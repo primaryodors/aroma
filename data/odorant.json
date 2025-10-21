@@ -2163,6 +2163,13 @@
     {
         "full_name": "3-hydroxy-2-methyl hexanoic acid",
         "smiles": "CCC(C(C(=O)[O-])C)O",
+        "isomers":
+        {
+            "(2R,3R)": "CC[C@H]([C@H](C(=O)[O-])C)O{O9}",
+            "(2R,3S)": "CC[C@@H]([C@H](C(=O)[O-])C)O{O9}",
+            "(2S,3R)": "CC[C@H]([C@@H](C(=O)[O-])C)O{O9}",
+            "(2S,3S)": "CC[C@@H]([C@@H](C(=O)[O-])C)O{O9}"
+        },
         "activity":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":
@@ -2656,6 +2663,11 @@
     {
         "full_name": "3-hydroxy-3-methyl heptanoic acid",
         "smiles": "CCCCC(CC(=O)[O-])(O)C",
+        "isomers":
+        {
+            "(R)": "CCCC[C@](CC(=O)[O-])(O)C",
+            "(S)": "CCCC[C@@](CC(=O)[O-])(O)C"
+        },
         "activity":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":
@@ -10157,6 +10169,13 @@
     {
         "full_name": "3-hydroxy-4-methyl heptanoic acid",
         "smiles": "CCCC(C(CC(=O)[O-])O)C",
+        "isomers":
+        {
+            "(3R,4R)": "CCC[C@H]([C@H](CC(=O)[O-])O)C{C13}",
+            "(3R,4S)": "CCC[C@@H]([C@H](CC(=O)[O-])O)C{C13}",
+            "(3S,4R)": "CCC[C@H]([C@@H](CC(=O)[O-])O)C{C13}",
+            "(3S,4S)": "CCC[C@@H]([C@@H](CC(=O)[O-])O)C{C13}"
+        },
         "activity":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":
@@ -34548,6 +34567,11 @@
     {
         "full_name": "3-hydroxy-4-methyl hexanoic acid",
         "smiles": "[O-]C(=O)CC(C(CC)C)O",
+        "isomers":
+        {
+            "(R)": "[O-]C(=O)C[C@@H](C(CC)C)O",
+            "(S)": "[O-]C(=O)C[C@H](C(CC)C)O"
+        },
         "activity":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":

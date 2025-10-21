@@ -3,15 +3,18 @@
 if (isset($_REQUEST['smiles']))
 {
     chdir(__DIR__);
+    chdir("..");
 
     $smilesu = escapeshellarg($_REQUEST['smiles']);
-    $cmd = "obabel --gen3d -osdf -O\"test.sdf\" -:$smilesu 2>&1";
+    if (false===strpos($_REQUEST['smiles'], '{'))
+        $cmd = "obabel --gen3d -osdf -O\"www/test.sdf\" -:$smilesu 2>&1";
+    else
+        $cmd = "test/mol_assem_test \"{$_REQUEST['smiles']}\" www/test.sdf";
     echo ("$cmd\n");
     passthru($cmd);
 
     if (@$_REQUEST["brot"])
     {
-        chdir("..");
         $brot = escapeshellarg($_REQUEST['brot']);
         $brot = str_replace(' ', "' '", $brot);
         $cmd = "test/bond_rotation_test \"www/test.sdf\" $brot";
@@ -23,7 +26,6 @@ if (isset($_REQUEST['smiles']))
 
     if (@$_REQUEST["rflp"])
     {
-        chdir("..");
         $rflp = escapeshellarg($_REQUEST['rflp']);
         $rflp = str_replace(' ', "' '", $rflp);
         $cmd = "bin/ringflip \"www/test.sdf\" $rflp";
