@@ -144,7 +144,7 @@ foreach ($prots as $protid => $p)
 }
 
 if (!$total) echo "No proteins match search criteria.";
-else echo "<p>Found $total proteins.</p>"
+else echo "<p>$total proteins.</p>"
 
 ?>
 </div>
