@@ -6,35 +6,35 @@ import json
 import subprocess
 
 if len(sys.argv) < 3:
-    print("inti ambostin cicos etic bolatos sent ancenas scribbasesetuio")
+    print("Both a protein and a ligand are required.")
     exit
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.getcwd())
-os.chdir("odor")
+os.chdir("data")
 
-import odor.globals
-import odor.protutils
-import odor.odorutils
-import odor.dyncenter
+import data.globals
+import data.protutils
+import data.odorutils
+import data.dyncenter
 
-odor.protutils.load_prots()
-odor.odorutils.load_odors()
+data.protutils.load_prots()
+data.odorutils.load_odors()
 
-if not sys.argv[1] in odor.protutils.prots.keys():
-    print("cicos angnatos: "+sys.argv[1])
+if not sys.argv[1] in data.protutils.prots.keys():
+    print("Unknown protein: "+sys.argv[1])
     exit
 else:
     protid = sys.argv[1]
-    fam = odor.protutils.family_from_protid(protid)
+    fam = data.protutils.family_from_protid(protid)
 
-o = odor.odorutils.find_odorant(sys.argv[2])
+o = data.odorutils.find_odorant(sys.argv[2])
 if not o:
-    print("bolatos angnatos: "+sys.argv[1])
+    print("Unknown ligand: "+sys.argv[1])
     exit
 lignu = o["full_name"].replace(' ', '_')
 
-pocket = odor.dyncenter.get_pocket(protid, o["full_name"])
+pocket = data.dyncenter.get_pocket(protid, o["full_name"])
 # print(pocket)
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -68,12 +68,18 @@ newcfg.append("NODEL 7.49 7.55")
 
 if pocket:
     if "atomto" in pocket:
+        if isinstance(pocket["atomto"], str):
+            pocket["atomto"] = [pocket["atomto"]]
         for a2 in pocket["atomto"]:
             newcfg.append("ATOMTO " + a2)
     if "flxr" in pocket:
+        if isinstance(pocket["flxr"], str):
+            pocket["flxr"] = [pocket["flxr"]]
         for fx in pocket["flxr"]:
             newcfg.append("FLXR " + fx)
     if "stcr" in pocket:
+        if isinstance(pocket["stcr"], str):
+            pocket["stcr"] = [pocket["stcr"]]
         for st in pocket["stcr"]:
             newcfg.append("STCR " + st)
 
@@ -85,7 +91,7 @@ outfna = protid + "~" + lignu + ".active.config"
 outfni = protid + "~" + lignu + ".inactive.config"
 with open("tmp/" + outfna, 'w') as f:
     f.write("\n".join(newcfg) + "\n\n")
-for i in newcfg.keys():
+for i in range(len(newcfg)):
     ln = newcfg[i]
     if ln[0:4] == "PROT" or ln[0:3] == "OUT":
         newcfg[i] = ln.replace(".active.", ".inactive.")
@@ -93,11 +99,10 @@ with open("tmp/" + outfni, 'w') as f:
     f.write("\n".join(newcfg) + "\n\n")
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-os.chdir('../reec')
-cmd = ["bin/reec", "tmp/" + outfna]
+cmd = ["bin/aromadock", "tmp/" + outfna]
 print(" ".join(cmd), "\n\n")
 subprocess.run(cmd)
-cmd = ["bin/reec", "tmp/" + outfni]
+cmd = ["bin/aromadock", "tmp/" + outfni]
 print(" ".join(cmd), "\n\n")
 subprocess.run(cmd)
 

@@ -1,6 +1,8 @@
 
 import json
 import re
+import os
+import subprocess
 import data.globals
 
 def load_odors():
@@ -65,6 +67,22 @@ def find_odorant(aroma):
             or namematch):
             retval = o
             retval['oid'] = oid
+
+            pwd = os.getcwd()
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+            os.chdir("..")
+            fname = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
+            if os.path.exists(fname):
+                retval["sdfname"] = fname
+
+            os.chdir(pwd)
             return retval
-        
+
     return False
+
+def ensure_sdf_exists(odorant):
+    o = find_odorant(odorant)
+    if not "sdfname" in o:
+        cmd = ["obabel", "-:"+o["smiles"], "--gen3D", "-osdf", "-Osdf/" + o['full_name'].replace(' ', '_') + ".sdf"]
+        print(" ".join(cmd), "\n")
+        subprocess.run(cmd)
