@@ -1,0 +1,4862 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<title>AROMA 3D Viewer</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/ngl@0.10.4/dist/ngl.js"></script>
+
+<script>
+var nglcitation
+	= "AS Rose, AR Bradley, Y Valasatava, JM Duarte, A Prlić and PW Rose.\n"
+	+ "Web-based molecular graphics for large complexes.\n"
+	+ "ACM Proceedings of the 21st International Conference on Web3D Technology (Web3D '16):\n"
+	+ "185-186, 2016. doi:10.1145/2945292.2945324\n"
+	+ "\n"
+	+ "AS Rose and PW Hildebrand.\n"
+	+ "NGL Viewer: a web application for molecular visualization.\n"
+	+ "Nucl Acids Res (1 July 2015) 43 (W1):\n"
+	+ "W576-W579 first published online April 29, 2015.\n"
+	+ "doi:10.1093/nar/gkv402";
+
+const aa1let = "ARNDCEQGHOILKMFPOUSTWYVHHHHH";
+const aa3let =
+[
+	'ALA', 'ARG', 'ASN', 'ASP', 'CYS',
+	'GLU', 'GLN', 'GLY', 'HIS', 'HYP',
+	'ILE', 'LEU', 'LYS', 'MET', 'PHE',
+	'PRO', 'PYL', 'SEC', 'SER', 'THR',
+	'TRP', 'TYR', 'VAL',
+	'HIP', 'HID', 'HIE', 'HSD', 'HSE',
+];
+
+/******************************************************************************/
+// http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript
+function getParameterByName(name, url)
+{
+    if (!url)
+    {
+        url = window.location.href;
+    }
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+    results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+/******************************************************************************/
+
+const aa_aliphatic = 0,
+	aa_aromatic = 1,
+	aa_hydrophilic = 2,
+	aa_acidic = 3,
+	aa_basic = 4,
+	aa_sulfur = 5;
+
+var opc_molecule = 1.0;
+var opc_ligand = 1.0;
+var opc_cartoon = 0.15;
+var opc_sidechain = 0.333;
+var opc_sidechain_active = 0.35;
+var opc_metal = 1.0;
+
+var mtl_bs = 0.0;
+var mtl_licorice = 0.0;
+var mtl_cartoon = 0.1;
+var mtl_metal = 0.5;
+
+var molid = getParameterByName('mol') ? getParameterByName('mol') : 'rand';
+var protid = getParameterByName('prot') ? getParameterByName('prot') : false;
+
+var website = "https://www.primaryodors.org";
+var is_localhost = false;
+
+var test = "http://127.0.0.1";
+
+function loadFile(fileData, fileName = "", custom_color_scheme = false)
+{
+	$("#pleasewait").show();
+	window.setTimeout( function()
+	{
+		$("#pleasewait").hide();
+	}, 5381);
+	
+	$("#affichage").hide();
+	
+    initialize_arrays();
+	
+    var fext = fileName.substr(fileName.lastIndexOf('.')+1);
+    orid = false; // 'OR1A1';
+    try
+    {
+        orid = fileName.match(/(OR[0-9]{1,2}[A-Z]{1,2}|TAAR|VN1R)[0-9]{1,2}/)[0];
+    }
+    catch (e)
+    {
+        ;
+    }
+
+    $.ajax(
+    {
+		url: website + "/recepinfo.php",
+		data:
+        {
+			recep: orid,
+        },
+		fext: fext,
+		fileData: fileData,
+		success: function(poresult)
+        {
+            poresult = poresult.split("\n");
+			bw50r = new Array(99).fill(0);
+
+            var i;
+            for (i=0; i<poresult.length; i++)
+            {
+                var ln = poresult[i];
+                if (ln.substr(0, 6) == "METAL|")
+                {
+                    var words = ln.split("|");
+                    var j;
+                    for (j=1; j<words.length; j++)
+                    {
+                        var m = words[j].match(/[0-9]{3}[:]/);
+                        if (m && m.length)
+                            mtlcoord.push(parseInt(m[0]));
+                    }
+                }
+                if (ln.substr(0, 7) == "REGION|")
+                {
+                    var words = ln.split("|");
+                    if (words[1].substr(0, 3) == "TMR" || words[1].substr(0, 3) == "HXR")
+                    {
+                        var tmr = parseInt(words[1].substr(3));
+                        tmstart[tmr] = parseInt(words[2]);
+                        tmend[tmr] = parseInt(words[3]);
+                    }
+                }
+                if (ln.substr(0, 3) == "BW|")
+                {
+                    var words = ln.split("|");
+					var tmr = parseInt(words[1].split('.')[0]);
+					bw50r[tmr] = parseInt(words[2]);
+                }
+                if (ln.substr(0, 7) == "POCKET|")
+                {
+                	if (!pocket[0] && !pocket[1] && !pocket[2])		// Only care about the first one for now.
+                	{
+                		var words = ln.split("|");
+                		var j;
+                		for (j=1; j<words.length; j++)
+                		{
+                			var kv = words[j].split('=');
+                			if (kv.length > 1)
+                			{
+		            			if (kv[0] == 'center_x') pocket[0] = parseFloat(kv[1]);
+		            			if (kv[0] == 'center_y') pocket[1] = parseFloat(kv[1]);
+		            			if (kv[0] == 'center_z') pocket[2] = parseFloat(kv[1]);
+		            			
+		            			$('#pktbtn').show();
+	            			}
+                		}
+                	}
+                }
+            }
+
+            var fext = this.fext;
+            switch (fext)
+            {
+		        case 'sdf':
+		        case 'pdb':
+				$("#vstats").hide();
+                stage.removeAllComponents();
+				visicomp = [];
+                window.result = fileData;
+                cen_ligand = false;
+				initialize_arrays();
+				bw50r = new Array(99).fill(0);
+
+                if (fext == 'pdb')
+                {
+					disable_spacefill();
+					hydrogens = false;
+					$("#nohyd").click();
+                	var i;
+                	var lines = fileData.split("\n");
+                    var lres = 0;
+					cavities = [];
+                    var tmpstr = "";
+					var ligtmp = "";
+					var h2otmp = "";
+					var strandid = "A";
+					var last_strandid = "";
+					var strand_has_tms = false;
+                    for (i=0; i<lines.length; i++)
+                    {
+                        var ln = lines[i];
+
+                        if ((ln.substr(0, 6) == "HETATM" || ln.substr(17,3) == "LIG"))
+                        {
+							if (ln.substr(17,3) != "HOH" && ln.substr(17,3)) ligtmp += ln + "\n";
+							else h2otmp += ln + "\n";
+						}
+
+						if (lines[i].substr(0, 7) == "ATOM   ")
+						{
+							var resno = parseInt(ln.substr(22,4));
+							var aname = ln.substr(12,4).trim();
+							var x = parseFloat(lines[i].substr(30, 8));
+							var y = parseFloat(lines[i].substr(38, 8));
+							var z = parseFloat(lines[i].substr(46, 8));
+							if (typeof sresapos[resno] == 'undefined') sresapos[resno] = {};
+							sresapos[resno][aname] = [x, y, z];
+						}
+						else if (lines[i].substr(0, 7) == "HETATM "
+							&& lines[i].substr(17,3) != "HOH" && lines[i].substr(17,3) != "H2O"
+							)
+						{
+							var aname = ln.substr(12,4).trim();
+							var x = parseFloat(lines[i].substr(30, 8));
+							var y = parseFloat(lines[i].substr(38, 8));
+							var z = parseFloat(lines[i].substr(46, 8));
+							var anum = aname.replace(/[^0-9]/g, '');
+							sligapos[anum] = [x, y, z];
+						}
+
+						if (ln.substr(0, 3) == 'TER') strand_has_tms = false;
+
+						if (ln.substr(0, 6) == 'REMARK')
+						{
+							var pieces = ln.split(" ");
+							if (pieces[2] == 'HELIX' && (pieces[3].substr(0,3) == 'TMR' || pieces[3].substr(0,3) == 'HXR'))
+							{
+								var tmrno = parseInt(pieces[3].substr(-1));
+								tmstart[tmrno] = parseInt(pieces[4]);
+								tmend[tmrno] = parseInt(pieces[5]);
+								strand_has_tms = true;
+								// tmstrand = [];			// Force reassignment later on.
+							}
+							else if (pieces[3] == "LIGAND_BINDING")
+							{
+								var resno = parseInt(pieces[4]);
+								ligbs.push(resno);
+							}
+							else if (pieces[3] == "BW")
+							{
+								var tmr = parseInt(pieces[4]);
+								var resno = parseInt(pieces[5]);
+								bw50r[tmr] = resno;
+							}
+							else if (pieces[3] == "MCOORD")
+							{
+								var resno = parseInt(pieces[4]);
+								mcres.push(resno);
+							}
+							else if (pieces[1] == "503") process_lsrb_ln(ln, 1, 0);
+							else if (pieces[1] == "821" && typeof pieces[3] != "undefined")
+							{
+								process_cavity_ln(ln);
+							}
+						}
+						else
+                        {
+							var resno = parseInt(ln.substr(22,4));
+							strandid = ln.substr(21,1).trim();
+							if (!strandid) strandid = "A";
+							var aa1let = aa_1let_from_3let(ln.substr(17,3).trim());
+							if (/* !tmstrand.length && */ strand_has_tms && tmstart[6] && (tmstrand.indexOf(strandid) < 0) ) tmstrand.push(strandid);
+
+							if (lres != resno)
+							{
+								if (ln.length > 20 || ln.trim() == "TER")
+								{
+									if (aa1let != '?' || ln.trim() == "TER")
+									{
+										var stringBlob6 = new Blob( [tmpstr], { type: 'text/plain'} );
+										stage.loadFile( stringBlob6, { ext: 'pdb' } ).then( function( comp6 )
+										{
+											resmdl.push(comp6);
+											restoggled.push(0);
+										});
+
+										// console.log(tmpstr);
+										// console.log(aa1let + resno + " of strand " + strandid);
+										
+										if (isNaN(resno)) resno = 0;
+										lres = resno;
+										mdlresno.push(resno);
+										resstrandid.push(strandid);
+										tmpstr = "";
+										sequence.push(aa1let);
+									}
+								}
+							}
+						}
+
+                        if (ln.length < 20) continue;
+
+                        tmpstr += ln + "\n";
+						last_strandid = strandid;
+                    }
+
+					finish_cavity_lines();
+
+                    /*if (tmpstr)
+                    {
+	                	var stringBlob6a = new Blob( [tmpstr], { type: 'text/plain'} );
+	                	stage.loadFile( stringBlob6a, { ext: 'pdb' } ).then( function( comp6a )
+	            		{
+	            			resmdl.push(comp6a);
+	            			restoggled.push(0);
+	            		});
+						if (isNaN(resno)) resno = 0;
+	            		mdlresno.push(resno);
+						resstrandid.push(last_strandid);
+						sequence.push(aa1let);
+    				}*/
+
+					if (ligtmp.length)
+					{
+						var stringBlob6b = new Blob( [ ligtmp ], { type: 'text/plain'} );
+						stage.loadFile( stringBlob6b, { ext: 'pdb', name: "ligand" } ).then( function( comp6b )
+						{
+							var rparam =
+							{
+								opacity: opc_ligand,
+								multipleBond: true,
+								colorScheme: PODefSchemeLigand,
+								metalness: mtl_bs,
+							};
+
+							model.push(comp6b);
+							mrep.push("ball+stick");
+							mrparams.push(rparam);
+							is_ligand.push(1);
+							curr_ligand = comp6b;
+							ligand_params = rparam;
+							if (curr_ligand) $('#ligbtn, #prsv').show();
+
+							var lpn = comp6b.name.split("|");
+							mpos.push(parseInt(lpn[0]));
+							mnod.push(parseInt(lpn[1]));
+							$('#clip').trigger("input");
+
+							curr_ligand.addRepresentation( "licorice", rparam );
+						} );
+						ligtmp = "";
+					}
+
+					if (h2otmp.length)
+					{
+						var stringBlob6b = new Blob( [ h2otmp ], { type: 'text/plain'} );
+						stage.loadFile( stringBlob6b, { ext: 'pdb', name: "ligand" } ).then( function( comp6b )
+						{
+							var rparam =
+							{
+								opacity: opc_ligand,
+								multipleBond: true,
+								colorScheme: PODefSchemeLigand,
+								metalness: mtl_bs,
+							};
+
+							model.push(comp6b);
+							mrep.push("ball+stick");
+							mrparams.push(rparam);
+							is_ligand.push(0);
+							if (curr_ligand) $('#ligbtn, #prsv').show();
+
+							var lpn = comp6b.name.split("|");
+							mpos.push(parseInt(lpn[0]));
+							mnod.push(parseInt(lpn[1]));
+							$('#clip').trigger("input");
+
+							comp6b.addRepresentation( "licorice", rparam );
+						} );
+						h2otmp = "";
+					}
+                    
+                }
+                
+                if (fext == 'sdf')
+                {
+                	$('#posey').show();
+					$('#posey')[0].innerText = fileData.split("\n")[0];
+					enable_spacefill();
+            	}
+
+				var fileStrands = fileData.split("\nTER");
+				fileStrands.forEach(function(strandData)
+                {
+					if (fext != "sdf" && (strandData.trim().length < 20 || strandData.indexOf("\nATOM ") < 0)) return;
+					var strandid = strandData.substr(strandData.indexOf("\nATOM "), 100).trim().substr(21,1).trim();
+					if (!strandid) strandid = "A";
+					var stringBlob = new Blob( [ strandData ], { type: 'text/plain'} );
+					stage.loadFile( stringBlob, { ext: fext, name: strandid } ).then( ( comp ) =>
+					{
+						if (fext == 'sdf')
+						{
+							var rp =
+							{
+								opacity: opc_molecule,
+								colorScheme: PODefSchemeHilite,
+								multipleBond: true,
+								metalness: mtl_bs,
+							};
+							comp.addRepresentation( "ball+stick", rp);
+							gmodel.push(comp);
+							gmvisible.push(true);
+							mdlligands.push(comp);
+							gmrep.push("ball+stick");
+							gmrparams.push(rp);
+
+							comp.autoView();
+						}
+
+						if (fext == 'pdb')
+						{
+							var rp =
+							{
+								opacity: opc_cartoon,
+								colorScheme: custom_color_scheme ? custom_color_scheme : ((tmstrand.indexOf(comp.name) >= 0) ? PODefRgnScheme : POAAScheme),
+								// colorScale: 'rainbow',
+								metalness: mtl_cartoon,
+							};
+							comp.addRepresentation( "cartoon", rp);
+							gmodel.push(comp);
+							gmvisible.push(true);
+							mdlstrands.push(comp);
+							gmrep.push("cartoon");
+							gmrparams.push(rp);
+
+							var i;
+							var subset = [], shiny = [];
+							var result = window.result.split("\n");
+							for (i=0; i<result.length; i++)
+							{
+								var ln = result[i];
+								var resno = parseInt(ln.substr(22,4));
+								var aname = ln.substr(12,4).trim();
+								if (mtlcoord.indexOf(resno) >= 0
+										&& aname != "N"
+										&& aname != "HN"
+										&& aname != "H"
+										&& aname != "CA"
+										&& aname != "HA"
+										&& aname != "HA1"
+										&& aname != "HA2"
+										// Due to a bug in NGL, the C and O atoms are required if including CA in
+										// licorice, ball+stick, or line mode. Hyperball avoids this but is slower to render.
+										// && aname != "C"
+										// && aname != "O"
+								) subset.push(ln);
+								if (ln.substr(17,3) == "MTL") shiny.push(ln);
+							}
+							var stringBlob2 = new Blob( [ shiny.join("\n") ], { type: 'text/plain'} );
+							stage.loadFile( stringBlob2, { ext: 'pdb' } ).then( function( comp2 )
+							{
+								var rp =
+								{
+									opacity: opc_metal,
+									colorScheme: PODefScheme,
+									metalness: mtl_metal,
+								};
+								comp2.addRepresentation( "spacefill", rp);
+								gmodel.push(comp2);
+								gmvisible.push(true);
+								mdlligands.push(comp2);
+								gmrep.push("spacefill");
+								gmrparams.push(rp);
+							});
+
+							stage.autoView();
+							if (!hydrogens) $("#nohyd").click();
+						}
+					} );
+
+					mdlstrandid.push(strandid);
+				});
+
+				if (fext != 'sdf') $("#affichage").show();
+                break;
+
+            	case 'txt':
+            	case 'dock':
+				dock_result_txt = [];
+                stage.removeAllComponents();
+				visicomp = [];
+                var lines = fileData.split("\n");
+                cen_ligand = true;
+				disable_spacefill();
+				hydrogens = false;
+				$("#nohyd").click();
+                
+                var i;
+                var mod = "m";
+                for (i=0; i<100; i++)
+                {
+                	if (lines[i].substr(0, 10) == "PDB file: ")
+                	{
+                		if (lines[i].indexOf(".metal.") < 0) mod = "";
+                		break;
+            		}
+                }
+
+				var lln = lines.length;
+				var lpose = -1, lnode = -1, llpose = -1, llnode = -1;
+				var reading_benerg = false;
+				var reading_atomlvl = false;
+				cavities = [];
+				for (i=0; i<lln; i++)
+				{
+					if (lines[i].substr(0,10) == "REMARK 503") process_lsrb_ln(lines[i], llpose, llnode);
+					else if (lines[i].substr(0,10) == "REMARK 821") process_cavity_ln(lines[i]);
+					else if (lines[i].substr(0, 6) == "Pose: ")
+					{
+						llpose = lpose = parseInt(lines[i].substr(6));
+						if (typeof dock_result_txt[lpose] == "undefined") dock_result_txt[lpose] = [];
+					}
+					else if (lines[i].substr(0, 6) == "Node: ")
+					{
+						llnode = lnode = parseInt(lines[i].substr(6));
+						dock_result_txt[lpose][lnode] = "";
+						$("#vstats").show();
+					}
+					else if (lines[i] == "Original PDB:")
+					{
+						lpose = lnode = -1;
+						orid = false;
+						var pdbdat = "";
+						for (i++; i<lln; i++) pdbdat += lines[i] + "\n";
+						apply_pdb(pdbdat);
+					}
+					else if (lines[i].substr(0, 7) == "ATOM   " || lines[i].substr(0, 7) == "HETATM " || lines[i] == "# PDB Data" || lines[i] == "PDBDAT:")
+					{
+						lpose = lnode = -1;
+
+						if (llpose >= 0 && llnode >= 0)
+						{
+							if (lines[i].substr(0, 7) == "ATOM   " || lines[i].substr(0, 7) == "HETATM ")
+							{
+								var resno = parseInt(lines[i].substr(20,6));
+								var aname = lines[i].substr(11, 6).trim();
+								var x = parseFloat(lines[i].substr(30, 8));
+								var y = parseFloat(lines[i].substr(38, 8));
+								var z = parseFloat(lines[i].substr(46, 8));
+								var esym = lines[i].substr(77, 2).replace(/[+-]/g, '');
+
+								if (lines[i].substr(0, 7) == "ATOM   ")
+								{
+									if (typeof resapos[llpose] == 'undefined') resapos[llpose] = [];
+									if (typeof resapos[llpose][llnode] == 'undefined') resapos[llpose][llnode] = [];
+									if (typeof resapos[llpose][llnode][resno] == 'undefined') resapos[llpose][llnode][resno] = {};
+									resapos[llpose][llnode][resno][aname] = [x, y, z, esym.trim()];
+								}
+								else if (lines[i].substr(0, 7) == "HETATM "
+									&& lines[i].substr(17,3) != "HOH" && lines[i].substr(17,3) != "H2O"
+									)
+								{
+									if (typeof ligapos[llpose] == 'undefined') ligapos[llpose] = [];
+									if (typeof ligapos[llpose][llnode] == 'undefined') ligapos[llpose][llnode] = {};
+									ligapos[llpose][llnode][aname] = [x, y, z, esym.trim()];
+								}
+							}
+						}
+					}
+					else if (lpose >= 0 && lnode >= 0)
+					{
+						dock_result_txt[lpose][lnode] += lines[i] + "\n";
+					}
+				}
+				for (i=0; i<lln; i++)
+				{
+					if (lines[i].trim() == "BENERG:")
+					{
+						reading_benerg = true;
+					}
+					if (lines[i].trim() == "Atom-level interactions:")
+					{
+						reading_atomlvl = true;
+					}
+					else if (lines[i].substr(0, 6) == "Pose: ")
+					{
+						llpose = lpose = parseInt(lines[i].substr(6));
+					}
+					else if (lines[i].substr(0, 6) == "Node: ")
+					{
+						llnode = lnode = parseInt(lines[i].substr(6));
+						$("#vstats").show();
+					}
+					else if (lpose >= 0 && lnode >= 0)
+					{
+						if (reading_benerg)
+						{
+							var pieces = lines[i].split(':');
+							if (pieces.length < 2)
+							{
+								reading_benerg = false;
+								continue;
+							}
+							// continue;
+
+							var resno = pieces[0];
+							if (!resno.match(/^[A-Za-z]{3}[0-9 ]{1,4}/))
+							{
+								reading_benerg = false;
+								continue;
+							}
+
+							resno = parseInt(resno.substr(3));
+							var energy = parseFloat(pieces[1]);
+							if (energy > -0.3) continue;
+
+							if (typeof resapos[lpose] == 'undefined') continue;
+							if (typeof resapos[lpose][lnode] == 'undefined') continue;
+							if (typeof resapos[lpose][lnode][resno] == 'undefined') continue;
+							if (typeof resapos[lpose][lnode][resno]['CA'] == 'undefined') continue;
+							var liga = nearest_lig_apos(lpose, lnode, resapos[lpose][lnode][resno]['CA']);
+							var resa = nearest_res_apos(lpose, lnode, resno, liga);
+							liga = nearest_lig_apos(lpose, lnode, resa);
+							resa = nearest_res_apos(lpose, lnode, resno, liga);
+							liga = nearest_lig_apos(lpose, lnode, resa);
+							var thing = [resa, liga, energy];
+
+							if (typeof visinter[lpose] == 'undefined') visinter[lpose] = [];
+							if (typeof visinter[lpose][lnode] == 'undefined') visinter[lpose][lnode] = [];
+							visinter[lpose][lnode].push(thing);
+						}
+						if (reading_atomlvl)
+						{
+							var pieces = lines[i].split('~');
+							if (pieces.length < 2)
+							{
+								reading_atomlvl = false;
+								continue;
+							}
+
+							var morceaux = pieces[0].split(':');
+							var aa1name = morceaux[0];
+							var res1no = parseInt(" 0" + aa1name.replace(/[^0-9]/g, ""));
+							var atom1name = morceaux[1];
+
+							var morceaux = pieces[1].split(':');
+							var aa2name = morceaux[0];
+							var res2no = parseInt(" 0" + aa2name.replace(/[^0-9]/g, ""));
+							var atom2name = morceaux[1];
+
+							var venergy = parseFloat(morceaux[2]);
+							if (res1no && res2no) continue;
+							if (venergy > -0.3) continue;
+
+							resno = res1no ? res1no : res2no;
+
+							var a1pos, a2pos;
+							if (res1no)
+							{
+								if (typeof resapos[lpose][lnode][res1no] == 'undefined') continue;
+								if (typeof resapos[lpose][lnode][res1no][atom1name] == 'undefined') continue;
+								a1pos = resapos[lpose][lnode][res1no][atom1name];
+							}
+							else 
+							{
+								if (typeof ligapos[lpose][lnode][atom1name] == 'undefined') continue;
+								a1pos = ligapos[lpose][lnode][atom1name];
+							}
+							if (res2no)
+							{
+								if (typeof resapos[lpose][lnode][res2no] == 'undefined') continue;
+								if (typeof resapos[lpose][lnode][res2no][atom2name] == 'undefined') continue;
+								a2pos = resapos[lpose][lnode][res2no][atom2name];
+							}
+							else
+							{
+								if (typeof ligapos[lpose][lnode][atom2name] == 'undefined') continue;
+								a2pos = ligapos[lpose][lnode][atom2name];
+							}
+
+							if (typeof a1pos == 'undefined' || typeof a2pos == 'undefined') continue;
+
+							if (typeof visinter[lpose] == 'undefined') visinter[lpose] = [];
+							if (typeof visinter[lpose][lnode] == 'undefined') visinter[lpose][lnode] = [];
+
+							var already = false;
+							var i1, l1 = visinter[lpose][lnode].length;
+
+							for (i1=0; i1<l1; i1++)
+							{
+								if (visinter[lpose][lnode][i1][3] == resno)
+								{
+									already = i1;
+									break;
+								}
+							}
+
+							var pettia = [a1pos, a2pos, venergy, resno];
+							if (already)
+							{
+								if (visinter[lpose][lnode][already][2] > venergy)
+									visinter[lpose][lnode][already] = pettia;
+							}
+							else visinter[lpose][lnode].push(pettia);
+						}
+					}
+				}
+
+				finish_cavity_lines();
+
+				if (orid)
+				{
+		            $.ajax(
+		            {
+						url: website + "/pdb.php",
+						data:
+		                {
+							"p": orid,
+							"mod": mod,
+		                },
+						success: function(poresult)
+		                {
+							apply_pdb(poresult);
+		                }		// end orpdb success.
+		            });		// end orpdb ajax.
+	            }		// end if orid.
+
+				$('#posey').show();
+                var posey = $('#posey')[0];
+                var i, writing=false, p=0, n=0;
+                var protmp = "", ligtmp = "", h2otmp = "";
+                posey.innerHTML = "Pose: ";
+                model = [];
+                is_ligand = [];
+                mpos = [];
+                mnod = [];
+				dockbsr = [];
+                for (i=0; i<lln; i++)
+                {
+                    var ln = lines[i];
+					if (ln.match(/^[A-Z][A-Za-z]{2}[0-9]+([(][0-9]{1,2}[.][0-9]{1,2}[)])?:\s+[+-]?[0-9.]+/g))
+					{
+						var lmn = ln.match(/[0-9]+/g);
+						var lrno = parseInt(lmn[0]);
+						dockbsr.push(lrno);
+					}
+
+					if (ln == "Original PDB:") break;
+
+                    if (ln.substr(0,6) == "Pose: ")
+                    {
+                        p = parseInt(ln.substr(6));
+                        ligtmp += "REMARK 225 " + ln + "\n";
+                    }
+                    else if (ln.substr(0,6) == "Node: ")
+                    {
+                        n = parseInt(ln.substr(6));
+                        ligtmp += "REMARK 225 " + ln + "\n";
+                    }
+                    else if (ln.substr(0,4) == "ACM ")
+                    {
+                    	var words = ln.split(" ");
+                    	if (words.length < 11) continue;
+                    	
+                    	acvnode = parseInt(words[1]);
+                    	
+                    	var matrixln =
+                    	{
+                    		name: words[2],
+                    		sr: parseInt(words[3]),
+                    		er: parseInt(words[4]),
+                    		nx: parseFloat(words[5]),
+                    		ny: parseFloat(words[6]),
+                    		nz: parseFloat(words[7]),
+                    		cx: parseFloat(words[8]),
+                    		cy: parseFloat(words[9]),
+                    		cz: parseFloat(words[10]),
+                    	};
+                    	
+                    	if (!acvmatrix.length) acvmatrix.push(matrixln);
+                    	else
+                    	{
+                    		var j;
+                    		var found = false;
+                    		for (j=0; j<acvmatrix.length; j++)
+                    		{
+                    			if (acvmatrix[j].name == matrixln.name)
+                    			{
+                    				acvmatrix[j] = matrixln;
+                    				found = true;
+                    				break;
+                    			}
+                    		}
+                    		if (!found) acvmatrix.push(matrixln);
+                    	}
+                    }
+                    else if (ln.substr(0,4) == "ACR ")
+                    {
+                    	var words = ln.split(" ");
+                    	if (words.length < 11) continue;
+                    	
+                    	acvnode = parseInt(words[1]);
+                    	
+                    	acvmatrix = [];
+                    	
+                    	var rot8ln =
+                    	{
+                    		name: words[2],
+                    		sr: parseInt(words[3]),
+                    		er: parseInt(words[4]),
+                    		tx: parseFloat(words[5]),			// transform xyz.
+                    		ty: parseFloat(words[6]),
+                    		tz: parseFloat(words[7]),
+                    		ox: parseFloat(words[8]),			// origin xyz.
+                    		oy: parseFloat(words[9]),
+                    		oz: parseFloat(words[10]),
+                    		ax: parseFloat(words[11]),			// axis xyz, relative to origin.
+                    		ay: parseFloat(words[12]),
+                    		az: parseFloat(words[13]),
+                    		angle: parseFloat(words[14]),		// radians.
+                    	};
+                    	
+                    	if (!acvrot8.length) acvrot8.push(rot8ln);
+                    	else
+                    	{
+                    		var j;
+                    		var found = false;
+                    		for (j=0; j<acvrot8.length; j++)
+                    		{
+                    			if (acvrot8[j].name == rot8ln.name)
+                    			{
+                    				acvrot8[j] = rot8ln;
+                    				found = true;
+                    				break;
+                    			}
+                    		}
+                    		if (!found) acvrot8.push(rot8ln);
+                    	}
+                	}
+                    else if (ln.trim() == "PDBDAT:")
+                    {
+                        if (p>0) writing = true;
+                    }
+                    else if (ln.trim() == "END")
+                    {
+                        if (!n)
+                        {
+                        	var btnid = "posebtn"+p;
+                        	
+                        	if (!$('#'+btnid).length)
+                        	{
+		                        var posea = document.createElement("a");
+		                        posea.className = "posebtn";
+		                        if (p==1) $(posea).addClass("hilite");
+		                        posea.innerText = p;
+		                        posea.id = btnid;
+		                        posea.setAttribute("onclick", "showPose("+p+");");
+
+		                        posey.appendChild(posea);
+                            }
+                        }
+
+                        if (writing)
+                        {
+                            var stringBlob7a = new Blob( [ protmp ], { type: 'text/plain'} );
+                            stage.loadFile( stringBlob7a, { ext: 'pdb', name: p+"|"+n } ).then( function( comp7a )
+                            {
+                                var rparam =
+                                {
+                                    opacity: opc_sidechain_active,
+									colorScheme: PODefSchemeHilite,
+                                    metalness: mtl_licorice,
+                                };
+
+                                model.push(comp7a);
+                                mrep.push("licorice");
+                                mrparams.push(rparam);
+                                is_ligand.push(0);
+
+                                var lpn = comp7a.name.split("|");
+                                mpos.push(parseInt(lpn[0]));
+                                mnod.push(parseInt(lpn[1]));
+                                $('#clip').trigger("input");
+                            } );
+
+                            var stringBlob7b = new Blob( [ ligtmp ], { type: 'text/plain'} );
+                            stage.loadFile( stringBlob7b, { ext: 'pdb', name: p+"|"+n } ).then( function( comp7b )
+                            {
+                                var rparam =
+                                {
+									opacity: opc_ligand,
+									multipleBond: true,
+									colorScheme: PODefSchemeLigand,
+                                    metalness: mtl_bs,
+                                };
+
+                                model.push(comp7b);
+                                mrep.push("licorice");
+                                mrparams.push(rparam);
+                                is_ligand.push(1);
+								if (!curr_ligand)
+								{
+									curr_ligand = comp7b;
+									ligand_params = rparam;
+									window.setTimeout(function()
+									{
+										showPose(1);
+										if (!hydrogens) $("#nohyd").click();
+										// curr_ligand.autoView();
+									}, 259);
+								}
+
+                                var lpn = comp7b.name.split("|");
+                                mpos.push(parseInt(lpn[0]));
+                                mnod.push(parseInt(lpn[1]));
+                                $('#clip').trigger("input");
+                            } );
+
+							if (h2otmp.length)
+							{
+								var stringBlob7c = new Blob( [ h2otmp ], { type: 'text/plain'} );
+								stage.loadFile( stringBlob7c, { ext: 'pdb', name: p+"|"+n } ).then( function( comp7c )
+								{
+									var rparam =
+									{
+										opacity: opc_ligand,
+										multipleBond: true,
+										colorScheme: PODefSchemeLigand,
+										metalness: mtl_bs,
+									};
+
+									model.push(comp7c);
+									mrep.push("licorice");
+									mrparams.push(rparam);
+									is_ligand.push(0);
+
+									var lpn = comp7c.name.split("|");
+									mpos.push(parseInt(lpn[0]));
+									mnod.push(parseInt(lpn[1]));
+									$('#clip').trigger("input");
+								} );
+							}
+                        }
+                        writing = false;
+                        protmp = ligtmp = h2otmp = "";
+                    }
+                    else if (writing)
+                    {
+                        if (ln.substr(0,6) == "HETATM" || ln.substr(17,3) == "LIG")
+                        {
+							var rescd = ln.substr(17,3);
+							if (rescd == "HOH" || rescd == "H2O") h2otmp += ln + "\n";
+							else ligtmp += ln + "\n";
+						}
+                        else
+						{
+							var lrno = parseInt(ln.substr(21,6));
+							if (dockbsr.indexOf(lrno) >= 0)
+								protmp += ln + "\n";
+						}
+                    }
+                }
+                
+                window.setTimeout(function()
+                {
+                    showPose(1);
+                    // curr_ligand.autoView();
+                }, 259);
+                $("#affichage").show();
+                break;
+
+            	default:
+                alert('Unknown file type ' + fext);
+            }
+            window.setTimeout(function()
+            {
+            	$("#pleasewait").hide();
+                if (curr_ligand) curr_ligand.autoView();
+            	$('#clip').trigger("input");
+				showPose(1);
+        	}, 1536);
+
+			$("#clip").trigger("input");
+        }
+    });
+}
+
+function do_initial_load()
+{
+	if (molid == "none") return;
+	var url = getParameterByName('url') ? getParameterByName('url') : website+'/sdf.php';
+
+	var literal_pdb = false;
+	var literal_fname = "";
+
+	if (literal_pdb)
+	{
+		loadFile(literal_pdb, literal_fname);
+	}
+	else if (protid)
+	{
+		load_remote_pdb(url);
+	}
+	else if (molid != "~")
+	{
+		load_remote_sdf(url);
+	}
+}
+
+if (!is_localhost) $.ajax(
+{
+	url: test + "/instcheck.php",
+	cache: false,
+	success: function(result)
+	{
+		if (result == "b00d1cca")
+		{
+			website = test;
+			is_localhost = true;
+			do_initial_load();
+		}
+	},
+	error: function(result)
+	{
+		test = "http://127.0.0.1/aromadock";
+		if (!is_localhost) $.ajax(
+		{
+			url: test + "/instcheck.php",
+			cache: false,
+			success: function(result)
+			{
+				if (result == "b00d1cca")
+				{
+					website = test;
+					is_localhost = true;
+					do_initial_load();
+				}
+			},
+			error: function(result)
+			{
+				do_initial_load();
+			}
+		});
+	}
+});
+
+
+
+</script>
+<style>
+body
+{
+	color: #69c;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+body.whtbk
+{
+	color: #346;
+	background-color: #fed;
+}
+
+a
+{	color: #2af;
+	text-decoration: none;
+}
+
+body.whtbk a
+{
+	color: #259;
+}
+
+a:hover
+{
+	text-decoration: underline;
+}
+
+#pleasewait
+{
+	position: fixed;
+	top: 22%;
+	left: 40%;
+	right: 40%;
+	width: 20%;
+	text-align: center;
+	background-color: rgba(0,11,31,0.67);
+	color: #def;
+	padding: 15px;
+	border-radius: 25px;
+	box-shadow: 0px 0px 41px rgba(0,0,0,0.22), 5px 3px 5px rgba(0,0,0,0.41);
+}
+
+body.whtbk #pleasewait
+{
+	background-color: rgba(224, 240, 255, 0.67);
+}
+
+#citefloat
+{
+	position: fixed;
+	text-align: right;
+    right: 25px;
+    bottom: 15px;
+	font-family: Verdana, Arial, Sans-Serif;
+    font-size: 11px;
+}
+
+#citefloat, #citefloat a
+{
+	color: #036;
+}
+
+#citefloat span
+{
+    background-color: rgba(0,0,0,0.53);
+	color: rgba(0, 128, 255, 0);
+	font-size: 15px;
+	transition: color 2s, height 2s;
+	text-align: left;
+	display: block;
+	height: 0px;
+	overflow: hidden;
+	width: 150px;
+}
+
+body.whtbk #citefloat span
+{
+	background-color: rgba(255,255,255, 0.67);
+}
+
+#citefloat:hover span
+{
+	color: rgba(192, 192, 192, 1);
+	display: block;
+	height: auto;
+	width: fit-content;
+}
+
+body.whtbk #citefloat:hover span
+{
+	color: #222;
+}
+
+#dockfloat
+{
+	position: fixed;
+	text-align: left;
+	left: 0px;
+    top: 10%;
+	font-family: Verdana, Arial, Sans-Serif;
+    font-size: 11px;
+	height: 500px;
+	overflow-y: auto;
+}
+
+#dockfloat, #dockfloat a
+{
+	color: #036;
+}
+
+#dockfloat span
+{
+    background-color: rgba(0,0,0,0.53);
+	color: rgba(0, 128, 255, 0);
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 15px;
+	/* transition: color 1s, width 1s; */
+	text-align: left;
+	display: block;
+	width: 10px;
+	overflow: hidden;
+	height: 500px;
+}
+
+body.whtbk #dockfloat span
+{
+	background-color: rgba(255,255,255, 0.67);
+}
+
+#dockfloat:hover span
+{
+	color: rgba(192, 192, 192, 1);
+	display: block;
+	width: fit-content;
+    padding: 20px;
+	height: fit-content;
+}
+
+body.whtbk #dockfloat:hover span
+{
+	color: #222;
+}
+
+#ctrls div
+{
+    margin-left: 15px;
+}
+
+#posey
+{
+	background-color: #123;
+    min-width: 71px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+body.whtbk #posey
+{
+	background-color: #bdf;
+}
+
+#dspsett
+{
+	position: absolute;
+	top: 53px;
+	border: 1px solid #039;
+    padding: 5px;
+    background-color: rgba(0, 32, 96, 0.67);
+    border-radius: 13px;
+}
+
+body.whtbk #dspsett
+{
+	background-color: rgba(224, 240, 255, 0.67);
+}
+
+.clickme, .clickme:hover
+{
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.clickme:hover
+{
+	color: #9cf;
+}
+
+body.whtbk .clickme:hover
+{
+	color: #06f;
+}
+
+.posebtn
+{
+	background-color: #246;
+    border-top: 2px solid #47a;
+    border-left: 2px solid #369;
+    border-right: 2px solid #234;
+    border-bottom: 2px solid #123;
+    border-radius: 5px;
+    padding-left: 3px;
+    padding-right: 3px;
+    margin-left: 2px;
+    margin-right: 2px;
+	cursor: pointer;
+    font-size: 14px;
+	font-family: Verdana, Arial, sans-serif;
+}
+
+body.whtbk .posebtn
+{
+	background-color: #9bd;
+    border-top: 2px solid #def;
+    border-left: 2px solid #ace;
+    border-right: 2px solid #69c;
+    border-bottom: 2px solid #468;
+	color: #123;
+}
+
+.posebtn.hilite
+{
+	background-color: #369;
+    border-top: 2px solid #68a;
+    border-left: 2px solid #579;
+    border-right: 2px solid #246;
+    border-bottom: 2px solid #135;
+}
+
+body.whtbk .posebtn.hilite
+{
+	background-color: #6bf;
+    border-top: 2px solid #def;
+    border-left: 2px solid #ace;
+    border-right: 2px solid #69c;
+    border-bottom: 2px solid #468;
+	color: #159;
+}
+
+.nodebtn
+{
+	background-color: #234;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin-left: 0px;
+    margin-right: 0px;
+	cursor: pointer;
+    font-size: 14px;
+	font-family: Verdana, Arial, sans-serif;
+	display: inline-block;
+}
+
+body.whtbk .nodebtn
+{
+	background: transparent;
+}
+
+.nodebtn.hilite
+{
+	background-color: #357;
+}
+
+body.whtbk .nodebtn.hilite
+{
+	background: transparent;
+}
+
+.bw50
+{
+	color: #fff;
+}
+
+body.whtbk .bw50
+{
+	color: #600;
+	font-weight: bold;
+}
+
+.symbol
+{
+	font-size: 20px!important;
+}
+
+.symbol.smaller
+{
+	font-size: 16px!important;
+	line-height: 31px;
+}
+
+input, select
+{
+	background-color: #036;
+	color: #9cf;
+    border: 1px solid #06c;
+    border-radius: 5px;
+}
+
+body.whtbk input, body.whtbk select
+{
+	background-color: #9cf;
+	color: #036;
+}
+
+option.agonist
+{
+	background-color: #044;
+	color: #9ef;
+	font-weight: bold;
+}
+
+body.whtbk option.agonist
+{
+	background-color: #9ef;
+	color: #044;
+}
+
+option.non_agonist
+{
+	background-color: #234;
+	color: #bcd;
+}
+
+body.whtbk option.non_agonist
+{
+	background-color: #bcd;
+	color: #234;
+}
+
+option.antagonist
+{
+	background-color: #410;
+	color: #fb9;
+}
+
+body.whtbk option.antagonist
+{
+	background-color: #fb9;
+	color: #410;
+}
+
+option.unknown
+{
+	background-color: #000;
+	color: #999;
+}
+
+body.whtbk option.unknown
+{
+	background-color: #999;
+	color: #000;
+}
+
+#clip, #bbvis, #lght
+{
+    width: 503px;
+}
+
+#seqdd, #sfrndd, #statsdd, #pocketsdd
+{
+	background-color: #223355cc;
+	position: absolute;
+	display: block;
+	top: 25px;
+	/*left: 225px;*/
+	right: 5px;
+	z-index: 1000;
+	padding: 10px;
+	border: 1px solid #249;
+	border-radius: 15px;
+	overflow-y: auto;
+	max-height: 81%;
+}
+
+#statsdd
+{
+	font-family: Monospace;
+}
+
+#pocketsdd
+{
+	font-size: 0.8em;
+}
+
+#pocketsdd .hilite
+{
+	font-weight: bold;
+	color: #0ef;
+}
+
+body.whtbk #seqdd
+{
+	background-color: #bbccffcc;
+}
+
+#seqdd .tab button
+{
+	background-color: #112;
+    border-top: 2px solid #258;
+    border-left: 2px solid #147;
+    border-right: 2px solid #123;
+    border-bottom: 0px;
+    border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	color: #9cf;
+	cursor: pointer;
+}
+
+body.whtbk #seqdd .tab button
+{
+	background-color: #ccd;
+    border-top: 2px solid #def;
+    border-left: 2px solid #cde;
+    border-right: 2px solid #68a;
+	color: #135;
+}
+
+#seqdd .tab button.highlighted
+{
+    border-top: 2px solid #5af;
+    border-left: 2px solid #48c;
+    border-right: 2px solid #369;
+	color: #def;
+	background-color: #234;
+	font-weight: bold;
+}
+
+body.whtbk #seqdd .tab button.highlighted
+{
+	background-color: #9bf;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #adf;
+    border-right: 2px solid #37b;
+	color: #159;
+}
+
+.stranddiv
+{
+	background-color: #234;
+}
+
+body.whtbk .stranddiv
+{
+	background-color: #bcd;
+}
+
+.stranddiv button
+{
+	background-color: transparent;
+	border: 0px;
+	margin-top: 5px;
+	margin-right: 5px;
+	cursor: pointer;
+}
+
+.sctgbtn
+{
+	font-family: Monospace;
+	margin-bottom: 10px;
+}
+
+.sctgbtn.hilite
+{
+	border: 1px solid #35f;
+    background-color: #345;
+    color: #9cf;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+body.whtbk .sctgbtn.hilite
+{
+    background-color: #9cf;
+    color: #345;
+}
+
+.seqnumln
+{
+	font-family: Monospace;
+	letter-spacing: 1.4px;
+    margin-left: 5px;
+    font-size: 13px;
+}
+
+.packtight
+{
+	letter-spacing: -4px!important;
+}
+
+.mdlsel
+{
+	color: #6bf;
+	font-weight: bold;
+}
+
+</style>
+<script>
+
+// https://www.w3schools.com/jsref/met_element_exitfullscreen.asp
+function openFullscreen(elem) 
+{
+	if (elem.requestFullscreen) 
+	{
+		elem.requestFullscreen();
+	}
+	else if (elem.webkitRequestFullscreen)
+	{
+		/* Safari */
+		elem.webkitRequestFullscreen();
+	}
+	else if (elem.msRequestFullscreen) 
+	{
+		/* IE11 */
+		elem.msRequestFullscreen();
+	}
+}
+function exitFullscreen()
+{
+	if (document.exitFullscreen)
+	{
+		document.exitFullscreen();
+	}
+	else if (document.webkitExitFullscreen)
+	{
+		/* Safari */
+		document.webkitExitFullscreen();
+	}
+	else if (document.msExitFullscreen) 
+	{ 
+		/* IE11 */
+		document.msExitFullscreen();
+	}
+}
+var is_fullscreen = false;
+
+function rotate3D(point, source, axis, theta)
+{
+    // copied from https://web.archive.org/web/20131229124319/http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+
+    if (!source)
+    {
+        source = {x:0, y:0, z:0};
+    }
+
+    if (!axis.x && !axis.y && !axis.z) return point;
+
+    var x = point.x, y = point.y, z = point.z;
+    var axisr = Math.sqrt(axis.x*axis.x + axis.y*axis.y + axis.z*axis.z);
+    var u = axis.x / axisr, v = axis.y / axisr, w = axis.z / axisr;
+    var a, b, c;
+    if (source)
+    {
+        a = source.x;
+        b = source.y;
+        c = source.z;
+    }
+    else a = b = c = 0;
+    var u2 = u*u;
+    var v2 = v*v;
+    var w2 = w*w;
+    var sint = Math.sin(theta), cost = Math.cos(theta), _1_cost = (1.0 - cost);
+
+    var x1 = (a * (v2+w2) - u * (b*v + c*w - u*x - v*y - w*z)) * _1_cost
+           + x * cost
+           + (-c*v + b*w - w*y + v*z) * sint;
+
+    var y1 = (b * (u2+w2) - v * (a*u + c*w - u*x - v*y - w*z)) * _1_cost
+           + y * cost
+           + ( c*u - a*w + w*x - u*z) * sint;
+
+    var z1 = (c * (u2+v2) - w * (a*u + b*v - u*x - v*y - w*z)) * _1_cost
+           + z * cost
+           + (-b*u + a*v - v*x + u*y) * sint;
+
+    pt = {x:x1, y:y1, z:z1};
+    return pt;
+}
+
+</script>
+</head>
+<body bgcolor="#000">
+<div id="ctrls" style="display: flex; flex-wrap: wrap;">
+    <div id="filediv">
+		<input type="file">
+    </div>
+
+<div id="affichage">
+	<a id="settbtn" class="nodebtn clickme symbol" onclick="show_hide_sett();" title="View Settings">&#9881;</a>
+	<!-- a id="ptbbbtn" class="nodebtn clickme symbol" onclick="show_hide_gmdl();" title="Protein Backbone">&#xAA5C;</a -->
+	<a id="sdchbtn" class="nodebtn clickme symbol" onclick="show_seqdd();" title="Side Chains">&#x232C;</a>
+</div>
+<a id="whtbk" title="Switch to Light Background" class="nodebtn clickme symbol smaller" onclick="whtbk=true; stage.setParameters({'backgroundColor': '#fff0e8'}); $(document.body).addClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#blkbk').show(); $('#bkbnsld').hide();">&#x2600;&#xFE0F;</a>
+<a id="blkbk" title="Switch to Dark Background" class="nodebtn clickme symbol smaller" onclick="whtbk=false; stage.setParameters({'backgroundColor': '#020408'}); $(document.body).removeClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#whtbk').show(); $('#bkbnsld').show();" style="display: none; background-color: #000;">&#x1F319;</a>
+
+<a id="nohyd" title="Turn Off Hydrogens" class="nodebtn clickme symbol smaller" onclick="hydrogens=false; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } update_hydrogens(); $(this).hide(); $('#hydro').show();">&#x1f3dc;&#xFE0F;</a>
+<a id="hydro" title="Turn On Hydrogens" class="nodebtn clickme symbol smaller" onclick="hydrogens=true; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } update_hydrogens(); $(this).hide(); $('#nohyd').show();" style="display: none;">&#x1F6b0;</a>
+
+<a id="colcpk" title="Colors: CPK Standard" class="nodebtn clickme symbol smaller" onclick="born=true; aqua=false; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#colborn').show();">CPK</a>
+<a id="colborn" title="Colors: Blue Oxygen, Red Nitrogen" class="nodebtn clickme symbol smaller" onclick="born=false; aqua=true; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#colaq').show();" style="display: none;">BORN</a>
+<a id="colaq" title="Colors: Aqua" class="nodebtn clickme symbol smaller" onclick="born=aqua=false; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#colcpk').show();" style="display: none;">Aqua</a>
+<a id="spcfill" title="Space Fill" class="nodebtn clickme symbol smaller" onclick="spaceFill(); refreshSideChainsVisible(); showNode(gnode);">&#x1F388;</a>
+<a id="bstick" title="Ball and Stick" class="nodebtn clickme symbol smaller" onclick="ballAndStick();" style="display: none; background-color: #234;">&#x1F9B4;</a>
+
+<a id="pockets" title="Pockets" style="display: none;" class="nodebtn clickme symbol smaller" onclick="show_pockets();">&#x1f998;</a>
+
+<a id="lsrbbtn" title="Show/Hide LSRB" style="display: none;" class="nodebtn clickme symbol smaller" onclick="show_lsrb = !show_lsrb; showNode(gnode);">&#x1f41a;</a>
+
+<a id="spinon" title="Spin On" class="nodebtn clickme symbol smaller" onclick="stage.setSpin(true); $(this).hide(); $('#spinoff').show();">&#x1F310;</a>
+<a id="spinoff" title="Spin Off" class="nodebtn clickme symbol smaller" onclick="stage.setSpin(false); $(this).hide(); $('#spinon').show();" style="display: none;">&#x1F9F1;</a>
+<a id="vstats" title="View Stats" style="display: none;" class="nodebtn clickme symbol smaller" onclick="show_stats();">&#x1f4ca;</a>
+
+<div id="center">
+<a id="fsbtn" class="nodebtn clickme" onclick="if (is_fullscreen) exitFullscreen(); else openFullscreen(document.body); is_fullscreen = !is_fullscreen">&#x26F6;</a>
+Center:
+<a class="posebtn clickme" onclick="stage.autoView(); cen_ligand = false;" title="Middle-click an atom to center it.">Model</a>
+<a class="posebtn clickme" onclick="centerPocket(); cen_ligand = false;" id="pktbtn" style="display: none;">Pocket</a>
+<a class="posebtn clickme" onclick="curr_ligand.autoView(); cen_ligand = true;" id="ligbtn" style="display: none;">Ligand</a>
+</div>
+
+&nbsp;|&nbsp;
+
+<div id="posey" title="Use the A-Z keys or the up and down arrow keys to choose poses when viewing dock results.">&nbsp;
+</div>
+
+<div id="pnodz"
+     title="Use the 0-9 keys or the left and right arrow keys to choose nodes when viewing dock results. Shift+A-Z selects nodes 10 - 35."
+     >&nbsp;
+</div>
+</div>
+
+<div id="dspsett" style="display: none;">
+Clip:
+<input type="range" id="clip" min="0" max="100" step="1" value="0" class="slider" onkeyup="this.blur();">
+<span id="prsv">
+<input type="checkbox" id="preserve" checked onchange="$('#clip').trigger('input');"> Preserve Ligand
+</span>
+<br>
+<span id="bkbnsld">
+Backbone:
+<input type="range" id="bbvis" min="0" max="100" step="1" value="10" class="slider" onkeyup="this.blur();">
+<br>
+</span>
+Lighting:
+<input type="range" id="lght" min="0" max="170" step="1" value="80" class="slider" onkeyup="this.blur();">
+</div>
+
+<center>
+<div id="viewport" style="width:1800px; height:880px; background-color: #020408;"></div>
+</center>
+<script>
+
+function hsl_to_rgb(hue, sat, lum)
+{
+  sat /= 255;
+  lum /= 255;
+  const k = n => (n + hue / 30) % 12;
+  const a = sat * Math.min(lum, 1 - lum);
+  const f = n =>
+    lum - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  var r = 255 * f(0);
+  var g = 255 * f(8);
+  var b = 255 * f(4);
+  
+  return 0x10000*parseInt(r) + 0x100*parseInt(g) + parseInt(b);
+}
+
+// Can modify this array to your preferred TMR color scheme.
+var tmcolor =
+{
+    1: hsl_to_rgb(350,  16, 128),
+    2: hsl_to_rgb(200, 144, 160),
+    3: hsl_to_rgb(150, 240, 176),
+    4: hsl_to_rgb( 70,  96,  96),
+    5: hsl_to_rgb( 60, 255, 176),
+    6: hsl_to_rgb( 25, 240, 160),
+    7: hsl_to_rgb(355, 175, 130),
+    8: hsl_to_rgb(260,  85, 100),
+};
+
+var tmstart = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0}, tmend = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+var ligbs = [];
+
+// Man et al 2004 https://doi.org/10.1110%2Fps.03296404
+// de March et al 2024 https://doi.org/10.1038/s41586-024-08126-0
+var ligbs_bw_orII = ["2.53", "3.41", "3.40", "3.37", "3.36", "3.33", "3.32", "3.29", "4.53", "4.57", "4.60", "45.49", "45.51", "45.52", "5.47", "5.46", "5.43", "5.39", "6.48", "6.51", "6.55", "7.42", "7.39", "7.38"];
+
+// Billesbolle et al 2022 https://doi.org/10.1101/2022.12.20.520951
+var ligbs_bw_orI = ["3.33", "4.57", "4.60", "45.52", "45.53", "5.39", "5.43", "6.55", "R6.59"];
+
+// Based on 8ITF, 8IW4.
+var ligbs_bw_taar = ["3.29", "3.32", "3.33", "3.36", "3.37", "4.56", "4.61", "45.64", "5.43", "6.48", "6.51", "7.39", "7.42", "7.43"];
+
+// Zhou et al 2019 https://doi.org/10.7554/eLife.50279
+var acvbs = ["1x49", "1x53", "2x43", "2x46", "DENYSK2x50", "EKSTNQD3x39", "3x40", "VMILFY3x43", "3x46", "DE3x49", "R3x50", "3x51", "3x53", "3x54", "5x51", "5x55", "5x57", "5x58", "5x61", "5x62", "6x33", "6x37", "6x40", "6x41", "FWYMILV6x44", "6x48", "STNQ7x45", "STNQK7x49", "7x50", "7x52", "Y7x53", "7x54", "7x55", "8x50", "8x51"];
+
+var conserved = ["1x49", "1x50", "2x36", "2x37", "2x38", "2x39", "2x40", "2x43", "2x59", "2x60", "2x61", "2x62", "3x25", "3x28",
+	"3x46", "3x47", "3x48", "3x49", "3x50", "3x51", "3x52", "3x53", "3x54", "3x55", "34x50", "34x51", "34x53", "45x40", "45x60",
+	"45x50", "45x51", "5x50", "5x57", "5x58", "56x50", "6x32", "6x33", "6x34", "6x35", "6x36", "6x37", "6x39", "6x40", "6x41", 
+	"6x47", "6x48", "6x49", "6x55", "6x58", "7x46", "7x47", "7x48", "7x49", "7x50", "7x51", "7x52", "7x53", "7x54", "7x55", "7x56",
+	"8x43", "8x44", "8x45"
+];
+
+// Haag et al 2020 https://doi.org/10.1007%2Fs00018-019-03279-y
+// These and M5.46 are conserved in all OR2M, OR2T, OR2V receptors and no others. M5.46 might be a third coordination residue.
+var mtlbs = ["C5.42", "C5.43"];
+
+var tmstrand = ["A"];
+var mcres = [];
+var bw50r = new Array(99).fill(0);
+
+function resno_from_bw(bwnum)
+{
+	var lbw = bwnum.split(".");
+	if (lbw.length < 2) lbw = bwnum.split("x");
+	if (lbw.length < 2) return 0;
+
+	var rgnno = parseInt(lbw[0]);
+	var member = parseInt(lbw[1]);
+
+	if (typeof bw50r[rgnno] == "undefined") return 0;
+	if (!bw50r[rgnno]) return 0;
+
+	return bw50r[rgnno] + member - 50;
+}
+
+function bw_from_resno(resno)
+{
+	var rgnno;
+	for (rgnno = 1; rgnno <= 8; rgnno++)
+	{
+		if (resno >= tmstart[rgnno] && resno <= tmend[rgnno])
+		{
+			if (typeof bw50r[rgnno] == "undefined") return "";
+			else return (""+rgnno) + '.' + (parseInt(resno) - bw50r[rgnno] + 50);
+		}
+	}
+	for (rgnno = 12; rgnno <= 78; rgnno += 11)
+	{
+		var before = parseInt(Math.floor(rgnno / 10));
+		var after = before+1;
+
+		if (resno > tmend[before] && resno < tmstart[after] && typeof bw50r[rgnno] != "undefined" && bw50r[rgnno] > 0)
+			return (""+rgnno) + '.' + (parseInt(resno) - bw50r[rgnno] + 50);
+	}
+	return "";
+}
+
+function superscript_number(num)
+{
+	var str = num.toString();
+	var out = "";
+	var i, n = str.length;
+
+	for (i=0; i<n; i++)
+	{
+		var o = str.charCodeAt(i);
+		if (o >= 0x30 && 0 <= 0x39) out += String.fromCharCode(0x2040 + o);
+		else if (o == 0x2e) out += String.fromCharCode(0x2d9);
+		else out += String.fromCharCode(o);
+	}
+
+	return out;
+}
+
+function resno_from_letters_and_bw(bwnum)
+{
+	if (bwnum.toString().match(/^[0-9]+$/)) return parseInt(bwnum);
+	var lbw = bwnum.replace(/[^0-9.x]/g, '');
+	var resno = resno_from_bw(lbw);
+	var mdlidx = getResMdlIdx(resno, tmstrand[0]);
+	if (lbw == bwnum || bwnum.indexOf(sequence[mdlidx]) >= 0) return resno;
+	else return 0;
+}
+
+function get_ligbs_from_orid()
+{
+	if (sresapos.length && sligapos.length)
+	{
+		var result = [];
+		sresapos.every(function(v, resno)
+		{
+			var resfound = false;
+			for (let aname in v)
+			{
+				if (aname == 'C' || aname == 'CA' || aname == 'N' || aname == 'O' || aname == 'HA') continue;
+				var xyz = v[aname];
+				var rx = parseFloat(xyz[0]), ry = parseFloat(xyz[1]), rz = parseFloat(xyz[2]);
+				sligapos.every(function(w)
+				{
+					var lx = parseFloat(w[0]), ly = parseFloat(w[1]), lz = parseFloat(w[2]);
+
+					var r = Math.sqrt(Math.pow(lx-rx, 2) + Math.pow(ly-ry, 2) + Math.pow(lz-rz, 2));
+					if (r < 5.3)
+					{
+						result.push(resno);
+						resfound = true;
+						return false;
+					}
+					else return true;
+				});
+			}
+			return true;
+		});
+		return result;
+	}
+
+	if (!orid) return [];
+
+	if (orid.substr(0, 2) == "OR")
+	{
+		var fam = parseInt(orid.substr(2, 2));
+		if (fam >= 50) return ligbs_bw_orI;
+		else return ligbs_bw_orII;
+	}
+
+	else if (orid.substr(0, 4) == "TAAR")
+		return ligbs_bw_taar;
+
+	else return [];
+}
+
+function get_acvbs_from_orid()
+{
+	if (!orid) return [];
+
+	if (orid.substr(0, 2) == "OR")
+	{
+		return acvbs;
+	}
+
+	else if (orid.substr(0, 4) == "TAAR")
+		return acvbs;
+
+	else return [];
+}
+
+function get_conserved_from_orid()
+{
+	if (!orid) return [];
+
+	if (orid.substr(0, 2) == "OR")
+	{
+		return conserved;
+	}
+
+	else if (orid.substr(0, 4) == "TAAR")
+		return conserved;
+
+	else return [];
+}
+
+function count_metal_bs()
+{
+	var i, j=0, n = mtlbs.length;
+
+	for (i=0; i<n; i++)
+	{
+		if (resno_from_letters_and_bw(mtlbs[i])) j++;
+	}
+
+	return j;
+}
+
+function aa_1let_from_3let(laa3let)
+{
+	var retval = "?";
+	aa3let.forEach(function(item, index)
+	{
+		if (item == laa3let) retval = aa1let.substr(index, 1);
+	});
+	return retval;
+}
+
+function rgn_color(resno, tm_only = false)
+{
+	var i;
+
+    for (i=1; i<=8; i++)
+    {
+        if (resno >= tmstart[i] && resno <= tmend[i]) return tmcolor[i];
+        else if (!tm_only && resno < tmstart[i]) return (i&1) ? 0xccddee : 0xcc9966;
+    }
+
+    return tm_only ? 0 : 0xcc9966;
+}
+
+function rgn_color_dark(resno, tm_only = false)
+{
+	var couleur = rgn_color(resno, tm_only);
+	var r = couleur & 0xff0000;
+	var g = couleur & 0x00ff00;
+	var b = couleur & 0x0000ff;
+
+	r = Math.floor(r/4) & 0xff0000;
+	g = Math.ceil(g/3) & 0x00ff00;
+	b = Math.ceil(b/2);
+	
+	return r + g + b;
+}
+
+function rgn_color_light(resno, tm_only = false)
+{
+	var couleur = rgn_color(resno, tm_only);
+	if (!couleur) return couleur;
+
+	var r = couleur & 0xff0000;
+	var g = couleur & 0x00ff00;
+	var b = couleur & 0x0000ff;
+
+	r = 0xff0000 - r;
+	g = 0x00ff00 - g;
+	b = 0x0000ff - b;
+
+	r = Math.floor(r/2) & 0xff0000;
+	g = Math.ceil(g/2) & 0x00ff00;
+	b = Math.ceil(b/2);
+
+	r = 0xff0000 - r;
+	g = 0x00ff00 - g;
+	b = 0x0000ff - b;
+	
+	return r + g + b;
+}
+
+function css_color(rgb_int)
+{
+	return '#'+("000000" + rgb_int.toString(16)).substr(-6);
+}
+
+function show_seqdd_tab(strandid)
+{
+	$(".stranddiv").hide();
+	$("#stranddiv"+strandid).show();
+	$(".tab button").removeClass("highlighted");
+	$("#stab"+strandid).addClass("highlighted");
+}
+
+function getStrandIdxFromID(strandid)
+{
+	var i;
+	for (i=0; i<mdlstrandid.length; i++)
+	{
+		if (mdlstrandid[i] == strandid) return i;
+	}
+	return -1;
+}
+
+function toggleStrand(strandid)
+{
+	var idx = getStrandIdxFromID(strandid);
+	if (idx >= 0)
+	{
+		if (gmvisible[idx])
+		{
+			gmodel[idx].removeAllRepresentations();
+			gmvisible[idx] = false;
+		}
+		else
+		{
+			var p = gmrparams[idx];
+			if (whtbk) p.opacity = 1;
+			if (!hydrogens) p.sele = "* and not hydrogen";
+			gmodel[idx].addRepresentation(gmrep[idx], p);
+			gmvisible[idx] = true;
+		}
+	}
+}
+
+function getStrandColor(strandid)
+{
+	var i;
+	for (i=0; i<mdlstrandid.length; i++)
+	{
+		if (typeof strand_color[i] != "undefined" && mdlstrandid[i] == strandid) return strand_color[i];
+	}
+
+	return '*';
+}
+
+function strandColorSelection(strandid, colorCode)
+{
+	var idx = getStrandIdxFromID(strandid);
+	if (typeof gmrparams[idx] == "undefined") gmrparams[idx] =
+		{
+			opacity: opc_cartoon,
+			colorScheme: PODefRgnScheme,
+			metalness: mtl_cartoon,
+		};
+	var p = gmrparams[idx];
+	if (whtbk) p.opacity = 1;
+	if (!hydrogens) p.sele = "* and not hydrogen";
+	var tabbtn = $("#stab"+strandid)[0];
+
+	switch(colorCode)
+	{
+		case 'y':
+		p.colorScheme = yellowScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#550";
+			tabbtn.style.color = "#ff0";
+		}
+		break;
+
+		case 'g':
+		p.colorScheme = greenScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#350";
+			tabbtn.style.color = "#cf0";
+		}
+		break;
+
+		case 't':
+		p.colorScheme = tealScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#053";
+			tabbtn.style.color = "#6f9";
+		}
+		break;
+
+		case 'c':
+		p.colorScheme = cyanScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#056";
+			tabbtn.style.color = "#9ff";
+		}
+		break;
+
+		case 'b':
+		p.colorScheme = blueScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#039";
+			tabbtn.style.color = "#9cf";
+		}
+		break;
+
+		case 'p':
+		p.colorScheme = purpleScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#309";
+			tabbtn.style.color = "#c9f";
+		}
+		break;
+
+		case 'm':
+		p.colorScheme = magentaScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#608";
+			tabbtn.style.color = "#f9e";
+		}
+		break;
+
+		case 'r':
+		p.colorScheme = redScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#600";
+			tabbtn.style.color = "#f99";
+		}
+		break;
+
+		case 'o':
+		p.colorScheme = orangeScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#630";
+			tabbtn.style.color = "#fc9";
+		}
+		break;
+
+		case 'w':
+		p.colorScheme = brownScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#321";
+			tabbtn.style.color = "#c96";
+		}
+		break;
+
+		case 'k':
+		p.colorScheme = blackScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#000";
+			tabbtn.style.color = "#666";
+		}
+		break;
+
+		case 'h':
+		p.colorScheme = grayScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#333";
+			tabbtn.style.color = "#999";
+		}
+		break;
+
+		case 'i':
+		p.colorScheme = whiteScheme;
+		if (typeof tabbtn != "undefined") 
+		{
+			tabbtn.style.backgroundColor = "#999";
+			tabbtn.style.color = "#fff";
+		}
+		break;
+
+		default:
+		p.colorScheme = (tmstrand.indexOf(strandid) >= 0) ? PODefRgnScheme : POAAScheme;
+		if (typeof tabbtn != "undefined") tabbtn.style.backgroundColor = whtbk ? "#bcd" : "#234";
+	}
+
+	return p;
+}
+
+function colorizeStrand(strandid, colorCode)
+{
+	var idx = getStrandIdxFromID(strandid);
+	gmodel[idx].removeAllRepresentations();
+	var p = strandColorSelection(strandid, colorCode);
+	gmodel[idx].addRepresentation(gmrep[idx], p);
+
+	while (strand_color.length <= idx) strand_color.push("*");
+	strand_color[idx] = colorCode;
+}
+
+var tmoid = false;
+function show_seqdd()
+{
+	var seqdd = $('#seqdd')[0];
+	seqdd.innerHTML = "<b>Show/Hide Side Chains:</b><br><br>";
+	if (!tmstrand.length) tmstrand = ["A"];
+
+	if (!mdlstrandid.length) mdlstrandid = ["A"];
+	var tabs;
+
+	var first = true;
+	mdlstrandid.forEach(function(strandid, sidx)
+	{
+		var sdiv = document.createElement("div");
+		sdiv.id = "stranddiv"+strandid;
+		sdiv.style.display = "none";
+		sdiv.className = "stranddiv";
+
+		var perline = 40;
+
+		var i;
+		var resno;
+
+		var max_resno = 0;
+		for (resno = 1; resno <= Math.max(...mdlresno); resno++)
+		{
+			var mdlidx = getResMdlIdx(resno, strandid);
+			if (mdlidx >= 0) max_resno = resno;
+		}
+
+		if (!max_resno) return;
+
+		if (strandid)
+		{
+			if (first)
+			{
+				tabs = document.createElement("div");
+				tabs.className = "tab";
+				var strandlbl = document.createElement("div");
+				strandlbl.style.display = "inline-block";
+				strandlbl.innerText = "Strand:\xa0\xa0";
+				tabs.appendChild(strandlbl);
+
+				seqdd.appendChild(tabs);
+
+				first = false;
+			}
+
+			var tab = document.createElement("button");
+			tab.innerText = strandid;
+			tab.id = "stab"+strandid;
+			tab.setAttribute("onclick", "show_seqdd_tab('"+strandid+"');");
+			tabs.appendChild(tab);
+
+			strandColorSelection(strandid, strand_color[sidx]);
+
+			var eye = document.createElement("button");
+			eye.innerHTML = "&#x1f441;&#xfe0f;";
+			eye.setAttribute("onclick", "toggleStrand('"+strandid+"')");
+			sdiv.appendChild(eye);
+
+			var cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#fe0";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'y');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#9f0";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'g');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#0f9";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 't');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#0ef";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'c');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#39f";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'b');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#96f";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'p');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#f3c";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'm');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#f34";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'r');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#f70";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'o');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#963";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'w');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#000";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'k');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#666";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'h');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&nbsp;&nbsp;";
+			cbtn.style.backgroundColor = "#ccc";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', 'i');");
+			sdiv.appendChild(cbtn);
+
+			cbtn = document.createElement("button");
+			cbtn.innerHTML = "&#x1F308;";
+			cbtn.setAttribute("onclick", "colorizeStrand('"+strandid+"', '*');");
+			sdiv.appendChild(cbtn);
+
+			sdiv.appendChild(document.createElement("br"));
+		}
+
+		var span = document.createElement("span");
+		var dots = ". . . . . . . . .";
+		var dotslen = dots.length;
+		span.innerText = dots+"10 "+dots+"20 "+dots+"30 "+dots+"40 ";
+		span.className = "seqnumln";
+		span.appendChild(document.createElement("br"));
+		sdiv.appendChild(span);
+		var seqoff = 50;
+
+		for (resno = 1; resno <= max_resno; resno++)
+		{
+			var mdlidx = getResMdlIdx(resno, strandid);
+
+			var tgl = document.createElement("span");
+			if (typeof restoggled[mdlidx] == "undefined") restoggled[mdlidx] = 0;
+			tgl.className = "clickme nodebtn sctgbtn" + (restoggled[mdlidx] ? " hilite" : "");
+			var rcd = false;
+			if (tmstrand.indexOf(strandid) >= 0) rcd = whtbk ? rgn_color_light(resno, true) : rgn_color_dark(resno, true);
+			if (rcd) tgl.style.backgroundColor = css_color(rcd);
+
+			var j;
+			if (tmstrand.indexOf(strandid) >= 0) for (j=1; j<67; j++) if (bw50r[j] == resno) tgl.className += ' bw50';
+
+			if (mdlidx < 0)
+			{
+				tgl.innerText = "-";
+				tgl.id = "seqddtgl" + strandid + resno;
+				tgl.title = resno;
+				tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+				tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+				tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+			}
+			else
+			{
+				tgl.innerText = sequence[mdlidx];
+				tgl.id = "seqddtgl" + (mdlidx);
+				var bw = bw_from_resno(resno);
+				tgl.title = sequence[mdlidx] + resno + (bw ? (' (' + bw + ')') : "");
+				tgl.setAttribute("onclick", "event.preventDefault(); toggleSideChain("+resno+", '"+strandid+"'); return false;");
+				tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+				tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+				tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+			}
+			sdiv.appendChild(tgl);
+
+			if (!((resno)%perline))
+			{
+				sdiv.appendChild(document.createElement("br"));
+				sdiv.appendChild(document.createElement("br"));
+				span = document.createElement("span");
+
+				var l;
+				span.innerText = "";
+				for (l=0; l<perline; l+=10)
+				{
+					if (seqoff >= 100) dots = dots.substr(0, dotslen-(seqoff.toString().length-2));
+					span.innerText += dots+seqoff + " ";
+					seqoff += 10;
+				}
+
+				span.className = "seqnumln";
+				span.appendChild(document.createElement("br"));
+				sdiv.appendChild(span);
+			}
+		}
+
+		seqdd.appendChild(sdiv);
+	});
+
+	seqdd.appendChild(document.createElement("br"));
+	seqdd.appendChild(document.createElement("br"));
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Aliphatic";
+	tgl.id = "seqddaliph";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_aliphatic); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Aromatic";
+	tgl.id = "seqddaroma";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_aromatic); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Polar Uncharged";
+	tgl.id = "seqddpolar";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_hydrophilic); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Acidic";
+	tgl.id = "seqddacid";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_acidic); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Basic";
+	tgl.id = "seqddbasic";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_basic); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Sulfur";
+	tgl.id = "seqddsulfur";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_sulfur); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("br");
+	// tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	if (get_ligbs_from_orid().length)
+	{
+		tgl = document.createElement("span");
+		tgl.className = "clickme nodebtn sctgbtn";
+		tgl.innerText = "Ligand Binding";
+		tgl.id = "seqddligbs";
+		tgl.setAttribute("onclick", "event.preventDefault(); showLigandSideChains(); return false;");
+		tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+		seqdd.appendChild(tgl);
+
+		tgl = document.createElement("span");
+		tgl.innerText = "|";
+		seqdd.appendChild(tgl);
+	}
+
+	if (get_acvbs_from_orid().length)
+	{
+		tgl = document.createElement("span");
+		tgl.className = "clickme nodebtn sctgbtn";
+		tgl.innerText = "Activation";
+		tgl.id = "seqddligbs";
+		tgl.setAttribute("onclick", "event.preventDefault(); showActivationSideChains(); return false;");
+		tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+		seqdd.appendChild(tgl);
+
+		tgl = document.createElement("span");
+		tgl.innerText = "|";
+		seqdd.appendChild(tgl);
+	}
+
+	if (get_conserved_from_orid().length)
+	{
+		tgl = document.createElement("span");
+		tgl.className = "clickme nodebtn sctgbtn";
+		tgl.innerText = "Conserved";
+		tgl.id = "seqddligbs";
+		tgl.setAttribute("onclick", "event.preventDefault(); showConservedSideChains(); return false;");
+		tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+		seqdd.appendChild(tgl);
+
+		tgl = document.createElement("span");
+		tgl.innerText = "|";
+		seqdd.appendChild(tgl);
+	}
+
+	if (count_metal_bs() == mtlbs.length)
+	{
+		tgl = document.createElement("span");
+		tgl.className = "clickme nodebtn sctgbtn";
+		tgl.innerText = "Metal Coord";
+		tgl.id = "seqddmcoord";
+		tgl.setAttribute("onclick", "event.preventDefault(); showMetalSideChains(); return false;");
+		tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+		tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+		seqdd.appendChild(tgl);
+
+		tgl = document.createElement("span");
+		tgl.innerText = "|";
+		seqdd.appendChild(tgl);
+	}
+
+	/*
+	Show All sidechains makes browsers freeze up.
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "All";
+	tgl.id = "seqddall";
+	tgl.setAttribute("onclick", "event.preventDefault(); showAllSideChains(); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);*/
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "None";
+	tgl.id = "seqddnone";
+	tgl.setAttribute("onclick", "event.preventDefault(); hideAllSideChains(); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
+	var sdchbtn = $('#sdchbtn')[0];
+	var btnrect = sdchbtn.getBoundingClientRect();
+	$(seqdd).css("top", parseInt(btnrect.bottom).toString()+"px").toggle().on("mouseleave", function()
+	{
+		if (tmoid) window.clearTimeout(tmoid);
+		tmoid = window.setTimeout(function()
+		{
+			$('#seqdd').hide();
+		}, 1000);
+	}).on("mousemove", function()
+	{
+		if (tmoid) window.clearTimeout(tmoid);
+	});
+
+	var buttons = $(".tab button")
+	if (buttons.length) buttons[0].click();
+	else $(".stranddiv").show();
+}
+
+var stage = new NGL.Stage("viewport");
+
+var gmodel = [], model = [], is_ligand = [], mrep = [], gmrep = [], mrparams = [], gmrparams = [], mpos = [], mnod = [];
+var gmvisible = [];
+
+var mdlstrands = [], mdlstrandid = [], mdlligands = [], strand_color = [];
+
+var resmdl = [], resstrandid = [""], mdlresno = [], restoggled = [];
+var acvmdl = false;
+var acvmatrix = [], acvrot8 = [];
+var acvnode = 387420489;
+var curr_ligand = false, ligand_params = [], cen_ligand = false;
+
+var resapos = [], ligapos = [], sresapos = [], sligapos = [];
+var visinter = [];
+var visicomp = [];
+
+var gpose = 1, gnode = 0;
+var orid;
+var mtlcoord = [];
+var sequence = ["-"];
+var pocket = [0,0,0];
+var cavities = [];
+var last_clicked_cavity = false;
+var lsrbdata = [];
+var lsrbshapes = [];
+var show_lsrb = false;
+
+$("#affichage").hide();
+
+function initialize_arrays()
+{
+	gmodel = []; model = []; is_ligand = []; mrep = []; gmrep = []; mrparams = []; gmrparams = []; mpos = []; mnod = [];
+	gmvisible = [];
+	mdlstrands = []; mdlstrandid = []; mdlligands = []; strand_color = [];
+	acvmatrix = []; acvrot8 = [];
+	ligbs = []; mcres = [];
+	mtlcoord = [];
+	tmstart = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+	tmend = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+	sequence = ["-"];
+	resmdl = []; resstrandid = []; mdlresno = [0]; restoggled = [];
+	reaspos = ligapos = [];
+	visinter = [];
+	$('#pockets').hide();
+	cavities = [];
+	$('#lsrbbtn').hide();
+	lsrbdata = [];
+}
+
+function xyz_distance(xyz1, xyz2)
+{
+	var x = xyz1[0] - xyz2[0];
+	var y = xyz1[1] - xyz2[1];
+	var z = xyz1[2] - xyz2[2];
+
+	return Math.sqrt(x*x + y*y + z*z);
+}
+
+function nearest_res_apos(pose, node, resno, xyz)
+{
+	if (typeof resapos[pose][node][resno] == 'undefined') return false;
+	var result = [0,0,0];
+	var bestr = 1e15;
+
+	for (var key in resapos[pose][node][resno])
+	{
+		var value = resapos[pose][node][resno][key];
+		var r = xyz_distance(xyz, value);
+		if (typeof value[3] != 'undefined')
+		{
+			if (value[3] == 'H') continue;
+			if (value[3] == 'C') r *= 1.2;
+			if (typeof xyz[3] != 'undefined')
+			{
+				if (xyz[3] == 'C' && value[3] == 'C') r *= 0.7;
+				if ((xyz[3] == 'N' || xyz[3] == 'O') && (value[3] == 'N' || value[3] == 'O')) r /= 2;
+			}
+		}
+
+		if (key == 'N' || key == 'CA' || key == 'C' || key == 'O') r *= 2;
+
+		if (r < bestr)
+		{
+			result = value;
+			bestr = r;
+		}
+	}
+
+	return result;
+}
+
+function nearest_lig_apos(pose, node, xyz)
+{
+	var result = [0,0,0];
+	var bestr = 1e15;
+
+	for (var key in ligapos[pose][node])
+	{
+		var value = ligapos[pose][node][key];
+		var r = xyz_distance(xyz, value);
+		if (typeof value[3] != 'undefined')
+		{
+			if (value[3] == 'H') continue;
+			if (value[3] == 'C') r *= 1.2;
+			if (value[3] == 'N' || value[3] == 'O') r *= 0.7;
+			if (typeof xyz[3] != 'undefined')
+			{
+				if (xyz[3] == 'C' && value[3] == 'C') r *= 0.8;
+				if ((xyz[3] == 'N' || xyz[3] == 'O') && (value[3] == 'N' || value[3] == 'O')) r /= 1.5;
+			}
+		}
+		if (r < bestr)
+		{
+			result = value;
+			bestr = r;
+		}
+	}
+
+	return result;
+}
+
+var gmdl_shown = true;
+function show_hide_gmdl()
+{
+	if (gmdl_shown)
+	{
+		gmodel[0].removeAllRepresentations();
+	}
+	else
+	{
+		var p = gmrparams[0];
+		if (whtbk) p.opacity = 1;
+		if (!hydrogens) p.sele = "* and not hydrogen";
+		gmodel[0].addRepresentation( "cartoon", p);
+	}
+	gmdl_shown = !gmdl_shown;
+	set_gmdl_opacity();
+}
+
+function set_gmdl_opacity()
+{
+	if (typeof gmodel[0] == 'undefined') return;
+	if ($("#affichage")[0].style.display == 'none') return;
+	var opc = parseFloat($("#bbvis")[0].value) / 100;
+	if ($('#sdchbtn')[0].style.display == 'none') opc = 1;
+	var i;
+	for (i=0; i<gmvisible.length; i++)
+	{
+		if (gmvisible[i])
+		{
+			gmodel[i].removeAllRepresentations();
+			gmrparams[i].opacity = opc;
+			var p = gmrparams[i];
+			if (whtbk) p.opacity = 1;
+			if (!hydrogens) p.sele = "* and not hydrogen";
+			gmodel[i].addRepresentation( "cartoon", p);
+		}
+	}
+}
+
+function show_hide_sett()
+{
+	var sett = $("#dspsett");
+	var rect = $("#ctrls")[0].getClientRects()[0];
+	sett[0].style.top = (parseInt(rect.bottom)+5) + "px";
+	rect = $("#settbtn")[0].getClientRects()[0];
+	sett[0].style.left = (parseInt(rect.left)+0) + "px";
+	sett.toggle().on("mouseleave", function()
+	{
+		if (tmoid) window.clearTimeout(tmoid);
+		tmoid = window.setTimeout(function()
+		{
+			$('#dspsett').hide();
+		}, 1000);
+	}).on("mousemove", function()
+	{
+		if (tmoid) window.clearTimeout(tmoid);
+	});
+
+	sett.show();
+}
+
+window.onresize = function()
+{
+    var w = parseInt(window.visualViewport.width - $("#viewport")[0].getBoundingClientRect().top - 5);
+    var h = parseInt(window.visualViewport.height - 5);
+    $('#viewport').css("width", w+"px").css("height",h+"px");
+    stage.setSize(w, h);
+};
+window.onresize();
+
+stage.mouseControls.add( "scroll-ctrl+shift", function( stage, delta )
+{
+    var ai = stage.getParameters().ambientIntensity;
+    stage.setParameters( { ambientIntensity: Math.max( 0, ai + delta / 50 ) } );
+} );
+
+function centerPocket()
+{
+	if (last_clicked_cavity) last_clicked_cavity['shapeComp'].autoView();
+	else stage.viewerControls.center( 
+	{
+		x: pocket[0],
+		y: pocket[1],
+		z: pocket[2],
+	});
+}
+
+function get_clip_value()
+{
+	var v = parseFloat($("#clip")[0].value);
+	v /= 50;
+	v -= 1;
+	v = Math.sign(v) * Math.pow(Math.abs(v), 3);
+	v += 1;
+	v *= 50;
+	return v;
+}
+
+function getResStrandIdx(resmdlidx)
+{
+	var result = -1;
+	mdlstrandid.forEach(function(strandid, idx)
+	{
+		if (strandid == resstrandid[resmdlidx]) result = idx;
+	});
+	return result;
+}
+
+function getResMdlIdx(resno, strandid)
+{
+	var result = -1;
+	mdlresno.forEach(function(mdlres, idx)
+	{
+		if (mdlres == resno && resstrandid[idx] == strandid) result = idx;
+	});
+
+	return result;
+}
+
+function showSideChain(resno, strandid)
+{
+	if (typeof strandid == "object")
+	{
+		var i, n = strandid.length;
+		for (i=0; i<n; i++) showSideChain(resno, strandid[i]);
+		return;
+	}
+
+	try
+	{
+		if (typeof strandid == "undefined") strandid = "A";
+
+		var clipValue = get_clip_value();
+		var mdlidx = getResMdlIdx(resno, strandid);
+		if (!restoggled[mdlidx])
+		{
+			var p = 
+            {
+                "opacity": (spcfill | whtbk) ? 1 : opc_sidechain,
+				"colorScheme": PODefSchemeHilite,
+                "metalness": mtl_licorice,
+                "clipNear": clipValue,
+				"sele": hydrogens ? "" : "* and not hydrogen",
+            };
+
+			var pc = strandColorSelection(strandid, getStrandColor(strandid));
+			if (pc.colorScheme != PODefRgnScheme && pc.colorScheme != POAAScheme) p.colorScheme = pc.colorScheme;
+
+			resmdl[mdlidx].addRepresentation( spcfill ? "spacefill" : "licorice", p);
+			restoggled[mdlidx] = 1;
+			$('#seqddtgl'+mdlidx).addClass('hilite');
+		}
+	}
+	catch (ex)
+	{
+		;
+	}
+	set_gmdl_opacity();
+}
+
+function toggleSideChain(resno, strandid)
+{
+	try
+	{
+		var mdlidx = getResMdlIdx(resno, strandid);
+		if (restoggled[mdlidx])
+		{
+			resmdl[mdlidx].removeAllRepresentations();
+			restoggled[mdlidx] = 0;
+			$('#seqddtgl'+mdlidx).removeClass('hilite');
+		}
+		else
+		{
+			showSideChain(resno, strandid);
+		}
+	}
+	catch (ex)
+	{
+		;
+	}
+	set_gmdl_opacity();
+}
+
+function refreshSideChainsVisible()
+{
+	try
+	{
+		var clipValue = get_clip_value();
+		var i;
+		for (i=0; i<restoggled.length; i++)
+		{
+			if (restoggled[i])
+			{
+				resmdl[i].removeAllRepresentations();
+				resmdl[i].addRepresentation( spcfill ? "spacefill" : "licorice",
+				{
+					"opacity": (spcfill | whtbk) ? 1 : opc_sidechain,
+					"colorScheme": PODefScheme,
+					"metalness": mtl_licorice,
+					"clipNear": clipValue,
+					"sele": hydrogens ? "" : "* and not hydrogen",
+				});
+			}
+		}
+	}
+	catch (ex)
+	{
+		;
+	}
+}
+
+function showAllSideChains()
+{
+	var i;
+	for (i=0; i<sequence.length; i++)
+	{
+		if (!gmvisible[getResStrandIdx(i)]) continue;
+		showSideChain(mdlresno[i], mdlstrandid[i]);
+	}
+}
+
+function hideAllSideChains()
+{
+	var i;
+	for (i=0; i<sequence.length; i++)
+	{
+		resmdl[i].removeAllRepresentations();
+		restoggled[i] = 0;
+		$('#seqddtgl'+i).removeClass('hilite');
+	}
+}
+
+function showSideChainsByType(show_type)
+{
+	var resno, i;
+	for (i=0; i<sequence.length; i++)
+	{
+		if (!gmvisible[getResStrandIdx(i)]) continue;
+		var aa = sequence[i];
+
+		var show_sc = false;
+		switch(aa)
+		{
+			case 'M':
+				show_sc = (show_type == aa_aliphatic || show_type == aa_sulfur);
+				break;
+			case 'A': case 'I': case 'L': case 'V': case 'P': case 'G':
+				show_sc = (show_type == aa_aliphatic);
+				break;
+			case 'C':
+				show_sc = (show_type == aa_sulfur);
+				break;
+			case 'F': case 'W': case 'Y':
+				show_sc = (show_type == aa_aromatic);
+				break;
+			case 'H':
+				show_sc = (show_type == aa_aromatic || show_type == aa_basic);
+				break;
+			case 'R': case 'K':
+				show_sc = (show_type == aa_basic);
+				break;
+			case 'D': case 'E':
+				show_sc = (show_type == aa_acidic);
+				break;
+			case 'S': case 'T': case 'N': case 'Q':
+				show_sc = (show_type == aa_hydrophilic);
+				break;
+		}
+
+		if (show_sc)
+		{
+			resno = mdlresno[i];
+			showSideChain(resno, resstrandid[i]);
+		}
+	}
+}
+
+function showLigandSideChains()
+{
+	var i, j;
+	var lligbs = get_ligbs_from_orid();
+
+	var n = lligbs.length;
+	if (!n) return;
+
+	for (i=0; i<n; i++)
+	{
+		var resno = resno_from_letters_and_bw(lligbs[i]);
+		if (!resno) continue;
+		for (j=0; j<tmstrand.length; j++)
+		{
+			var mdlidx = getStrandIdxFromID(tmstrand[j]);
+			if (gmvisible[mdlidx]) showSideChain(resno, tmstrand[j]);
+		}
+	}
+}
+
+function showActivationSideChains()
+{
+	var i, j;
+	var lligbs = get_acvbs_from_orid();
+
+	var n = lligbs.length;
+	if (!n) return;
+
+	for (i=0; i<n; i++)
+	{
+		var resno = resno_from_letters_and_bw(lligbs[i]);
+		if (!resno) continue;
+		for (j=0; j<tmstrand.length; j++)
+		{
+			var mdlidx = getStrandIdxFromID(tmstrand[j]);
+			if (gmvisible[mdlidx]) showSideChain(resno, tmstrand[j]);
+		}
+	}
+}
+
+function showConservedSideChains()
+{
+	var i, j;
+	var lligbs = get_conserved_from_orid();
+
+	var n = lligbs.length;
+	if (!n) return;
+
+	for (i=0; i<n; i++)
+	{
+		var resno = resno_from_letters_and_bw(lligbs[i]);
+		if (!resno) continue;
+		for (j=0; j<tmstrand.length; j++)
+		{
+			var mdlidx = getStrandIdxFromID(tmstrand[j]);
+			if (gmvisible[mdlidx]) showSideChain(resno, tmstrand[j]);
+		}
+	}
+}
+
+
+function showMetalSideChains()
+{
+	var i;
+	for (i=0; i<mtlbs.length; i++)
+	{
+		var resno = resno_from_letters_and_bw(mtlbs[i]);
+		if (!resno) continue;
+		for (j=0; j<tmstrand.length; j++)
+		{
+			var mdlidx = getStrandIdxFromID(tmstrand[j]);
+			if (gmvisible[mdlidx]) showSideChain(resno, tmstrand[j]);
+		}
+	}
+}
+
+function ballAndStick()
+{
+	if (mdlstrands.length) hydrogens=false;
+
+	var i;
+	for (i=0; i<gmodel.length && i<gmrparams.length && i<gmrep.length; i++)
+	{
+		if (gmrep[i] == "ball+stick")
+		{
+			gmodel[i].removeAllRepresentations();
+			var p = gmrparams[i];
+			if (whtbk) p.opacity = 1;
+			if (!hydrogens) p.sele = "* and not hydrogen";
+			else p.sele = "";
+			gmodel[i].addRepresentation((resmdl.length || hydrogens) ? "ball+stick" : "licorice", p);
+		}
+	}
+	if (curr_ligand)
+	{
+		curr_ligand.removeAllRepresentations();
+		var p = ligand_params;
+		if (whtbk) p.opacity = 1;
+		if (!hydrogens) p.sele = "* and not hydrogen";
+		else p.sele = "";
+		curr_ligand.addRepresentation(model.length ? "licorice" : "ball+stick", p);
+	}
+	spcfill = false;
+
+	refreshSideChainsVisible();
+	showNode(gnode);
+	$('#bstick').hide();
+	$('#spcfill').show();
+	if (mdlstrands.length)
+	{
+		$('#hydro').show();
+		$('#nohyd').hide();
+	}
+}
+
+var gspcfill_resnos = [];
+
+function spaceFill(resno = -1)
+{
+	if (model.length > 1)
+	{
+		if (resno >= 0)
+		{
+			var already = gspcfill_resnos.indexOf(resno);
+			if (already>=0) gspcfill_resnos.splice(already, 1);
+			else gspcfill_resnos.push(resno);
+			showNode(gnode);
+		}
+		else
+		{
+			// Pull up a list from model[0].structure.residueStore.resno array.
+			var sfrndd = document.createElement('div');
+			sfrndd.id = "sfrndd";
+			sfrndd.style.position = "absolute";
+			sfrndd.style.top = 50;
+			sfrndd.style.right = "30%";
+			sfrndd.style.maxWidth = "33%";
+			sfrndd.setAttribute("onmouseleave", "document.body.removeChild(this);");
+			sfrndd.innerHTML = "<a href=\"#\" onclick=\"spaceFill(0);\">Ligand</a><hr>";
+
+			model[0].structure.residueStore.resno.forEach(function(value)
+			{
+				var c = sequence[getResMdlIdx(value, 'A')];
+				if (typeof c == 'undefined') c = '';
+				if (value) sfrndd.innerHTML +=
+					"<a href=\"#\" onclick=\"spaceFill(" + value
+						+ ");\" onmousemove=\"hilite_residue(" + value
+						+ ");\" onmouseout=\"showNode(gnode);\">"
+						+ c + value + "</a> ";
+			});
+			
+			sfrndd.innerHTML += "<hr><a href=\"#\" onclick=\"gspcfill_resnos = []; ballAndStick();\">none</a>";
+
+			document.body.appendChild(sfrndd);
+		}
+	}
+	else
+	{
+		var i;
+		for (i=0; i<gmodel.length && i<gmrparams.length && i<gmrep.length; i++)
+		{
+			if (gmrep[i] == "ball+stick")
+			{
+				gmodel[i].removeAllRepresentations();
+				var p = gmrparams[i];
+				p.opacity = 1;
+				if (!hydrogens) p.sele = "* and not hydrogen";
+				else p.sele = "";
+				gmodel[i].addRepresentation("spacefill", p);
+			}
+		}
+		if (curr_ligand)
+		{
+			curr_ligand.removeAllRepresentations();
+			var p = ligand_params;
+			p.opacity = 1;
+			if (!hydrogens) p.sele = "* and not hydrogen";
+			else p.sele = "";
+			curr_ligand.addRepresentation("spacefill", p);
+		}
+		spcfill = true;
+		hydrogens=true;
+		showNode(gnode);
+		$('#spcfill').hide();
+		$('#bstick').show();
+		$('#hydro').hide();
+		$('#nohyd').show();
+	}
+}
+
+function disable_spacefill()
+{
+	return;
+	$('#spcfill').hide();
+	$('#bstick').hide();
+	sfenable = false;
+}
+
+function enable_spacefill()
+{
+	spcfill ? $('#spcfill').hide() : $('#spcfill').show();
+	spcfill ? $('#bstick').show() : $('#bstick').hide();
+	spcfill ? spaceFill() : ballAndStick();
+	sfenable = true;
+}
+
+var born = false;
+var aqua = false;
+var whtbk  = false;
+var spcfill = false;
+var sfenable = true;
+var hydrogens = true;
+
+var dock_result_txt = [];
+
+if (getParameterByName("born"))
+{
+	born = true;
+	$("#colborn").show();
+	$("#colcpk").hide();
+}
+if (getParameterByName("aqua"))
+{
+	aqua = true;
+	$("#colaq").show();
+	$("#colcpk").hide();
+}
+if (getParameterByName("whtbk"))
+{
+	whtbk = true;
+}
+var PODefScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		if (typeof atom.atomType == "undefined") return 0xff99ff;
+    	var elem = atom.element;
+        if (atom.resno <= 1)
+        {
+        	elem = atom.atomname.replace(/[^A-Za-z]/g, '');
+        	elem = elem.charAt(0).toUpperCase() + elem.slice(1).toLowerCase();
+    	}
+        switch (elem)
+        {
+        	case 'H': 
+			var is_backbone = atom.isBackbone() || (atom.atomname == "HN");
+			return is_backbone ? 0x79949b : 0xd1f5ff;
+
+			case 'He': return 0xfcaa93;
+			case 'Ne': return 0xff4e00;
+            
+        	case 'C':
+            if (atom.isBackbone()) return 0x666666;
+            else switch (atom.resname)
+            {
+                case 'GLY':
+                return 0x999999;
+
+                case 'ALA':
+                case 'ILE':
+                case 'LEU':
+                case 'PRO':
+                case 'VAL':
+                return 0x808080;
+
+                case 'MET':
+                case 'CYS':
+                case 'SEC':
+                return 0x99aa77;
+
+                case 'PHE':
+                case 'TRP':
+                case 'TYR':
+                case 'HIS':
+                return whtbk ? 0xaa99aa : 0x887788;
+
+                case 'SER':
+                case 'THR':
+                case 'GLN':
+                case 'ASN':
+                return whtbk ? 0x339988 : 0x55aa93;
+
+                case 'ASP':
+                case 'GLU':
+                return born ? 0x99bbdd : 0xddbb99;
+
+                case 'LYS':
+                case 'ARG':
+                case 'PYL':
+                return born ? 0xddbb99 : 0x99bbdd;
+
+                default:
+                return 0x666666;
+            }
+
+        	case 'N': return born ? (atom.isBackbone() ? 0x660033 : 0xFF3300) : (atom.isBackbone() ? 0x000066 : 0x3300FF);
+        	case 'O': return aqua ? (atom.isBackbone() ? 0x006666 : 0x00EEFF) : (born ? (atom.isBackbone() ? 0x003366 : 0x00CCFF) : (atom.isBackbone() ? 0x660000 : 0xFF0000));
+        	case 'P': return 0xff77c6;
+        	case 'S': return 0xffdd00;
+        	case 'Se': return 0xffaa00;
+        	case 'Cl': return 0x339900;
+        	case 'Br': return 0x993300;
+        	case 'I': return 0x990033;
+        	case 'Cu': return 0xe5a072;
+        	case 'Zn': return 0x92b0cc;
+        	case 'Na': return 0xffcc00;
+        	case 'Mg': return 0x99ffcc;
+        	case 'K': return 0x9966ff;
+        	case 'Ca': return 0xf7f7f7;
+        	case 'Fe': return 0x845f42;
+
+        	default: return 0x99aabb;
+        }
+
+        return 0xcc00ff;
+    };
+});
+
+var PODefSchemeHilite = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		if (typeof atom.atomType == "undefined") return 0xff99ff;
+    	var elem = atom.atomType.element;
+        if (atom.resno <= 1)
+        {
+        	elem = atom.atomname.replace(/[^A-Za-z]/g, '');
+        	elem = elem.charAt(0).toUpperCase() + elem.slice(1).toLowerCase();
+    	}
+        switch (elem)
+        {
+        	case 'H': 
+			var is_backbone = atom.isBackbone() || (atom.atomname == "HN");
+			return is_backbone ? 0x79949b : 0xe1faff;
+
+			case 'He': return 0xfcaa93;
+			case 'Ne': return 0xff4e00;
+            
+        	case 'C':
+            if (atom.isBackbone()) return 0x666666;
+            else switch (atom.resname)
+            {
+                case 'GLY':
+                return 0xe0e0e0;
+
+                case 'ALA':
+                case 'ILE':
+                case 'LEU':
+                case 'PRO':
+                case 'VAL':
+                return 0x667766;
+
+                case 'MET':
+                case 'CYS':
+                case 'SEC':
+                return 0xddee99;
+
+                case 'PHE':
+                case 'TRP':
+                case 'TYR':
+                case 'HIS':
+                return 0xaa88aa;
+
+                case 'SER':
+                case 'THR':
+                case 'GLN':
+                case 'ASN':
+                return 0x77eed5;
+
+                case 'ASP':
+                case 'GLU':
+                return born ? 0xbbddff : 0xffddbb;
+
+                case 'LYS':
+                case 'ARG':
+                case 'PYL':
+                return born ? 0xffddbb : 0xbbddff;
+
+                default:
+                return 0x777777;
+            }
+
+        	case 'N': return born ? (atom.isBackbone() ? 0x660033 : 0xFF3300) : (atom.isBackbone() ? 0x000066 : 0x3300FF);
+        	case 'O': return aqua ? (atom.isBackbone() ? 0x006666 : 0x00EEFF) : (born ? (atom.isBackbone() ? 0x003366 : 0x00CCFF) : (atom.isBackbone() ? 0x660000 : 0xFF2222));
+        	case 'P': return 0xff8add;
+        	case 'S': return 0xffe022;
+        	case 'Se': return 0xffb022;
+        	case 'Cl': return 0x339900;
+        	case 'Br': return 0x993300;
+        	case 'I': return 0x990033;
+        	case 'Cu': return 0xe5a072;
+        	case 'Zn': return 0x92b0cc;
+        	case 'Na': return 0xffcc00;
+        	case 'Mg': return 0x99ffcc;
+        	case 'K': return 0x9966ff;
+        	case 'Ca': return 0xf7f7f7;
+        	case 'Fe': return 0x845f42;
+
+        	default: return 0x99aabb;
+        }
+
+        return 0xcc00ff;
+    };
+});
+
+var PODefSchemeLigand = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		if (typeof atom.atomType == "undefined") return 0xff99ff;
+    	var elem = atom.atomType.element;
+        if (atom.resno <= 1)
+        {
+        	elem = atom.atomname.replace(/[^A-Za-z]/g, '');
+        	elem = elem.charAt(0).toUpperCase() + elem.slice(1).toLowerCase();
+    	}
+        switch (elem)
+        {
+        	case 'H': return 0xe1faff;
+			case 'He': return 0xfcaa93;
+        	case 'C': return whtbk ? 0x333741 : 0xa7ada4;
+        	case 'N': return born ? 0xFF3300 : 0x5533FF;
+        	case 'O': return aqua ? 0x00EEFF : (born ? 0x00CCFF : 0xFF2222);
+			case 'Ne': return 0xff4e00;
+        	case 'P': return 0xff8add;
+        	case 'S': return 0xffe022;
+        	case 'Se': return 0xffb022;
+        	case 'Cl': return 0x339900;
+        	case 'Br': return 0x993300;
+        	case 'I': return 0x990033;
+        	case 'Cu': return 0xe5a072;
+        	case 'Zn': return 0x92b0cc;
+        	case 'Na': return 0xffcc00;
+        	case 'Mg': return 0x99ffcc;
+        	case 'K': return 0x9966ff;
+        	case 'Ca': return 0xf7f7f7;
+        	case 'Fe': return 0x845f42;
+
+        	default: return 0x99aabb;
+        }
+
+        return 0xcc00ff;
+    };
+});
+
+var PODefSchemeRainbow = NGL.ColormakerRegistry.addScheme(function (params)
+{
+	/**/
+
+	this.atomColor = function(atom) 
+	{
+		if (isNaN(atom.structure.rnbPos))
+		{
+			var morceaux = atom.structure.name.split("|");
+
+			var i;
+			var nmax = 0;
+
+			for (i=0; i<model.length; i++)
+			{
+				if (mpos[i] == gpose && mnod[i] > nmax) nmax = mnod[i];
+			}
+
+			var nodeNo = parseInt(morceaux[1]);
+			atom.structure.rnbPos = 0.9 + (0.02 + nodeNo) / (0.5+nmax);
+		}
+
+		var rnbint = parseInt(255*atom.structure.rnbPos)
+		var acol = hsl_to_rgb(rnbint, 123, 123);
+		return acol;
+	}
+});
+
+function firegrad(value)					// Accepts 0 to pi and returns [r,g,b] integers 0 to 255.
+{
+	var red   = 128 - Math.cos(value + 0.5) * 127;
+	var green = value >= 1.5 ? (128 - Math.cos((value - 1.5)*2.3) * 127) : 0;
+	var blue  = 128 - Math.cos((value + 1.5)*1.7) * 127;
+
+	if (value>Math.PI) red = green = 255;
+
+	return [parseInt(red), parseInt(green), parseInt(blue)];
+}
+
+var PODefSchemeFire = NGL.ColormakerRegistry.addScheme(function (params)
+{
+	/**/
+
+	this.atomColor = function(atom) 
+	{
+		if (isNaN(atom.structure.rnbPos))
+		{
+			var morceaux = atom.structure.name.split("|");
+
+			var i;
+			var nmax = 0;
+
+			for (i=0; i<model.length; i++)
+			{
+				if (mpos[i] == gpose && mnod[i] > nmax) nmax = mnod[i];
+			}
+
+			var nodeNo = parseInt(morceaux[1]);
+			atom.structure.rnbPos = Math.PI * nodeNo / nmax;
+		}
+
+		var rgb = firegrad(atom.structure.rnbPos);
+
+		return 0x10000*rgb[0] + 0x100*rgb[1] + rgb[2];
+	}
+});
+
+function aa_scheme(atom)
+{
+	switch (atom.resname.toUpperCase())
+	{
+		case "MET":
+		return 0xcccc99;
+		
+		case "ALA": case "ILE": case "LEU": case "VAL":
+		return 0xcccccc;
+
+		case "PRO":
+		return 0x999999;
+
+		case "GLY":
+		return 0x666666;
+
+		case "CYS":
+		return 0xcccc33;
+
+		case "SER": case "THR":
+		return 0x66cc99;
+
+		case "ASN": case "GLN":
+		return 0x33cc99;
+
+		case "ASP": case "GLU":
+		return 0xff6666;
+
+		case "ARG": case "LYS": case "HIS":
+		return 0x3333ff;
+
+		case "PHE": case "TRP": case "TYR":
+		return 0xcc99cc;
+
+		default:
+		return 0xcc9966;
+	}
+}
+
+var POAAScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return aa_scheme(atom);
+	}
+});
+
+var PODefRgnScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+        var resno = atom.resno;
+        var rgnc = 0;
+		
+		rgnc = rgn_color(resno, true);
+
+		if (!rgnc) rgnc = aa_scheme(atom);
+
+		return rgnc;
+    }
+});
+
+var amberScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xffcc00;
+	}
+});
+
+var yellowScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xffee00;
+	}
+});
+
+var canaryScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xffff99;
+	}
+});
+
+var lemonScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xddff00;
+	}
+});
+
+var greenScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x99ff00;
+	}
+});
+
+var emeraldScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x22ff55;
+	}
+});
+
+var tealScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x00ff99;
+	}
+});
+
+var cyanScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x00eeff;
+	}
+});
+
+var skyScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x99ddff;
+	}
+});
+
+var blueScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x3399ff;
+	}
+});
+
+var indigoScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x3322ff;
+	}
+});
+
+var purpleScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x9966ff;
+	}
+});
+
+var magentaScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xff33cc;
+	}
+});
+
+var pinkScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xff6688;
+	}
+});
+
+var redScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xff3344;
+	}
+});
+
+var orangeScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xff7700;
+	}
+});
+
+var vermillionScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xff5522;
+	}
+});
+
+var beigeScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xffbb66;
+	}
+});
+
+var brownScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x996633;
+	}
+});
+
+var blackScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x333333;
+	}
+});
+
+var grayScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x999999;
+	}
+});
+
+var charcoalScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0x666666;
+	}
+});
+
+var whiteScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xeeeeee;
+	}
+});
+
+var ashScheme = NGL.ColormakerRegistry.addScheme(function (params)
+{
+    this.atomColor = function(atom)
+    {
+		return 0xaaccee;
+	}
+});
+
+stage.setParameters(
+{
+	'backgroundColor': '#020408',
+	'ambientColor': '#59f',
+    'ambientIntensity': 0.3,
+	'lightColor': '#fff0e0',
+    'lightIntensity': 0.8,
+});
+
+// These do not work in Chrome on Linux.
+stage.mouseControls.remove( "scroll-ctrl" );
+stage.mouseControls.remove( "scroll-shift" );
+stage.mouseControls.remove( "scroll-alt" );
+
+// Things better stay where they are.
+stage.mouseControls.remove( "drag-ctrl-right ");
+stage.mouseControls.remove( "drag-ctrl-left ");
+
+function process_cavity_ln(ln)
+{
+	var pieces = ln.replaceAll(/\s+/g, ' ').split(" ");
+	var cavno = parseInt(pieces[2]);
+	if (typeof cavities[cavno] == "undefined")
+	{
+		cavities[cavno] = [];
+		cavities[cavno]['residues'] = [];
+	}
+	var cavdata = [];
+	cavdata['x'] = parseFloat(pieces[3]);
+	cavdata['y'] = parseFloat(pieces[4]);
+	cavdata['z'] = parseFloat(pieces[5]);
+	cavdata['r'] = parseFloat(pieces[6]);
+	if (pieces.length < 8) return;
+	cavdata['metal'] = pieces[7].indexOf('M') >= 0;
+	cavdata['chargep'] = pieces[7].indexOf('+') >= 0;
+	cavdata['chargen'] = pieces[7].indexOf('-') >= 0;
+	cavdata['hydro'] = pieces[7].indexOf('H') >= 0;
+	cavdata['thio'] = pieces[7].indexOf('S') >= 0;
+	cavdata['pi'] = pieces[7].indexOf('P') >= 0;
+	cavdata['priority'] = pieces[7].indexOf('!') >= 0;
+	cavities[cavno].push(cavdata);
+
+	var n = pieces.length;
+	if (n > 8)
+	{
+		var i;
+		for (i=8; i<n; i++)
+		{
+			var resno = parseInt(pieces[i]);
+			if (!isNaN(resno)) cavities[cavno]['residues'][resno] = resno;
+		}
+	}
+}
+
+function finish_cavity_lines()
+{
+	var n = cavities.length;
+	if (n)
+	{
+		var i, j;
+		for (i=0; i<n; i++)
+		{
+			var list = cavities[i]['residues'].values();
+			var newres = [];
+			j = 0;
+			for (let resno of list)
+			{
+				if (resno)
+				{
+					newres[j] = resno;
+					j++;
+				}
+			}
+			cavities[i]['residues'] = newres;
+
+			if (typeof cavities[i]['residues'] != "undefined") cavities[i]['residues'].sort(function(a, b){return a - b});
+		}
+
+		cavities.sort(function(a, b){ return b['residues'].length - a['residues'].length; });
+
+		$('#pockets').show();
+	}
+	else $('#pockets').hide();
+}
+
+function process_lsrb_ln(ln, poseno, nodeno)
+{
+	$('#lsrbbtn').show();
+	if (typeof lsrbdata[poseno] == 'undefined') lsrbdata[poseno] = [];
+	if (typeof lsrbdata[poseno][nodeno] == 'undefined') lsrbdata[poseno][nodeno] = [];
+	var pieces = ln.replaceAll(/\s+/g, ' ').split(" ");
+	var vertex =
+	{
+		'x': pieces[2],
+		'y': pieces[3],
+		'z': pieces[4],
+		'w': pieces[5]
+	};
+	lsrbdata[poseno][nodeno].push(vertex);
+}
+
+function apply_pdb(poresult)
+{
+	var i;
+	var shiny = [];
+	var result = poresult.split("\n");
+	var lres = 0;
+	var lstrandid = "A";
+	var tmpstr = "";
+	cavities = [];
+	for (i=0; i<result.length; i++)
+	{
+		var ln = result[i];
+		if (ln.substr(0,10) == "REMARK 503") process_lsrb_ln(ln, 1, 0);
+		if (ln.substr(0,10) == "REMARK 821") process_cavity_ln(ln);
+		var resno = parseInt(ln.substr(22,4));
+		if (isNaN(resno)) resno = 0;
+		var strandid = ln.substr(21,1).trim();
+		if (!strandid) strandid = "A";
+		var aa1let = aa_1let_from_3let(ln.substr(17,3).trim());
+		var aname = ln.substr(12,4).trim();
+		if (ln.substr(17,3) == "MTL") shiny.push(ln);
+		
+		if (lres != resno)
+		{
+			if (ln.length > 20)
+			{
+				if (aa1let != '?')
+				{
+					var stringBlob5 = new Blob( [tmpstr], { type: 'text/plain'} );
+					stage.loadFile( stringBlob5, { ext: 'pdb' } ).then( function( comp5 )
+					{
+						resmdl.push(comp5);
+						restoggled.push(0);
+						disable_spacefill();
+					});
+					if (isNaN(resno)) resno = 0;
+					mdlresno.push(resno);
+					resstrandid.push(strandid);
+					
+					lres = resno;
+					lstrandid = strandid;
+					tmpstr = "";
+					
+					sequence.push(aa1let);
+					
+					$('#clip').trigger("input");
+				}
+			}
+		}
+		if (ln.length < 20) continue;
+		
+		tmpstr += ln + "\n";
+		
+		$('#clip').trigger("input");
+	}
+	if (tmpstr)
+	{
+		var stringBlob5a = new Blob( [tmpstr], { type: 'text/plain'} );
+		stage.loadFile( stringBlob5a, { ext: 'pdb' } ).then( function( comp5a )
+		{
+			resmdl.push(comp5a);
+			restoggled.push(0);
+			disable_spacefill();
+			$('#clip').trigger("input");
+		});
+		if (isNaN(resno)) resno = 0;
+		mdlresno.push(resno);
+		resstrandid.push(lstrandid);
+		sequence.push(aa1let);
+	}
+
+	var stringBlob3 = new Blob( [ poresult ], { type: 'text/plain'} );
+	stage.loadFile( stringBlob3, { ext: 'pdb' } ).then( function( comp3 )
+	{
+		var rp =
+		{
+			opacity: whtbk ? 1 : opc_cartoon,
+			colorScheme: PODefRgnScheme,
+			metalness: mtl_cartoon,
+		};
+		comp3.addRepresentation( "cartoon", rp);
+		comp3.setName("backbone");
+		gmodel.push(comp3);
+		gmvisible.push(true);
+		mdlstrands.push(comp3);
+		gmrep.push("cartoon");
+		gmrparams.push(rp);
+		disable_spacefill();
+		$('#clip').trigger("input");
+		
+		if (acvrot8.length)
+		{
+			var j;
+			if (!acvmdl)
+			{
+				for (j=0; j<gmodel.length; j++)
+				{
+					if (gmodel[j].name == "backbone")
+					{
+						// acvmdl = JSON.parse(JSON.stringify(gmodel[j]));
+						stage.loadFile( stringBlob3, { ext: 'pdb' } ).then( function( comp8 )
+						{
+							acvmdl = comp8;
+							
+							if (acvmdl)
+							{
+								// Call the NGL functions to get the proxies etc.
+								acvmdl.structure.eachResidue(function(res_proxy)
+								{
+									var i;
+									for (i=0; i<acvrot8.length; i++)
+									{
+										if (res_proxy.resno >= acvrot8[i].sr && res_proxy.resno <= acvrot8[i].er)
+										{
+											var lrot8 = acvrot8[i];
+											var ox = lrot8.ox, oy = lrot8.oy, oz = lrot8.oz;
+											var ax = lrot8.ax, ay = lrot8.ay, az = lrot8.az;
+											var origin = { x:ox, y:oy, z:oz };
+											var axis   = { x:ax, y:ay, z:az };
+											res_proxy.eachAtom(function(a_proxy)
+											{
+												var rotated = rotate3D( 
+													{
+														x:a_proxy.x + acvrot8[i].tx, 
+														y:a_proxy.y + acvrot8[i].ty,
+														z:a_proxy.z + acvrot8[i].tz
+													},
+													origin,
+													axis,
+													acvrot8[i].angle
+												);
+												a_proxy.x = rotated.x;
+												a_proxy.y = rotated.y;
+												a_proxy.z = rotated.z;
+											});
+										}
+									}		// end each acvrot8.
+								});		// end each residue.
+							}		// end if acvmdl.
+						});
+						break;
+					}		// end if name backbone.
+				}		// end for gmodel.
+			}		// end if not acvmdl.
+		}		// if acvrot8 length
+		else if (acvmatrix.length)
+		{
+			var j;
+			if (!acvmdl)
+			{
+				for (j=0; j<gmodel.length; j++)
+				{
+					if (gmodel[j].name == "backbone")
+					{
+						// acvmdl = JSON.parse(JSON.stringify(gmodel[j]));
+						stage.loadFile( stringBlob3, { ext: 'pdb' } ).then( function( comp8 )
+						{
+							acvmdl = comp8;
+							
+							if (acvmdl)
+							{
+								// Call the NGL functions to get the proxies etc.
+								acvmdl.structure.eachResidue(function(res_proxy)
+								{
+									var i;
+									for (i=0; i<acvmatrix.length; i++)
+									{
+										if (res_proxy.resno >= acvmatrix[i].sr && res_proxy.resno <= acvmatrix[i].er)
+										{
+											var f = parseFloat(res_proxy.resno - acvmatrix[i].sr) / (acvmatrix[i].er - acvmatrix[i].sr);
+											var mx = f * acvmatrix[i].cx + (1.0-f) * acvmatrix[i].nx;
+											var my = f * acvmatrix[i].cy + (1.0-f) * acvmatrix[i].ny;
+											var mz = f * acvmatrix[i].cz + (1.0-f) * acvmatrix[i].nz;
+											
+											res_proxy.eachAtom(function(a_proxy)
+											{
+												a_proxy.x += mx;
+												a_proxy.y += my;
+												a_proxy.z += mz;
+											});
+										}
+									}		// end each acvmatrix.
+								});		// end each residue.
+							}		// end if acvmdl.
+						});
+						break;
+					}		// end if name backbone.
+				}		// end for gmodel.
+			}		// end if not acvmdl.
+
+			
+		}		// end if acvmatrix length.
+	});
+
+	if (shiny.length)
+	{
+		var stringBlob4 = new Blob( [ shiny.join("\n") ], { type: 'text/plain'} );
+		stage.loadFile( stringBlob4, { ext: 'pdb' } ).then( function( comp4 )
+		{
+			var rp = 
+			{
+				opacity: whtbk ? 1 : opc_metal,
+				colorScheme: PODefScheme,
+				metalness: mtl_metal,
+			};
+			comp4.addRepresentation( "spacefill", rp);
+			gmodel.push(comp4);
+			gmvisible.push(true);
+			mdlligands.push(comp4);
+			gmrep.push("spacefill");
+			gmrparams.push(rp);
+			disable_spacefill();
+			$('#clip').trigger("input");
+		});
+	}
+	
+	set_gmdl_opacity();
+}
+
+function load_remote_pdb(pdburl, append=false, custom_color_scheme=false)
+{
+	if (!append) stage.removeAllComponents();
+	initialize_arrays();
+	$.ajax(
+	{
+		url: pdburl,
+		cache: false,
+		data:
+		{
+			p: protid,
+			mod: getParameterByName('mod', pdburl.indexOf("mod=") >= 0 ? pdburl : null )
+		},
+		success: function(result)
+		{
+			var j = result.indexOf("\nTER\n");
+			if (j) result = result.substr(0, j);
+
+			var lines = result.split("\n");
+			$('#posey').hide();
+
+			cavities = [];
+			for (i=0; i<lines.length; i++)
+            {
+                var ln = lines[i];
+				if (ln.substr(0, 6) == 'REMARK')
+				{
+					var pieces = ln.replaceAll(/\s+/g, ' ').split(" ");
+					if (pieces[2] == 'HELIX' && (pieces[3].substr(0,3) == 'TMR' || pieces[3].substr(0,3) == 'HXR'))
+					{
+						var tmrno = parseInt(pieces[3].substr(-1));
+						tmstart[tmrno] = parseInt(pieces[4]);
+						tmend[tmrno] = parseInt(pieces[5]);
+					}
+					else if (pieces[3] == "LIGAND_BINDING")
+					{
+						var resno = parseInt(pieces[4]);
+						if (isNaN(resno)) resno = 0;
+						ligbs.push(resno);
+					}
+					else if (pieces[3] == "BW")
+					{
+						var tmr = parseInt(pieces[4]);
+						var resno = parseInt(pieces[5]);
+						if (isNaN(resno)) resno = 0;
+						bw50r[tmr] = resno;
+					}
+					else if (pieces[3] == "MCOORD")
+					{
+						var resno = parseInt(pieces[4]);
+						if (isNaN(resno)) resno = 0;
+						mcres.push(resno);
+					}
+					else if (pieces[1] == "503") process_lsrb_ln(ln, 1, 0);
+					else if (pieces[1] == "821" && typeof pieces[3] != "undefined")
+					{
+						process_cavity_ln(ln);
+					}
+				}
+			}
+
+			finish_cavity_lines();
+
+			loadFile(result, protid+'.pdb', custom_color_scheme);
+		}
+	});
+}
+
+function load_remote_sdf(sdfurl)
+{
+	stage.removeAllComponents();
+	initialize_arrays();
+	$.ajax(
+	{
+		url: sdfurl,
+		cache: false,
+		data:
+		{
+			m: molid
+		},
+		success: function(result)
+		{
+		    if (result.length < 100 && result.indexOf('not found') >= 0)
+		    {
+		        alert('Please make sure openbabel is installed and the compound\'s SMILES string is correct. Also make sure the web server has access to write to the sdf/ folder.');
+				$('#pleasewait')[0].innerText = 'Failed to load molecule.';
+		        return;
+		    }
+		    $('#posey').show();
+		    $('#posey')[0].innerText = result.split("\n")[0];
+		    var stringBlob = new Blob( [ result ], { type: 'text/plain'} );
+		    stage.loadFile( stringBlob, { ext: "sdf" } ).then( function( comp )
+		    {
+		        var reptype = spcfill ? "spacefill" : (hydrogens ? "ball+stick" : "licorice");
+		        var rparam =
+		        {
+		        	multipleBond: true,
+				colorScheme: PODefSchemeHilite,
+		        	metalness: mtl_bs,
+		        }
+				if (!hydrogens) rparam.sele = "* and not hydrogen";
+		        comp.addRepresentation(reptype, rparam);
+		        gmodel.push(comp);
+				gmvisible.push(true);
+				mdlligands.push(comp);
+				gmrep.push(reptype);
+				gmrparams.push(rparam);
+		        comp.autoView();
+				$("#pleasewait").hide();
+		    } );
+		}
+	});
+}
+
+function update_visinters()
+{
+	visicomp.forEach(function(vc)
+	{
+		vc.removeAllRepresentations();
+	});
+
+	visicomp = [];
+
+	if (typeof visinter[gpose] != 'undefined') if (typeof visinter[gpose][gnode] != 'undefined') visinter[gpose][gnode].forEach(function(value)
+	{
+		var max_opacity = 0.4;
+		var color = [0,0,1];
+		var opacity = max_opacity;
+
+		var cidx = Math.min(Math.sqrt(-value[2])/5, 1) * 3.14;
+		var rgb = firegrad(cidx);
+
+		color = [parseFloat(rgb[0])/255, parseFloat(rgb[1])/255, parseFloat(rgb[2])/255];
+
+		var shape = new NGL.Shape("shape");
+		shape.addCylinder( value[0].slice(0, 3), value[1].slice(0, 3), color, 0.0666 );
+		var shapeComp = stage.addComponentFromObject(shape);
+		shapeComp.addRepresentation("buffer", {"opacity": opacity});
+		visicomp.push(shapeComp);
+	});
+}
+
+function update_lsrb_visual()
+{
+	hide_lsrb_shapes();
+	if (show_lsrb && typeof lsrbdata[gpose] != 'undefined')
+	{
+		if (typeof lsrbdata[gpose][gnode] != 'undefined')
+		{
+			lsrbdata[gpose][gnode].forEach(function(value)
+			{
+				var shape = new NGL.Shape("shape");
+				var position = [];
+				var radius = [];
+				var color = [];
+
+				position.push(value.x);
+				position.push(value.y);
+				position.push(value.z);
+
+				radius.push(Math.sqrt(value.w) / 20 + 0.03);
+
+				var rgb = firegrad(value.w * 4);
+				color.push(parseFloat(rgb[1])/255);
+				color.push(parseFloat(rgb[0])/255);
+				color.push(parseFloat(rgb[2])/255);
+
+				var sphereBuffer = new NGL.SphereBuffer({ position: new Float32Array(position), color: new Float32Array(color), radius: new Float32Array(radius) });
+				shape.addBuffer(sphereBuffer);
+
+				var shapeComp = stage.addComponentFromObject(shape);
+				shapeComp.addRepresentation("buffer", { opacity: 0.6 });
+				lsrbshapes.push(shapeComp);
+			});
+		}
+	}
+}
+
+function showPose(p)
+{
+    var i;
+
+    var pnodz = $('#pnodz')[0];
+    pnodz.innerHTML = "Node: ";
+    var pmax = 1, nmax = 0;
+
+    for (i=0; i<model.length; i++)
+    {
+        if (mpos[i] == p && mnod[i] == 0)
+        {
+			if (mrparams[i].colorScheme == PODefSchemeFire || mrparams[i].colorScheme == PODefSchemeRainbow) mrparams[i].colorScheme = PODefSchemeLigand;
+			model[i].removeAllRepresentations();
+			var lrep = spcfill ? "spacefill" : mrep[i];
+			var lparam = Object.assign({}, mrparams[i]);
+			if (spcfill || whtbk) lparam.opacity = 1;
+			if (!hydrogens) lparam.sele = "* and not hydrogen";
+            model[i].addRepresentation( lrep, lparam );
+            if (is_ligand[i])
+			{
+				curr_ligand = model[i];
+				ligand_params = mrparams[i];
+			}
+        }
+        else
+            if (model[i].name != 'ligand') model[i].removeAllRepresentations();
+
+        if (mpos[i] > pmax) pmax = mpos[i];
+
+        if ($("#nodebtn"+mnod[i]).length == 0)
+		{
+			if (mpos[i] == p )
+			{
+				var nodebtn = document.createElement("a");
+				nodebtn.className = "nodebtn";
+				if (mnod[i]==0) $(nodebtn).addClass("hilite");
+				nodebtn.innerText = mnod[i];
+				nodebtn.id = "nodebtn"+mnod[i];
+				nodebtn.setAttribute("onclick", "showNode("+mnod[i]+");");
+
+				pnodz.appendChild(nodebtn);
+
+				if (mnod[i] > nmax) nmax = mnod[i];
+			}
+		}
+    }
+
+	if (nmax)
+	{
+		var rnbbtn = document.createElement("a");
+		rnbbtn.className = "nodebtn";
+		if (mnod[i]==0) $(rnbbtn).addClass("hilite");
+		rnbbtn.innerText = "🚀";
+		rnbbtn.id = "rnbbtn";
+		rnbbtn.setAttribute("onclick", "rainbowNodes();");
+
+		pnodz.appendChild(rnbbtn);
+	}
+
+    if (p < 1)
+    {
+        showPose(1);		// RECURSION!!!
+        return;
+    }
+
+    if (p > pmax)
+    {
+        showPose(pmax);		// RECURSION!!!
+        return;
+    }
+
+    gpose = p;
+    gnode = 0;
+	update_visinters();
+	update_lsrb_visual();
+
+    $(".posebtn").removeClass("hilite");
+    $("#posebtn"+p).addClass("hilite");
+
+    $("#clip").trigger("input");
+    if (curr_ligand) $('#ligbtn, #prsv').show();
+    
+	set_gmdl_opacity();
+}
+
+function show_stats()
+{
+	var txt = dock_result_txt[gpose][gnode];
+	
+	var statsdd = document.createElement('div');
+	statsdd.id = "statsdd";
+	statsdd.style.position = "absolute";
+	statsdd.style.top = 50;
+	statsdd.style.right = "30%";
+	statsdd.style.maxWidth = "33%";
+	statsdd.setAttribute("onmouseleave", "document.body.removeChild(this);");
+	statsdd.innerText = txt;
+
+	document.body.appendChild(statsdd);
+}
+
+function show_pockets()
+{
+	var pocketsdd = document.createElement('div');
+	pocketsdd.id = "pocketsdd";
+	pocketsdd.style.position = "absolute";
+	pocketsdd.style.top = 50;
+	pocketsdd.style.right = "10%";
+	pocketsdd.style.maxWidth = "33%";
+	pocketsdd.setAttribute("onmouseleave", "document.body.removeChild(this);");
+	var html = "";
+
+	var i, n = cavities.length;
+	for (i=0; i<n; i++)
+	{
+		if (typeof cavities[i] == 'undefined') break;
+		html += "<a id=\"cavtgl"+i+"\" onclick=\"show_hide_cavity("+i+", 1);\" style=\"cursor: pointer;\"";
+		if (cavities[i]['shown']) html += " class=\"hilite\"";
+		html += "\">";
+
+		var j;
+		var bzclick = "";
+		for (j=0; j<cavities[i]['residues'].length; j++)
+		{
+			var resno = cavities[i]['residues'][j];
+			var aa = sequence[getResMdlIdx(resno, 'A')];
+			if (typeof aa == "string")
+			{
+				html += "<span style=\"color: #";
+				if ("DE".indexOf(aa) >= 0) html += "ff0000";
+				else if ("RK".indexOf(aa) >= 0) html += "0099ff";
+				else if ("STNQ".indexOf(aa) >= 0) html += "00ffcc";
+				else if ("FHWY".indexOf(aa) >= 0) html += "cc99cc";
+				else if ("CM".indexOf(aa) >= 0) html += "ffee00";
+				else html += "cccccc";
+				html += ";\">";
+				html += aa+resno+" ";
+				html += "</span>";
+			}
+			else html += resno+" ";
+
+			bzclick += "showSideChain("+resno+");";
+		}
+
+		html += "</a> <a id=\"cavres"+i+"\" onclick=\""+bzclick+"\" style=\"cursor: pointer;\">\u232c</a>";
+		html += "<br><br>\n\n";
+	}
+
+	pocketsdd.innerHTML = html;
+	document.body.appendChild(pocketsdd);
+}
+
+function hide_lsrb_shapes()
+{
+	if (lsrbshapes.length)
+	{
+		lsrbshapes.forEach(function(value)
+		{
+			value.removeAllRepresentations();
+		});
+		lsrbshapes = [];
+	}
+}
+
+function hilite_residue(resno)
+{
+    for (i=0; i<model.length; i++)
+    {
+        if (mpos[i] == gpose && mnod[i] == gnode)
+        {
+			var lparam = Object.assign({}, mrparams[i]);
+			lparam.sele = resno.toString() + " and not hydrogen";
+			lparam.opacity = 1.0;
+			model[i].addRepresentation("licorice", lparam);
+		}
+	}
+}
+
+function showNode(n)
+{
+	// TODO: get the resnos list from model[i].structure.residueStore.resno array and check global spacefill resnos - zero means ligand.
+	// Each spacefill resno, model[i].addRepresentation("spacefill", {sele: resno}); (but no sele resno if ligand).
+
+    var i, bbi=-1;
+    var nmax = 0;
+    for (i=0; i<model.length; i++)
+    {
+        if (mpos[i] == gpose && mnod[i] == n)
+        {
+			if (mrparams[i].colorScheme == PODefSchemeFire || mrparams[i].colorScheme == PODefSchemeRainbow) mrparams[i].colorScheme = PODefSchemeLigand;			// @#$% shallow copy.
+			model[i].removeAllRepresentations();
+			var lrep = spcfill ? "spacefill" : mrep[i];
+			var lparam = Object.assign({}, mrparams[i]);
+			if (spcfill || whtbk) lparam.opacity = 1;
+			if (is_ligand[i] && gspcfill_resnos.find((element) => element == 0) !== undefined)
+			{
+				lrep = "spacefill";
+				lparam.sele = "*";
+				lparam.opacity = 1;
+			}
+			else if (!hydrogens) lparam.sele = "* and not hydrogen";
+            model[i].addRepresentation( lrep, lparam );
+            if (is_ligand[i])
+			{
+				curr_ligand = model[i];
+				ligand_params = mrparams[i];
+			}
+			else
+			{
+				gspcfill_resnos.forEach(function(resno)
+				{
+					var lparam = Object.assign({}, mrparams[i]);
+					lparam.sele = resno.toString();
+					lparam.opacity = 1.0;
+					model[i].addRepresentation("spacefill", lparam);
+				});
+			}
+        }
+        else
+		if (model[i].name != 'ligand') model[i].removeAllRepresentations();
+
+        if (mpos[i] == gpose && mnod[i] > nmax) nmax = mnod[i];
+    }
+
+    if (n < 0)
+    {
+        showNode(0);		// RECURSION!!!
+        return;
+    }
+
+    if (n > nmax)
+    {
+        showNode(nmax);		// RECURSION!!!
+        return;
+    }
+    
+    for (i=0; i<gmodel.length; i++)
+    {
+    	if (gmodel[i].name == "backbone")
+    	{
+    		bbi = i;
+    		break;
+    	}
+    }
+
+	update_lsrb_visual();
+
+	// Cartoon for active protein conformational change.
+    if (bbi >= 0 && acvmdl)
+    {
+		if (n >= acvnode)
+		{
+			if (!acvmdl.reprList.length) acvmdl.addRepresentation( "cartoon",
+            {
+                opacity: whtbk ? 1 : opc_cartoon,
+				colorScheme: PODefRgnScheme,
+                metalness: mtl_cartoon,
+            });
+            gmodel[bbi].removeAllRepresentations();
+		}
+		else
+		{
+			if (!gmodel[bbi].reprList.length) gmodel[bbi].addRepresentation( "cartoon",
+            {
+                opacity: whtbk ? 1 : opc_cartoon,
+				colorScheme: PODefRgnScheme,
+                metalness: mtl_cartoon,
+            });
+            acvmdl.removeAllRepresentations();
+		}
+    }
+
+    $(".nodebtn").removeClass("hilite");
+    $("#nodebtn"+n).addClass("hilite");
+
+    gnode = parseInt(n);			// Givl upi Javascript from one sddjpar to another.
+	update_visinters();
+
+    $("#clip").trigger("input");
+    if (curr_ligand) $('#ligbtn, #prsv').show();
+
+	set_gmdl_opacity();
+}
+
+function rainbowNodes()
+{
+    var i, bbi=-1;
+    var nmax = 0;
+
+	cen_ligand = false;
+
+	$(".nodebtn").removeClass("hilite");
+	$("#rnbbtn").addClass("hilite");
+
+	// var cc = new NGL.ComponentCollection();
+
+    for (i=0; i<model.length; i++)
+    {
+        if (mpos[i] == gpose && mnod[i] > nmax) nmax = mnod[i];
+    }
+
+    for (i=0; i<model.length; i++)
+    {
+        if (mpos[i] == gpose)
+        {
+			var mrp = mrparams[i];
+			if (mrp.colorScheme == PODefSchemeLigand)
+			{
+				mrp.colorScheme = PODefSchemeFire;
+				mrp.opacity = 0.6;
+			}
+			else continue;
+			model[i].removeAllRepresentations();
+			if (spcfill || whtbk) mrp.opacity = 1;
+			if (!hydrogens) mrp.sele = "* and not hydrogen";
+            model[i].addRepresentation( mrep[i], mrp );
+            if (is_ligand[i])
+			{
+				if (mnod[i] == 0)
+				{
+					curr_ligand = model[i];
+					ligand_params = mrparams[i];
+				}
+			}
+        }
+        else
+            model[i].removeAllRepresentations();
+    }
+
+	set_gmdl_opacity();
+}
+
+function show_hide_cavity(cavno, cmode=1)
+{
+	if (typeof cavities[cavno]['shown'] == 'undefined') show_cavity(cavno, cmode);
+	else if (!cavities[cavno]['shown']) show_cavity(cavno, cmode);
+	else hide_cavity(cavno);
+}
+
+function show_cavity(cavno, cmode=1)
+{
+	if (typeof cavities[cavno] == "undefined") return;
+	hide_cavity(cavno);
+
+	var shape = new NGL.Shape("shape");
+	var position = [];
+	var radius = [];
+	var color = [];
+
+	var i, n = cavities[cavno].length;
+	for (i=0; i<n; i++)
+	{
+		if (typeof cavities[cavno][i] == undefined) break;
+		position.push(cavities[cavno][i]['x']);
+		position.push(cavities[cavno][i]['y']);
+		position.push(cavities[cavno][i]['z']);
+		radius.push(cavities[cavno][i]['r']);
+
+		var red, green, blue;
+		switch (cmode)
+		{
+			case 1:
+			if (cavities[cavno][i]["metal"]) { red = 0.75; green = 0.6; blue = 0.5; }
+			else if (cavities[cavno][i]["chargen"] && cavities[cavno][i]["chargep"]) { red = 0.9; green = 0.9; blue = 0.9; }
+			else if (cavities[cavno][i]["chargen"]) { red = 0.99; green = 0.05; blue = 0.01; }
+			else if (cavities[cavno][i]["chargep"]) { red = 0.01; green = 0.04; blue = 0.99; }
+			else if (cavities[cavno][i]["hydro"]) { red = 0.01; green = 0.81; blue = 0.99; }
+			else if (cavities[cavno][i]["thio"]) { red = 0.75; green = 0.75; blue = 0.50; }
+			else if (cavities[cavno][i]["pi"]) { red = 0.58; green = 0.53; blue = 0.58; }
+			else { red = 0.6; green = 0.6; blue = 0.6; }
+
+			var lum = 0.29*red + 0.57*green + 0.14*blue;
+			var rg = red - lum;
+			var yb = lum - blue;
+
+			if (cavities[cavno][i]["priority"])
+			{
+				rg *= 2.5;
+				yb *= 2.1;
+				lum *= 1.666;
+			}
+			else
+			{
+				rg *= 0.5;
+				yb *= 0.6;
+			}
+
+			red = rg + lum;
+			blue = lum - yb;
+			green = (lum - 0.29*red - 0.14*blue)/0.57;
+			break;
+
+			case 2:
+			if (cavities[cavno][i]["priority"]) { red = 0.5; green = 0.75; blue = 0.5; }
+			else { red = 0.6; green = 0.6; blue = 0.6; }
+			break;
+
+			case 0:
+			default:
+			var c = hsl_to_rgb(cavno*360.0/n, 128, 128);
+			red = 0.00392 * (c & 0xff0000) / 65536;
+			green = 0.00392 * (c & 0xff00) / 256;
+			blue = 0.00392 * (c & 0xff);
+		}
+
+		red = Math.max(0, Math.min(1, red));
+		green = Math.max(0, Math.min(1, green));
+		blue = Math.max(0, Math.min(1, blue));
+
+		color.push(red);
+		color.push(green);
+		color.push(blue);
+	}
+
+	var sphereBuffer = new NGL.SphereBuffer({ position: new Float32Array(position), color: new Float32Array(color), radius: new Float32Array(radius) });
+	shape.addBuffer(sphereBuffer);
+
+	var shapeComp = stage.addComponentFromObject(shape);
+	cavities[cavno]['shapeComp'] = shapeComp;
+
+	cavities[cavno]['shapeComp'].addRepresentation("buffer", { opacity: 0.1 });
+	cavities[cavno]['shown'] = true;
+	last_clicked_cavity = cavities[cavno];
+	$('#cavtgl'+cavno).addClass('hilite');
+
+	set_gmdl_opacity();
+}
+
+function hide_cavity(cavno)
+{
+	if (typeof cavities[cavno] == "undefined") return;
+	if (typeof cavities[cavno]['shapeComp'] == "undefined") return;
+	cavities[cavno]['shapeComp'].removeAllRepresentations();
+	cavities[cavno]['shown'] = false;
+	last_clicked_cavity = false;
+	$('#cavtgl'+cavno).removeClass('hilite');
+}
+
+$("body").on("keyup", function(e, obj)
+{
+    var cc = e.key.charCodeAt(0);
+    if (e.altkey || e.ctrlkey) return;
+
+    if (e.keyCode >= 37 && e.keyCode <= 40)
+    {
+        if (e.keyCode == 37) showNode(gnode-1);
+        if (e.keyCode == 38) showPose(gpose-1);
+        if (e.keyCode == 39) showNode(gnode+1);
+        if (e.keyCode == 40) showPose(gpose+1);
+        e.preventDefault();
+        return;
+    }
+    else
+    {
+        if (cc > 0x60 && cc <= 0x7a) showPose(cc-0x60);
+        else if (cc >= 0x30 && cc <= 0x39) showNode(cc-0x30);
+        else if (cc > 0x40 && cc <= 0x59) showNode(cc-55);
+        e.preventDefault();
+    }
+});
+
+function update_hydrogens()
+{
+    var i;
+    for (i=0; i<model.length; i++)
+    {
+		model[i].eachRepresentation( function(obj)
+		{
+			obj.setSelection( hydrogens ? "*" : "* and not hydrogen" );
+		});
+	}
+    for (i=0; i<gmodel.length; i++)
+    {
+        gmodel[i].eachRepresentation( function(obj)
+        {
+			obj.setSelection( hydrogens ? "*" : "* and not hydrogen" );
+        });
+    }
+    if (acvmdl) acvmdl.eachRepresentation( function(obj)
+    {
+			obj.setSelection( hydrogens ? "*" : "* and not hydrogen" );
+    });
+    for (i=0; i<resmdl.length; i++)
+    {
+    	resmdl[i].eachRepresentation( function(obj)
+        {
+			obj.setSelection( hydrogens ? "*" : "* and not hydrogen" );
+        });
+	}
+}
+
+$("#clip").on("input", function (e, obj)
+{
+    var i;
+    var clipValue = get_clip_value();
+    for (i=0; i<model.length; i++)
+    {
+        model[i].eachRepresentation( function(obj)
+        {
+            lcv = clipValue;
+            if (is_ligand[i] && $("#preserve")[0].checked) lcv = 0;
+            obj.setParameters( { "clipNear": lcv } );
+        });
+    }
+    for (i=0; i<gmodel.length; i++)
+    {
+        gmodel[i].eachRepresentation( function(obj)
+        {
+            obj.setParameters( { "clipNear": clipValue } );
+        });
+    }
+    if (acvmdl) acvmdl.eachRepresentation( function(obj)
+    {
+        obj.setParameters( { "clipNear": clipValue } );
+    });
+    for (i=0; i<resmdl.length; i++)
+    {
+    	resmdl[i].eachRepresentation( function(obj)
+        {
+            obj.setParameters( { "clipNear": clipValue } );
+        });
+	}
+	for (i=0; i<visicomp.length; i++)
+	{
+		visicomp[i].eachRepresentation( function(obj)
+        {
+            obj.setParameters( { "clipNear": clipValue } );
+        });
+	}
+    stage.setParameters( { "fogNear": (clipValue), "fogFar": Math.max(25+clipValue, 200-clipValue*3), } );
+});
+
+$("#bbvis").on("input", function (e, obj)
+{
+	set_gmdl_opacity();
+});
+
+$("#lght").on("input", function (e, obj)
+{
+	var lint = parseFloat($("#lght")[0].value) / 100;
+	stage.setParameters(
+	{
+		'lightIntensity': lint,
+	});
+});
+
+function getFileContents(event)
+{
+	hide_lsrb_shapes();
+    var ff = event.target.files;
+	if (!ff.length) return;
+
+    var f = ff[0];
+    var r = new FileReader();
+    r.fname = f.name;
+    $('#ligbtn, #prsv').hide();
+
+    r.onload = (function(lf)
+    {
+        return function(e)
+        {
+            curr_ligand = null;
+            window.setTimeout(function()
+            {
+                $("#clip").trigger("input");
+            }, 259);
+            return loadFile(e.target.result, e.target.fname);
+        };
+    })(f);
+    r.readAsText(f);
+
+	event.target.value = "";
+	$("#posey")[0].innerText = f.name;
+}
+
+$('input[type=file]').on('input', getFileContents);
+</script>
+
+<div id="dockfloat">
+	<span>
+	</span>
+</div>
+
+<div id="citefloat">
+	<span>
+	</span>
+	<br>
+	<a href="https://nglviewer.org/ngl/api/">Visualization using NGL Viewer</a>
+</div>
+
+<script>
+$('#citefloat span')[0].innerText = nglcitation;
+
+if (getParameterByName("whtbk"))
+{
+	$("#whtbk").click();
+}
+</script>
+
+<div id="pleasewait" style="display: none;">
+<h2>Please Wait...</h2>
+</div>
+
+<div id="seqdd" style="display: none;">
+</div>

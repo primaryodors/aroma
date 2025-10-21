@@ -1,0 +1,351 @@
+
+/*
+    Hues used in this color scheme:
+    #6d7886 blue
+    #008967 green
+    #836daa purple
+*/
+
+body
+{
+    background-color: #2b3642;
+    color: #daceec;
+    margin: 0px;
+    overflow: hidden;
+}
+
+html, body 
+{
+    height: 100%;
+}
+
+input, select, textarea
+{
+    border-radius: 4px;
+    background-color: #aabbb7;
+    color: #08101b;
+    border: 1px solid #214577;
+    margin: 2px;
+}
+
+hr
+{
+    border: 1px solid #2e6859;
+    border-style: dashed;
+}
+
+.box
+{
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+}
+
+.box .row.header
+{
+    flex: 0 1 auto;
+}
+
+.box .row.content
+{
+    flex: 1 1 auto;
+}
+
+.hilite
+{
+    font-weight: bold;
+    text-shadow: 0px 0px 5px #0cf;
+}
+
+.dim
+{
+    color: #8b8494;
+}
+
+::-webkit-scrollbar 
+{
+    width: 13px;
+}
+
+::-webkit-scrollbar-track 
+{
+    background: #283c57; 
+}
+
+::-webkit-scrollbar-thumb 
+{
+    background: #675c7a; 
+}
+
+::-webkit-scrollbar-thumb:hover 
+{
+    background: #679d8a;
+}
+
+a[href], a:visited
+{
+    text-decoration: none;
+    color: #66cea8;
+}
+
+a[href]:hover
+{
+    text-decoration: underline;
+}
+
+p
+{
+    font-family: Verdana, Arial, Sans-Serif;
+    font-size: 14px;
+}
+
+#logo
+{
+    background-color: #22436d;
+    padding: 5px;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    z-index: 20000;
+}
+
+#logo h2
+{
+    margin-left: 21px;
+    margin-right: 53px;
+    margin-top: 2px;
+    font-size: 42px;
+    margin-bottom: 0px;
+    color: rgb(122, 157, 255);
+    font-style: italic;
+    float: left;
+}
+
+#logo h2:hover
+{
+    text-decoration: none!important;
+}
+
+#side
+{
+    background-color: #18283d;
+    padding: 5px;
+    padding-top: 47px;
+    display: block;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+    width: 22px;
+    z-index: 10000;
+    overflow-x: hidden;
+}
+
+#side:hover
+{
+    width: fit-content;
+    padding-right: 5px;
+    z-index: 10000;
+}
+
+#main
+{
+    display: block;
+    position: absolute;
+    top: 37px;
+    left: 81px;
+    z-index: 1;
+    width: 90%;
+    height: 79%;
+}
+
+#side:hover ul
+{
+    padding: 5px;
+}
+
+#side li
+{
+    display: block;
+    background-color: #324c6e;
+    border-top: 1px solid #6381a8;
+    border-left: 1px solid #57759c;
+    border-right: 1px solid #14263d;
+    border-bottom: 1px solid #152130;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+#side li:hover 
+{
+    background-color: #31695b;
+}
+
+#side li a:hover 
+{
+    text-decoration: none;
+}
+
+.burger
+{
+    font-size: 26px;
+    color: #9cc8ff;
+}
+
+#side:hover .burger
+{
+    display: none;
+}
+
+p.ref
+{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 18px;
+}
+
+.scrollw
+{
+    overflow-x: auto;
+}
+
+.scrollw > div
+{
+    width: max-content;
+}
+
+.scrollw > div > *
+{
+    float: left;
+    display: block;
+}
+
+table:not(.notannoying) tr:hover td
+{
+    background-color: rgba(69, 195, 175, 0.2);
+}
+
+table.rcplist tr:nth-of-type(odd), table.liglist tr:nth-of-type(odd)
+{
+    background-color: rgba(128,192,224,0.07);
+}
+
+/* table.rcplist tr:nth-of-type(5n+1), table.liglist tr:nth-of-type(5n+1)
+{
+    border-bottom: 1px solid #57759c;
+} */
+
+.idxbuttons td
+{
+    padding: 25px;
+}
+
+.idxbuttons td img
+{
+    box-shadow: 0px 0px 15px #00c6d4;
+}
+
+#skeletal, #skeletal1
+{
+    display: block;
+    width: 300px;
+    height: 300px;
+    background-color: #000;
+}
+
+.barchart
+{
+    margin-left: 25px;
+}
+
+.aromainfo
+{
+    display: block;
+    float: left;
+    width: 22%;
+}
+
+.scrollh
+{
+    height: 470px;
+    overflow-y: auto;
+    display: block;
+}
+
+.scrollh50
+{
+    height: 420px;
+    overflow-y: auto;
+    display: block;
+}
+
+.rcplist, .liglist
+{
+    width: 95%;
+    border-collapse: collapse;
+    margin-left: 15px;
+    margin-top: 20px;
+}
+
+.rcplist th, .liglist th
+{
+    text-align: left;
+    background-color: #5595e9;
+    color: #111b27;
+}
+
+.rcplist th, .rcplist td, .liglist th, .liglist td
+{
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 16px;
+    padding: 0;
+    min-width: 81px;
+}
+
+.pugrest_msg
+{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 11px;
+    clear: left!important;
+    width: 97%;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.odorlist
+{
+    float: left;
+    margin-right: 15px;
+    width: 97%;
+}
+
+.rcptile
+{
+    display: inline-block;
+    border: 1px solid #6841ac;
+    background-color: #173f77;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 15px;
+    padding: 3px;
+}
+
+.fam
+{
+    float: none;
+    clear: left;
+    height: fit-content;
+    margin-bottom: 8px;
+}
+
+.fam a
+{
+    float: none!important;
+    display: inline!important;
+}
+
+#protseq
+{
+    background-color: #142030;
+    color: #82769b;
+    width: fit-content;
+    padding: 8px;
+}

@@ -1,0 +1,33 @@
+
+#################################################################################
+#                                                                               #
+# hm/fivewinder.phew                                                            #
+#                                                                               #
+# Performs winding motions on a TM helix of a specified residue. Originally     #
+# used for TMR5 adjustments, hence the name. Useful for any protein whose TM    #
+# side chains are not adequately positioned by the homology modeling system.    #
+#                                                                               #
+# Example:                                                                      #
+# bin/phew hm/fivewinder.phew pdbs/OR5/OR5K1.active.pdb 3 7                     #
+# Winds TMR7 by 3 arbitrary units.                                              #
+#                                                                               #
+#################################################################################
+
+IF NOT $arg2 THEN FAIL "No protein specified."
+
+LET $pdbname = $arg2
+
+LET &amount = 4
+IF $arg3 THEN LET &amount = $arg3
+
+LET &tmr = 7
+IF $arg4 THEN LET &tmr = $arg4
+
+LOAD $pdbname
+
+IF &tmr = 5 THEN WIND %A.5.58 %A.TMR5.s &amount
+ELSE IF &tmr = 6 THEN WIND %A.6.40 %A.TMR6.e &amount
+ELSE IF &tmr = 7 THEN WIND %A.7.49 %A.TMR7.s &amount
+
+SAVE $pdbname
+

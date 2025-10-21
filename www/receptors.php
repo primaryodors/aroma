@@ -1,0 +1,256 @@
+<?php
+chdir(__DIR__);
+require_once("../data/protutils.php");
+require_once("../data/odorutils.php");
+
+function filter_prot($protid, $filter)
+{
+    global $fnum, $prots, $dock_results;
+
+    if (@$_REQUEST['bt'])
+    {
+        if (!@$prots[$protid]['btree']) return false;
+        $len = strlen($_REQUEST['bt']);
+        if (substr($prots[$protid]['btree'], 0, $len) !== $_REQUEST['bt']) return false;
+    }
+
+    $disp = true;
+    switch ($filter)
+    {
+        case 'e':                   // Expression threshold.
+        $en = intval(@$prots[$protid]['expression']);
+        if ($fnum && $en < $fnum) $disp = false;
+        break;
+
+        case 'a':                   // Has agonists.
+        $ep = all_empirical_pairs_for_receptor($protid, true);
+        foreach ($ep as $k => $v) if ($v <= 0) unset($ep[$k]);
+        if (!count($ep)) $disp = false;
+        else if ($fnum && count($ep) < $fnum) $disp = false;
+        else if (max($ep) <= 0) $disp = false;
+        break;
+
+        case 'i':                   // Has inverse agonists and/or antagonists.
+        $ep = all_empirical_pairs_for_receptor($protid, true);
+        if (!count($ep)) $disp = false;
+        else if (min($ep) >= 0) $disp = false;
+        if (has_antagonists($protid)) $disp = true;
+        break;
+
+        case 'o':                   // Orphan.
+        $ep = all_empirical_pairs_for_receptor($protid, true);
+        foreach ($ep as $k => $v) if ($v == 0) unset($ep[$k]);
+        if (count($ep)) $disp = false;
+        break;
+
+        case 's':
+        $ftxt = substr($_REQUEST['f'], 1);
+        if (substr($protid, 0, strlen($ftxt)) != $ftxt) $disp = false;
+        break;
+
+        case 'q':
+        $disp = (@$prots[$protid]['hypothesized']);
+        break;
+
+        case 'p':
+        $disp = isset($dock_results[$protid]);
+        break;
+
+        case '':
+        break;
+
+        default:
+        $disp = false;
+    }
+
+    return $disp;
+}
+
+
+$filter = @$_REQUEST['f'] ?: "";
+$fnum = intval(@substr($filter, 1));
+$filter = substr($filter, 0, 1);
+
+$extra_js = ['js/tabs.js'];
+$extra_css = ['assets/tabs.css'];
+include("header.php");
+
+chdir(__DIR__);
+$dock_results = json_decode(file_get_contents("../predict/dock_results.json"), true);
+
+echo "<h1>Receptors</h1>\n";
+
+?>
+
+<div class="box">
+<div class="row header">
+<p>
+<a href="receptors.php" class="<?php if ($filter == '') echo "hilite" ?>">All</a>
+|
+<a href="receptors.php?f=e95" class="<?php if ($filter == 'e' && $fnum == 95) echo "hilite" ?>">Near Universally Expressed</a>
+|
+<a href="receptors.php?f=e75" class="<?php if ($filter == 'e' && $fnum == 75) echo "hilite" ?>">&#x2a7e;3/4 Expressed</a>
+|
+<a href="receptors.php?f=e50" class="<?php if ($filter == 'e' && $fnum == 50) echo "hilite" ?>">&#x2a7e;1/2 Expressed</a>
+|
+<a href="receptors.php?f=a55" class="<?php if ($filter == 'a' && $fnum == 55) echo "hilite" ?>">Big Five</a>
+|
+<a href="receptors.php?f=a" class="<?php if ($filter == 'a' && $fnum <= 1) echo "hilite" ?>">Having Agonists</a>
+|
+<a href="receptors.php?f=a2" class="<?php if ($filter == 'a' && $fnum == 2) echo "hilite" ?>">Having Multiple Agonists</a>
+|
+<a href="receptors.php?f=a10" class="<?php if ($filter == 'a' && $fnum == 10) echo "hilite" ?>">Having Many Agonists</a>
+|
+<a href="receptors.php?f=i" class="<?php if ($filter == 'i') echo "hilite" ?>">Having Antagonists</a>
+|
+<a href="receptors.php?f=o" class="<?php if ($filter == 'o') echo "hilite" ?>">Orphans</a>
+|
+<a href="receptors.php?f=p" class="<?php if ($filter == 'p') echo "hilite" ?>">Having Predictions</a>
+</p>
+</div>
+<div class="row content scrollh">
+
+
+<div class="tab" style="display: inline-block; margin-top: 30px;">
+<button class="tablinks <?php if (!@$_REQUEST['tree']) echo "default"; ?>" id="tabList" onclick="openTab(this, 'List');">List</button>
+<button class="tablinks <?php if ( @$_REQUEST['tree']) echo "default"; ?>" id="tabTree" onclick="openTab(this, 'Tree');">Tree</button>
+</div>
+
+
+
+<div id="List" class="tabcontent">
+<div class="fam">
+<?php
+
+$ffam = "OR1";
+$echoed = $total = 0;
+foreach ($prots as $protid => $p)
+{
+    if (!@$p['region']) continue;
+    $fam = family_from_protid($protid);
+    if ($echoed && $fam != $ffam)
+    {
+        echo "</div><hr><div class=\"fam\">\n";
+        $echoed = 0;
+    }
+
+    if (filter_prot($protid, $filter))
+    {
+        echo "<a class=\"rcptile\" href=\"receptor.php?r=$protid\">$protid</a>\n";
+        $echoed++;
+        $total++;
+    }
+    $ffam = $fam;
+}
+
+if (!$total) echo "No proteins match search criteria.";
+else echo "<p>Found $total proteins.</p>"
+
+?>
+</div>
+</div>
+
+
+<div id="Tree" class="tabcontent">
+<?php
+$tree = [];
+foreach ($prots as $protid => $p)
+{
+    if (!isset($p['btree'])) continue;
+    if (!filter_prot($protid, $filter)) continue;
+    $path = $p['btree'];
+    if (!isset($tree[$path])) $tree[$path] = [];
+    $tree[$path][] = $protid;
+}
+if (!count($tree)) echo "No proteins match search criteria.<br>";
+
+ksort($tree, SORT_STRING);
+
+$major = [];
+foreach ($treenodes as $nodeid => $nodename)
+{
+    if (substr($nodeid, 0, 1) == '*')
+    {
+        $major[$nodename] = "<a href=\"receptors.php?tree=1&bt=".substr($nodeid,1)."\">$nodename</a>";
+    }
+}
+if (count($major))
+{
+    $keys = array_keys($major);
+    natsort($keys);
+    $disparr = [];
+    foreach ($keys as $k) $disparr[] = $major[$k];
+    echo "<small>Major nodes: ".implode(" | ",$disparr)."</small><br>";
+}
+
+echo "<pre>";
+
+if (@$_REQUEST['bt']) echo "<a href=\"receptors.php?tree=1&bt=".substr($_REQUEST['bt'], 0, strlen($_REQUEST['bt'])-1)."\">&#x21b0;</a>\n";
+
+$prev = [];
+$path1 = "";
+$lno = 0;
+$ktree = array_keys($tree);
+foreach ($tree as $path => $protids)
+{
+    $curr = str_split($path);
+    // echo str_pad($path, 50);
+    foreach ($curr as $i => $c)
+    {
+        if ($c == 0)
+        {
+            $sub = substr($path, 0, $i);
+            $sub1 = $sub.'1';
+
+            $found1 = false;
+            for ($j=$lno+1; $j<count($tree); $j++)
+            {
+                $lookahead = $ktree[$j];
+                if (substr($lookahead, 0, $i) != $sub)
+                {
+                    $c = '1';
+                    break;
+                }
+                else if (substr($lookahead, 0, $i+1) == $sub1)
+                {
+                    $found1 = true;
+                    break;
+                }
+            }
+            if (!$found1) $c = '1';
+        }
+        if (isset($prev[$i]))
+        {
+            if (substr($path1, 0, $i+1) != substr($path, 0, $i+1))
+            {
+                if ($c === '0') echo "&#x252c;&#x2500;&#x2500;&#x2500;";       // +
+                else if (substr($path1, 0, $i) == substr($path, 0, $i)) echo "&#x2514;&#x2500;&#x2500;&#x2500;";                  // `
+                else echo "&#x2500;&#x2500;&#x2500;&#x2500;";                      // -
+            }
+            else
+            {
+                if ($c === '0') echo "&#x2502;&nbsp;&nbsp;&nbsp;";       // |
+                else echo "&nbsp;&nbsp;&nbsp;&nbsp;";                         //
+            }
+        }
+        else
+        {
+            if ($c == 0) echo "&#x252c;&#x2500;&#x2500;&#x2500;";              // +
+            else echo "&#x2500;&#x2500;&#x2500;&#x2500;";                      // -
+        }
+    }
+
+    echo "&#x2500;&#x2500;&#x2500;";
+    foreach ($protids as $r)
+    {
+        echo " <a href=\"receptor.php?r=$r\">$r</a>";
+        if ($filter == 'q') echo " ".$prots[$r]['hypothesized'];
+    }
+    echo "\n";
+
+    $prev = str_split($path);
+    $path1 = $path;
+    $lno++;
+}
+
+?></div>
