@@ -19,6 +19,7 @@ def get_pocket(protid, lig):
     o = data.odorutils.find_odorant(lig)
     if not "sdfname" in o:
         data.odorutils.ensure_sdf_exists(lig)
+        o = data.odorutils.find_odorant(lig)
     if not o:
         raise Exception("Unknown ligand " + lig)
     matched = False
