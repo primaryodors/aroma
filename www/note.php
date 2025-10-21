@@ -2,7 +2,7 @@
 chdir(__DIR__);
 require_once("../data/protutils.php");
 require_once("../data/odorutils.php");
-require_once("../predict/statistics.php");
+require_once("../data/statistics.php");
 require_once("receptor_notes.php");
 $treenodes = json_decode(file_get_contents("../data/tree_nodes.json"), true);
 

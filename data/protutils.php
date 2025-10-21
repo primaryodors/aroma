@@ -187,7 +187,7 @@ function binding_site($protid)
 
 function json_encode_pretty($array)
 {
-	return preg_replace("/([ \t]*)([^\\s]*) ([{\\[])\n/", "\$1\$2\n\$1\$3\n", json_encode($array, JSON_PRETTY_PRINT));
+	return str_replace("\\/", "/", preg_replace("/([ \t]*)([^\\s]*) ([{\\[])\n/", "\$1\$2\n\$1\$3\n", json_encode($array, JSON_PRETTY_PRINT)));
 }
 
 function split_pdb_to_rigid_and_flex($protid, $pdblines, $flxr_array)

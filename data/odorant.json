@@ -38,7 +38,24 @@
             {
                 "OR2L5":
                 {
-                    "ec50": "-5.78"
+                    "ec50": "-5.78",
+                    "adjusted_curve_top": "10"
+                },
+                "OR2L3":
+                {
+                    "adjusted_curve_top": "5"
+                },
+                "OR2L2":
+                {
+                    "adjusted_curve_top": "1"
+                },
+                "OR11G2":
+                {
+                    "adjusted_curve_top": "1"
+                },
+                "OR1D2":
+                {
+                    "adjusted_curve_top": "4"
                 }
             }
         },
@@ -704,7 +721,7 @@
     },
     "0301e2bc8f625dcc3011f979ceb3504c":
     {
-        "full_name": "3-hydroxy-3-methylhexanoic acid",
+        "full_name": "3-hydroxy-3-methyl hexanoic acid",
         "smiles": "[O-]C(=O)CC(C)(O)CCC",
         "isomers":
         {
@@ -750,7 +767,8 @@
             {
                 "OR52E8":
                 {
-                    "ec50": "-5.28"
+                    "ec50": "-5.28",
+                    "adjusted_curve_top": "10"
                 }
             }
         },
@@ -1484,6 +1502,13 @@
                 "OR51E1":
                 {
                     "type": "na"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },
@@ -3603,6 +3628,13 @@
                     "ec50": "-1.87",
                     "adjusted_curve_top": "4.1176472306252"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "oid": "109d08efc87b8fd3ed600b9e03beda48"
@@ -4318,6 +4350,35 @@
         },
         "oid": "15f5e2777091e11ba0e539557012b79f"
     },
+    "16cd489ad41446e39849b9f7ee13267e":
+    {
+        "full_name": "tropicate",
+        "iupac": "methyl 2-cyclohexylacetate",
+        "smiles": "COC(=O)CC1CCCCC1",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "fruity",
+                "tropical",
+                "banana",
+                "mango",
+                "pineapple",
+                "honey"
+            ]
+        },
+        "activity":
+        {
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR2L5":
+                {
+                    "ec50": "-4.04"
+                }
+            }
+        },
+        "oid": "16cd489ad41446e39849b9f7ee13267e"
+    },
     "16d42b3c8886e79d9fb90b19d8c25530":
     {
         "full_name": "2-coumaranone",
@@ -4643,6 +4704,22 @@
             }
         },
         "oid": "18d035fe7a5b018223db4d64cb80f77d"
+    },
+    "18f6e4ca0f10f5649b42e03f95ecb333":
+    {
+        "full_name": "4-tert-butyl cyclohexane-1-carboxylic acid",
+        "smiles": "[O-]C(=O)C1CCC(CC1)C(C)(C)C",
+        "activity":
+        {
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR52E8":
+                {
+                    "adjusted_curve_top": "7"
+                }
+            }
+        },
+        "oid": "18f6e4ca0f10f5649b42e03f95ecb333"
     },
     "1916a20faa0a8d09931d736ca94a6164":
     {
@@ -5397,11 +5474,17 @@
             {
                 "OR11A1":
                 {
-                    "ec50": "-3.97"
+                    "ec50": "-3.97",
+                    "adjusted_curve_top": "2"
                 },
                 "OR14J1":
                 {
-                    "ec50": "-5.40"
+                    "ec50": "-5.40",
+                    "adjusted_curve_top": "10"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "3"
                 }
             }
         },
@@ -5453,7 +5536,7 @@
             {
                 "OR52I2":
                 {
-                    "adjusted_curve_top": "0"
+                    "ec50": "-4.13"
                 }
             }
         },
@@ -5920,6 +6003,13 @@
                     "type": "sa",
                     "adjusted_curve_top": "3.4",
                     "ec50": "-3"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },
@@ -7226,6 +7316,13 @@
                 {
                     "adjusted_curve_top": "0"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "oid": "28c1256869a1b671970feda9b3a06c31"
@@ -7613,6 +7710,13 @@
                 "OR2W1":
                 {
                     "adjusted_curve_top": "0"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "3"
                 }
             }
         },
@@ -8528,6 +8632,21 @@
                     "ec50": "-5.8",
                     "adjusted_curve_top": "2.0000000298023"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR2C1":
+                {
+                    "ec50": "-4.66"
+                },
+                "OR2T1":
+                {
+                    "adjusted_curve_top": "0"
+                },
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "oid": "2e056651296b2da1d124d6ee4a743041"
@@ -9199,7 +9318,16 @@
             {
                 "OR52I2":
                 {
-                    "ec50": "-5.03"
+                    "ec50": "-5.03",
+                    "adjusted_curve_top": "10"
+                },
+                "OR2J2":
+                {
+                    "adjusted_curve_top": "2"
+                },
+                "OR4Q3":
+                {
+                    "adjusted_curve_top": "2"
                 }
             }
         }
@@ -9422,7 +9550,8 @@
             {
                 "OR51L1":
                 {
-                    "ec50": "-4.00"
+                    "ec50": "-4.00",
+                    "adjusted_curve_top": "7"
                 }
             }
         },
@@ -10598,7 +10727,24 @@
             {
                 "OR10G3":
                 {
-                    "ec50": "-5.02"
+                    "ec50": "-5.02",
+                    "adjusted_curve_top": "10"
+                },
+                "OR10G4":
+                {
+                    "adjusted_curve_top": "1"
+                },
+                "OR10G7":
+                {
+                    "adjusted_curve_top": "4"
+                },
+                "OR2J2":
+                {
+                    "adjusted_curve_top": "2"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "5"
                 }
             }
         },
@@ -12987,11 +13133,20 @@
             {
                 "OR2M2":
                 {
-                    "ec50": "-5.88"
+                    "ec50": "-5.88",
+                    "adjusted_curve_top": "10"
                 },
                 "OR2M3":
                 {
                     "adjusted_curve_top": "0"
+                },
+                "OR2L5":
+                {
+                    "adjusted_curve_top": "4"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "4"
                 }
             }
         },
@@ -13502,6 +13657,13 @@
                     "ec50": "-4.7",
                     "adjusted_curve_top": "0.86956518888474"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "soluble": "w",
@@ -13647,6 +13809,13 @@
                 {
                     "type": "ma",
                     "adjusted_curve_top": "6.1700000762939"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },
@@ -14063,7 +14232,20 @@
             {
                 "OR8K3":
                 {
-                    "ec50": "-5.75"
+                    "ec50": "-5.75",
+                    "adjusted_curve_top": "10"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "8"
+                },
+                "OR10G7":
+                {
+                    "adjusted_curve_top": "4"
+                },
+                "OR11A1":
+                {
+                    "adjusted_curve_top": "2"
                 }
             }
         },
@@ -15622,6 +15804,13 @@
                     "type": "na",
                     "adjusted_curve_top": "0.1"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR10G3":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "soluble": "w",
@@ -16076,6 +16265,13 @@
                 "OR1A2":
                 {
                     "type": "na"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },
@@ -16620,6 +16816,13 @@
                 "OR1G1":
                 {
                     "type": "a"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },
@@ -17409,7 +17612,7 @@
         },
         "activity":
         {
-            "https:\/\/doi.org\/10.1016\/j.cub.2025.09.041":
+            "https://doi.org/10.1016/j.cub.2025.09.041":
             {
                 "OR1A1":
                 {
@@ -17965,6 +18168,37 @@
         "full_name": "allicin",
         "smiles": "C=CCSS(=O)CC=C",
         "oid": "6a4098653ac2327e62b3d0b6530f38a8"
+    },
+    "6a6e1f57682a58c3103c35e4790989c5":
+    {
+        "full_name": "gardamide",
+        "name1": "gardenia amide",
+        "iupac": "N,2-dimethyl-N-phenylbutanamide",
+        "smiles": "CCC(C(=O)N(c1ccccc1)C)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "fresh",
+                "woody",
+                "citrus",
+                "oily",
+                "natural",
+                "cedar",
+                "grapefruit"
+            ]
+        },
+        "activity":
+        {
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR2M2":
+                {
+                    "ec50": "-4.23"
+                }
+            }
+        },
+        "oid": "6a6e1f57682a58c3103c35e4790989c5"
     },
     "6b0312f86e95330750badec0ce38ed17":
     {
@@ -19241,7 +19475,7 @@
                 {
                     "type": "ma",
                     "ec20": "-4.29",
-                    "ec50": "-3.5"
+                    "ec50": "-3.46"
                 },
                 "OR14J1":
                 {
@@ -19549,7 +19783,7 @@
                     "type": "na"
                 }
             },
-            "https:\/\/doi.org\/10.1016\/j.cub.2025.09.041":
+            "https://doi.org/10.1016/j.cub.2025.09.041":
             {
                 "OR1A1":
                 {
@@ -21157,11 +21391,16 @@
             {
                 "OR2M2":
                 {
-                    "ec50": "-4.70"
+                    "ec50": "-4.70",
+                    "adjusted_curve_top": "8"
                 },
                 "OR2M3":
                 {
                     "adjusted_curve_top": "0"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "10"
                 }
             }
         },
@@ -22640,6 +22879,13 @@
                 {
                     "type": "a"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "oid": "856552991e50ec3120124fb0cb155e93"
@@ -23396,6 +23642,14 @@
                 "OR52A5":
                 {
                     "type": "wa"
+                },
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                },
+                "OR52E8":
+                {
+                    "adjusted_curve_top": "1"
                 }
             }
         },
@@ -24513,8 +24767,8 @@
     },
     "90fb0df5bafc1f8b58c0e47ab4d96de0":
     {
-        "full_name": "dihydroisojasmonate",
-        "smiles": "COC(=O)C1CCC(=O)C1CCCCCC",
+        "full_name": "methyl dihydro isojasmonate",
+        "smiles": "C(CCCCC)C1C(CCC1=O)C(=O)OC",
         "isomers":
         {
             "(1R,2S)": "COC(=O)[C@H]1CCC(=O)[C@H]1CCCCCC",
@@ -24542,6 +24796,17 @@
                 {
                     "type": "ma",
                     "ec50": "-5.43"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR1A1":
+                {
+                    "type": "wa"
+                },
+                "OR5B12":
+                {
+                    "ec50": "-4.28"
                 }
             }
         },
@@ -26434,15 +26699,26 @@
             {
                 "OR10D3":
                 {
-                    "ec50": "-5.34"
+                    "ec50": "-5.34",
+                    "adjusted_curve_top": "8"
                 },
                 "OR10G3":
                 {
-                    "ec50": "-3.88"
+                    "ec50": "-3.88",
+                    "adjusted_curve_top": "2"
                 },
                 "OR10G7":
                 {
-                    "ec50": "-5.54"
+                    "ec50": "-5.54",
+                    "adjusted_curve_top": "10"
+                },
+                "OR10G4":
+                {
+                    "adjusted_curve_top": "1"
+                },
+                "OR2J2":
+                {
+                    "adjusted_curve_top": "3"
                 }
             }
         },
@@ -26693,7 +26969,16 @@
             {
                 "OR51L1":
                 {
-                    "ec50": "-5.46"
+                    "ec50": "-5.46",
+                    "adjusted_curve_top": "10"
+                },
+                "OR51B5":
+                {
+                    "adjusted_curve_top": "5"
+                },
+                "OR56A5":
+                {
+                    "adjusted_curve_top": "2"
                 }
             }
         },
@@ -27172,7 +27457,16 @@
             {
                 "OR2A25":
                 {
-                    "ec50": "-4.55"
+                    "ec50": "-4.55",
+                    "adjusted_curve_top": "10"
+                },
+                "OR1D2":
+                {
+                    "adjusted_curve_top": "5"
+                },
+                "OR1A1":
+                {
+                    "adjusted_curve_top": "2"
                 }
             }
         },
@@ -28705,6 +28999,17 @@
                     "adjusted_curve_top": "7.7",
                     "ec50": "-4.42"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR52A5":
+                {
+                    "ec50": "-3.68"
+                },
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "oid": "ae2fb03b006ca5a141676fa9b7266be0"
@@ -28736,6 +29041,22 @@
                 }
             }
         }
+    },
+    "af1e3064909a965c9c86e1a20371d8cd":
+    {
+        "full_name": "4-isopropylhex-3-ene carboxylic acid",
+        "smiles": "CCC(=CCCC(=O)[O-])C(C)C",
+        "activity":
+        {
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR52E8":
+                {
+                    "adjusted_curve_top": "3"
+                }
+            }
+        },
+        "oid": "af1e3064909a965c9c86e1a20371d8cd"
     },
     "af2961f8caeb12c93c58c303950fb1e2":
     {
@@ -28931,7 +29252,16 @@
             {
                 "OR52A5":
                 {
-                    "ec50": "-5.74"
+                    "ec50": "-5.74",
+                    "adjusted_curve_top": "10"
+                },
+                "OR56A1":
+                {
+                    "adjusted_curve_top": "4"
+                },
+                "OR52K1":
+                {
+                    "adjusted_curve_top": "3"
                 }
             }
         },
@@ -30671,6 +31001,13 @@
                 {
                     "type": "a"
                 }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
+                }
             }
         },
         "soluble": "w",
@@ -30809,7 +31146,7 @@
     {
         "full_name": "benzyl mercaptan",
         "smiles": "c1ccccc1CS",
-        "activation":
+        "activity":
         {
             "https://doi.org/10.1016/j.foodchem.2021.131680":
             {
@@ -32550,15 +32887,25 @@
             {
                 "OR2C1":
                 {
-                    "adjusted_curve_top": "0"
+                    "adjusted_curve_top": "6"
                 },
                 "OR2T1":
                 {
-                    "ec50": "-4.72"
+                    "ec50": "-4.72",
+                    "adjusted_curve_top": "5"
                 },
                 "OR2T11":
                 {
-                    "ec50": "-5.49"
+                    "ec50": "-5.49",
+                    "adjusted_curve_top": "5"
+                },
+                "OR4K13":
+                {
+                    "adjusted_curve_top": "3"
+                },
+                "OR4Q3":
+                {
+                    "adjusted_curve_top": "10"
                 }
             }
         },
@@ -32587,11 +32934,17 @@
             {
                 "OR2A25":
                 {
-                    "ec50": "-5.35"
+                    "ec50": "-5.35",
+                    "adjusted_curve_top": "8"
                 },
                 "OR8H1":
                 {
-                    "ec50": "-5.23"
+                    "ec50": "-5.23",
+                    "adjusted_curve_top": "10"
+                },
+                "OR1A1":
+                {
+                    "adjusted_curve_top": "1"
                 }
             }
         },
@@ -34260,7 +34613,16 @@
             {
                 "OR7A10":
                 {
-                    "ec50": "-7.32"
+                    "ec50": "-7.32",
+                    "adjusted_curve_top": "10"
+                },
+                "OR7A17":
+                {
+                    "adjusted_curve_top": "7"
+                },
+                "OR7A5":
+                {
+                    "adjusted_curve_top": "6"
                 }
             }
         },
@@ -35294,11 +35656,13 @@
             {
                 "OR11A1":
                 {
-                    "ec50": "-5.49"
+                    "ec50": "-5.49",
+                    "adjusted_curve_top": "10"
                 },
                 "OR14J1":
                 {
-                    "ec50": "-3.79"
+                    "ec50": "-3.79",
+                    "adjusted_curve_top": "1"
                 }
             }
         },
@@ -41363,6 +41727,17 @@
                     "type": "ma",
                     "adjusted_curve_top": "5.7",
                     "ec50": "-4.1"
+                }
+            },
+            "https://doi.org/10.1016/j.cub.2025.09.041":
+            {
+                "OR52A5":
+                {
+                    "ec50": "-3.94"
+                },
+                "OR51L1":
+                {
+                    "adjusted_curve_top": "0"
                 }
             }
         },

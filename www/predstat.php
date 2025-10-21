@@ -2,7 +2,7 @@
 chdir(__DIR__);
 require_once("../data/protutils.php");
 require_once("../data/odorutils.php");
-require_once("../predict/statistics.php");
+require_once("../data/statistics.php");
 
 $dr = json_decode(file_get_contents("../predict/dock_results.json"), true);
 
