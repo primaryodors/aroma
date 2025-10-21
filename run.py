@@ -55,7 +55,7 @@ with open("example.config") as f:
                 ln = "CEN RES " + pocket["pocket"]
         elif ln[0:4] == "OUT ":
             ln = ("OUT output/" + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.dock" 
-                + "\nOUTPDB 1 " + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.model%"+"o.pdb")
+                + "\nOUTPDB 1 output/" + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.model%"+"o.pdb")
 
         newcfg.append(ln)
 
