@@ -52,7 +52,12 @@ with open("example.config") as f:
             ln = "LIG sdf/" + lignu + ".sdf"
         elif ln[0:4] == "CEN ":
             if pocket:
-                ln = "CEN RES " + pocket["pocket"]
+                if isinstance(pocket["pocket"], str):
+                    ln = "CEN RES " + pocket["pocket"]
+                else:
+                    ln = ""
+                    for pkt in pocket["pocket"]
+                        ln = ln + "CEN RES " + pkt + "\n"
         elif ln[0:4] == "OUT ":
             ln = ("OUT output/" + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.dock" 
                 + "\nOUTPDB 1 output/" + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.model%"+"o.pdb")

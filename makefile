@@ -82,7 +82,7 @@ $(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/mol
 $(OBJ)/protein.o: src/classes/protein.h src/classes/protein.cpp $(OBJ)/aminoacid.o
 	$(CPL) -c src/classes/protein.cpp -o $(OBJ)/protein.o $(CFLAGS)
 
-$(OBJ)/search.o: src/classes/search.h src/classes/search.cpp 
+$(OBJ)/search.o: src/classes/search.h src/classes/search.cpp $(OBJ)/protein.o
 	$(CPL) -c src/classes/search.cpp -o $(OBJ)/search.o $(CFLAGS)
 
 $(OBJ)/cavity.o: src/classes/cavity.h src/classes/cavity.cpp $(OBJ)/protein.o

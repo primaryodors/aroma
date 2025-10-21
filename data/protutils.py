@@ -10,8 +10,31 @@ def load_prots():
         prots = json.load(file)
 
 def bw_insdel(protid, tmrno, offset):
-    #TODO:
-    return 0
+    global prots
+    result = 0
+    prot = prots[protid]
+
+    if 'deletion' in prot:
+        for dltn in prot['deletion']:
+            pettia = dltn.split('.')
+            dtmr = pettia[0]
+            doff = pettia[1]
+
+            if dtmr == tmrno:
+                if doff <  50 and doff >= offset: result += 1
+                if doff >= 50 and doff <  offset: result -= 1
+
+    if 'insertion' in prot:
+        for insn in prot['insertion']:
+            pettia = insn.split('.')
+            dtmr = pettia[0]
+            doff = pettia[1]
+
+            if dtmr == tmrno:
+                if doff <  50 and doff >= offset: result -= 1
+                if doff >= 50 and doff <  offset: result += 1
+
+    return result
 
 def resno_from_bw(protid, bw):
     global prots

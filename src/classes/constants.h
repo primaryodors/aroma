@@ -222,8 +222,8 @@
 #define bb_find_empty_space 1
 #define bb_group_distance_cutoff 4.3
 #define bb_lonely_radius 2
-#define bb_pocket_res_extra_spacing 4
-#define bb_pocket_res_spacing_allowance 1
+#define bb_pocket_res_extra_spacing 3.5
+#define bb_pocket_res_spacing_allowance 2
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.2
 #define bb_realign_iters 1
@@ -263,7 +263,7 @@
 // Scoring constants.
 #define compute_lsrb 0
 #define lsrb_vdw_multiplier 1.0
-#define priority_weight_group 15
+#define priority_weight_group 2
 #define ts_priority_coefficient 10
 #define ignore_invalid_partial 1
 #define include_mcr_in_dock_energy 0

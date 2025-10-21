@@ -118,18 +118,12 @@ foreach ($result as $line)
     $ligands_inprogress[$odor['oid']] = true;
 }
 
-// Copper binding sites for e.g. OR2T11
-// http://pubs.acs.org/doi/abs/10.1021/jacs.6b06983
+// Copper binding sites for OR2M/T
 $cub =
 [
-	"2.39" => "MCHDENQR",
-	"3.46" => "MCHDENQR",
-	"3.50" => "R",
-	"4.37" => "MCHDENQR",
-	"4.39" => "R",
-	"4.42" => "CHMDENQ",
-	"6.37" => "CHMDENQ",
-	"6.40" => "HCMDENQ",
+	"5.39" => "M",
+	"5.42" => "C",
+	"5.43" => "C"
 ];
 
 $page_title = $rcpid;
@@ -137,6 +131,17 @@ $extra_js = ['js/tabs.js'];
 $extra_css = ['assets/tabs.css'];
 
 $pairs = all_empirical_pairs_for_receptor($rcpid);
+
+foreach ($pairs as $oid => $p)
+{
+    $o = @$odors[$oid];
+    if (!$o) continue;
+    $fnu = str_replace(' ', '_', $o['full_name']);
+    if (file_exists("../output/$fam/$rcpid/$rcpid~$fnu.active.dock")) $pairs[$oid]["adock"] = "../output/$fam/$rcpid/$rcpid~$fnu.active.dock";
+    if (file_exists("../output/$fam/$rcpid/$rcpid~$fnu.inactive.dock")) $pairs[$oid]["idock"] = "../output/$fam/$rcpid/$rcpid~$fnu.inactive.dock";
+}
+
+// print_r($pairs);
 
 include("header.php");
 
@@ -673,13 +678,14 @@ The repository is accepting pull requests at
 <table class="liglist">
     <tr>
         <th width="20%">Odorant</th>
-        <th width="10%">EC<sub>50</sub></th>
-        <th width="10%">Adjusted Top</th>
-        <th width="10%">Antagonist?</th>
+        <th width="8%">EC<sub>50</sub></th>
+        <th width="8%">Adjusted Top</th>
+        <th width="4%">Antagonist?</th>
+        <th width="20%">Docks</th>
         <?php
         if (count($predictions)) echo "<th width=\"1%\">Dock Score</th>"; // <th width=\"1%\">Dock Energy</th>";
         ?>
-        <th width="50%">Aroma Notes</th>
+        <th width="40%">Aroma Notes</th>
     </tr>
 
 <?php 
@@ -746,6 +752,38 @@ foreach ($pairs as $oid => $pair)
         ) . "</sup></td>\n";
 
     if (@$pair['antagonist']) echo "<td>Y <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno_ant</a></td>";
+    else echo "<td>&nbsp;</td>";
+
+    if (@$pair['adock'] || @$pair['idock'])
+    {
+        echo "<td style=\"text-align: center;\">";
+        foreach (['a', 'i'] as $i => $char)
+        {
+            $has = false;
+            if ($i) echo ", ";
+            if (@$pair[$char.'dock'])
+            {
+                $c = file_get_contents($pair[$char.'dock']);
+                $lines = explode("\n", $c);
+                foreach ($lines as $ln)
+                {
+                    if (substr($ln, 0, 7) == "Total: ")
+                    {
+                        $fttl = explode("/", $pair[$char.'dock']);
+                        $fttl = $fttl[count($fttl)-1];
+                        list($prot, $other) = explode("~", $fttl);
+                        list($odor, $mode, $blah) = explode(".", $other, 3);
+                        echo "<a href=\"viewer.php?view=dock&prot=$prot&odor=$odor&mode=$mode\" target=\"_dock\">";
+                        echo round(floatval(substr($ln, 7)), 2);
+                        echo "</a>";
+                        $has = true;
+                        break;
+                    }
+                }
+            }
+            if (!$has) echo "-";
+        }
+    }
     else echo "<td>&nbsp;</td>";
 
     if (count($predictions))

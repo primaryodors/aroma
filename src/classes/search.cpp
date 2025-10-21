@@ -483,6 +483,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 {
     int i, j, k, l, m, n, ii;
     float best = 0;
+    bool best_ionic = false, best_neutral_polar = false, best_pi = false;
     Point ligcen = ligand->get_barycenter();
     int ntarg, npr;
     bool override_target_compatibility = false;
@@ -493,7 +494,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
     memset(mcatoms, 0, 256*sizeof(Atom*));
     Moiety y;
-    if (!ligand->num_monomers)
+    if (!ligand->num_monomers && !ligand->get_charge())
     {
         y.pattern = "OCCO";
         if (!y.contained_by(ligand, mcatoms)) y.pattern = "OCCCO";
@@ -678,6 +679,14 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                         {
                             if (m >= 0 && ntarg>=3 && (n==j || n==l)) continue;
 
+                            bool has_ionic = false, has_neutral_polar = false, has_pi = false;
+                            if (ichg && jchg) has_ionic = true;
+                            else if (ipol && jpol) has_neutral_polar = true;
+                            else if (ipi && jpi) has_pi = true;
+                            if (kchg && lchg) has_ionic = true;
+                            else if (lpol && kpol) has_neutral_polar = true;
+                            else if (kpi && lpi) has_pi = true;
+
                             float nchg, npol, ncba;
                             int npi;
                             bool nhba, nhbd, mnmc;
@@ -693,7 +702,13 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 nmtl = pocketres[n]->coordmtl;
 
                                 mnmc = pocketres[n]->coordmtl && (mfam == CHALCOGEN || mfam == PNICTOGEN) && mZ != 8 && mchg <= 0;
-                                if (!override_target_compatibility) if (!mnmc && !target_compatibility(mchg, nchg, mpol, npol, mpi, npi, mhba, nhba, mhbd, nhbd)) continue;
+                                if (!override_target_compatibility) 
+                                    if (!mnmc && !target_compatibility(mchg, nchg, mpol, npol, mpi, npi, mhba, nhba, mhbd, nhbd))
+                                        continue;
+
+                                if (mchg && nchg) has_ionic = true;
+                                else if (mpol && npol) has_neutral_polar = true;
+                                else if (mpi && npi) has_pi = true;
                             }
 
                             bbr.ligand = ligand;
@@ -794,7 +809,21 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             }
                             #endif
 
-                            if (score > best)
+                            #if _dbg_bb_scoring
+                            cout << " ";
+                            if (has_ionic) cout << "i";
+                            if (has_neutral_polar) cout << "n";
+                            if (has_pi) cout << "p";
+                            cout << " ";
+                            if (best_ionic) cout << "I";
+                            if (best_neutral_polar) cout << "N";
+                            if (best_pi) cout << "P";
+                            #endif
+
+                            if (score > best
+                                && (has_ionic || !best_ionic)
+                                && (has_neutral_polar || !best_neutral_polar)
+                                && (has_pi || !best_pi))
                             {
                                 // Assign by importance.
                                 int i1, i2, i3, j1, j2, j3;
@@ -802,7 +831,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 iimp = targets[i].importance(ligand);
                                 kimp = targets[k].importance(ligand);
                                 mimp = (m >= 0) ? targets[m].importance(ligand) : 0;
-                                
+
                                 if (ijmc) iimp += 1000;
                                 if (klmc) kimp += 1000;
                                 if ((m >= 0) && mnmc) mimp += 1000;
@@ -876,6 +905,10 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 output->tert_tgt = (m >= 0) ? &targets[i3] : nullptr;
                                 output->probability = 1;
                                 best = score;
+
+                                if (has_ionic) best_ionic = true;
+                                if (has_neutral_polar) best_neutral_polar = true;
+                                if (has_pi) best_pi = true;
 
                                 #if _dbg_bb_scoring
                                 cout << " *** ";
@@ -1663,28 +1696,31 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
 
     // Match contacts by their relative spacings.
     float ikdist, jldist, imdist, jndist, kmdist, lndist;
-    
+
     if (sec_res && sec_tgt)
     {
-        ikdist = pri_tgt->barycenter().get_3d_distance(sec_tgt->barycenter());
-        jldist = fmax(1, pri_res->distance_to(sec_res) - bb_pocket_res_extra_spacing);
-        if (jldist > ikdist) jldist -= fmin(jldist-ikdist, bb_pocket_res_spacing_allowance); 
+        if (kpol && lpol)
+        {
+            ikdist = pri_tgt->barycenter().get_3d_distance(sec_tgt->barycenter());
+            jldist = fmax(1, pri_res->distance_to(sec_res) - bb_pocket_res_extra_spacing);
+            if (jldist > ikdist) jldist -= fmin(jldist-ikdist, bb_pocket_res_spacing_allowance); 
 
-        score *= (fmin(ikdist, jldist) / fmax(ikdist, jldist) + 1);
+            score *= (fmin(ikdist, jldist) / fmax(ikdist, jldist));
+        }
 
-        if (tert_res && tert_tgt)
+        if (tert_res && tert_tgt && mpol && npol)
         {
             imdist = pri_tgt->barycenter().get_3d_distance(tert_tgt->barycenter());
             jndist = fmax(1, pri_res->distance_to(tert_res) - bb_pocket_res_extra_spacing);
             if (jndist > imdist) jndist -= fmin(jndist-imdist, bb_pocket_res_spacing_allowance);
 
-            score *= (fmin(imdist, jndist) / fmax(imdist, jndist) + 1);
+            score *= (fmin(imdist, jndist) / fmax(imdist, jndist));
 
             kmdist = sec_tgt->barycenter().get_3d_distance(tert_tgt->barycenter());
             lndist = fmax(1, sec_res->distance_to(tert_res) - bb_pocket_res_extra_spacing);
             if (lndist > kmdist) lndist -= fmin(lndist-kmdist, bb_pocket_res_spacing_allowance);
 
-            score *= (fmin(kmdist, lndist) / fmax(kmdist, lndist) + 1);
+            score *= (fmin(kmdist, lndist) / fmax(kmdist, lndist));
         }
         else imdist = jndist = kmdist = lndist = 1;
     }
@@ -1712,7 +1748,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     }
 
     // Prefer contacts that span the entire molecule.
-    if (sec_tgt) score *= pow(ikdist + imdist + kmdist, 2);
+    if (sec_tgt) score *= pow(ikdist + imdist + kmdist, 2) / 1000;
 
     #if _dbg_bb_scoring
     cout << "d:" << score << " ";
@@ -1752,9 +1788,6 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
 
     #if _dbg_bb_scoring
     cout << "f:" << score << " ";
-    #endif
-    #if _dbg_bb_scoring
-    cout << "g:" << score << " ";
     #endif
 
     return score;

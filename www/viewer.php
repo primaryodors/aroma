@@ -94,7 +94,7 @@ if (@$_REQUEST['view'] == "dock")
     $n = @$_REQUEST["n"] ?: 1;
 
     chdir(__DIR__);
-    $dock = "../output/$fam/$protid/$protid.$odor.$mode.dock";
+    $dock = "../output/$fam/$protid/$protid~$odor.$mode.dock";
     if (!file_exists($dock)) die("Something went wrong.");
     $txt = file_get_contents($dock);
 
