@@ -333,8 +333,7 @@ function ensure_sdf_exists($ligname)
 			$isofname = substr(escapeshellarg("sdf/$iso-$fullname.sdf"), 1, -1);
 			if (!file_exists($isofname) || filesize($isofname) < 20)
 			{
-				// Temporarily do not use obabel for acyclic chiral molecules.
-				if (false===strpos($ismiles, "@") || (preg_match("/[0-9]/", $ismiles))) $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";
+				if (false===strpos($ismiles, "{")) $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";
 				else $cmd = "test/mol_assem_test \"$ismiles\" '$isofname'";
 				echo "$cmd\n";
 				exec($cmd);
