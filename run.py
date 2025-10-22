@@ -26,6 +26,7 @@ if not sys.argv[1] in data.protutils.prots.keys():
     popt = sys.argv[1]
 else:
     protid = sys.argv[1]
+    popt = "*"              # necessary for emp functionality
 
 o = data.odorutils.find_odorant(sys.argv[2])
 if not o:
