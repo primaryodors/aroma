@@ -52,7 +52,7 @@ with open("example.config") as f:
             ln = "PROT pdbs/" + fam + "/" + protid + ".active.pdb"
         elif ln[0:4] == "LIG ":
             ln = "LIG sdf/" + lignu + ".sdf"
-            if len(isomers):
+            if isomers and len(isomers):
                 for iso in isomers:
                     ln += "\nISO sdf/" + iso.replace(' ', '_') + ".sdf"
         elif ln[0:4] == "CEN ":

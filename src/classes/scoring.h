@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <iomanip>
-#include "protein.h"
+#include "search.h"
 
 #ifndef _SCORING
 #define _SCORING
@@ -32,6 +32,7 @@ class DockResult
     #endif
     Protein* mprot = nullptr;
     Molecule* mlig = nullptr;
+    BestBindingResult* mbbr = nullptr;
     float ligand_self = 0;
     float worst_energy = 0;
     float worst_nrg_aa = 0;

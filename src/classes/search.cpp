@@ -1543,6 +1543,21 @@ std::ostream& operator<<(std::ostream& os, const LigandTarget& lt)
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const BestBindingResult &bbr)
+{
+    if (!bbr.pri_res || !bbr.pri_tgt)
+    {
+        os << "(empty)" << endl;
+        return os;
+    }
+    os << "Pri: " << bbr.pri_tgt << "..." << bbr.pri_res << endl;
+    if (!bbr.sec_res || !bbr.sec_tgt) return os;
+    os << "Sec: " << bbr.sec_tgt << "..." << bbr.sec_res << endl;
+    if (!bbr.tert_res || !bbr.tert_tgt) return os;
+    os << "Ter: " << bbr.tert_tgt << "..." << bbr.tert_res << endl;
+    return os;
+}
+
 float BestBindingResult::score(Point ligcen, Cavity* container)
 {
     float lchg=0, lpol=0, lcba;

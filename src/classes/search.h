@@ -75,5 +75,6 @@ extern AminoAcid *g_pri_pairres, *g_sec_pairres, *g_tert_pairres;
 extern LigandTarget *g_pri_ltarg, *g_sec_ltarg, *g_tert_ltarg;
 
 std::ostream& operator<<(std::ostream& os, const LigandTarget& lt);
+std::ostream& operator<<(std::ostream& os, const BestBindingResult& bbr);
 
 #endif

@@ -98,13 +98,14 @@ def ensure_sdf_exists(odorant):
         subprocess.run(cmd)
 
     isomers = check_isomers(o['full_name'])
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.chdir("..")
-    if len(isomers):
-        for iso in o["isomers"].keys():
-            fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
-            if not os.path.exists(fname):
-                cmd = ["obabel", "-:"+o["isomers"][iso], "--gen3D", "-osdf", "-O" + fname]
-                print(" ".join(cmd), "\n")
-                subprocess.run(cmd)
+    if isomers:
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir("..")
+        if len(isomers):
+            for iso in o["isomers"].keys():
+                fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
+                if not os.path.exists(fname):
+                    cmd = ["obabel", "-:"+o["isomers"][iso], "--gen3D", "-osdf", "-O" + fname]
+                    print(" ".join(cmd), "\n")
+                    subprocess.run(cmd)
 
