@@ -25,7 +25,8 @@ IF $arg4 THEN LET &tmr = $arg4
 
 LOAD $pdbname
 
-IF &tmr = 5 THEN WIND %A.5.58 %A.TMR5.s &amount
+IF &tmr = 4 THEN WIND %A.4.50 %A.TMR4.e &amount
+ELSE IF &tmr = 5 THEN WIND %A.5.58 %A.TMR5.s &amount
 ELSE IF &tmr = 6 THEN WIND %A.6.40 %A.TMR6.e &amount
 ELSE IF &tmr = 7 THEN WIND %A.7.49 %A.TMR7.s &amount
 

@@ -33,6 +33,8 @@ if not o:
     print("Unknown ligand: "+sys.argv[1])
     exit
 lignu = o["full_name"].replace(' ', '_')
+isomers = data.odorutils.check_isomers(o["full_name"])
+data.odorutils.ensure_sdf_exists(o["full_name"])
 
 pocket = data.dyncenter.get_pocket(protid, o["full_name"])
 # print(pocket)
@@ -50,13 +52,16 @@ with open("example.config") as f:
             ln = "PROT pdbs/" + fam + "/" + protid + ".active.pdb"
         elif ln[0:4] == "LIG ":
             ln = "LIG sdf/" + lignu + ".sdf"
+            if len(isomers):
+                for iso in isomers:
+                    ln += "\nISO sdf/" + iso.replace(' ', '_') + ".sdf"
         elif ln[0:4] == "CEN ":
             if pocket:
                 if isinstance(pocket["pocket"], str):
                     ln = "CEN RES " + pocket["pocket"]
                 else:
                     ln = ""
-                    for pkt in pocket["pocket"]
+                    for pkt in pocket["pocket"]:
                         ln = ln + "CEN RES " + pkt + "\n"
         elif ln[0:4] == "OUT ":
             ln = ("OUT output/" + fam + "/" + protid + "/" + protid + "~" + lignu + ".active.dock" 

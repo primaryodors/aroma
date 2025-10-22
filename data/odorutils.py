@@ -46,12 +46,12 @@ def empirical_pairs(rcpid, onedim=False, agonists_only=False):
 def find_odorant(aroma):
     global odors
     if not aroma: return False
-    
+
     if aroma in odors.keys():
         retval = odors[aroma]
         retval['oid'] = aroma
         return retval
-    
+
     aroma1 = re.sub("/[^a-z0-9_+-]/", "", aroma.lower().replace(' ', '_'))
     for oid, o in odors.items():
         namematch = False
@@ -60,7 +60,7 @@ def find_odorant(aroma):
             if o["name"+str(i)] == aroma:
                 namematch = True
             i += 1
-        
+
         if (o['smiles'] == aroma
             or re.sub( "/[^a-z0-9_+-]/", "", o['full_name'].lower().replace(' ', '_') ) == aroma1
             or ("iupac" in o.keys() and o['iupac'] == aroma)
@@ -80,9 +80,31 @@ def find_odorant(aroma):
 
     return False
 
+def check_isomers(ligname, randomize=True):
+    odor = find_odorant(ligname)
+    if not odor: raise Exception("Odorant not found "+ligname)
+    if not "isomers" in odor: return False
+
+    result = []
+    for iso in odor["isomers"].keys():
+        result.append(iso+"-"+odor["full_name"])
+    return result
+
 def ensure_sdf_exists(odorant):
     o = find_odorant(odorant)
     if not "sdfname" in o:
         cmd = ["obabel", "-:"+o["smiles"], "--gen3D", "-osdf", "-Osdf/" + o['full_name'].replace(' ', '_') + ".sdf"]
         print(" ".join(cmd), "\n")
         subprocess.run(cmd)
+
+    isomers = check_isomers(o['full_name'])
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir("..")
+    if len(isomers):
+        for iso in o["isomers"].keys():
+            fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
+            if not os.path.exists(fname):
+                cmd = ["obabel", "-:"+o["isomers"][iso], "--gen3D", "-osdf", "-O" + fname]
+                print(" ".join(cmd), "\n")
+                subprocess.run(cmd)
+
