@@ -492,6 +492,12 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
     int multichalc = 0;
     Atom* mcatoms[256];
 
+    // TODO:
+    // Right now you are considering multiple possible starting poses and then selecting hopably the best (most energetically favorable) one.
+    // What you can do is rule out the ones that cannot avoid clashes with the protein, and then store what's left over in order to estimate
+    // the probabilities of all the possible states. Then the result will allow estimating the TΔS of the optimal state.
+    // https://en.wikipedia.org/wiki/Boltzmann_distribution
+
     memset(mcatoms, 0, 256*sizeof(Atom*));
     Moiety y;
     if (!ligand->num_monomers && !ligand->get_charge())
