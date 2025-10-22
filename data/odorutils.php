@@ -125,6 +125,8 @@ function best_empirical_pair($protein, $aroma, $as_object = false)
 					$obj['refe'] = $ref;
 					$btyp = @$sepyt[trim($acv[$protein]['type'])];
 				}
+				if (isset($acv[$protein]['type'])) $obj['type'] = $acv[$protein]['type'];
+				if (isset($acv[$protein]['antagonist'])) $obj['antagonist'] = $acv[$protein]['antagonist'];
 			}
 		}
 	}

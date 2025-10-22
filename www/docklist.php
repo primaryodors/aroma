@@ -22,16 +22,6 @@ $filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
 ?>
 <style>
 <?php output_dlmenu_style(); ?>
-
-.liglist tr.trbk_active
-{
-    background-color: #243!important;
-}
-
-.liglist tr.trbk_inactive
-{
-    background-color: #235!important;
-}
 </style>
 <script>
 <?php output_dlmenu_script(); ?>
@@ -52,7 +42,6 @@ $filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
 <table class="liglist">
     <tr><th>Receptor</th>
         <th>Odorant</th>
-        <th>Mode</th>
         <th>Dock Energies</th>
         <th>Poses</th>
         <th>Agonist?</td>
@@ -72,29 +61,15 @@ foreach ($prots as $protid => $p)
     while (false!==($fname=$dir->read())) $files[] = $fname;
     natsort($files);
 
+    $rows = [];
     foreach ($files as $fname)
     {
         if (substr($fname, -5) != ".dock") continue;
         if (false===strpos($fname, "~")) continue;
         list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
-        echo "<tr class=\"trbk_$mode\">\n";
 
-        echo "<td><a href=\"receptor.php?r=$protid\">$protid</a>";
-        if ($frcp != $protid)
-            echo " <a href=\"docklist.php?r=$protid\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
-        echo "</td>\n";
-        $frcp = $protid;
-
-        $o = find_odorant($odor);
-        $fn = $o['full_name'];
-        $fnu = str_replace(' ', '_', $fn);
-        echo "<td><a href=\"odorant.php?o={$o['oid']}\">$fn</a>";
-        if ($flig != $o['oid'])
-            echo " <a href=\"docklist.php?o={$o['oid']}\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
-        echo "</td>\n";
-        $flig = $o['oid'];
-
-        echo "<td>$mode</td>";
+        $rowid = "$protid~$odor";
+        if (!isset($rows[$rowid])) $rows[$rowid] = [];
 
         $c = file_get_contents("../output/$fam/$protid/$fname");
         $lines = explode("\n", $c);
@@ -111,11 +86,8 @@ foreach ($prots as $protid => $p)
         }
         if (!$nump) $nump = "-";
 
-        echo "<td><a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">";
-        echo round($benerg, 4);
-        echo "</td>";
-
-        echo @"<td>$nump</td>\n";
+        $rows[$rowid]["benerg_$mode"] = $benerg;
+        $rows[$rowid]["nump_$mode"] = $nump;
 
         $agonist = "?";
         $pair = best_empirical_pair($protid, $odor, true);
@@ -152,6 +124,42 @@ foreach ($prots as $protid => $p)
             }
             elseif (@$pair["antagonist"] == "Y") $agonist = "ant";
         }
+        $rows[$rowid]["agonist"] = $agonist;
+    }
+
+    foreach ($rows as $k => $r)
+    {
+        list($protid, $odor) = explode("~", $k);
+        extract($r);
+        echo "<tr>\n";
+
+        echo "<td><a href=\"receptor.php?r=$protid\">$protid</a>";
+        if ($frcp != $protid)
+            echo " <a href=\"docklist.php?r=$protid\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
+        echo "</td>\n";
+        $frcp = $protid;
+
+        $o = find_odorant($odor);
+        $fn = $o['full_name'];
+        $fnu = str_replace(' ', '_', $fn);
+        echo "<td><a href=\"odorant.php?o={$o['oid']}\">$fn</a>";
+        if ($flig != $o['oid'])
+            echo " <a href=\"docklist.php?o={$o['oid']}\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
+        echo "</td>\n";
+        $flig = $o['oid'];
+
+        echo "<td>";
+        echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">";
+        echo round($benerg_active, 4) ?: "-";
+        echo "</a>";
+        echo " / ";
+        echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=inactive\" target=\"_dock\">";
+        echo round($benerg_inactive, 4) ?: "-";
+        echo "</a>";
+        echo "</td>";
+
+        echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
+
         echo @"<td>$agonist</td>\n";
     }
 }
