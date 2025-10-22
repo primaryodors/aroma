@@ -104,14 +104,12 @@ foreach ($prots as $protid => $p)
             $benerg = floatval(substr($ln, 7));
             break;
         }
-        $nump = "";
-        foreach ($lines as $ln) if (substr($ln, 0, 7) == "Total: ")
+        $nump = 0;
+        foreach ($lines as $ln)
         {
-            if (false!==strpos($ln, "pose(s) found."))
-            {
-                $nump = intval($ln);
-            }
+            if (substr($ln, 0, 6) == "Pose: ") $nump++;
         }
+        if (!$nump) $nump = "-";
 
         echo "<td><a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">";
         echo round($benerg, 4);
