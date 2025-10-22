@@ -58,7 +58,11 @@ foreach ($prots as $protid => $p)
     $dockpath = "../output/$fam/$protid";
     if (!file_exists($dockpath)) continue;
     $dir = dir($dockpath);
-    while (false!==($fname=$dir->read()))
+    $files = [];
+    while (false!==($fname=$dir->read())) $files[] = $fname;
+    natsort($files);
+
+    foreach ($files as $fname)
     {
         if (false===strpos($fname, "~")) continue;
         list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
