@@ -25,7 +25,7 @@ $filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
 
 .liglist tr.trbk_active
 {
-    background-color: #341!important;
+    background-color: #243!important;
 }
 
 .liglist tr.trbk_inactive
