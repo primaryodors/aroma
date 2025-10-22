@@ -22,6 +22,16 @@ $filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
 ?>
 <style>
 <?php output_dlmenu_style(); ?>
+
+.liglist tr.trbk_active
+{
+    background-color: #341!important;
+}
+
+.liglist tr.trbk_inactive
+{
+    background-color: #235!important;
+}
 </style>
 <script>
 <?php output_dlmenu_script(); ?>
@@ -64,9 +74,10 @@ foreach ($prots as $protid => $p)
 
     foreach ($files as $fname)
     {
+        if (substr($fname, -5) != ".dock") continue;
         if (false===strpos($fname, "~")) continue;
         list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
-        echo "<tr>\n";
+        echo "<tr class=\"trbk_$mode\">\n";
 
         echo "<td><a href=\"receptor.php?r=$protid\">$protid</a>";
         if ($frcp != $protid)
