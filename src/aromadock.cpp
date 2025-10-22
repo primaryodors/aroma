@@ -903,8 +903,12 @@ void update_progressbar(float percentage)
     percentage = percentage/poses + (float)(pose-1)*100.0/poses;
     if (success_sofar)
     {
-        progb.set_color(96, 216, 128);
+        if (strstr(protfname, ".inactive.pdb"))
+            progb.set_color(98, 176, 224);
+        else
+            progb.set_color(96, 216, 128);
     }
+    else progb.set_color(160, 168, 176);
     progb.update(percentage);
 }
 
