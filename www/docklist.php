@@ -35,6 +35,18 @@ $filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
 <div class="box">
 <div class="row content scrollh">
 
+<?php
+$args = [];
+foreach ($_REQUEST as $k => $v)
+{
+    if ($k != 'e') $args[] = "$k=$v";
+}
+$args = implode("&", $args);
+?>
+
+<a href="docklist.php?<?php echo $args; ?>">All</a>
+<a href="docklist.php?e=1&<?php echo $args; ?>">Only empirical</a>
+
 <?php if (isset($_REQUEST['r']) || isset($_REQUEST['o'])) { ?>
 <a href="docklist.php">Clear filters</a>
 <?php } ?>
@@ -53,6 +65,7 @@ $flig = false;
 chdir(__DIR__);
 foreach ($prots as $protid => $p)
 {
+    if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
     $fam = family_from_protid($protid);
     $dockpath = "../output/$fam/$protid";
     if (!file_exists($dockpath)) continue;
@@ -67,6 +80,21 @@ foreach ($prots as $protid => $p)
         if (substr($fname, -5) != ".dock") continue;
         if (false===strpos($fname, "~")) continue;
         list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
+        $o = find_odorant($odor);
+
+        if (isset($_REQUEST['o']) && $o['oid'] != $_REQUEST['o']) continue;
+
+        if (@$_REQUEST['e'])
+        {
+            if (!isset($o['activity'])) continue;
+            $found = false;
+            foreach ($o['activity'] as $url => $ldat)
+            {
+                if (isset($ldat[$protid])) $found = true;
+                if ($found) break;
+            }
+            if (!$found) continue;
+        }
 
         $rowid = "$protid~$odor";
         if (!isset($rows[$rowid])) $rows[$rowid] = [];
@@ -139,7 +167,6 @@ foreach ($prots as $protid => $p)
         echo "</td>\n";
         $frcp = $protid;
 
-        $o = find_odorant($odor);
         $fn = $o['full_name'];
         $fnu = str_replace(' ', '_', $fn);
         echo "<td><a href=\"odorant.php?o={$o['oid']}\">$fn</a>";
