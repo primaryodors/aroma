@@ -35,6 +35,7 @@ $mode = 'e';            // Empirical.
 if (isset($_REQUEST["m"])) $mode = $_REQUEST["m"];
 
 $t = [];
+$tprobs = [];
 $e = [];
 $p = [];
 
@@ -46,6 +47,22 @@ switch ($mode)
         foreach ($acv as $rcpid => $a)
         {
             $act = @$a['adjusted_curve_top'] ?: ((@$a['type'] == 'a' && !@$a['ec50']) ? true : false);
+            if (!isset($a['adjusted_curve_top']) && isset($a['type']))
+            {
+                $act = 0;
+                if ($a['type'] == "vsa") $act = 10;
+                else if ($a['type'] == "sa") $act = 8;
+                else if ($a['type'] == "ma") $act = 5;
+                else if ($a['type'] == "wa") $act = 2;
+                else if ($a['type'] == "va") $act = 0.333;
+                else if ($a['type'] == "pa")
+                {
+                    $act = 4;
+                    $tprobs[$rcpid] = true;
+                }
+                if ($act) $maxt = 10;
+            }
+
             if (!isset($t[$rcpid])) $t[$rcpid] = $act;
             else
             {
@@ -126,7 +143,7 @@ foreach (array_keys($prots) as $x => $orid)
     $last4 = $first4;
 }
 
-$maxt = count($t) ? ( @max($t) ?: 1 ) : 1;
+if (!isset($maxt)) $maxt = count($t) ? ( @max($t) ?: 1 ) : 1;
 $maxe = count($e) ? ( @max($e) ?: 0 ) : 0;
 $mine = count($e) ? ( @min($e) ?: -6 ) : -6;
 if ($maxe) $maxe += 0.5;
@@ -293,17 +310,29 @@ foreach (array_values($bytree) as $x => $orid)
     $tazure = imagecolorallocatealpha($im,32,96,255,$opacity);
 
     $dy = $base;
-    if (false!==$dyt && false===$dye)   imagefilledrectangle($im, $dx,$base1, $dx+$res-2,$dy=$dyt, $tred);
-    if (false!==$dye && false===$dyt)   imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dy=$dye, $tgreen);
+    if (false!==$dyt && false===$dye)
+    {
+        if (@$tprobs[$orid])
+            {
+                for ($y1 = $base1; $y1 > $dy=$dyt; $y1 -= 10)
+                {
+                    imagefilledrectangle($im, $dx,$y1, $dx+$res-2,$y1-3, $tred);
+                }
+            }
+        else imagefilledrectangle($im, $dx,$base1, $dx+$res-2,$dy=$dyt, $tred);
+    }
+    if (false!==$dye && false===$dyt) imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dy=$dye, $tgreen);
     if (false!==$dye && false!==$dyt)
-    {   
+    {
         $dy = min($dye,$dyt);
         if ($dye < $dyt)
-        {   if ($t[$orid] >= 0) imagefilledrectangle($im, $dx,$base , $dx+$res-3,$dye, $tgreen);
+        {
+            if ($t[$orid] >= 0) imagefilledrectangle($im, $dx,$base , $dx+$res-3,$dye, $tgreen);
             imagefilledrectangle($im, $dx,$base1, $dx+$res-2,$dyt, $tyellow);
         }
         else
-        {   imagefilledrectangle($im, $dx+1,$base1, $dx+$res-2,$dyt, $tred);
+        {
+            imagefilledrectangle($im, $dx+1,$base1, $dx+$res-2,$dyt, $tred);
             imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dye, $tyellow);
         }
     }
@@ -328,7 +357,7 @@ foreach (array_values($bytree) as $x => $orid)
     }
     if ($peak && $dy < $h/1.4)
     {
-        $texts[] = [$dx, $dy-5, $orid];
+        $texts[] = [$dx, $dy-5, @$tprobs[$orid] ? "($orid)" : $orid];
         $txtop[] = intval(0.81 * (100-(floatval(@$prots[$orid]['expression'] ?: 100))));
     }
 }

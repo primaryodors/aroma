@@ -1899,7 +1899,7 @@ void apply_protein_specific_settings(Protein* p)
 
 int main(int argc, char** argv)
 {
-    strcpy(splash, "AromaDock:\nAROMA Molecular Docker\n");
+    strcpy(splash, "   ***     ******      ****    ***    ***     ***     *****       ****      *****   **    ** \n  ** **    **   **    **  **   ****  ****    ** **    **  **     **  **    **   **  **    **\n **   **   **    **  **    **  ** **** **   **   **   **   **   **    **  **        **    **\n**     **  **   **   **    **  **  **  **  **     **  **    **  **    **  **        **   ** \n*********  ******    **    **  **  **  **  *********  **    **  **    **  **        ******\n**     **  **   **   **    **  **      **  **     **  **    **  **    **  **        **   ** \n**     **  **    **  **    **  **      **  **     **  **   **   **    **  **        **    **\n**     **  **    **   **  **   **      **  **     **  **  **     **  **    **   **  **    **\n**     **  **    **    ****    **      **  **     **  *****       ****      *****   **    **\n");
     char buffer[65536];
     int i, j;
 
@@ -1944,6 +1944,41 @@ int main(int argc, char** argv)
 
     read_config_file(pf);
     fclose(pf);
+
+    char protid[255];
+    char* slash = strrchr(protfname, '/');
+    if (!slash) slash = strrchr(protfname, '\\');
+    strcpy(protid, slash ? slash+1 : protfname );
+    char* dot = strchr(protid, '.');
+    if (dot) *dot = 0;
+
+    Protein pose_proteins[poses];
+    Molecule pose_ligands[poses+1];
+    protein = &pose_proteins[0]; // new Protein(protid);
+    pf = fopen(protfname, "r");
+    if (!pf)
+    {
+        cout << splash << endl;
+        cerr << "Error trying to read " << protfname << endl;
+        return 0xbadf12e;
+    }
+    protein->load_pdb(pf, 0, protstrand ?: 'A');
+    fclose(pf);
+
+    j=1;
+    std::string seq = protein->get_sequence();
+    for (i=0; splash[i]; i++)
+    {
+        if (splash[i] == '*')
+        {
+            splash[i] = seq.c_str()[j++];
+            if (j >= seq.length()) j = 0;
+        }
+    }
+
+    #if _dbg_A100
+    float init_A100 = protein->A100();
+    #endif
 
     cout << splash << endl;
 
@@ -2035,29 +2070,6 @@ int main(int argc, char** argv)
         fclose(fp);
         cout << "Read " << ncvtys << " cavities." << endl;
     }
-
-    char protid[255];
-    char* slash = strrchr(protfname, '/');
-    if (!slash) slash = strrchr(protfname, '\\');
-    strcpy(protid, slash ? slash+1 : protfname );
-    char* dot = strchr(protid, '.');
-    if (dot) *dot = 0;
-
-    Protein pose_proteins[poses];
-    Molecule pose_ligands[poses+1];
-    protein = &pose_proteins[0]; // new Protein(protid);
-    pf = fopen(protfname, "r");
-    if (!pf)
-    {
-        cerr << "Error trying to read " << protfname << endl;
-        return 0xbadf12e;
-    }
-    protein->load_pdb(pf, 0, protstrand ?: 'A');
-    fclose(pf);
-
-    #if _dbg_A100
-    float init_A100 = protein->A100();
-    #endif
 
     apply_protein_specific_settings(protein);
     #if _DBG_STEPBYSTEP

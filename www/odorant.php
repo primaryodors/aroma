@@ -287,6 +287,34 @@ if (@$odor['activity']) foreach ($odor['activity'] as $refurl => $acv)
 
             if (false===$maxcurvtop[$rcpid] || $a['adjusted_curve_top'] > $maxcurvtop[$rcpid]) $maxcurvtop[$rcpid] = $a['adjusted_curve_top'];
         }
+        else if (isset($a['type']))
+        {
+            $top = false; $tosort = 0;
+            if ($a['type'] == "na") $top = "0";
+            else if ($a['type'] == "vsa" || $a['type'] == "sa" || $a['type'] == "ma" || $a['type'] == "wa" || $a['type'] == "vwa")
+            {
+                $top = "(agonist)";
+                if ($a['type'] == "vsa") $tosort = 10;
+                if ($a['type'] == "sa") $tosort = 8;
+                if ($a['type'] == "ma") $tosort = 5;
+                if ($a['type'] == "wa") $tosort = 1;
+                if ($a['type'] == "vwa") $tosort = 0.1;
+            }
+            else if ($a['type'] == "pa")
+            {
+                $top = "(probable&nbsp;agonist)";
+                $tosort = 0.001;
+            }
+
+            if ($top)
+            {
+                if (!isset($tbltops[$rcpid])) $tbltops[$rcpid] = "";
+                else $tbltops[$rcpid] .= ", ";
+                $tbltops[$rcpid] .= $top . " <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno</a></sup>";
+                $sorted[$rcpid] += $tosort;
+                $ssamples++;
+            }
+        }
         if (isset($a['ec50']))
         {
             if (!isset($tblec50[$rcpid])) $tblec50[$rcpid] = "";
