@@ -691,7 +691,7 @@ std::ostream& operator<<(std::ostream& output, const DockResult& dr)
     if (dr.mbbr)
     {
         output << "Best-binding targets:" << endl;
-        output << dr.mbbr << endl << endl;
+        output << *(dr.mbbr) << endl << endl;
     }
 
     if (dr.out_per_res_e || dr.out_per_btyp_e)
