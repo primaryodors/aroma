@@ -1556,11 +1556,11 @@ std::ostream &operator<<(std::ostream &os, const BestBindingResult &bbr)
         os << "(empty)" << endl;
         return os;
     }
-    os << "Pri: " << bbr.pri_tgt << "..." << bbr.pri_res << endl;
+    os << "Pri: " << *(bbr.pri_tgt) << "..." << *(bbr.pri_res) << endl;
     if (!bbr.sec_res || !bbr.sec_tgt) return os;
-    os << "Sec: " << bbr.sec_tgt << "..." << bbr.sec_res << endl;
+    os << "Sec: " << *(bbr.sec_tgt) << "..." << *(bbr.sec_res) << endl;
     if (!bbr.tert_res || !bbr.tert_tgt) return os;
-    os << "Ter: " << bbr.tert_tgt << "..." << bbr.tert_res << endl;
+    os << "Ter: " << *(bbr.tert_tgt) << "..." << *(bbr.tert_res) << endl;
     return os;
 }
 

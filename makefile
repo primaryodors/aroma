@@ -100,7 +100,7 @@ $(OBJ)/dynamic.o: src/classes/dynamic.h src/classes/dynamic.cpp $(OBJ)/protein.o
 $(OBJ)/moiety.o: src/classes/moiety.h src/classes/moiety.cpp $(OBJ)/molecule.o
 	$(CPL) -c src/classes/moiety.cpp -o $(OBJ)/moiety.o $(CFLAGS)
 
-$(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp $(OBJ)/protein.o
+$(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp $(OBJ)/search.o
 	$(CPL) -c src/classes/scoring.cpp -o $(OBJ)/scoring.o $(CFLAGS)
 
 $(OBJ)/progress.o: src/classes/progress.h src/classes/progress.cpp $(OBJ)/misc.o
