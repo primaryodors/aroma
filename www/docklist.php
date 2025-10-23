@@ -104,17 +104,16 @@ foreach ($prots as $protid => $p)
         $lines = explode("\n", $c);
         $benerg = 0;
         $nump = 0;
+        $occl = 0;
         foreach ($lines as $ln) 
         {
-            if (substr($ln, 0, 7) == "Total: ")
+            if (!$benerg && substr($ln, 0, 7) == "Total: ")
             {
                 $benerg = floatval(substr($ln, 7));
-                break;
             }
-            else if (substr($ln, 0, 25) == "Ligand pocket occlusion: ")
+            else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
             {
                 $occl = floatval(substr($ln, 25));
-                break;
             }
             else if (substr($ln, 0, 6) == "Pose: ") $nump++;
         }
