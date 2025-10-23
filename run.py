@@ -34,6 +34,7 @@ if not o:
     lopt = sys.argv[2]
 else:
     oid = o["oid"]
+    lopt = "*"
 
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
