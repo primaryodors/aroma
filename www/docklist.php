@@ -55,6 +55,7 @@ $args = implode("&", $args);
     <tr><th>Receptor</th>
         <th>Odorant</th>
         <th>Dock Energies</th>
+        <th>Occlusion</th>
         <th>Poses</th>
         <th>Agonist?</td>
     </tr>
@@ -102,20 +103,26 @@ foreach ($prots as $protid => $p)
         $c = file_get_contents("../output/$fam/$protid/$fname");
         $lines = explode("\n", $c);
         $benerg = 0;
-        foreach ($lines as $ln) if (substr($ln, 0, 7) == "Total: ")
-        {
-            $benerg = floatval(substr($ln, 7));
-            break;
-        }
         $nump = 0;
-        foreach ($lines as $ln)
+        foreach ($lines as $ln) 
         {
-            if (substr($ln, 0, 6) == "Pose: ") $nump++;
+            if (substr($ln, 0, 7) == "Total: ")
+            {
+                $benerg = floatval(substr($ln, 7));
+                break;
+            }
+            else if (substr($ln, 0, 25) == "Ligand pocket occlusion: ")
+            {
+                $occl = floatval(substr($ln, 25));
+                break;
+            }
+            else if (substr($ln, 0, 6) == "Pose: ") $nump++;
         }
         if (!$nump) $nump = "-";
 
         $rows[$rowid]["benerg_$mode"] = $benerg;
         $rows[$rowid]["nump_$mode"] = $nump;
+        $rows[$rowid]["occl_$mode"] = $occl;
 
         $agonist = "?";
         $pair = best_empirical_pair($protid, $odor, true);
@@ -155,6 +162,8 @@ foreach ($prots as $protid => $p)
         $rows[$rowid]["agonist"] = $agonist;
     }
 
+    // print_r($rows);
+
     foreach ($rows as $k => $r)
     {
         list($protid, $odor) = explode("~", $k);
@@ -186,6 +195,7 @@ foreach ($prots as $protid => $p)
         echo "</a>";
         echo "</td>";
 
+        echo @"<td>" . (round($occl_active, 3) ?: "-") . " / " . (round($occl_inactive, 3) ?: "-") . "</td>\n";
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
 
         echo @"<td>$agonist</td>\n";
