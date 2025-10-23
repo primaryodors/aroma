@@ -167,6 +167,7 @@ foreach ($prots as $protid => $p)
         echo "</td>\n";
         $frcp = $protid;
 
+        $o = find_odorant($odor);
         $fn = $o['full_name'];
         $fnu = str_replace(' ', '_', $fn);
         echo "<td><a href=\"odorant.php?o={$o['oid']}\">$fn</a>";
