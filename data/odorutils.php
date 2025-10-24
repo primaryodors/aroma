@@ -261,17 +261,20 @@ function all_empirical_pairs_for_receptor($protein, $return_1dim = false, $agoni
 				if (@$array[$oid]['adjusted_curve_top'])
 				{
 					$value += $array[$oid]['adjusted_curve_top'];
+					$array[$oid]['top_ref'] = $ref;
 					$samples++;
 				}
-				else if (@$array[$oid]['type'] == 'a')
+				else if (@$array[$oid]['type'] == 'a' || preg_match("/^v?[smw]a$/", @$array[$oid]['type']))
 				{
 					$value += 1;
+					$array[$oid]['top_ref'] = $ref;
 					$samples++;
 				}
 				if (@$array[$oid]['ec50'] && $value >= 0)
 				{
 					$value -= $array[$oid]['ec50']*1.6;
-					$samples++;					
+					$array[$oid]['ec50_ref'] = $ref;
+					$samples++;
 				}
 
 				if ($samples) $value /= $samples;
