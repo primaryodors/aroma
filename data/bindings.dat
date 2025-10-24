@@ -94,7 +94,7 @@ Se      H	   coval	1	  1.488
 
 # Make sure to list ionic bonds before hydrogen bonds, because the former supersedes the latter.
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
-NH      O      ionic    0.5   1.53       30           1.6?
+NH      O      ionic    0.5   1.53       60           1.6?
 
 NH      N      hbond    0.5   1.6?       13           3.5
 NH      O      hbond    0.5   1.66        8           1.6

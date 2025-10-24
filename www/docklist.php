@@ -103,6 +103,7 @@ foreach ($prots as $protid => $p)
         $c = file_get_contents("../output/$fam/$protid/$fname");
         $lines = explode("\n", $c);
         $benerg = 0;
+        $lsfe = $lsbe = $phfe = $phbe = 0;
         $nump = 0;
         $occl = 0;
         foreach ($lines as $ln) 
@@ -110,6 +111,22 @@ foreach ($prots as $protid => $p)
             if (!$benerg && substr($ln, 0, 7) == "Total: ")
             {
                 $benerg = floatval(substr($ln, 7));
+            }
+            else if (!$lsfe && substr($ln, 0, 25) == "Ligand solvation energy: ")
+            {
+                $lsfe = floatval(substr($ln, 25));
+            }
+            else if (!$lsbe && substr($ln, 0, 32) == "Ligand pocket solvation energy: ")
+            {
+                $lsbe = floatval(substr($ln, 32));
+            }
+            else if (!$phfe && substr($ln, 0, 25) == "Pocket hydration energy: ")
+            {
+                $phfe = floatval(substr($ln, 25));
+            }
+            else if (!$phbe && substr($ln, 0, 31) == "Pocket bound hydration energy: ")
+            {
+                $phbe = floatval(substr($ln, 31));
             }
             else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
             {
@@ -119,7 +136,7 @@ foreach ($prots as $protid => $p)
         }
         if (!$nump) $nump = "-";
 
-        $rows[$rowid]["benerg_$mode"] = $benerg;
+        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe);
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 
