@@ -229,7 +229,7 @@ function all_empirical_pairs_for_receptor($protein, $return_1dim = false, $agoni
 				if ($agonists_only)
 				{
 					if (isset($acv[$protein]['adjusted_curve_top']) && @$acv[$protein]['adjusted_curve_top'] <= 0) continue;
-					if (@$acv[$protein]['type'] == "na" || @$acv[$protein]['type'] == "ia") continue;
+					if (@$acv[$protein]['type'] == "na" || @$acv[$protein]['type'] == "ia" || @$acv[$protein]['type'] == "?") continue;
 				}
 
 				if (!isset($array[$oid]))

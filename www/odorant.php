@@ -17,7 +17,7 @@ foreach ($odors as $o)
             if (@$data['adjusted_curve_top'] > 0) $prots[$rcpid]['has_agonists'] = true;
             else if (isset($data['type'])) switch ($data['type'])
             {
-                case 'vsa': case 'sa': case 'ma': case 'wa': case 'vwa':
+                case 'a': case 'vsa': case 'sa': case 'ma': case 'wa': case 'vwa':
                     $prots[$rcpid]['has_agonists'] = true;
                     break;
                 case 'ia':

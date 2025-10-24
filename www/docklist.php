@@ -161,7 +161,7 @@ foreach ($prots as $protid => $p)
             {
                 switch ($pair["type"])
                 {
-                    case "vsa": case "sa": case "ma": case "wa": case "vwa":
+                    case "a": case "vsa": case "sa": case "ma": case "wa": case "vwa":
                         $agonist = "Y";
                         break;
 
