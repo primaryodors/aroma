@@ -681,7 +681,6 @@ The repository is accepting pull requests at
         <th width="8%">EC<sub>50</sub></th>
         <th width="8%">Adjusted Top</th>
         <th width="4%">Antagonist?</th>
-        <th width="20%">Docks</th>
         <?php
         if (count($predictions)) echo "<th width=\"1%\">Dock Score</th>"; // <th width=\"1%\">Dock Energy</th>";
         ?>
@@ -754,7 +753,7 @@ foreach ($pairs as $oid => $pair)
     if (@$pair['antagonist']) echo "<td>Y <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno_ant</a></td>";
     else echo "<td>&nbsp;</td>";
 
-    if (@$pair['adock'] || @$pair['idock'])
+    /*if (@$pair['adock'] || @$pair['idock'])
     {
         echo "<td style=\"text-align: center;\">";
         foreach (['a', 'i'] as $i => $char)
@@ -784,7 +783,7 @@ foreach ($pairs as $oid => $pair)
             if (!$has) echo "-";
         }
     }
-    else echo "<td>&nbsp;</td>";
+    else echo "<td>&nbsp;</td>";*/
 
     if (count($predictions))
     {
