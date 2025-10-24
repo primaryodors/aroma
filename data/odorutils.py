@@ -105,7 +105,19 @@ def ensure_sdf_exists(odorant):
             for iso in o["isomers"].keys():
                 fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
-                    cmd = ["obabel", "-:"+o["isomers"][iso], "--gen3D", "-osdf", "-O" + fname]
+                    pettias = o["isomers"][iso].split("|")
+                    smiles = pettias[0]
+                    cmd = ["obabel", "-:"+smiles, "--gen3D", "-osdf", "-O" + fname]
                     print(" ".join(cmd), "\n")
                     subprocess.run(cmd)
+
+                    if 1 in pettias:
+                        sub4 = pettias[1][0:4]
+                        rest = pettias[1][4:]
+                        if sub4 == "rflp":
+                            cmd = ["bin/ringflip"]
+                            for larg in rest.strip().split(" "):
+                                cmd.append(larg)
+                            print(" ".join(cmd), "\n")
+                            subprocess.run(cmd)
 
