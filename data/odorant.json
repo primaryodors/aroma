@@ -57,6 +57,17 @@
                 {
                     "adjusted_curve_top": "4"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2L3":
+                {
+                    "ec50": "-4.064"
+                },
+                "OR2L5":
+                {
+                    "ec50": "-5.322"
+                }
             }
         },
         "oid": "002b93555eda9fd94ede39aa646b854e"
@@ -4000,6 +4011,29 @@
                 {
                     "ec50": "-3.84"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "ma"
+                },
+                "OR2J2":
+                {
+                    "type": "ma"
+                }
             }
         },
         "oid": "151e8ee457fd70c2e08c2b808487989a"
@@ -4361,6 +4395,22 @@
             }
         },
         "oid": "15f5e2777091e11ba0e539557012b79f"
+    },
+    "15fdfa550c6136638c3e11ec7c33bf3e":
+    {
+        "full_name": "mahonial",
+        "smiles": "O=CCCC=C(CCCC(O)(C)C)C",
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10J5":
+                {
+                    "ec50": "-4.70"
+                }
+            }
+        },
+        "oid": "15fdfa550c6136638c3e11ec7c33bf3e"
     },
     "16cd489ad41446e39849b9f7ee13267e":
     {
@@ -5498,6 +5548,13 @@
                 {
                     "adjusted_curve_top": "3"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR14J1":
+                {
+                    "ec50": "-5.66"
+                }
             }
         },
         "oid": "1d5d388c0e0238cee237797696d46710"
@@ -6146,6 +6203,13 @@
                 "OR7A17":
                 {
                     "type": "na"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7C1":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -6844,6 +6908,14 @@
                 "OR10K1":
                 {
                     "ec50": "-5.66"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10H1":
+                {
+                    "type": "a",
+                    "ec50": "-5.15"
                 }
             }
         },
@@ -8663,6 +8735,38 @@
         },
         "oid": "2e056651296b2da1d124d6ee4a743041"
     },
+    "2e05cd3406a41c69cc7c2e749a3b446c":
+    {
+        "full_name": "heliotropin",
+        "smiles": "O=Cc1ccc2c(c1)OCO2",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "cherry",
+                "maraschino_cherry",
+                "almond",
+                "bitter",
+                "almond",
+                "cherry",
+                "tropical",
+                "custard",
+                "vanilla",
+                "spicy"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR5P3":
+                {
+                    "type": "a"
+                }
+            }
+        },
+        "oid": "2e05cd3406a41c69cc7c2e749a3b446c"
+    },
     "2e23e67d62de67e219a69ef501627b18":
     {
         "full_name": "creosol",
@@ -9215,6 +9319,46 @@
         },
         "oid": "2ffb69f14540bfcbfc679c4afb0f9d44"
     },
+    "30365d704dc367894c1d4a062f07992a":
+    {
+        "full_name": "ambroxan",
+        "name1": "ambrofix",
+        "smiles": "CC1(C)CCC[C@]2([C@H]1CC[C@@]1([C@@H]2CCO1)C)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "ambergris",
+                "sweet",
+                "labdanum",
+                "dry",
+                "woody",
+                "pine",
+                "cedar",
+                "green",
+                "seedy",
+                "tea",
+                "fresh",
+                "nutty"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7A17":
+                {
+                    "ec50": "-5.89"
+                },
+                "OR7E24":
+                {
+                    "type": "a",
+                    "ec50": "-5.11"
+                }
+            }
+        },
+        "oid": "30365d704dc367894c1d4a062f07992a"
+    },
     "3085d446d6702f5497196af67e16f143":
     {
         "full_name": "ethylphenyl acetate",
@@ -9340,6 +9484,14 @@
                 "OR4Q3":
                 {
                     "adjusted_curve_top": "2"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2AG2":
+                {
+                    "type": "a",
+                    "ec50": "-5.35"
                 }
             }
         }
@@ -10545,6 +10697,13 @@
                 {
                     "ec50": "-2.971"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "2.7"
+                }
             }
         },
         "pK":
@@ -10917,6 +11076,17 @@
                     "type": "wa",
                     "ec50": "-5.7",
                     "adjusted_curve_top": "1.2000000178814"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2M2":
+                {
+                    "type": "a"
+                },
+                "OR2V1":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -11354,6 +11524,29 @@
                 {
                     "adjusted_curve_top": "0"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "ma"
+                },
+                "OR10A6":
+                {
+                    "type": "na"
+                },
+                "OR10J1":
+                {
+                    "type": "na"
+                },
+                "OR2AP1":
+                {
+                    "type": "na"
+                },
+                "OR2J2":
+                {
+                    "type": "na"
+                }
             }
         },
         "oid": "4175188c5571c53fcbe575de06a338b9"
@@ -11682,6 +11875,17 @@
                 {
                     "type": "ia",
                     "adjusted_curve_top": "-2"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR5P3":
+                {
+                    "type": "a"
+                },
+                "OR6P1":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -12206,6 +12410,13 @@
                 {
                     "type": "ma",
                     "adjusted_curve_top": "4.2639590472739"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR4S2":
+                {
+                    "ec50": "-3.983"
                 }
             }
         },
@@ -12881,6 +13092,13 @@
                 "OR2W1":
                 {
                     "ec50": "-3.358"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "4"
                 }
             }
         },
@@ -13649,6 +13867,13 @@
                 {
                     "type": "ma",
                     "adjusted_curve_top": "6.5217389166355"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "2.0"
                 }
             }
         },
@@ -15830,6 +16055,13 @@
                 {
                     "adjusted_curve_top": "0"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR9Q2":
+                {
+                    "ec50": "-5.55"
+                }
             }
         },
         "soluble": "w",
@@ -16292,6 +16524,21 @@
                 {
                     "adjusted_curve_top": "0"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR52K1":
+                {
+                    "type": "a"
+                },
+                "OR56A1":
+                {
+                    "type": "a"
+                },
+                "OR56A4":
+                {
+                    "type": "a"
+                }
             }
         },
         "oid": "62368b4530db7fac68a7c8932e06d3aa"
@@ -16359,6 +16606,13 @@
                 "OR8K3":
                 {
                     "ec50": "-3.80"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR8K3":
+                {
+                    "ec50": "-3.93"
                 }
             }
         },
@@ -18121,6 +18375,13 @@
                     "type": "na",
                     "adjusted_curve_top": "0"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "3.1"
+                }
             }
         },
         "oid": "6a0766e9530b1be60d3b659bb6726d79"
@@ -18277,6 +18538,35 @@
         },
         "oid": "6b52264754b54e3f8a821e968af57159"
     },
+    "6c25661e9f97c5dc0c49421d5227a520":
+    {
+        "full_name": "ethyl 3-methylthiopropionate",
+        "smiles": "CSCCC(=O)OCC",
+        "aroma":
+        {
+            "https://doi.org/10.1016/j.foodchem.2021.131680":
+            [
+                "sulfurous",
+                "metallic",
+                "pineapple",
+                "fruity",
+                "ripe",
+                "pulpy",
+                "tomato"
+            ]
+        },
+        "activity":
+        {
+            "https://doi.org/10.1016/j.foodchem.2021.131680":
+            {
+                "OR2W1":
+                {
+                    "ec50": "-2.817"
+                }
+            }
+        },
+        "oid": "6c25661e9f97c5dc0c49421d5227a520"
+    },
     "6c3cd6794efca3cafdf543ecdb272353":
     {
         "full_name": "2-nonanone",
@@ -18396,6 +18686,13 @@
                 "OR2W1":
                 {
                     "ec50": "-4.718"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10J5":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -18644,6 +18941,26 @@
         },
         "oid": "6ed14eab60fd46372d853fbdd8d61228"
     },
+    "6f26d469286a8f77c563c268f2759212":
+    {
+        "full_name": "4-methyl-3-hexenoic acid",
+        "smiles": "[O-]C(=O)CC=C(CC)C",
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR51B2":
+                {
+                    "type": "a"
+                },
+                "OR51B5":
+                {
+                    "type": "a"
+                }
+            }
+        },
+        "oid": "6f26d469286a8f77c563c268f2759212"
+    },
     "6f32ac14a979f2cfeba959f609387f74":
     {
         "full_name": "ambrettolide",
@@ -18722,6 +19039,13 @@
                 {
                     "type": "ia",
                     "adjusted_curve_top": "-9.9999996019446"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR1N2":
+                {
+                    "ec50": "-5.82"
                 }
             }
         },
@@ -19583,6 +19907,29 @@
                 {
                     "type": "ma"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "sa"
+                },
+                "OR2J2":
+                {
+                    "type": "sa"
+                }
             }
         },
         "oid": "73fb9cf1a926583f1d2c5c72b1192709"
@@ -19828,6 +20175,13 @@
                 {
                     "ec50": "-4.40"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR5B12":
+                {
+                    "ec50": "-4.738"
+                }
             }
         },
         "oid": "74dedcb4b9d15289a42eb0b9c7d9446e"
@@ -20050,6 +20404,32 @@
             }
         },
         "oid": "75a72f1b58cf33c2e92945ed56d5deb6"
+    },
+    "75c11069422d59c99a00c2cad1224503":
+    {
+        "full_name": "cascalone",
+        "smiles": "O=C1COc2c(OC1)ccc(c2)C(C)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "marine",
+                "watery",
+                "fruity",
+                "clean"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10H2":
+                {
+                    "ec50": "-3.646"
+                }
+            }
+        },
+        "oid": "75c11069422d59c99a00c2cad1224503"
     },
     "75d38dab9287505c49bd95bb9229aae7":
     {
@@ -20686,6 +21066,29 @@
                     "type": "pa"
                 },
                 "OR56A4":
+                {
+                    "type": "ma"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "na"
+                },
+                "OR10J1":
+                {
+                    "type": "ma"
+                },
+                "OR2AP1":
+                {
+                    "type": "na"
+                },
+                "OR2J2":
                 {
                     "type": "ma"
                 }
@@ -22257,6 +22660,26 @@
         },
         "oid": "827d425266b951b0e4f07c41f79d585f"
     },
+    "8296b7d6e979e52ebb7b9fdcc8fb9ee9":
+    {
+        "full_name": "rosyfolia",
+        "smiles": "OCC1(C)CC1C(CC=C(C)C)C",
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2A5":
+                {
+                    "ec50": "-4.74"
+                },
+                "OR2A25":
+                {
+                    "ec50": "-4.959"
+                }
+            }
+        },
+        "oid": "8296b7d6e979e52ebb7b9fdcc8fb9ee9"
+    },
     "838ec03462de15227b8343df3be6e7b5":
     {
         "full_name": "methyl isoeugenol",
@@ -22478,6 +22901,16 @@
                 "linden_blossom",
                 "creamy"
             ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10J5":
+                {
+                    "ec50": "-5.21"
+                }
+            }
         },
         "oid": "84b8d231072be64af30fafaa47b88732"
     },
@@ -25571,6 +26004,29 @@
                 {
                     "type": "ma"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "vsa"
+                },
+                "OR10A6":
+                {
+                    "type": "vsa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "sa"
+                },
+                "OR2J2":
+                {
+                    "type": "sa"
+                }
             }
         },
         "oid": "96307b7432f887c61f58100d3541a0af"
@@ -25617,6 +26073,40 @@
             }
         },
         "oid": "970ff08eab1621d8ef5aa6dea27b547a"
+    },
+    "975233d83e28fa5bba1f1b3ab9fccd09":
+    {
+        "full_name": "2-methyl-3-tetrahydrofuranthiol",
+        "smiles": "SC1CCOC1C",
+        "isomers":
+        {
+            "(2S,3S)": "S[C@H]1CCO[C@H]1C",
+            "(2R,3S)": "S[C@H]1CCO[C@@H]1C",
+            "(2R,3R)": "S[C@@H]1CCO[C@@H]1C",
+            "(2S,3R)": "S[C@@H]1CCO[C@H]1C"
+        },
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "roasted", "beefy", "chicken", "meaty", "sulfurous", "alliaceous"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T4":
+                {
+                    "adjusted_curve_top": "10"
+                },
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "1.9"
+                }
+            }
+        },
+        "oid": "975233d83e28fa5bba1f1b3ab9fccd09"
     },
     "97acd8481743ff00e202e03ce7a01c8d":
     {
@@ -26516,6 +27006,24 @@
                 "sickening"
             ]
         },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR56A1":
+                {
+                    "type": "a"
+                },
+                "OR56A3":
+                {
+                    "type": "a"
+                },
+                "OR56A4":
+                {
+                    "type": "a"
+                }
+            }
+        },
         "oid": "9eddcecb096618242940feeee841de38"
     },
     "a00c3d2eaaca6e91820c963b74b829dd":
@@ -26944,6 +27452,7 @@
     {
         "full_name": "tert-butyl mercaptan",
         "name1": "tert-butanethiol",
+        "name2": "2-methyl-2-propanethiol",
         "smiles": "C(C)(C)(C)S",
         "aroma":
         {
@@ -26977,6 +27486,13 @@
                 "OR2T11":
                 {
                     "adjusted_curve_top": "0"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "1.9"
                 }
             }
         },
@@ -27047,6 +27563,17 @@
                 {
                     "adjusted_curve_top": "2"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR51B2":
+                {
+                    "type": "a"
+                },
+                "OR51B5":
+                {
+                    "type": "a"
+                }
             }
         },
         "oid": "a276ab392949e6a20f3aeeebbc9ebb92"
@@ -27092,6 +27619,22 @@
             ]
         },
         "oid": "a3229d0c17fdce0c53dc5f6fa8207690"
+    },
+    "a33fa6821a446419f9df9a8e1e812943":
+    {
+        "full_name": "methyl 3-mercaptopropionate",
+        "smiles": "CSCCC(=O)OC",
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "2.2"
+                }
+            }
+        },
+        "oid": "a33fa6821a446419f9df9a8e1e812943"
     },
     "a383382919e82b2756699f53e2c4231b":
     {
@@ -27732,6 +28275,29 @@
                 {
                     "type": "ma"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "na"
+                },
+                "OR2J2":
+                {
+                    "type": "sa"
+                }
             }
         },
         "oid": "a53fc67593a2546b0bea2bd7bed3bb6f"
@@ -28327,6 +28893,13 @@
                 {
                     "type": "vwa",
                     "adjusted_curve_top": "0.30000001192093"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR5P3":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -29346,6 +29919,13 @@
                 {
                     "adjusted_curve_top": "3"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR52A5":
+                {
+                    "ec50": "-3.523"
+                }
             }
         },
         "oid": "afd5ef2c8a9deab5a58799a633e4416a"
@@ -29674,6 +30254,29 @@
                 {
                     "type": "ma"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "na"
+                },
+                "OR2J2":
+                {
+                    "type": "ma"
+                }
             }
         },
         "oid": "b013143acfa662e12b38998c4c06679d"
@@ -29868,6 +30471,29 @@
                 "OR56A4":
                 {
                     "type": "ma"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "vsa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "sa"
+                },
+                "OR2J2":
+                {
+                    "type": "sa"
                 }
             }
         },
@@ -31410,6 +32036,17 @@
                     "adjusted_curve_top": "8.3",
                     "ec50": "-4.42"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR51B2":
+                {
+                    "type": "a"
+                },
+                "OR52K1":
+                {
+                    "type": "a"
+                }
             }
         },
         "oid": "bfd6d55c31a15054ccded6100bd3b0d6"
@@ -32589,6 +33226,13 @@
                     "adjusted_curve_top": "10",
                     "ec50": "-3.97"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR56A4":
+                {
+                    "ec50": "-4.66"
+                }
             }
         },
         "oid": "c63d864c72bb0b2ec67e69dd82b03bd3"
@@ -33022,6 +33666,17 @@
                 {
                     "adjusted_curve_top": "10"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T4":
+                {
+                    "adjusted_curve_top": "5"
+                },
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "7.5"
+                }
             }
         },
         "oid": "c7817d3dbb629c60237f8f5dd52a1b27"
@@ -33144,6 +33799,17 @@
                 "OR2T11":
                 {
                     "ec50": "-5.02"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T4":
+                {
+                    "adjusted_curve_top": "8"
+                },
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "5.9"
                 }
             }
         },
@@ -33577,6 +34243,29 @@
                 "OR56A4":
                 {
                     "type": "ma"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "vsa"
+                },
+                "OR10A6":
+                {
+                    "type": "vsa"
+                },
+                "OR10J1":
+                {
+                    "type": "sa"
+                },
+                "OR2AP1":
+                {
+                    "type": "sa"
+                },
+                "OR2J2":
+                {
+                    "type": "vsa"
                 }
             }
         },
@@ -34760,6 +35449,13 @@
                 {
                     "adjusted_curve_top": "6"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7A5":
+                {
+                    "ec50": "-5.25"
+                }
             }
         },
         "oid": "d32eed265463ae8a9b0edfe6a0160d80"
@@ -34980,6 +35676,21 @@
                 "onion",
                 "vegetable"
             ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T4":
+                {
+                    "ec50": "-5.836",
+                    "adjusted_curve_top": "9.4"
+                },
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "6.9"
+                }
+            }
         },
         "oid": "d4d77358a8f3708f4b29e6887f658b94"
     },
@@ -36354,6 +37065,32 @@
         },
         "oid": "d95dd47fe71e85838e3416876c5dcb47"
     },
+    "d9733b57870ff7215c4185e75bd421de":
+    {
+        "full_name": "ambermax",
+        "smiles": "OCC(C1=C2C(C)(C)C3CC2(C(CC1)(C)C)CC3)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "amber",
+                "woody",
+                "cedarwood",
+                "ambergris"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7C1":
+                {
+                    "ec50": "-5.64"
+                }
+            }
+        },
+        "oid": "d9733b57870ff7215c4185e75bd421de"
+    },
     "d9a2e452040486d8a9d3242d89f663da":
     {
         "full_name": "2-cyclohexylpropanal",
@@ -36399,6 +37136,29 @@
             }
         },
         "oid": "d9a2e452040486d8a9d3242d89f663da"
+    },
+    "da22ccba6e93bcb8a592776a566e7a34":
+    {
+        "full_name": "2-acetylthiazole",
+        "smiles": "CC(=O)c1nccs1",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "nutty", "popcorn", "peanut", "roasted", "peanut", "hazelnut", "toasted", "corn_chip", "raw", "bready"
+            ]
+        },
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "3.5"
+                }
+            }
+        },
+        "oid": "da22ccba6e93bcb8a592776a566e7a34"
     },
     "daa45d4c3a28e80e87628525f31c3427":
     {
@@ -37501,6 +38261,13 @@
                 {
                     "type": "na"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR1C1":
+                {
+                    "ec50": "-3.69"
+                }
             }
         },
         "oid": "e27df19eb19010d180969a650c4846f8"
@@ -38250,6 +39017,29 @@
                 {
                     "ec50": "-4.93"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10A3":
+                {
+                    "type": "sa"
+                },
+                "OR10A6":
+                {
+                    "type": "sa"
+                },
+                "OR10J1":
+                {
+                    "type": "na"
+                },
+                "OR2AP1":
+                {
+                    "type": "sa"
+                },
+                "OR2J2":
+                {
+                    "type": "na"
+                }
             }
         },
         "oid": "e77e5d61c7e9eef27b97ad49afaed42d"
@@ -38463,6 +39253,13 @@
                 "OR7D4":
                 {
                     "ec50": "-6.87"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7D4":
+                {
+                    "ec50": "-6.89"
                 }
             }
         },
@@ -38858,6 +39655,31 @@
         },
         "oid": "eb63930948e3ea65032e56ddc8e13f20"
     },
+    "ebd3b41792a7a9e30500d08b91c3cf90":
+    {
+        "full_name": "rosabloom",
+        "smiles": "OCC[C@H](CC/C=C(/CC)\\C)C",
+        "activity":
+        {
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR1D2":
+                {
+                    "type": "a",
+                    "ec50": "-3.461"
+                },
+                "OR2A25":
+                {
+                    "type": "a"
+                },
+                "OR2A5":
+                {
+                    "type": "a"
+                }
+            }
+        },
+        "oid": "ebd3b41792a7a9e30500d08b91c3cf90"
+    },
     "ebf0d0b3c02b378d6567c12c068c75f4":
     {
         "full_name": "n-butyl alcohol",
@@ -39039,29 +39861,43 @@
                 {
                     "type": "na"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR10H5":
+                {
+                    "ec50": "-4.39"
+                },
+                "OR10H2":
+                {
+                    "type": "a"
+                }
             }
         },
         "oid": "ed63ea395381cf765bc75d9c5d035db5"
     },
     "eddf384587f05eaca75a72a4b0ec1afb":
     {
-        "full_name": "ethyl 3-methylthiopropionate",
+        "full_name": "ethyl 3-mercaptopropionate",
         "smiles": "CCOC(=O)CCS",
         "aroma":
         {
             "https://doi.org/10.1016/j.foodchem.2021.131680":
             [
-                "sulfurous",
-                "fruity"
+                "animal",
+                "fruity",
+                "grape",
+                "skunk",
+                "meaty"
             ]
         },
         "activity":
         {
-            "https://doi.org/10.1016/j.foodchem.2021.131680":
+            "https://patents.google.com/patent/WO2024126820A1/en":
             {
-                "OR2W1":
+                "OR2C1":
                 {
-                    "ec50": "-2.817"
+                    "ec50": "-5.36"
                 }
             }
         },
@@ -40669,7 +41505,7 @@
     },
     "f4eb989d5326d646cb4753b0474f8cdd":
     {
-        "full_name": "S-methylthiobutanoate",
+        "full_name": "S-methyl thiobutanoate",
         "smiles": "CCCC(=O)SC",
         "aroma":
         {
@@ -40699,6 +41535,13 @@
                 {
                     "type": "ma",
                     "adjusted_curve_top": "3.502537996303"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR2T11":
+                {
+                    "adjusted_curve_top": "2.8"
                 }
             }
         },
@@ -41874,6 +42717,29 @@
                 "OR51L1":
                 {
                     "adjusted_curve_top": "0"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR51B2":
+                {
+                    "type": "a"
+                },
+                "OR52A5":
+                {
+                    "type": "a"
+                },
+                "OR52K1":
+                {
+                    "type": "a"
+                },
+                "OR56A1":
+                {
+                    "type": "a"
+                },
+                "OR56A4":
+                {
+                    "type": "a"
                 }
             }
         },
