@@ -61,8 +61,7 @@ for rcpid in data.protutils.prots.keys():
                 acv = o["activity"][url]
                 if rcpid in acv: isemp = True
             if not isemp: continue
-
-        if not oid:
+        elif not oid:
             isnote = False
             if "aroma" in o:
                 for url in o["aroma"]:
