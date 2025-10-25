@@ -209,7 +209,13 @@ foreach ($prots as $protid => $p)
 
     file_put_contents($cachefn, json_encode_pretty($cached));
 
-    // print_r($rows);
+    $graphdat =
+    [
+        0 => [],
+        1 => [],
+        2 => [],
+        3 => []
+    ];
 
     foreach ($rows as $k => $r)
     {
@@ -246,10 +252,72 @@ foreach ($prots as $protid => $p)
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
 
         echo @"<td>$agonist</td>\n";
+
+        if ($agonist == 'Y')
+        {
+            $graphdat[0][] = [$benerg_active, $occl_active];
+            $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active];
+        }
+        else if ($agonist == 'N')
+        {
+            $graphdat[1][] = [$benerg_active, $occl_active];
+            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active];
+        }
     }
 }
 
 ?></table>
+
+<table>
+    <tr>
+        <th>Active enthalpy vs. occlusion, agonists</th>
+        <th>Active enthalpy vs. occlusion, non-agonists</th>
+        <th>Active &Delta;H vs. occlusion, agonists</th>
+        <th>Active &Delta;H vs. occlusion, non-agonists</th>
+    </tr>
+    <tr>
+        <?php
+        foreach ($graphdat as $gi => $ldat)
+        {
+            echo "<td>\n";
+            $grid = [];
+            for ($y=0; $y<20; $y++)
+            {
+                $grid[$y] = [];
+                for ($x=0; $x<20; $x++)
+                    $grid[$y][$x] = 0;
+            }
+            $gridmax = 1;
+
+            foreach ($ldat as $d)
+            {
+                $x = intval(10 + $d[0]/1.5);
+                $y = intval(20 - $d[1]*2);
+
+                $grid[$y][$x] += 1;
+                if ($grid[$y][$x] > $gridmax) $gridmax = $grid[$y][$x];
+            }
+
+            for ($y=0; $y<20; $y++)
+            {
+                for ($x=0; $x<20; $x++)
+                {
+                    $value = floatval($grid[$y][$x]) / $gridmax * pi();
+                    $red   = intval(128 - cos($value + 0.5) * 127);
+                    $green = intval($value >= 1.5 ? (128 - cos(($value - 1.5)*2.3) * 127) : 0);
+                    $blue  = intval(128 - cos(($value + 0.5)*1.7) * 127);
+
+                    echo "<span style=\"background-color: rgb($red, $green, $blue);\">&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+                }
+                echo "<br>\n";
+            }
+
+            echo "</td>\n";
+        }
+        ?>
+    </tr>
+</table>
+
 <?php
 
 output_dlmenu_div();
