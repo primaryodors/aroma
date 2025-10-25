@@ -291,7 +291,7 @@ foreach ($prots as $protid => $p)
 
             foreach ($ldat as $d)
             {
-                $x = max(0, min(19, intval(10 + $d[0]/2)));
+                $x = max(0, min(19, intval(10 + $d[0]/5)));
                 $y = max(0, min(19, intval(20 - $d[1]*20)));
 
                 $grid[$y][$x] += 1;
