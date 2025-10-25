@@ -298,7 +298,7 @@ foreach ($prots as $protid => $p)
                 if ($grid[$y][$x] > $gridmax) $gridmax = $grid[$y][$x];
             }
 
-            echo "Max = $gridmax<br>\n";
+            echo "Peak = $gridmax<br>\n";
 
             for ($y=0; $y<20; $y++)
             {
@@ -314,9 +314,6 @@ foreach ($prots as $protid => $p)
                 }
                 echo "<br>\n";
             }
-
-            echo "<!-- ".print_r($grid, true)." -->\n";
-
             echo "</td>\n";
         }
         ?>
