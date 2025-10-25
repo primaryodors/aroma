@@ -61,6 +61,15 @@ $args = implode("&", $args);
     </tr>
 <?php
 
+$cached = [];
+$cachemt = 0;
+$cachefn = "docklist.cache.json";
+if (file_exists($cachefn))
+{
+    $cachemt = filemtime($cachefn);
+    $cached = json_decode(file_get_contents($cachefn), true);
+}
+
 $frcp = false;
 $flig = false;
 chdir(__DIR__);
@@ -100,41 +109,61 @@ foreach ($prots as $protid => $p)
         $rowid = "$protid~$odor";
         if (!isset($rows[$rowid])) $rows[$rowid] = [];
 
-        $c = file_get_contents("../output/$fam/$protid/$fname");
-        $lines = explode("\n", $c);
-        $benerg = 0;
-        $lsfe = $lsbe = $phfe = $phbe = 0;
-        $nump = 0;
-        $occl = 0;
-        foreach ($lines as $ln) 
+        $fpn = "../output/$fam/$protid/$fname";
+
+        if (isset($cached[$fname]) && filemtime($fpn) < $cachemt)
         {
-            if (!$benerg && substr($ln, 0, 7) == "Total: ")
-            {
-                $benerg = floatval(substr($ln, 7));
-            }
-            else if (!$lsfe && substr($ln, 0, 25) == "Ligand solvation energy: ")
-            {
-                $lsfe = floatval(substr($ln, 25));
-            }
-            else if (!$lsbe && substr($ln, 0, 32) == "Ligand pocket solvation energy: ")
-            {
-                $lsbe = floatval(substr($ln, 32));
-            }
-            else if (!$phfe && substr($ln, 0, 25) == "Pocket hydration energy: ")
-            {
-                $phfe = floatval(substr($ln, 25));
-            }
-            else if (!$phbe && substr($ln, 0, 31) == "Pocket bound hydration energy: ")
-            {
-                $phbe = floatval(substr($ln, 31));
-            }
-            else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
-            {
-                $occl = floatval(substr($ln, 25));
-            }
-            else if (substr($ln, 0, 6) == "Pose: ") $nump++;
+            extract($cached[$fname]);
         }
-        if (!$nump) $nump = "-";
+        else
+        {
+            $c = file_get_contents($fpn);
+            $lines = explode("\n", $c);
+            $benerg = 0;
+            $lsfe = $lsbe = $phfe = $phbe = 0;
+            $nump = 0;
+            $occl = 0;
+            foreach ($lines as $ln) 
+            {
+                if (!$benerg && substr($ln, 0, 7) == "Total: ")
+                {
+                    $benerg = floatval(substr($ln, 7));
+                }
+                else if (!$lsfe && substr($ln, 0, 25) == "Ligand solvation energy: ")
+                {
+                    $lsfe = floatval(substr($ln, 25));
+                }
+                else if (!$lsbe && substr($ln, 0, 32) == "Ligand pocket solvation energy: ")
+                {
+                    $lsbe = floatval(substr($ln, 32));
+                }
+                else if (!$phfe && substr($ln, 0, 25) == "Pocket hydration energy: ")
+                {
+                    $phfe = floatval(substr($ln, 25));
+                }
+                else if (!$phbe && substr($ln, 0, 31) == "Pocket bound hydration energy: ")
+                {
+                    $phbe = floatval(substr($ln, 31));
+                }
+                else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
+                {
+                    $occl = floatval(substr($ln, 25));
+                }
+                else if (substr($ln, 0, 6) == "Pose: ") $nump++;
+            }
+            if (!$nump) $nump = "-";
+
+            $cached[$fname] =
+            [
+                "benerg" => $benerg,
+                "lsfe" => $lsfe,
+                "lsbe" => $lsbe,
+                "phfe" => $phfe,
+                "phbe" => $phbe,
+                "occl" => $occl,
+                "nump" => $nump,
+            ];
+        }
 
         $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe);
         $rows[$rowid]["nump_$mode"] = $nump;
@@ -177,6 +206,8 @@ foreach ($prots as $protid => $p)
         }
         $rows[$rowid]["agonist"] = $agonist;
     }
+
+    file_put_contents($cachefn, json_encode_pretty($cached));
 
     // print_r($rows);
 
