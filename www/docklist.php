@@ -267,10 +267,10 @@ foreach ($prots as $protid => $p)
 
         $prediction = 0;
         $benerg_active = floatval($benerg_active);
-        $occl = floatval($occl);
-        if ($benerg_active > 0)             $prediction = max(0, 100.0 * -($occl - (17 - $benerg_active)/100));
-        else if ($benerg_active > -15)      $prediction = max(0, 100.0 *  ($occl - 0.85));
-        else                                $prediction = max(0, 100.0 * -($occl - ($benerg_active + 17)/100));
+        $occl_active = floatval($occl_active);
+        if ($benerg_active > 0)             $prediction = max(0, 100.0 * -($occl_active - (17 - $benerg_active)/100));
+        else if ($benerg_active > -15)      $prediction = max(0, 100.0 *  ($occl_active - 0.85));
+        else                                $prediction = max(0, 100.0 * -($occl_active - ($benerg_active + 17)/100));
 
         echo "<td>$prediction</td>\n";
 
