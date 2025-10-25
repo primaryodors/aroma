@@ -82,6 +82,7 @@ $graphdat =
     2 => [],
     3 => []
 ];
+$right = $wrong = 0;
 foreach ($prots as $protid => $p)
 {
     if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
@@ -271,6 +272,7 @@ foreach ($prots as $protid => $p)
         if ($benerg_active > 0)             $prediction = max(0, 100.0 * -($occl_active - (17 - $benerg_active)/100));
         else if ($benerg_active > -15)      $prediction = max(0, 100.0 *  ($occl_active - 0.85));
         else                                $prediction = max(0, 100.0 * -($occl_active - ($benerg_active + 17)/100));
+        $prediction = round($prediction, 2);
 
         echo "<td>$prediction</td>\n";
 
@@ -278,16 +280,22 @@ foreach ($prots as $protid => $p)
         {
             $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
             $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+            if ($prediction) $right++;
+            else $wrong++;
         }
         else if ($agonist == 'N')
         {
             $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
             $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+            if (!$prediction) $right++;
+            else $wrong++;
         }
     }
 }
 
 ?></table>
+
+<?php echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%</p>"; ?>
 
 <table>
     <tr>
