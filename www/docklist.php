@@ -292,7 +292,7 @@ foreach ($prots as $protid => $p)
             foreach ($ldat as $d)
             {
                 $x = intval(10 + $d[0]/1.5);
-                $y = intval(20 - $d[1]*2);
+                $y = intval(20 - $d[1]*20);
 
                 $grid[$y][$x] += 1;
                 if ($grid[$y][$x] > $gridmax) $gridmax = $grid[$y][$x];
