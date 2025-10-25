@@ -302,10 +302,11 @@ foreach ($prots as $protid => $p)
             {
                 for ($x=0; $x<20; $x++)
                 {
+                    // $value = $x/20 * pi(); // for testing
                     $value = floatval($grid[$y][$x]) / $gridmax * pi();
-                    $red   = intval(128 - cos($value + 0.5) * 127);
+                    $red   = intval(128 - cos($value + 0.5) * 127) * pow($value/pi(), 0.2);
                     $green = intval($value >= 1.5 ? (128 - cos(($value - 1.5)*2.3) * 127) : 0);
-                    $blue  = intval(128 - cos(($value + 0.5)*1.7) * 127);
+                    $blue  = intval(128 - cos(($value + 1.5)*1.8) * 127) * pow($value/pi(), 0.333);
 
                     echo "<span style=\"background-color: rgb($red, $green, $blue);\">&nbsp;&nbsp;&nbsp;&nbsp;</span>";
                 }
