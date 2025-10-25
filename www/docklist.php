@@ -315,6 +315,8 @@ foreach ($prots as $protid => $p)
                 echo "<br>\n";
             }
 
+            echo "<!-- ".print_r($grid, true)." -->\n";
+
             echo "</td>\n";
         }
         ?>
