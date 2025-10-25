@@ -269,27 +269,45 @@ foreach ($prots as $protid => $p)
         $prediction = 0;
         $benerg_active = floatval($benerg_active);
         $occl_active = floatval($occl_active);
-        if ($benerg_active > 0)             $prediction = max(0, 100.0 * ($occl_active + (17 - $benerg_active)/100));
+        if ($benerg_active > 0)             $prediction = max(0, 100.0 * ($occl_active - (1.0 - (17 - $benerg_active)/100)));
         else if ($benerg_active > -15)      $prediction = max(0, 100.0 * ($occl_active - 0.85));
-        else                                $prediction = max(0, 100.0 * ($occl_active + ($benerg_active + 17)/100));
+        else                                $prediction = max(0, 100.0 * ($occl_active - ($benerg_active + 17)/100));
         $prediction = round($prediction, 2);
 
-        echo "<td>$prediction</td>\n";
+        $color = "";
 
         if ($agonist == 'Y')
         {
             $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
             $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if ($prediction) $right++;
-            else $wrong++;
+            if ($prediction)
+            {
+                $color = "color: #0c0;";
+                $right++;
+            }
+            else
+            {
+                $color = "color: #f00;";
+                $wrong++;
+            }
         }
         else if ($agonist == 'N')
         {
             $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
             $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if (!$prediction) $right++;
-            else $wrong++;
+            if (!$prediction)
+            {
+                $color = "color: #0c0;";
+                $right++;
+            }
+            else
+            {
+                $color = "color: #f00;";
+                $wrong++;
+            }
         }
+
+        echo "<td style=\"$color\">$prediction</td>\n";
     }
 }
 
