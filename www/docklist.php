@@ -73,6 +73,14 @@ if (file_exists($cachefn))
 $frcp = false;
 $flig = false;
 chdir(__DIR__);
+
+$graphdat =
+[
+    0 => [],
+    1 => [],
+    2 => [],
+    3 => []
+];
 foreach ($prots as $protid => $p)
 {
     if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
@@ -208,14 +216,6 @@ foreach ($prots as $protid => $p)
     }
 
     file_put_contents($cachefn, json_encode_pretty($cached));
-
-    $graphdat =
-    [
-        0 => [],
-        1 => [],
-        2 => [],
-        3 => []
-    ];
 
     foreach ($rows as $k => $r)
     {
