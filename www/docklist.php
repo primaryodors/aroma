@@ -58,6 +58,7 @@ $args = implode("&", $args);
         <th>Occlusion</th>
         <th>Poses</th>
         <th>Agonist?</td>
+        <th>Predicted</td>
     </tr>
 <?php
 
@@ -253,15 +254,35 @@ foreach ($prots as $protid => $p)
 
         echo @"<td>$agonist</td>\n";
 
+        /*
+            let o = occlusion, H = active enthalpy
+
+            if H >= 0:
+                    o >= 1 - (15 - H)/100
+            if -15 < H < 0:
+                    o >= 0.85
+            if H <= -15:
+                    o >= 0.85 - (H + 15)/100
+        */
+
+        $prediction = 0;
+        $benerg_active = floatval($benerg_active);
+        $occl = floatval($occl);
+        if ($benerg_active > 0)             $prediction = max(0, 100.0 * -($occl - (17 - $benerg_active)/100));
+        else if ($benerg_active > -15)      $prediction = max(0, 100.0 *  ($occl - 0.85));
+        else                                $prediction = max(0, 100.0 * -($occl - ($benerg_active + 17)/100));
+
+        echo "<td>$prediction</td>\n";
+
         if ($agonist == 'Y')
         {
-            $graphdat[0][] = [$benerg_active, $occl_active];
-            $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active];
+            $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
+            $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
         }
         else if ($agonist == 'N')
         {
-            $graphdat[1][] = [$benerg_active, $occl_active];
-            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active];
+            $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
+            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
         }
     }
 }
