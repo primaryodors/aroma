@@ -298,6 +298,8 @@ foreach ($prots as $protid => $p)
                 if ($grid[$y][$x] > $gridmax) $gridmax = $grid[$y][$x];
             }
 
+            echo "Max = $gridmax<br>\n";
+
             for ($y=0; $y<20; $y++)
             {
                 for ($x=0; $x<20; $x++)
