@@ -1275,25 +1275,25 @@ float Molecule::octant_occlusion(Molecule *ligand)
 float Molecule::octant_occlusion(Molecule **ligands)
 {
     if (!atoms) return 0;
-    int i, j, l;
+    int h, i, j, l;
 
     float worst_occlusion = 1835;
-    for (i=0; atoms[i]; i++)
+    for (h=0; atoms[h]; h++)
     {
         Sphere octant_atoms[8];
         for (i=0; i<8; i++)
         {
-            octant_atoms[i].center = Point(0,0,0);
-            octant_atoms[i].radius = 0;
+            octant_atoms[h].center = Point(0,0,0);
+            octant_atoms[h].radius = 0;
         }
-        int ag = atoms[i]->get_geometry();
+        int ag = atoms[h]->get_geometry();
         for (j=0; j<ag; j++)
         {
-            Bond* b = atoms[i]->get_bond_by_idx(j);
+            Bond* b = atoms[h]->get_bond_by_idx(j);
             if (!b) continue;
             if (!b->atom2) continue;
 
-            SCoord rel = b->atom2->loc.subtract(atoms[i]->loc);
+            SCoord rel = b->atom2->loc.subtract(atoms[h]->loc);
             int octi = rel.octant_idx();
             float oim = octant_atoms[octi].center.magnitude();
 
@@ -1301,16 +1301,16 @@ float Molecule::octant_occlusion(Molecule **ligands)
             if (!oim || r < oim)
             {
                 octant_atoms[octi].center = rel;
-                octant_atoms[octi].radius = atoms[i]->vdW_radius + b->atom2->vdW_radius;
+                octant_atoms[octi].radius = atoms[h]->vdW_radius + b->atom2->vdW_radius;
             }
         }
 
         for (j=0; ligands[j]; j++)
         {
-            Atom* b = ligands[j]->get_nearest_atom(atoms[i]->loc);
+            Atom* b = ligands[j]->get_nearest_atom(atoms[h]->loc);
             if (!b) continue;
 
-            SCoord rel = b->loc.subtract(atoms[i]->loc);
+            SCoord rel = b->loc.subtract(atoms[h]->loc);
             int octi = rel.octant_idx();
             float oim = octant_atoms[octi].center.magnitude();
 
@@ -1318,7 +1318,7 @@ float Molecule::octant_occlusion(Molecule **ligands)
             if (!oim || r < oim)
             {
                 octant_atoms[octi].center = rel;
-                octant_atoms[octi].radius = atoms[i]->vdW_radius + b->vdW_radius;
+                octant_atoms[octi].radius = atoms[h]->vdW_radius + b->vdW_radius;
             }
         }
 
