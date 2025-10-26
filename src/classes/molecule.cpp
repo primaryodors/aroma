@@ -1280,11 +1280,12 @@ float Molecule::octant_occlusion(Molecule **ligands)
     float worst_occlusion = 1835;
     for (h=0; atoms[h]; h++)
     {
+        if (atoms[h]->is_backbone) continue;
         Sphere octant_atoms[8];
         for (i=0; i<8; i++)
         {
-            octant_atoms[h].center = Point(0,0,0);
-            octant_atoms[h].radius = 0;
+            octant_atoms[i].center = Point(0,0,0);
+            octant_atoms[i].radius = 0;
         }
         int ag = atoms[h]->get_geometry();
         for (j=0; j<ag; j++)
