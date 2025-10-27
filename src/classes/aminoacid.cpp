@@ -1731,6 +1731,60 @@ Atom* AminoAcid::get_reach_atom()
     return retval;
 }
 
+Atom *AminoAcid::get_reach_atom(intera_type typ)
+{
+    if (!atoms) return nullptr;
+
+    int i;
+    float maxr = 0;
+    Atom* CA = get_atom("CA");
+    Atom* retval = nullptr;
+    if (!CA) return nullptr;
+
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->get_heavy_atom()->is_backbone)
+        {
+            atoms[i]->is_backbone = true;
+            continue;
+        }
+        bool type_ok = true;
+        switch (typ)
+        {
+            case covalent: return nullptr; break;
+            case ionic:
+                if (!atoms[i]->get_charge() && !atoms[i]->is_conjugated_to_charge()) type_ok = false;
+            break;
+            case mcoord:
+                if (!atoms[i]->get_family() != CHALCOGEN && !atoms[i]->get_family() != PNICTOGEN) type_ok = false;
+                if (atoms[i]->Z == 8) type_ok = false;
+            break;
+            case hbond:
+                if (fabs(atoms[i]->is_polar()) < hydrophilicity_cutoff) type_ok = false;
+            break;
+            case pi:
+                if (!atoms[i]->is_pi()) type_ok = false;
+            break;
+            case polarpi:
+                if (fabs(atoms[i]->is_polar()) < hydrophilicity_cutoff && !atoms[i]->is_pi()) type_ok = false;
+            break;
+            case vdW:
+            default:
+                if (fabs(atoms[i]->is_polar()) >= hydrophilicity_cutoff || atoms[i]->is_pi()) type_ok = false;
+        }
+        if (!type_ok) continue;
+
+        float r = atoms[i]->distance_to(CA);
+        if (r > maxr)
+        {
+            maxr = r;
+            retval = atoms[i];
+        }
+    }
+
+    return retval;
+}
+
 float AminoAcid::CB_angle(Point reference)
 {
     Atom *CB, *HA1, *HA2;

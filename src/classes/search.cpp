@@ -1533,6 +1533,14 @@ bool LigandTarget::contains(Atom *a)
     return false;
 }
 
+intera_type LigandTarget::best_interaction()
+{
+    if (charge()) return ionic;
+    if (polarity()) return hbond;
+    if (is_pi()) return pi;
+    return vdW;
+}
+
 std::string LigandTarget::to_std_string()
 {
     if (single_atom) return std::string(single_atom->name);

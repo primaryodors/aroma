@@ -115,6 +115,7 @@ for rcpid in data.protutils.prots.keys():
             newcfg.append("SOFT " + softness + " 4 5 6 7")
         newcfg.append("NODEL 45.52 5.39")
         newcfg.append("NODEL 7.49 7.55")
+        newcfg.append("OUTBBP")
 
         if pocket:
             if "atomto" in pocket:

@@ -199,7 +199,8 @@
 #define hydrogenate_add_missing_heavy_atoms 1
 
 // Ligand repositioning constants.
-#define multimol_stays_enforcement 0.5
+#define multimol_stays_enforcement 0.666
+#define multimol_stays_allow_revert_worsening 0
 #define stays_tolerance_factor .15
 #define reuse_pose_probability 0.333
 #define best_pose_reset_frequency 0.25

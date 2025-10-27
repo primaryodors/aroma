@@ -22,6 +22,7 @@ class LigandTarget
     float importance(Molecule* mol);
     bool contains(LigandTarget* lt);
     bool contains(Atom* a);
+    intera_type best_interaction();
     std::string to_std_string();
 };
 

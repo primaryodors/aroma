@@ -114,6 +114,7 @@ public:
     bool can_reach(Molecule* other) const;
     bool can_reach(AminoAcid* other) const;
     Atom* get_reach_atom();
+    Atom* get_reach_atom(intera_type typ);
     float CB_angle(Point reference);
     void set_region(const char* regname)
     {

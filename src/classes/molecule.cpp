@@ -5228,7 +5228,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     if (audit) sprintf(triedchange, "stochastic rotation %f deg.", theta*fiftyseven);
                     a->enforce_stays(multimol_stays_enforcement);
                     tryenerg = cfmol_multibind(a, nearby);
-                    
 
                     if (tryenerg.improved(benerg))
                     {
@@ -5238,7 +5237,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     }
                     else
                     {
+                        #if multimol_stays_allow_revert_worsening
                         pib.restore_state(a);
+                        #endif
                     }
                 }
             }       // If can axial rotate.
@@ -5396,10 +5397,12 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
                             else
                             {
+                                #if multimol_stays_allow_revert_worsening
                                 pib.restore_state(a);
 
                                 #if _dbg_mol_flexion
                                 if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                #endif
                                 #endif
                             }
                         }
