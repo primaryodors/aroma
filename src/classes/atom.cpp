@@ -1827,7 +1827,10 @@ float Ring::flip_atom(Atom* wa)
         wa->move(nl);
 
         float r; // = pt1.get_3d_distance(ol);
-        if (!far_enough && theta > hexagonal / 3) far_enough = true;
+        if (!far_enough && theta > hexagonal / 3)
+        {
+            if (wa->distance_to(va) >= 0.98*rvw && wa->distance_to(xa) >= 0.98*rxw) far_enough = true;
+        }
         if (far_enough)
         {
             r = pt1.get_3d_distance(pt2);
@@ -1858,8 +1861,8 @@ float Ring::flip_atom(Atom* wa)
                         movesw[j]->move(lpt);
                     }
                 }
-                return theta;
             }
+            return theta;
             step = fmax(0.01, r * 0.1 * fiftyseventh);
         }
 
