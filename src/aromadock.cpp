@@ -3179,6 +3179,19 @@ _try_again:
                             if (pose <= 1) cout << "Staying " << llig->stay_close_mine->name << " near " 
                                 << g_bbr[l].pri_res->get_residue_no() << ":" << llig->stay_close_other->name << endl << endl;
 
+                            if (g_bbr[l].sec_res && g_bbr[l].sec_tgt)
+                            {
+                                if (g_bbr[l].sec_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].sec_tgt->single_atom;
+                                else if (g_bbr[l].sec_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].sec_tgt->conjgrp->get_nearest_atom(g_bbr[l].sec_res->get_CA_location());
+                                llig->stay_close2_mol = g_bbr[l].sec_res;
+                                if (g_bbr[l].sec_res->coordmtl) llig->stay_close2_other = g_bbr[l].sec_res->coordmtl;
+                                else llig->stay_close2_other = g_bbr[l].sec_res->get_nearest_atom(g_bbr[l].sec_tgt->barycenter());
+                                llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
+
+                                if (pose <= 1) cout << "Staying " << llig->stay_close2_mine->name << " near " 
+                                    << g_bbr[l].sec_res->get_residue_no() << ":" << llig->stay_close2_other->name << endl << endl;
+                            }
+
                             // ligand->propagate_stays();
                             g_bbr[l].protein = protein;
                             Search::align_targets(llig, searchcen, &g_bbr[l]);

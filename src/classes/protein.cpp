@@ -4011,12 +4011,26 @@ void Protein::bridge(int resno1, int resno2)
         if (aa2->stay_close_mine && aa2->stay_close_other) 
             aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
     }
+    r = (aa1->stay_close2_mine && aa1->stay_close_other) ? aa1->stay_close2_mine->distance_to(aa1->stay_close_other) : -1;
+    if (r>0 && r > aa1->stay_close_optimal)
+    {
+        if (aa1->stay_close2_mine && aa1->stay_close_other)
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+        if (aa2->stay_close2_mine && aa2->stay_close_other) 
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+        if (aa1->stay_close2_mine && aa1->stay_close_other) 
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+        if (aa2->stay_close2_mine && aa2->stay_close_other) 
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+    }
     Molecule::conform_molecules(mols, 20);
 
     aa1->movability = MOV_PINNED;
     aa2->movability = MOV_PINNED;
 
-    aa1->stay_close_mine = aa1->stay_close_other = aa2->stay_close_mine = aa2->stay_close_other = nullptr;
+    aa1->stay_close_mine = aa1->stay_close_other = aa2->stay_close_mine = aa2->stay_close_other
+        = aa1->stay_close2_mine = aa1->stay_close2_other = aa2->stay_close2_mine = aa2->stay_close2_other 
+        = nullptr;
 
     _INTERA_R_CUTOFF = _DEFAULT_INTERA_R_CUTOFF;
 }

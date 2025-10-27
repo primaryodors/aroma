@@ -311,8 +311,9 @@ public:
     Molecule* best_interactor = nullptr;
     int eclipse_hash = 0;
     Atom *stay_close_mine = nullptr, *stay_close_other = nullptr;
-    Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr;
-    float stay_close_tolerance = 0, stay_close_optimal = 2;
+    Atom *stay_close2_mine = nullptr, *stay_close2_other = nullptr;
+    Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr, *stay_close2_mol = nullptr;
+    float stay_close_tolerance = 0, stay_close_optimal = 2, stay_close2_optimal = 2;
     bool is_ic_res = false;
 
 protected:

@@ -935,11 +935,15 @@ void Molecule::propagate_stays()
         {
             if (monomers[i]->atoms[j] == stay_close_mine)
             {
+                monomers[i]->stay_close_mol = stay_close_mol;
                 monomers[i]->stay_close_mine = stay_close_mine;
                 monomers[i]->stay_close_other = stay_close_other;
-                monomers[i]->stay_close_mol = stay_close_mol;
                 monomers[i]->stay_close_optimal = stay_close_optimal;
                 monomers[i]->stay_close_tolerance = stay_close_tolerance;
+                monomers[i]->stay_close2_mol = stay_close2_mol;
+                monomers[i]->stay_close2_mine = stay_close2_mine;
+                monomers[i]->stay_close2_other = stay_close2_other;
+                monomers[i]->stay_close2_optimal = stay_close2_optimal;
             }
         }
     }
@@ -3710,7 +3714,7 @@ float Molecule::find_mutual_max_bind_potential(Molecule* other)
     int i, j, m = get_atom_count(), n = other->get_atom_count();
     if (!m || !n) return 0;
 
-    float best_potential = 0;
+    float best_potential = 0, nextbest_potential = 0;
     for (i=0; i<m; i++)
     {
         if (atoms[i]->is_backbone) continue;
@@ -3727,6 +3731,10 @@ float Molecule::find_mutual_max_bind_potential(Molecule* other)
             if (b > best_potential)
             {
                 best_potential = b;
+                stay_close2_mol = stay_close_mol;
+                stay_close2_mine = stay_close_mine;
+                stay_close2_other = stay_close_other;
+                stay_close2_optimal = stay_close_optimal;
                 stay_close_mol = other;
                 stay_close_mine = atoms[i];
                 stay_close_other = other->atoms[j];
@@ -3747,6 +3755,13 @@ float Molecule::find_mutual_max_bind_potential(Molecule* other)
                     << " have potential binding energy of " << -b << " kJ/mol at " << stay_close_optimal << "Å."
                     << endl;
                 #endif
+            }
+            else if (b > nextbest_potential)
+            {
+                stay_close2_mol = other;
+                stay_close2_mine = atoms[i];
+                stay_close2_other = other->atoms[j];
+                stay_close2_optimal = InteratomicForce::optimal_distance(stay_close2_mine, stay_close2_other);
             }
             // cout << endl;
         }
@@ -3782,16 +3797,29 @@ bool Molecule::check_stays()
 bool Molecule::check_stays_dry()
 {
     float r = stay_close_other->distance_to(stay_close_mine);
-    return (r <= stay_close_optimal+stay_close_tolerance);
+    bool result = (r <= stay_close_optimal+stay_close_tolerance);
+    if (!result) return result;
+    r = stay_close2_other->distance_to(stay_close2_mine);
+    return (r <= stay_close2_optimal+stay_close_tolerance);
 }
 
 void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
 {
     if (!stay_close_mine || !stay_close_other) return;
+    if (is_residue())
+    {
+        // TODO: flex side chain
+        return;
+    }
+
     if (stay_close_other->vanished)
     {
         stay_close_mine = stay_close_other = nullptr;
         return;
+    }
+    if (stay_close2_other && stay_close2_other->vanished)
+    {
+        stay_close2_mine = stay_close2_other = nullptr;
     }
 
     Rotation rot;
@@ -3946,7 +3974,7 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
     if (!movamt.r) return;
 
     rot = align_points_3d(stay_close_mine->loc, stay_close_other->loc, get_barycenter());
-    rot.a = fmin(fabs(rot.a), fiftyseventh*10)*sgn(rot.a);
+    rot.a = fmin(fabs(rot.a), fiftyseventh*22.5)*sgn(rot.a);
     lv = rot.v;
     lv.origin = get_barycenter();
     #if _dbg_improvements_only_rule
@@ -3956,15 +3984,29 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
 
     movamt = stay_close_other->loc.subtract(stay_close_mine->loc);
     movamt.r -= (stay_close_optimal+stay_close_tolerance);
-    if (movamt.r < 0) return;
-    movamt.r *= amt;
+    if (movamt.r > 0)
+    {
+        movamt.r *= amt;
 
-    if (fabs(movamt.r) > speed_limit) movamt.r = sgn(movamt.r) * speed_limit;
+        if (fabs(movamt.r) > speed_limit) movamt.r = sgn(movamt.r) * speed_limit;
 
-    #if _dbg_improvements_only_rule
-    excuse_deterioration = true;
-    #endif
-    move(movamt);
+        #if _dbg_improvements_only_rule
+        excuse_deterioration = true;
+        #endif
+        move(movamt);
+    }
+
+    if (stay_close2_mine && stay_close2_other)
+    {
+        SCoord v = stay_close2_other->loc.subtract(stay_close2_mine->loc);
+        v.r -= (stay_close2_optimal+stay_close_tolerance);
+        rot = align_points_3d(stay_close2_mine->loc, stay_close2_other->loc, stay_close_mine->loc);
+        rot.a *= amt;
+        lv = rot.v;
+        lv.origin = stay_close2_mine->loc;
+        rotate(lv, rot.a);
+    }
+
     movability = wasmov;
 
     #if _dbg_stays_enforce
