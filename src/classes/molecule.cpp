@@ -1278,6 +1278,8 @@ float Molecule::octant_occlusion(Molecule **ligands)
     int h, i, j, l;
 
     float worst_occlusion = 1835;
+    float total_occlusion = 0;
+    int occl_samples = 0;
     for (h=0; atoms[h]; h++)
     {
         if (atoms[h]->is_backbone) continue;
@@ -1312,6 +1314,10 @@ float Molecule::octant_occlusion(Molecule **ligands)
             if (!b) continue;
 
             SCoord rel = b->loc.subtract(atoms[h]->loc);
+            Atom* a = get_nearest_atom(b->loc);
+            if (atoms[h]->get_heavy_atom()->is_bonded_to(a->get_heavy_atom()) 
+                || atoms[h]->get_heavy_atom()->shares_bonded_with(a->get_heavy_atom())) 
+                rel = b->loc.subtract(a->loc);
             int octi = rel.octant_idx();
             float oim = octant_atoms[octi].center.magnitude();
 
@@ -1323,8 +1329,12 @@ float Molecule::octant_occlusion(Molecule **ligands)
             }
         }
 
+        #if _dbg_octant_occlusion
+        cout << "Atom " << atoms[h]->name;
+        #endif
         float local_occlusions = 0;
         Point zero(0,0,0);
+        float local_worst = 1;
         for (i=0; i<4; i++)
         {
             int j = 7-i;
@@ -1342,24 +1352,36 @@ float Molecule::octant_occlusion(Molecule **ligands)
                 #if _dbg_octant_occlusion
                 cout << " partial " << partial;
                 #endif
-                float r = fmax(octant_atoms[i].center.magnitude()-octant_atoms[i].radius, 0) + 1;
+                float r = fmax(octant_atoms[i].center.magnitude()-octant_atoms[i].radius, 0) / octant_atoms[i].radius + 1;
                 partial /= r;
                 #if _dbg_octant_occlusion
                 cout << " / " << r;
                 #endif
-                r = fmax(octant_atoms[j].center.magnitude()-octant_atoms[j].radius, 0) + 1;
+                r = fmax(octant_atoms[j].center.magnitude()-octant_atoms[j].radius, 0) / octant_atoms[i].radius + 1;
                 partial /= r;
                 #if _dbg_octant_occlusion
                 cout << " / " << r << " = " << partial << endl;
                 #endif
-                local_occlusions += partial/4;
+                local_occlusions += partial/3;          // it only takes 3 out of 4.
+                if (partial < local_worst) local_worst = partial;
             }
+            #if _dbg_octant_occlusion
+            else cout << " (vacant)" << endl;
+            #endif
         }
+        local_occlusions = fmin(1, local_occlusions-local_worst/3);
+
+        #if _dbg_octant_occlusion
+        cout << "Local: " << local_occlusions << endl << endl;
+        #endif
 
         if (local_occlusions < worst_occlusion) worst_occlusion = local_occlusions;
+        total_occlusion += local_occlusions;
+        occl_samples++;
     }
 
-    return worst_occlusion;
+    // return worst_occlusion;
+    return occl_samples ? (total_occlusion / occl_samples) : 0;
 }
 
 float Molecule::bindability_by_type(intera_type t, bool ib)
