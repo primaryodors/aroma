@@ -1281,6 +1281,7 @@ float Molecule::octant_occlusion(Molecule **ligands)
     if (!atoms) return 0;
     int h, i, j, l;
 
+    #if per_atom_occlusions
     float worst_occlusion = 1835;
     float total_occlusion = 0;
     int occl_samples = 0;
@@ -1386,6 +1387,76 @@ float Molecule::octant_occlusion(Molecule **ligands)
 
     // return worst_occlusion;
     return occl_samples ? (total_occlusion / occl_samples) : 0;
+    #else
+    float total_occlusions = 0;
+    Sphere octant_atoms[8];
+
+    for (i=0; i<8; i++) octant_atoms[i].radius = 0;
+
+    #if _dbg_octant_occlusion
+    cout << endl;
+    #endif
+    for (i=0; ligands[i]; i++)
+    {
+        if (ligands[i] == this) continue;
+        Atom* a;
+        for (j=0; a = ligands[i]->atoms[j]; j++)
+        {
+            if (!j && !a->molsurf_area) ligands[i]->get_surface_area();
+            Atom* b = get_nearest_atom(a->loc);
+            SCoord rel = a->loc.subtract(b->loc);
+            int octi = rel.octant_idx();
+            float oim = octant_atoms[octi].center.magnitude();
+
+            float r = rel.r;
+            if (!oim || r < oim)
+            {
+                octant_atoms[octi].center = rel;
+                octant_atoms[octi].radius = a->vdW_radius + b->vdW_radius;
+                #if _dbg_octant_occlusion
+                cout << "Atom " << ligands[i]->name << ":" << a->name << " for octant " << octi << endl;
+                #endif
+            }
+        }
+    }
+
+    Point zero(0,0,0);
+    for (i=0; i<4; i++)
+    {
+        int j = 7-i;
+        #if _dbg_octant_occlusion
+        if (!i) cout << endl;
+        cout << "Octant " << i << " vs. " << j << ":";
+        #endif
+        if (octant_atoms[i].radius && octant_atoms[j].radius)
+        {
+            float theta = find_3d_angle(octant_atoms[i].center, octant_atoms[j].center, zero);
+            #if _dbg_octant_occlusion
+            cout << " theta " << (theta*fiftyseven);
+            #endif
+            float partial = pow(cos(fmin(theta-M_PI, square)), 0.333);
+            #if _dbg_octant_occlusion
+            cout << " partial " << partial;
+            #endif
+            float r = fmax(octant_atoms[i].center.magnitude()-octant_atoms[i].radius, 0) + 1;
+            partial /= r;
+            #if _dbg_octant_occlusion
+            cout << " / " << r;
+            #endif
+            r = fmax(octant_atoms[j].center.magnitude()-octant_atoms[j].radius, 0) + 1;
+            partial /= r;
+            #if _dbg_octant_occlusion
+            cout << " / " << r << " = " << partial << endl;
+            #endif
+            total_occlusions += partial/4;
+        }
+    }
+    #if _dbg_octant_occlusion
+    cout << endl << endl;
+    #endif
+
+    return total_occlusions;
+    #endif
 }
 
 float Molecule::bindability_by_type(intera_type t, bool ib)

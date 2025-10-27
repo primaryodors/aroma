@@ -277,6 +277,7 @@
 #define polar_sat_influence_for_dock 30
 #define polar_sat_influence_for_bb 30
 #define polar_sat_influence_for_scoring 0
+#define per_atom_occlusions 0
 
 // Path-based docking.
 
