@@ -109,10 +109,10 @@ function best_empirical_pair($protein, $aroma, $as_object = false)
 		{
 			if (isset($acv[$protein]))
 			{
-				// echo "<!-- Reference $ref says {$o['full_name']} is ec50 {$acv[$protein]['ec50']} for $protein. -->\n";
+				// echo @"<!-- Reference $ref says {$o['full_name']} is top {$acv[$protein]['adjusted_curve_top']} ec50 {$acv[$protein]['ec50']} for $protein. -->\n";
 
 				if (isset($acv[$protein]['adjusted_curve_top']) &&
-					(!isset($obj['adjusted_curve_top']) || $obj['adjusted_curve_top'] < floatval($acv[$protein]['adjusted_curve_top'])))
+					(!isset($obj['adjusted_curve_top']) || ($obj['adjusted_curve_top'] < floatval($acv[$protein]['adjusted_curve_top']))))
 				{
 					$obj['adjusted_curve_top'] = floatval($acv[$protein]['adjusted_curve_top']);
 					$obj['reft'] = $ref;
@@ -134,7 +134,7 @@ function best_empirical_pair($protein, $aroma, $as_object = false)
 	$obj['ref'] = @$obj['refe'] ?: @$obj['reft'];
 	unset($obj['reft']);
 	unset($obj['refe']);
-	if (@$obj['ec50'] < 0 && isset($obj['adjusted_curve_top']) && @$obj['adjusted_curve_top'] <= 0) unset($obj['adjusted_curve_top']);
+	if (@$obj['ec50'] < 0 && isset($obj['adjusted_curve_top']) && @$obj['adjusted_curve_top'] == 0) unset($obj['adjusted_curve_top']);
 
 	return $as_object ? $obj : $btyp;
 }

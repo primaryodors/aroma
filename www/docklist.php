@@ -187,7 +187,7 @@ foreach ($prots as $protid => $p)
             {
                 $act = floatval($pair["adjusted_curve_top"]);
                 if ($act > 0) $agonist = "Y";
-                else if ($act < 0) $agonist = "N";
+                else if (!$act) $agonist = "N";
                 else $agonist = "inv";
             }
             elseif (isset($pair["ec50"]))
@@ -280,7 +280,22 @@ foreach ($prots as $protid => $p)
         {
             $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
             $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if ($prediction)
+            if ($prediction > 0)
+            {
+                $color = "color: #0c0;";
+                $right++;
+            }
+            else
+            {
+                $color = "color: #f00;";
+                $wrong++;
+            }
+        }
+        else if ($agonist == 'inv' || $agonist == 'ant')
+        {
+            $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
+            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+            if ($prediction <= 0)
             {
                 $color = "color: #0c0;";
                 $right++;
