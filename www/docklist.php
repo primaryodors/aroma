@@ -233,7 +233,7 @@ foreach ($prots as $protid => $p)
 
         $o = find_odorant($odor);
         $fn = $o['full_name'];
-        $fnu = str_replace(' ', '_', $fn);
+        $fnu = urlencode(str_replace(' ', '_', $fn));
         echo "<td><a href=\"odorant.php?o={$o['oid']}\">$fn</a>";
         if ($flig != $o['oid'])
             echo " <a href=\"docklist.php?o={$o['oid']}\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
