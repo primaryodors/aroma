@@ -16556,7 +16556,7 @@
     {
         "full_name": "(1R,2S,5R)-(-)-menthol",
         "name1": "(-)-menthol",
-        "name2": "L-menthol",
+        "name2": "l-menthol",
         "smiles": "C[C@@H]1CC[C@H]([C@@H](C1)O)C(C)C",
         "aroma":
         {
@@ -37773,7 +37773,7 @@
     {
         "full_name": "(1S,2R,5S)-(+)-menthol",
         "name1": "(+)-menthol",
-        "name2": "D-menthol",
+        "name2": "d-menthol",
         "smiles": "C[C@H]1CC[C@@H]([C@H](C1)O)C(C)C",
         "aroma":
         {
