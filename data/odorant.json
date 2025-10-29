@@ -3066,6 +3066,7 @@
     "0d693c7bae7ca65e29c636a8b003e5bb":
     {
         "full_name": "(1R,2S,5S)-(-)-isomenthol",
+        "name1": "l-isomenthol",
         "smiles": "C[C@H]1CC[C@H]([C@@H](C1)O)C(C)C",
         "aroma":
         {
@@ -25744,6 +25745,7 @@
     "93831581fc102ec5220635097e6f4505":
     {
         "full_name": "(1R,2R,5R)-(+)-neoisomenthol",
+        "name1": "d-neoisomenthol",
         "smiles": "C[C@@H]1CC[C@@H]([C@@H](C1)O)C(C)C",
         "aroma":
         {
@@ -29113,6 +29115,7 @@
     "ac432d37485b7f0ec9f7410b8f97b316":
     {
         "full_name": "(1S,2S,5S)-(-)-neoisomenthol",
+        "name1": "l-neoisomenthol",
         "smiles": "C[C@H]1CC[C@H]([C@H](C1)O)C(C)C",
         "aroma":
         {
@@ -30788,6 +30791,7 @@
     "b2960e5069eedc62a664ce4822b365f0":
     {
         "full_name": "(1S,2S,5R)-(+)-neomenthol",
+        "name1": "d-neomenthol",
         "smiles": "C[C@@H]1CC[C@H]([C@H](C1)O)C(C)C",
         "aroma":
         {
@@ -34411,6 +34415,7 @@
     "cbee2b2e50169c0c4e4798ff9db7240e":
     {
         "full_name": "(1S,2R,5R)-(+)-isomenthol",
+        "name1": "d-isomenthol",
         "smiles": "C[C@@H]1CC[C@@H]([C@H](C1)O)C(C)C",
         "aroma":
         {
@@ -35141,6 +35146,7 @@
     "d1f19050bc676e963d06a4d19e6d4309":
     {
         "full_name": "(1R,2R,5S)-(-)-neomenthol",
+        "name1": "l-neomenthol",
         "smiles": "C[C@H]1CC[C@@H]([C@@H](C1)O)C(C)C",
         "aroma":
         {
