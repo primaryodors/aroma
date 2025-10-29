@@ -3067,6 +3067,15 @@
     {
         "full_name": "(1R,2S,5S)-(-)-isomenthol",
         "smiles": "C[C@H]1CC[C@H]([C@@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "minty",
+                "fresh",
+                "earthy"
+            ]
+        },
         "oid": "0d693c7bae7ca65e29c636a8b003e5bb"
     },
     "0d93161dac3d4d72075415be1bc94e75":
@@ -16547,6 +16556,7 @@
     {
         "full_name": "(1R,2S,5R)-(-)-menthol",
         "name1": "(-)-menthol",
+        "name2": "L-menthol",
         "smiles": "C[C@@H]1CC[C@H]([C@@H](C1)O)C(C)C",
         "aroma":
         {
@@ -16558,6 +16568,13 @@
                 "minty",
                 "camphorous",
                 "clean"
+            ],
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "minty",
+                "fresh",
+                "sweet",
+                "herbal"
             ]
         },
         "activity":
@@ -25717,6 +25734,16 @@
     {
         "full_name": "(1R,2R,5R)-(+)-neoisomenthol",
         "smiles": "C[C@@H]1CC[C@@H]([C@@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "minty",
+                "fresh",
+                "sweet",
+                "herbal"
+            ]
+        },
         "oid": "93831581fc102ec5220635097e6f4505"
     },
     "93d2e6e26ccdba43664e2a19a2c31194":
@@ -29076,6 +29103,16 @@
     {
         "full_name": "(1S,2S,5S)-(-)-neoisomenthol",
         "smiles": "C[C@H]1CC[C@H]([C@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "minty",
+                "fresh",
+                "sweet",
+                "herbal"
+            ]
+        },
         "oid": "ac432d37485b7f0ec9f7410b8f97b316"
     },
     "ac49f0276a3cff303482b7a25c47aebb":
@@ -30741,6 +30778,17 @@
     {
         "full_name": "(1S,2S,5R)-(+)-neomenthol",
         "smiles": "C[C@@H]1CC[C@H]([C@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "musty",
+                "minty",
+                "sweet",
+                "herbal",
+                "fresh"
+            ]
+        },
         "oid": "b2960e5069eedc62a664ce4822b365f0"
     },
     "b34ca7b041c2c7a844406f2d99a49016":
@@ -34353,6 +34401,17 @@
     {
         "full_name": "(1S,2R,5R)-(+)-isomenthol",
         "smiles": "C[C@@H]1CC[C@@H]([C@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "fresh",
+                "herbal",
+                "minty",
+                "sweet",
+                "woody"
+            ]
+        },
         "oid": "cbee2b2e50169c0c4e4798ff9db7240e"
     },
     "cc2cf68861f527bf30390cb049cea5e5":
@@ -35072,6 +35131,15 @@
     {
         "full_name": "(1R,2R,5S)-(-)-neomenthol",
         "smiles": "C[C@H]1CC[C@@H]([C@@H](C1)O)C(C)C",
+        "aroma":
+        {
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "minty",
+                "sweet",
+                "fresh"
+            ]
+        },
         "oid": "d1f19050bc676e963d06a4d19e6d4309"
     },
     "d26171e85a129fff5aa0270dd77332c3":
@@ -37694,6 +37762,7 @@
     {
         "full_name": "(1S,2R,5S)-(+)-menthol",
         "name1": "(+)-menthol",
+        "name2": "D-menthol",
         "smiles": "C[C@H]1CC[C@@H]([C@H](C1)O)C(C)C",
         "aroma":
         {
@@ -37702,6 +37771,13 @@
                 "cooling",
                 "mentholic",
                 "minty"
+            ],
+            "https://doi.org/10.3390/foods14142494":
+            [
+                "fresh",
+                "minty",
+                "sweet",
+                "herbal"
             ]
         },
         "activity":
