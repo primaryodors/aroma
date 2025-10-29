@@ -3,6 +3,6 @@
 PROT="$1"
 LIG="$2"
 
-make bin/aromadock
+make bin/aromadock bin/ic
 
 python3 run.py "$PROT" "$LIG"

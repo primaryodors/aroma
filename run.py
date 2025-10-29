@@ -117,6 +117,19 @@ for rcpid in data.protutils.prots.keys():
         newcfg.append("NODEL 7.49 7.55")
         newcfg.append("OUTBBP")
 
+        cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-5.0", "nooil"]
+        print(" ".join(cmd), "\n\n")
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+        for ln in proc.stdout.decode().split('\n'):
+            # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
+            # CNTCT 77 97
+            ln = ln.split(':')[0]
+            ln = re.sub("\\([0-9.]*\\)[.][A-Z0-9]+", "", ln)
+            ln = re.sub("[^0-9-]", "", ln)
+            if not "-" in ln: continue
+            ln = re.sub("-", " ", ln).strip()
+            if ln: newcfg.append("CNTCT "+ln)
+
         if pocket:
             if "atomto" in pocket:
                 if isinstance(pocket["atomto"], str):

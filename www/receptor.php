@@ -746,7 +746,7 @@ foreach ($pairs as $oid => $pair)
             ? (is_numeric(@$pair['adjusted_curve_top'])
                 ? (round(@$pair['adjusted_curve_top'], 4) . " <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno_top</a>")
                 : ((@$pair['type'] == 'a' || @$pair['type'] == 'vsa' || @$pair['type'] == 'sa' || @$pair['type'] == 'ma' || @$pair['type'] == 'wa' || @$pair['type'] == 'vwa')
-                    ? "(agonist) <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno_top</a>" : "-")
+                    ? "(agonist) <sup><a href=\"#\" onclick=\"openTab($('#tabRefs')[0], 'Refs');\">$refno_top</a>" : (@$pair['type'] == 'pa' ? "(probable agonist)" : "-"))
                 )
             : "-")
         ) . "</sup></td>\n";
