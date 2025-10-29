@@ -204,6 +204,10 @@ foreach ($prots as $protid => $p)
                         $agonist = "Y";
                         break;
 
+                    case "pa":
+                        $agonist = "Y?";
+                        break;
+
                     case "ia":
                         $agonist = "inv";
                         break;
@@ -288,6 +292,19 @@ foreach ($prots as $protid => $p)
             else
             {
                 $color = "color: #f00;";
+                $wrong++;
+            }
+        }
+        if ($agonist == 'Y?')
+        {
+            if ($prediction > 0)
+            {
+                $color = "color: #0cc;";
+                $right++;
+            }
+            else
+            {
+                $color = "color: #960;";
                 $wrong++;
             }
         }
