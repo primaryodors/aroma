@@ -2813,6 +2813,33 @@ _try_again:
             sphres = protein->get_residues_can_clash_ligand(reaches_spheroid[nodeno], ligand, nodecen, lsz, addl_resno);
             for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = NULL;
 
+            for (i=0; i<sphres; i++)
+            {
+                AminoAcid* aa = reaches_spheroid[nodeno][i];
+                if (!aa) continue;
+                if (aa->movability == MOV_PINNED) continue;
+                bool aa_cannot_point_inward = false;
+                for (j=0; j<n_soft_contact; j++)
+                {
+                    if (soft_contact_a[j].resno == aa->get_residue_no()) aa_cannot_point_inward = true;
+                    if (soft_contact_b[j].resno == aa->get_residue_no()) aa_cannot_point_inward = true;
+                    if (aa_cannot_point_inward) break;
+                }
+                if (aa_cannot_point_inward) continue;
+                if (fabs(aa->hydrophilicity()) < hydrophilicity_cutoff) continue;
+                // if (aa->get_charge() < -0.1) continue;                           // better of with this or without it? ¯\_(ツ)_/¯
+
+                Atom* a = aa->get_reach_atom(hbond);
+                if (!a)
+                {
+                    cerr << "SHIT! " << aa->get_name() << " has no hbond reach atom!" << endl;
+                    continue;
+                }
+                aa->movability = MOV_FLEXONLY;
+                aa->conform_atom_to_location(a->name, loneliest);
+                // cout << "Pointed " << aa->get_name() << " toward pocket center." << endl;
+            }
+
             #if 0
             if (pose==1)
             {
