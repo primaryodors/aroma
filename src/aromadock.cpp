@@ -2830,14 +2830,15 @@ _try_again:
                 // if (aa->get_charge() < -0.1) continue;                           // better of with this or without it? ¯\_(ツ)_/¯
 
                 Atom* a = aa->get_reach_atom(hbond);
-                if (!a)
-                {
-                    cerr << "SHIT! " << aa->get_name() << " has no hbond reach atom!" << endl;
-                    continue;
-                }
+                if (!a) continue;
                 aa->movability = MOV_FLEXONLY;
+                Pose was(aa);
+                AminoAcid** aaclashables = protein->clashable_residues(aa->get_residue_no());
+                Interaction e = aa->get_intermol_binding(aaclashables);
                 aa->conform_atom_to_location(a->name, loneliest);
-                // cout << "Pointed " << aa->get_name() << " toward pocket center." << endl;
+                aa->conform_molecules((Molecule**)aaclashables, nullptr, 20);
+                Interaction f = aa->get_intermol_binding(protein->clashable_residues(aa->get_residue_no()));
+                if (f.clash > clash_limit_per_aa*2 || f.summed() > e.summed()+clash_limit_per_aa*2) was.restore_state(aa);
             }
 
             #if 0
