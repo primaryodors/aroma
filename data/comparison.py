@@ -52,7 +52,7 @@ print("")
 
 for rcpid in data.protutils.prots.keys():
     p = data.protutils.prots[rcpid]
-    if rcpid[:rcppl] != rcppatt and not re.match("{$rcppatt}[0-9]", rcpid):
+    if rcpid[:rcppl] != rcppatt and not re.match(rcppatt, rcpid):
         continue
     if data.odorutils.empirical_pairs(rcpid, True):
         print(rcpid.ljust(10, " "), end="" )
