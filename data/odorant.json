@@ -18007,6 +18007,7 @@
     "6920ed5b25266278939fcc3fec0e8fdb":
     {
         "full_name": "alpha-phellandrene",
+        "name1": "alpha-phyllandrene",
         "smiles": "CC1=CCC(C=C1)C(C)C",
         "isomers":
         {
@@ -26248,7 +26249,8 @@
     },
     "9864cad23e29ddfd630b19788d59d373":
     {
-        "full_name": "beta-phyllandrene",
+        "full_name": "beta-phellandrene",
+        "name1": "beta-phyllandrene",
         "smiles": "CC(C)C1CCC(=C)C=C1",
         "isomers":
         {
