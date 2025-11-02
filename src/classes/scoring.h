@@ -33,6 +33,7 @@ class DockResult
     Protein* mprot = nullptr;
     Molecule* mlig = nullptr;
     BestBindingResult* mbbr = nullptr;
+    float estimated_DeltaS = 0;
     float ligand_self = 0;
     float worst_energy = 0;
     float worst_nrg_aa = 0;

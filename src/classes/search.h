@@ -42,7 +42,9 @@ class BestBindingResult
 
     float score(Point ligand_center, Cavity* container = nullptr);
     void add_to_candidates();
+    int num_assigned();
     bool is_equivalent(BestBindingResult* bbr2);
+    float estimate_DeltaS();
     Point barycenter();
 };
 

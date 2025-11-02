@@ -523,13 +523,13 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
     this->mstab        = new float[nmetrics];
     this->imkJmol       = new float[nmetrics];
     #if compute_vdw_repulsion
-    this->mvdWrepl       = new float[metcount];
-    this->imvdWrepl       = new float[metcount];
+    this->mvdWrepl        = new float[metcount];
+    this->imvdWrepl        = new float[metcount];
     #endif
-    this->mb_atom1_name     = new const char*[nmetrics];
-    this->mb_atom2_name      = new const char*[nmetrics];
-    this->mc_atom1_name       = new const char*[nmetrics];
-    this->mc_atom2_name        = new const char*[nmetrics];
+    this->mb_atom1_name      = new const char*[nmetrics];
+    this->mb_atom2_name       = new const char*[nmetrics];
+    this->mc_atom1_name        = new const char*[nmetrics];
+    this->mc_atom2_name         = new const char*[nmetrics];
     this->is_mcr = new bool[nmetrics];
     #if compute_missed_connections
     this->missed_connections = new float[nmetrics];
@@ -541,6 +541,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
                       );
     // cout << "Ligand base clashes " << ligand->get_base_clashes() << endl << "Ligand self " << ligand_self << endl << endl;
     A100 = protein->A100();
+    if (mbbr) estimated_DeltaS = mbbr->estimate_DeltaS();
     // kJmol += ligand_self;
     #if _dbg_internal_energy
     cout << "Ligand internal = " << ligand_self << endl;
@@ -806,11 +807,15 @@ _btyp_unassigned:
 
     if (dr.out_lig_int_e) output << "Ligand internal energy: " << dr.ligand_self*dr.energy_mult << endl << endl;
 
+    if (dr.estimated_DeltaS)
+    {
+        output << "Estimated DeltaS: " << dr.estimated_DeltaS << endl;
+    }
+
     if (dr.miscdata.size())
     {
         output << dr.miscdata << endl;
     }
-
     output << "A100 score: " << dr.A100 << endl;
     output << endl;
 

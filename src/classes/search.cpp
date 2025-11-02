@@ -1867,10 +1867,25 @@ void BestBindingResult::add_to_candidates()
     return;
 }
 
+int BestBindingResult::num_assigned()
+{
+    int result = 0;
+    if (pri_res && pri_tgt)
+    {
+        result++;
+        if (sec_res && sec_tgt)
+        {
+            result++;
+            if (tert_res && tert_tgt)
+                result++;
+        }
+    }
+    return result;
+}
+
 bool BestBindingResult::is_equivalent(BestBindingResult *bbr2)
 {
-    if ((!tert_res || !tert_tgt) && (bbr2->tert_res && bbr2->tert_tgt)) return false;
-    if ((tert_res && tert_tgt) && (!bbr2->tert_res || !bbr2->tert_tgt)) return false;
+    if (num_assigned() != bbr2->num_assigned()) return false;
     if (pri_res == bbr2->pri_res && pri_tgt == bbr2->pri_tgt)
     {
         if (sec_res == bbr2->sec_res && sec_tgt == bbr2->sec_tgt)
@@ -1885,4 +1900,33 @@ bool BestBindingResult::is_equivalent(BestBindingResult *bbr2)
         if (sec_res == bbr2->pri_res && sec_tgt == bbr2->pri_tgt)
             return true;
     return false;
+}
+
+float BestBindingResult::estimate_DeltaS()
+{
+    // Using the analogy of ice melting or water freezing, liquid water has more entropy than solid ice,
+    // so as T increases from absolute zero, the TΔS of ice melting increases until, at the melting point,
+    // TΔS balances the energetic advantage of ice's hydrogen bonds and the ice <--> water ΔG becomes zero.
+    // By this analogy, the docked ligand pose is like the solid ice side of the equation.
+    // The docker aims to predict which pose would be favored at absolute zero, but if the TΔS at 300K
+    // causes the pose to become energetically unfavorable, then the docker won't give an accurate prediction.
+    // Since the optimal pose is preferred at low temperatures, its ΔS must always be negative.
+    // Good stable poses that are maintained near 300K will have a small negative ΔS and a high BBR score
+    // relative to the scores of the other BBR candidates. But if the candidates all have similar scores,
+    // then the ΔS for even the best candidate will be rather large and the pose will be unlikely to remain
+    // stable at 300K.
+    int i;
+    float sum = 0;
+    for (i=0; i<MAX_BBR_CANDIDATES; i++)
+    {
+        if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
+        sum += bbr_candidates[i].cached_score;
+    }
+
+    // Based on the melting point of water, the entropy contribution for forming each hydrogen bond in a
+    // two state system must be around 1/8 kJ/mol/K. However, using the value of 1.5 kcal/mol for alkyl-H
+    // dissociation energy at 298K vs, 0K (https://en.wikipedia.org/wiki/Bond_dissociation_energy) gives a
+    // value of 0.021 kJ/mol/K.
+    // The following calculation is based on the latter number.
+    return -((float)num_assigned()*0.021)*(sum-cached_score)/sum;
 }
