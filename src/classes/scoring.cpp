@@ -541,7 +541,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
                       );
     // cout << "Ligand base clashes " << ligand->get_base_clashes() << endl << "Ligand self " << ligand_self << endl << endl;
     A100 = protein->A100();
-    if (mbbr) estimated_DeltaS = mbbr->estimate_DeltaS();
+    if (mbbr) estimated_TDeltaS = mbbr->estimate_DeltaS() * temperature;
     // kJmol += ligand_self;
     #if _dbg_internal_energy
     cout << "Ligand internal = " << ligand_self << endl;
@@ -807,9 +807,9 @@ _btyp_unassigned:
 
     if (dr.out_lig_int_e) output << "Ligand internal energy: " << dr.ligand_self*dr.energy_mult << endl << endl;
 
-    if (dr.estimated_DeltaS)
+    if (dr.estimated_TDeltaS)
     {
-        output << "Estimated DeltaS: " << dr.estimated_DeltaS << endl;
+        output << "Estimated TDeltaS: " << dr.estimated_TDeltaS << endl;
     }
 
     if (dr.miscdata.size())
