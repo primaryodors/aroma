@@ -264,7 +264,7 @@
 // Scoring constants.
 #define compute_lsrb 0
 #define lsrb_vdw_multiplier 1.0
-#define priority_weight_group 2
+#define priority_weight_group 25
 #define ts_priority_coefficient 10
 #define ignore_invalid_partial 1
 #define include_mcr_in_dock_energy 0

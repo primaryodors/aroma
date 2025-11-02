@@ -830,7 +830,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             #endif
 
                             bbr.cached_score = score;
-                            bbr.add_to_candidates();
+                            // bbr.add_to_candidates();
                             if (score > best
                                 && (has_ionic || !best_ionic)
                                 && (has_neutral_polar || !best_neutral_polar)
@@ -1692,7 +1692,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     float score = 0;
     if (ijmc) score += 200;
     if (ichg && jchg && sgn(ichg) == -sgn(jchg)) score += 60; 
-    if (ipol && jpol) 
+    if (ipol && jpol && ((ihba && jhbd) || (ihbd && jhba))) 
     {
         score += ipol*jpol*35;
         if (pri_res->is_amide() && ichg <= 0) score += 10;
@@ -1704,7 +1704,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     {
         if (klmc) score += 200;
         if (kchg && lchg && sgn(kchg) == -sgn(lchg)) score += 60; 
-        if (lpol && kpol) 
+        if (lpol && kpol && ((khba && lhbd) || (khbd && lhba))) 
         {
             score += kpol*lpol*35;
             if (sec_res->is_amide() && kchg <= 0) score += 10;
@@ -1717,7 +1717,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     {
         if (mnmc) score += 200;
         if (mchg && nchg && sgn(mchg) == -sgn(nchg)) score += 60; 
-        if (mpol && npol) 
+        if (mpol && npol && ((mhba && nhbd) || (mhbd && nhba))) 
         {
             score += mpol*npol*35;
             if (tert_res->is_amide() && mchg <= 0) score += 10;
@@ -1826,6 +1826,9 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     #if _dbg_bb_scoring
     cout << "e:" << score << " ";
     #endif
+
+    cached_score = score;
+    add_to_candidates();
 
     // Effect of priority.
     if (pri_res->priority) score *= priority_weight_group;
