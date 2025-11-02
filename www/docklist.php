@@ -133,6 +133,7 @@ foreach ($prots as $protid => $p)
             $lsfe = $lsbe = $phfe = $phbe = 0;
             $nump = 0;
             $occl = 0;
+            $tds = 0;
             foreach ($lines as $ln) 
             {
                 if (!$benerg && substr($ln, 0, 7) == "Total: ")
@@ -159,6 +160,10 @@ foreach ($prots as $protid => $p)
                 {
                     $occl = floatval(substr($ln, 25));
                 }
+                else if (!$occl && substr($ln, 0, 19) == "Estimated TDeltaS: ")
+                {
+                    $tds = floatval(substr($ln, 19));
+                }
                 else if (substr($ln, 0, 6) == "Pose: ") $nump++;
             }
             if (!$nump) $nump = "-";
@@ -172,10 +177,11 @@ foreach ($prots as $protid => $p)
                 "phbe" => $phbe,
                 "occl" => $occl,
                 "nump" => $nump,
+                "tds"  => $tds,
             ];
         }
 
-        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe);
+        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 
