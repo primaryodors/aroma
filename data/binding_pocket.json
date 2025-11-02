@@ -136,10 +136,11 @@
         "atomto":
         [
             "T5.47 OG2 3.36",
-            "H3.37 EXTENT 5.46"
+            "H3.37 EXTENT 5.46",
+            "ST4.56 EXTENT 4.51"
         ],
         "flxr": "DENQST3.37",
-        "stcr": "H3.37"
+        "stcr": "H3.37 ST4.56"
     },
     "OR10G*":
     {
