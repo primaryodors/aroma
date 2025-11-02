@@ -3481,6 +3481,7 @@ _try_again:
             dr[drcount][nodeno].out_mc = out_mc;
             dr[drcount][nodeno].out_vdw_repuls = out_vdw_repuls;
             dr[drcount][nodeno].mbbr = &g_bbr[0];
+            dr[drcount][nodeno].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
 
             if (nsoftrgn)
             {
