@@ -15,6 +15,7 @@ int main(int argc, char** argv)
     char* cvtyfname = nullptr;
     Cavity cvtys[256];
     int ncvtys = 0;
+    int showtopn = 0;
 
     bool save_tmp_pdbs = false;
 
@@ -85,6 +86,10 @@ int main(int argc, char** argv)
         else if (!strcasecmp(argv[i], "savtmp"))
         {
             save_tmp_pdbs = true;
+        }
+        else if (!strcasecmp(argv[i], "top"))
+        {
+            showtopn = atoi(argv[++i]);
         }
         else cout << "Warning: unknown command argument " << argv[i] << endl;
     }
@@ -223,7 +228,7 @@ int main(int argc, char** argv)
             for (i=0; i<pcn; i++)
             {
                 if (pocketcen_res[i].member_no) aa = p.get_residue(pocketcen_res[i]);
-                else aa = p.get_residue(pocketcen_res[i].helix_no);         // a trick to allow plain integer resnos on command line.
+                else aa = p.get_residue(pocketcen_res[i].helix_no);         // a trick to allow plain integer resnos on the command line.
                 if (aa)
                 {
                     aa->priority = priorities[i];
@@ -279,6 +284,21 @@ int main(int argc, char** argv)
             cout << endl;
         }
     }
-    return 0;
 
+    if (showtopn)
+    {
+        cout << endl << "Top candidates:" << endl;
+        for (i=0; i<showtopn; i++)
+        {
+            if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt)
+            {
+                cout << "End of list." << endl;
+                break;
+            }
+            cout << bbr_candidates[i] << "score: " << bbr_candidates[i].cached_score << endl << endl;
+        }
+        cout << endl;
+    }
+
+    return 0;
 }

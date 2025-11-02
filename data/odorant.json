@@ -27440,11 +27440,11 @@
     "a22519a14c73a758b9f273c65d5bfee4":
     {
         "full_name": "homofuraneol",
-        "smiles": "CCC1C(=O)C(=C(O1)C)O",
-        "isomers":
+        "smiles": "O1C(CC)=C(O)C(=O)[C@@H](C)1",
+        "notes":
         {
-            "(R)": "CC[C@@H]1C(=O)C(=C(O1)C)O",
-            "(S)": "CC[C@H]1C(=O)C(=C(O1)C)O"
+            "text": "The keto-enol tautomers and their enantiomers exist together in an equilibrium. The isomer shown is the only one with a strong sweet-roasty olfactive impact.",
+            "refs": "http://www.leffingwell.com/chirality/homofuraneol.htm"
         },
         "aroma":
         {

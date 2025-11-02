@@ -12,6 +12,7 @@ intera_type cs_bt[MAX_CS_RES];
 int cs_res_qty = 0;
 int cs_idx = -1;
 bool Search::any_resnos_priority = false;
+BestBindingResult bbr_candidates[MAX_BBR_CANDIDATES];
 
 void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocket_cen)
 {
@@ -492,6 +493,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
     int multichalc = 0;
     Atom* mcatoms[256];
 
+    clear_candidates();
+
     // TODO:
     // Right now you are considering multiple possible starting poses and then selecting hopably the best (most energetically favorable) one.
     // What you can do is rule out the ones that cannot avoid clashes with the protein, and then store what's left over in order to estimate
@@ -826,6 +829,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             if (best_pi) cout << "P";
                             #endif
 
+                            bbr.cached_score = score;
+                            bbr.add_to_candidates();
                             if (score > best
                                 && (has_ionic || !best_ionic)
                                 && (has_neutral_polar || !best_neutral_polar)
@@ -903,6 +908,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                     }
                                 }
 
+                                *output = bbr;
                                 output->pri_res = pocketres[j1];
                                 output->pri_tgt = &targets[i1];
                                 output->sec_res = pocketres[j2];
@@ -1448,6 +1454,16 @@ bool Search::target_compatibility(AminoAcid *aa, LigandTarget *lt)
     );
 }
 
+void Search::clear_candidates()
+{
+    int i;
+    for (i=0; i<MAX_BBR_CANDIDATES; i++)
+    {
+        bbr_candidates[i].pri_res = bbr_candidates[i].sec_res = bbr_candidates[i].tert_res = nullptr;
+        bbr_candidates[i].pri_tgt = bbr_candidates[i].sec_tgt = bbr_candidates[i].tert_tgt = nullptr;
+    }
+}
+
 float LigandTarget::charge()
 {
     if (single_atom) return single_atom->get_orig_charge();
@@ -1678,11 +1694,11 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     if (ichg && jchg && sgn(ichg) == -sgn(jchg)) score += 60; 
     if (ipol && jpol) 
     {
-        score += 35;
+        score += ipol*jpol*35;
         if (pri_res->is_amide() && ichg <= 0) score += 10;
     }
     if (!ipol && !jpol) score += 0.2 * sqrt(1.0 + icen.get_3d_distance(ligcen));
-    if ((!ipol || !jpol) && ipi && jpi) score += 2.0*ipi*jpi; 
+    if ((!ipol || !jpol) && ipi && jpi) score += 0.333*ipi*jpi; 
 
     if (sec_res && sec_tgt)
     {
@@ -1690,11 +1706,11 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
         if (kchg && lchg && sgn(kchg) == -sgn(lchg)) score += 60; 
         if (lpol && kpol) 
         {
-            score += 35;
+            score += kpol*lpol*35;
             if (sec_res->is_amide() && kchg <= 0) score += 10;
         } 
         if (!kpol && !lpol) score += 0.2 * sqrt(1.0 + kcen.get_3d_distance(ligcen));
-        if ((!lpol || !kpol) && kpi && lpi) score += 2.0*kpi*lpi;
+        if ((!lpol || !kpol) && kpi && lpi) score += 0.333*kpi*lpi;
     }
 
     if (tert_res && tert_tgt)
@@ -1703,11 +1719,11 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
         if (mchg && nchg && sgn(mchg) == -sgn(nchg)) score += 60; 
         if (mpol && npol) 
         {
-            score += 35;
+            score += mpol*npol*35;
             if (tert_res->is_amide() && mchg <= 0) score += 10;
         }
         if (!mpol && !npol) score += 0.2 * sqrt(1.0 + mcen.get_3d_distance(ligcen));
-        if ((!mpol || !npol) && mpi && npi) score += 2.0*mpi*npi;
+        if ((!mpol || !npol) && mpi && npi) score += 0.333*mpi*npi;
     }
 
     #if _dbg_bb_scoring
@@ -1736,6 +1752,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
 
             score *= (fmin(ikdist, jldist) / fmax(ikdist, jldist));
         }
+        else ikdist = jldist = 1;
 
         if (tert_res && tert_tgt && mpol && npol)
         {
@@ -1767,7 +1784,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
         float theta = fmin(find_3d_angle(ra1->loc, ra2->loc, ra3->loc),
             fmin(find_3d_angle(ra1->loc, ra3->loc, ra2->loc), find_3d_angle(ra3->loc, ra2->loc, ra1->loc)));
         score *= fabs(sin(theta*2));
-        int res1 = pri_res->get_residue_no(), res2 = sec_res->get_residue_no(), res3 = tert_res->get_residue_no();
+        // int res1 = pri_res->get_residue_no(), res2 = sec_res->get_residue_no(), res3 = tert_res->get_residue_no();
         /*if (max(res1, max(res2, res3)) == 262 && min(res1, min(res2, res3)) == 158)
             cout << "good " << res1 << ":" << ra1->name << "|" << res2 << ":" << ra2->name 
                 << "|" << res3 << ":" << ra3->name << " " << theta*fiftyseven << endl;
@@ -1819,5 +1836,53 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     cout << "f:" << score << " ";
     #endif
 
+    cached_score = score;
     return score;
+}
+
+void BestBindingResult::add_to_candidates()
+{
+    int i, j, nc;
+    for (nc=0; nc<MAX_BBR_CANDIDATES; nc++) if (!bbr_candidates[nc].pri_res || !bbr_candidates[nc].pri_tgt) break;
+    if (nc > MAX_BBR_CANDIDATES) nc = MAX_BBR_CANDIDATES;
+    for (i=0; i<nc; i++)
+    {
+        if (is_equivalent(&bbr_candidates[i]))
+        {
+            for (j=i+1; j<=nc; j++) bbr_candidates[j-1] = bbr_candidates[j];
+        }
+    }
+    for (i=0; i<nc; i++)
+    {
+        if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
+
+        if (cached_score > bbr_candidates[i].cached_score)
+        {
+            for (j=nc+1; j>i; j--) bbr_candidates[j] = bbr_candidates[j-1];
+            bbr_candidates[i] = *this;
+            return;
+        }
+    }
+    bbr_candidates[nc] = *this;
+    return;
+}
+
+bool BestBindingResult::is_equivalent(BestBindingResult *bbr2)
+{
+    if ((!tert_res || !tert_tgt) && (bbr2->tert_res && bbr2->tert_tgt)) return false;
+    if ((tert_res && tert_tgt) && (!bbr2->tert_res || !bbr2->tert_tgt)) return false;
+    if (pri_res == bbr2->pri_res && pri_tgt == bbr2->pri_tgt)
+    {
+        if (sec_res == bbr2->sec_res && sec_tgt == bbr2->sec_tgt)
+            if (tert_res == bbr2->tert_res && tert_tgt == bbr2->tert_tgt)
+                return true;
+        if (sec_res == bbr2->tert_res && sec_tgt == bbr2->tert_tgt)
+            if (tert_res == bbr2->sec_res && tert_tgt == bbr2->sec_tgt)
+                return true;
+        return false;
+    }
+    if (pri_res == bbr2->sec_res && pri_tgt == bbr2->sec_tgt)
+        if (sec_res == bbr2->pri_res && sec_tgt == bbr2->pri_tgt)
+            return true;
+    return false;
 }

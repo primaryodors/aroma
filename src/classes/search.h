@@ -38,8 +38,11 @@ class BestBindingResult
     AminoAcid* tert_res = nullptr;
     LigandTarget* tert_tgt = nullptr;
     float probability = 0;
+    float cached_score = 0;
 
     float score(Point ligand_center, Cavity* container = nullptr);
+    void add_to_candidates();
+    bool is_equivalent(BestBindingResult* bbr2);
     Point barycenter();
 };
 
@@ -57,6 +60,7 @@ class Search
     static bool target_compatibility(float chg1, float chg2, float pol1, float pol2, int pi1, int pi2,
         bool hba1, bool hba2, bool hbd1, bool hbd2);
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);
+    static void clear_candidates();
 
     protected:
     static bool any_resnos_priority;
@@ -74,6 +78,9 @@ extern int cs_idx;
 
 extern AminoAcid *g_pri_pairres, *g_sec_pairres, *g_tert_pairres;
 extern LigandTarget *g_pri_ltarg, *g_sec_ltarg, *g_tert_ltarg;
+
+#define MAX_BBR_CANDIDATES 65536
+extern BestBindingResult bbr_candidates[MAX_BBR_CANDIDATES];
 
 std::ostream& operator<<(std::ostream& os, const LigandTarget& lt);
 std::ostream& operator<<(std::ostream& os, const BestBindingResult& bbr);
