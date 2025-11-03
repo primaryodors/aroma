@@ -48,6 +48,21 @@ class BestBindingResult
     Point barycenter();
 };
 
+class LocProbs
+{
+    public:
+    Point* locations = nullptr;
+    int num_locs = 0;
+    Atom* atom = nullptr;
+
+    int from_spheroid(Point center, Point size, float density = 0.1);
+    bool apply_weights(Protein* p);                                         // make sure to set atom before calling this ftn
+    void trim_noughts();
+
+    private:
+    Point mcen, msz;
+};
+
 class Search
 {
     public:

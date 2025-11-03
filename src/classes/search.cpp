@@ -1933,3 +1933,96 @@ float BestBindingResult::estimate_DeltaS()
     // The following calculation is based on the latter number.
     return -((float)num_assigned()*0.021)*(sum-cached_score)/sum;
 }
+
+int LocProbs::from_spheroid(Point cen, Point sz, float density)
+{
+    mcen = cen;
+    msz = sz;
+
+    int nl = (int)(4.0/3 * M_PI * (sz.x+1) * (sz.y+1) * (sz.z+1));
+    locations = new Point[nl];
+    Point cursor;
+    num_locs = 0;
+
+    for (cursor.y = -sz.y; cursor.y <= sz.y; cursor.y += density)
+    {
+        float ys = cursor.y / sz.y;
+        for (cursor.z = -sz.z; cursor.z <= sz.z; cursor.z += density)
+        {
+            float zs = cursor.z / sz.z;
+            for (cursor.x = -sz.x; cursor.x <= sz.x; cursor.x += density)
+            {
+                float xs = cursor.x / sz.x;
+                float r = sqrt( xs*xs + ys*ys + zs*zs );
+                if (r < 1)
+                {
+                    locations[num_locs++] = cursor.add(cen);
+                }
+            }
+        }
+    }
+    return num_locs;
+}
+
+bool LocProbs::apply_weights(Protein *p)
+{
+    if (!atom) throw 0xbada7177;                // bad at[o]m
+
+    AminoAcid* res[p->get_end_resno()];
+    int i, j, sphres = p->get_residues_inside_spheroid(res, mcen, msz);
+    
+    for (i=0; i<num_locs; i++)
+    {
+        for (j=0; j<sphres; j++)
+        {
+            Atom* resa = res[j]->get_nearest_atom(locations[i]);
+            float r = resa->distance_to(atom), ropt = (resa->vdW_radius + atom->vdW_radius - global_clash_allowance);
+            if (r >= _INTERA_R_CUTOFF) continue;
+
+            float partial = 0;
+
+            float m1 = atom->get_charge(), m2 = resa->get_charge();
+            if (m1 && m2 && sgn(m1) == -sgn(m2))
+            {
+                partial += 35.0 * fabs(m1) * fabs(m2);
+                ropt *= 1.0 - (partial/143);
+            }
+
+            m1 = atom->is_polar();
+            m2 = resa->is_polar();
+            if (m1 && m2 && sgn(m1) == -sgn(m2))
+            {
+                partial += 25.0 * fabs(m1) * fabs(m2);
+                ropt *= 1.0 - (partial/100);
+            }
+            if (fabs(m1) < hydrophilicity_cutoff && fabs(m2) < hydrophilicity_cutoff) partial += 15.0;
+
+            m1 = atom->is_pi();
+            m2 = resa->is_pi();
+            if (m1 && m2) partial += 12.0;
+
+            if (resa->is_metal())
+            {
+                int fam = atom->get_family();
+                if (fam == CHALCOGEN || fam == PNICTOGEN)
+                {
+                    partial += InteratomicForce::metal_compatibility(resa, atom) * 60;
+                    ropt *= 1.0 - (partial/200);
+                }
+            }
+
+            r /= ropt;
+            if (r < 1)
+            {
+                // CLASH!
+                locations[i].weight = -1000;
+                break;
+            }
+
+            partial /= (r*r);
+            locations[i].weight += partial;
+        }
+    }
+
+    return false;
+}

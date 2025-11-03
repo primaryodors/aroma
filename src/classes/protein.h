@@ -149,6 +149,7 @@ public:
         bool ignore_priority = false,
         const int* excl_resno = nullptr
     );
+    int get_residues_inside_spheroid(AminoAcid** reaches_spheroid, const Point center, const Point size);
 
     int fetch_residues_near(Point pt, float max_distance, AminoAcid** results, bool facing=true);
     std::vector<AminoAcid*> get_contact_residues(Protein* other_prot, float contact_distance = 2.5);

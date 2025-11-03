@@ -1670,6 +1670,32 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
     return sphres;
 }
 
+int Protein::get_residues_inside_spheroid(AminoAcid **rs, const Point cen, const Point sz)
+{
+    int i, j, result = 0;
+
+    for (i=0; residues[i]; i++)
+    {
+        int n = residues[i]->get_atom_count();
+        for (j=0; j<n; j++)
+        {
+            Atom* a = residues[i]->get_atom(j);
+            Point relloc = a->loc.subtract(cen);
+            relloc.x /= sz.x;
+            relloc.y /= sz.y;
+            relloc.z /= sz.z;
+            if (relloc.magnitude() < 1)
+            {
+                rs[result++] = residues[i];
+                break;
+            }
+        }
+    }
+
+    rs[result] = nullptr;
+    return result;
+}
+
 bool Protein::aa_ptr_in_range(AminoAcid* aaptr)
 {
     if (!aaptr) return false;
