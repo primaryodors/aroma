@@ -1464,6 +1464,134 @@ void Search::clear_candidates()
     }
 }
 
+bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Point lsz)
+{
+    // First, generate base locprobs for all atoms in the molecule based on lcen and lsz.
+    int g, h, i, j, l, m, n = ligand->get_atom_count(), placed;
+    LocProbs base_lp[n];
+    bool do_chiral = ligand->is_chiral();
+    Pose was(ligand);
+
+    for (i=0; i<n; i++)
+    {
+        base_lp[i].atom = ligand->get_atom(i);
+        base_lp[i].from_spheroid(lcen, lsz);
+        base_lp[i].apply_weights(p);
+    }
+
+    // Next, generate and store distance restraints for atoms >= 1.
+    DistanceRestraint restd[n];
+    for (i=1; i<n; i++)
+    {
+        restd[i].define(ligand, ligand->get_atom(i));
+    }
+
+    // And angle restraints for atoms >= 2.
+    AngleRestraint *resta[n];
+    int nresta[n];
+    for (i=2; i<n; i++)
+    {
+        nresta[i] = 0;
+        Atom* a = ligand->get_atom(i);
+        Bond* b = a->get_bond_by_idx(0);
+        if (!b->atom2) continue;
+        Atom* a0 = b->atom2;
+        g = a->get_geometry();
+        m = a->get_bonded_atoms_count();
+        resta[i] = new AngleRestraint[m];
+
+        j = 0;
+        for (h=0; h<m; h++)
+        {
+            b = a0->get_bond_by_idx(h);
+            if (!b->atom2) continue;
+            if (b->atom2 == a) continue;
+            if (j >= (m-1)) throw 0xbadc0de;
+            resta[i][j].offset = h;
+            resta[i][j].define(ligand, a);
+            j++;
+        }
+        nresta[i] = j;
+    }
+
+    // And chiral restraints for any atoms that are BONDED TO chiral centers.
+    // Note: when you're placing the chiral center itself, a chiral restraint won't apply.
+    // Even when you place one of its bonded-tos, the chiral restraint won't apply the first time.
+    // But once you've placed the chiral center and one of its bonded-tos,
+    // all subsequent bonded-tos will have to obey their chiral restraint.
+    ChiralRestraint *cr[n];
+    if (do_chiral)
+    {
+        // TODO:
+    }
+
+    // Now begin the main loop. Allow for maybe a hundred thousand tries or more.
+    for (l=0; l<100000; l++)
+    {
+        _tryagain_restassbly:
+        placed = 0;
+
+        // Place the molecule's zeroth atom anywhere in its locprobs.
+        Atom* a = ligand->get_atom(0);
+        Point pt = base_lp[0].get_weighted_random();
+        a->move(pt);
+        placed++;
+
+        // Narrow down the oneth atom's original locprobs using the distance restraint.
+        // If the result is an empty set, indicated by num_locations == 0, then abandon the attempt and continue the loop.
+        a = ligand->get_atom(1);
+        LocProbs llp = base_lp[1].apply_restraint(&restd[1]);
+        if (!llp.num_locations) continue;
+
+        // Place the oneth atom anywhere in its locprobs.
+        pt = llp.get_weighted_random();
+        a->move(pt);
+        placed++;
+
+        // For every subsequent atom:
+        for (i=2; i<n; i++)
+        {
+            // Narrow down the atom's original locprobs using its distance restraint. If empty, abandon and goto the beginning of the loop.
+            llp = base_lp[i].apply_restraint(&restd[i]);
+            if (!llp.num_locations) goto _tryagain_restassbly;
+
+            // Narrow down the atom's original locprobs using its angle restraints. If empty, abandon and goto the beginning of the loop.
+            for (j=0; j < nresta[i]; j++)
+            {
+                llp = llp.apply_restraint(&resta[i][j]);
+                if (!llp.num_locations) goto _tryagain_restassbly;
+            }
+
+            // If the atom's bonded-zero is a chiral center, keep track of how many bonded-tos have been added to that atom so far.
+            // If this is not the first bonded-to to be added to the chiral atom (not counting the chiral atom's bonded-zero),
+            // then narrow down this atom's locprobs based on its chiral restraint. If empty, abandon and goto the beginning of the loop.
+            if (do_chiral)
+            {
+                // TODO:
+            }
+
+            // Place the atom randomly inside its locprobs.
+            a = ligand->get_atom(i);
+            pt = llp.get_weighted_random();
+            a->move(pt);
+            placed++;
+        }
+
+        // If all atoms placed, exit loop.
+        if (placed == n) break;
+    }
+
+    // Free up memory.
+    for (i=2; i<n; i++) if (resta && resta[i]) delete[] resta[i];
+
+    // If every atom has been successfully placed, return true.
+    if (placed == n) return true;
+
+    // Otherwise, the ligand cannot fit in the docking space in the number of tries indicated. Return false to indicate dock failure.
+    was.restore_state(ligand);
+    return false;
+}
+
 float LigandTarget::charge()
 {
     if (single_atom) return single_atom->get_orig_charge();
@@ -1934,10 +2062,11 @@ float BestBindingResult::estimate_DeltaS()
     return -((float)num_assigned()*0.021)*(sum-cached_score)/sum;
 }
 
-int LocProbs::from_spheroid(Point cen, Point sz, float density)
+int LocProbs::from_spheroid(Point cen, Point sz, float d)
 {
     mcen = cen;
     msz = sz;
+    density = d;
 
     int nl = (int)(4.0/3 * M_PI * (sz.x+1) * (sz.y+1) * (sz.z+1));
     locations = new Point[nl];
@@ -1966,12 +2095,12 @@ int LocProbs::from_spheroid(Point cen, Point sz, float density)
 
 bool LocProbs::apply_weights(Protein *p)
 {
-    if (!atom) throw 0xbada7177;                // bad at[o]m
+    if (!atom) return false;
 
     AminoAcid* res[p->get_end_resno()];
     int i, j, sphres = p->get_residues_inside_spheroid(res, mcen, msz);
     float weightmax = 0;
-    
+
     for (i=0; i<num_locs; i++)
     {
         for (j=0; j<sphres; j++)
@@ -2026,9 +2155,10 @@ bool LocProbs::apply_weights(Protein *p)
         }
     }
 
-    if (weightmax) for (i=0; i<num_locs; i++) locations[i].weight /= weightmax;
+    if (weightmax) for (i=0; i<num_locs; i++) if (locations[i].weight > 0) locations[i].weight /= weightmax;
 
-    return false;
+    trim_noughts();
+    return true;
 }
 
 void LocProbs::trim_noughts()
@@ -2049,6 +2179,22 @@ void LocProbs::trim_noughts()
     num_locs = j;
 
     delete[] oldlocs;
+}
+
+LocProbs LocProbs::apply_restraint(Restraint *r)
+{
+    if (atom != r->self) throw 0xbada7077;
+    LocProbs result = *this;
+    int i;
+    float threshold = density * 0.53;
+    for (i=0; i<result.num_locs; i++)
+    {
+        float d = r->check(result.locations[i]);
+        if (d > threshold) result.locations[i].weight = 0;
+    }
+
+    result.trim_noughts();
+    return result;
 }
 
 Point LocProbs::get_weighted_random()
@@ -2174,7 +2320,7 @@ float AngleRestraint::check(Point pt)
 {
     if (!self || !atomd || !atom0) return 0.0f;
     float theta = find_3d_angle(self->loc, atomd->loc, atom0->loc);
-    return fabs(theta - theta_optimal);
+    return cos(theta - theta_optimal) * self->distance_to(atom0);
 }
 
 ChiralRestraint::ChiralRestraint()

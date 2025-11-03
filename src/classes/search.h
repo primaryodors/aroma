@@ -100,22 +100,29 @@ class ChiralRestraint : public Restraint
 class LocProbs
 {
     public:
-    Point* locations = nullptr;
-    int num_locs = 0;
-    Atom* atom = nullptr;
-
-    int from_spheroid(Point center, Point size, float density = 0.1);
-    bool apply_weights(Protein* p);                                         // make sure to set atom before calling this ftn
-    void trim_noughts();
-    Point get_weighted_random();
+    LocProbs() { ; }
     LocProbs(const LocProbs& other);
     LocProbs(LocProbs&& other);
     LocProbs& operator=(const LocProbs& other);
     LocProbs& operator=(LocProbs&& other);
     ~LocProbs();
 
+    int from_spheroid(Point center, Point size, float density = 0.1);
+    bool apply_weights(Protein* p);                                         // make sure to set atom before calling this ftn
+    void trim_noughts();
+    LocProbs apply_restraint(Restraint* r);
+    Point get_weighted_random();
+
+    Point* locations = nullptr;
+    Atom* atom = nullptr;
+
     protected:
+    float density;
     Point mcen, msz;
+    int num_locs = 0;
+
+    public:
+    const int& num_locations = num_locs;
 };
 
 class Search
@@ -133,6 +140,8 @@ class Search
         bool hba1, bool hba2, bool hbd1, bool hbd2);
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);
     static void clear_candidates();
+
+    static bool do_restraint_assembly(Protein* protein, Molecule* ligand, Point l_pocket_cen, Point size);
 
     protected:
     static bool any_resnos_priority;
