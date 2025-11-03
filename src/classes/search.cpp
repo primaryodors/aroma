@@ -1970,6 +1970,7 @@ bool LocProbs::apply_weights(Protein *p)
 
     AminoAcid* res[p->get_end_resno()];
     int i, j, sphres = p->get_residues_inside_spheroid(res, mcen, msz);
+    float weightmax = 0;
     
     for (i=0; i<num_locs; i++)
     {
@@ -2021,8 +2022,238 @@ bool LocProbs::apply_weights(Protein *p)
 
             partial /= (r*r);
             locations[i].weight += partial;
+            if (locations[i].weight > weightmax) weightmax = locations[i].weight;
         }
     }
 
+    if (weightmax) for (i=0; i<num_locs; i++) locations[i].weight /= weightmax;
+
     return false;
+}
+
+void LocProbs::trim_noughts()
+{
+    Point* oldlocs = locations;
+    int i, j=0, n=0;
+
+    for (i=0; i<num_locs; i++) if (oldlocs[i].weight > 0) n++;
+    locations = new Point[n+4];
+
+    for (i=0; i<num_locs; i++)
+    {
+        if (oldlocs[i].weight > 0)
+        {
+            locations[j++] = oldlocs[i];
+        }
+    }
+    num_locs = j;
+
+    delete[] oldlocs;
+}
+
+Point LocProbs::get_weighted_random()
+{
+    int h, i;
+    for (h=0; h<100000; h++)
+    {
+        i = rand() % num_locs;
+        if (locations[i].weight > frand(0,1)) return locations[i];
+    }
+    return locations[i];
+}
+
+LocProbs::LocProbs(const LocProbs &other)
+{
+    *this = other;
+    this->locations = new Point[num_locs+4];
+    int i;
+    for (i=0; i<num_locs; i++) this->locations[i] = other.locations[i];
+}
+
+LocProbs::LocProbs(LocProbs &&other)
+{
+    *this = other;
+    other.locations = nullptr;
+}
+
+LocProbs &LocProbs::operator=(const LocProbs &other)
+{
+    if (this != &other)
+    {
+        if (this->locations) delete this->locations;
+        *this = other;
+        this->locations = new Point[num_locs+4];
+        int i;
+        for (i=0; i<num_locs; i++) this->locations[i] = other.locations[i];
+    }
+
+    return *this;
+}
+
+LocProbs &LocProbs::operator=(LocProbs &&other)
+{
+    if (this != &other)
+    {
+        if (this->locations) delete this->locations;
+        *this = other;
+        other.locations = nullptr;
+    }
+
+    return *this;
+}
+
+LocProbs::~LocProbs()
+{
+    if (locations) delete[] locations;
+}
+
+Restraint::Restraint()
+{
+    ;
+}
+
+void Restraint::define(Molecule *m, Atom *a)
+{
+    self = a;
+    Bond* b = a->get_bond_by_idx(0);
+    if (b) atom0 = b->atom2;
+}
+
+float Restraint::check(Point pt)
+{
+    // Nothing to check; this is only the base class.
+    return 0.0f;
+}
+
+DistanceRestraint::DistanceRestraint()
+{
+    ;
+}
+
+void DistanceRestraint::define(Molecule *m, Atom *a)
+{
+    Restraint::define(m, a);
+    if (self && atom0) r_optimal = self->distance_to(atom0);
+}
+
+float DistanceRestraint::check(Point pt)
+{
+    if (self && atom0) return fabs(r_optimal - self->distance_to(atom0));
+    return 0.0f;
+}
+
+AngleRestraint::AngleRestraint()
+{
+    ;
+}
+
+void AngleRestraint::define(Molecule *m, Atom *a)
+{
+    Restraint::define(m, a);
+
+    if (atom0)
+    {
+        int g = atom0->get_geometry(), i, j=0;
+        for (i=0; i<g; i++)
+        {
+            Bond* b = atom0->get_bond_by_idx(i);
+            if (!b->atom2) continue;
+            if (b->atom2 == self) continue;
+            if (j == offset)
+            {
+                atomd = b->atom2;
+                theta_optimal = find_3d_angle(self->loc, atomd->loc, atom0->loc);
+                break;
+            }
+            j++;
+        }
+    }
+}
+
+float AngleRestraint::check(Point pt)
+{
+    if (!self || !atomd || !atom0) return 0.0f;
+    float theta = find_3d_angle(self->loc, atomd->loc, atom0->loc);
+    return fabs(theta - theta_optimal);
+}
+
+ChiralRestraint::ChiralRestraint()
+{
+    ;
+}
+
+void ChiralRestraint::define(Molecule *m, Atom *a)
+{
+    Restraint::define(m, a);
+    if (!atom0) return;
+
+    int g = atom0->get_geometry(), i, j, n = atom0->get_bonded_atoms_count();
+    if (!atom0->is_chiral_center) return;
+    if (n < 3) return;
+    if (n == 3 && g < 4) return;
+
+    j=0;
+    for (i=0; i<g; i++)
+    {
+        Bond* b = atom0->get_bond_by_idx(i);
+        if (!b) continue;
+        if (!b->atom2) continue;
+        if (b->atom2 == self) continue;
+
+        // Not sure which of these is better, or if it even matters, so leaving both here in case want to switch later.
+        #if 0
+        if (!j)
+        {
+            atom1 = b->atom2;
+            j++;
+        }
+        else if (j==1)
+        {
+            atom2 = b->atom2;
+            break;
+        }
+        #else
+        if (b->atom2 < atom1)
+        {
+            atom2 = atom1;
+            atom1 = b->atom2;
+        }
+        else if (b->atom2 < atom2)
+        {
+            atom2 = b->atom2;
+        }
+        #endif
+    }
+
+    Atom* a4avg[4] = {self, atom1, atom2, nullptr};
+    Point avg = average_of_atom_locs(a4avg);
+    SCoord norm = compute_normal(self->loc, atom1->loc, atom2->loc);
+    norm.r = 0.1;
+    Point npt = avg.add(norm);
+
+    float r  = avg.get_3d_distance(atom0->loc);
+    float rn = npt.get_3d_distance(atom0->loc);
+
+    if (r < rn)
+    {
+        Atom* swap = atom1;
+        atom1 = atom2;
+        atom2 = swap;
+    }
+}
+
+float ChiralRestraint::check(Point pt)
+{
+    if (!self || !atom0 || !atom1 || !atom2) return 0.0f;
+
+    Atom* a4avg[4] = {self, atom1, atom2, nullptr};
+    Point avg = average_of_atom_locs(a4avg);
+    SCoord norm = compute_normal(self->loc, atom1->loc, atom2->loc);
+    norm.r = 0.1;
+    Point npt = avg.add(norm);
+
+    float r  = avg.get_3d_distance(atom0->loc);
+    float rn = npt.get_3d_distance(atom0->loc);
+
+    return (r > rn) ? Avogadro : 0;
 }

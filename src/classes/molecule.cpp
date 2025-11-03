@@ -7230,6 +7230,7 @@ bool Molecule::is_chiral()
     if (noAtoms(atoms)) return false;
 
     int i;
+    bool result = false;
     Bond* bndbuf[16];
     for (i=0; atoms[i]; i++)
     {
@@ -7248,10 +7249,11 @@ bool Molecule::is_chiral()
             if (bndbuf[1]->is_equivalent(bndbuf[3])) continue;
             if (bndbuf[2]->is_equivalent(bndbuf[3])) continue;
         }
-        return true;
+        atoms[i]->is_chiral_center = true;
+        result = true;
     }
 
-    return false;
+    return result;
 }
 
 void Molecule::mirror()

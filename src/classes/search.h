@@ -48,6 +48,55 @@ class BestBindingResult
     Point barycenter();
 };
 
+class Restraint
+{
+    public:
+    virtual void define(Molecule* m, Atom* a);
+    virtual float check(Point pt);
+
+    Atom* self = nullptr;
+
+    protected:
+    Restraint();
+    Atom* atom0 = nullptr;
+};
+
+class DistanceRestraint : public Restraint
+{
+    public:
+    DistanceRestraint();
+    void define(Molecule* m, Atom* a) override;
+    float check(Point pt) override;
+
+    protected:
+    float r_optimal = 0;
+};
+
+class AngleRestraint : public Restraint
+{
+    public:
+    AngleRestraint();
+    void define(Molecule* m, Atom* a) override;
+    float check(Point pt) override;
+
+    int offset = 0;
+
+    protected:
+    Atom* atomd = nullptr;
+    float theta_optimal = 0;
+};
+
+class ChiralRestraint : public Restraint
+{
+    public:
+    ChiralRestraint();
+    void define(Molecule* m, Atom* a) override;
+    float check(Point pt) override;
+
+    protected:
+    Atom *atom1 = nullptr, *atom2 = nullptr;            // The idea is that the normal of self, atom1, and atom2 must point to atom0.
+};
+
 class LocProbs
 {
     public:
@@ -58,8 +107,14 @@ class LocProbs
     int from_spheroid(Point center, Point size, float density = 0.1);
     bool apply_weights(Protein* p);                                         // make sure to set atom before calling this ftn
     void trim_noughts();
+    Point get_weighted_random();
+    LocProbs(const LocProbs& other);
+    LocProbs(LocProbs&& other);
+    LocProbs& operator=(const LocProbs& other);
+    LocProbs& operator=(LocProbs&& other);
+    ~LocProbs();
 
-    private:
+    protected:
     Point mcen, msz;
 };
 
