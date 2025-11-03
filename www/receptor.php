@@ -21,20 +21,38 @@ if (!$receptor)
 
 $hilite = explode("|", @$_GET['hi']);
 
-// Binding site residues from Man et al (2004) and de March et al (2024)
-$bsr = array_flip(
-    [
-        "2.53",
-        "3.29", "3.32", "3.33", "3.36", "3.37", "3.40", "3.41",
-        "4.53", "4.57", "4.60",
-        "45.49", "45.51", "45.52",
-        "5.39", "5.43", "5.46", "5.47",
-        "6.48", "6.51", "6.55",
-        "7.38", "7.39", "7.42",
-    ]); 
 
 $fam = family_from_protid($rcpid);
+$famno = intval(substr($fam, 2));
 $famsub = $fam.subfamily_from_protid($rcpid);
+
+if ($famno < 50)
+{
+    // Binding site residues from Man et al (2004) and de March et al (2024)
+    $bsr = array_flip(
+        [
+            "2.53",
+            "3.29", "3.32", "3.33", "3.36", "3.37", "3.40", "3.41",
+            "4.53", "4.57", "4.60",
+            "45.49", "45.51", "45.52",
+            "5.39", "5.43", "5.46", "5.47",
+            "6.48", "6.51", "6.55",
+            "7.38", "7.39", "7.42",
+        ]);
+}
+else
+{
+    // Binding site residues from Billesboelle et al (2022), Choi et al (2023), and de March et al (2024)
+    $bsr = array_flip(
+        [
+            "3.33", "3.37",
+            "4.57", "4.60",
+            "45.52", "45.53",
+            "5.39", "5.42", "5.43", "5.47",
+            "6.55", "6.59",
+        ]);
+}
+
 if ($fam == 'TAAR' || $famsub == "OR2M" || $famsub == "OR2T" || $famsub == "OR2V") $bsr['5.42'] = count($bsr);
 
 $predictions = [];
@@ -446,16 +464,33 @@ else
         }
         $angle = find_angle($x, $y);
         $tmrstartoff[$i] = intval(round($angle * 7 / (pi()*4)));
+        // if ($tmrstartoff[$i] > 0) $tmrstartoff[$i] -= 7;
     }
 
-    $tmrstartoff[6]++;
+    if (substr($fam, 0, 2) == "OR")
+    {
+        if (intval(substr($fam, 2)) < 50)
+        {
+            $tmrstartoff[3]--;
+            $tmrstartoff[7]--;
+        }
+        else
+        {
+            $tmrstartoff[6] -= 3;
+        }
+    }
+    else if ($fam == "TAAR")
+    {
+        $tmrstartoff[6]++;
+        $tmrstartoff[7]--;
+    }
 
     $rgntext = [];
     foreach ($receptor['region'] as $rgn => $r)
     {
         $st  = $r['start'];
         $end = $r['end'];
-        
+
         if (substr($rgn,0,3) == 'TMR')
         {
             $tmr = intval(substr($rgn,-1));
@@ -479,7 +514,7 @@ else
                 }
                 else $rgntext[$rgn][] = substr($seq, $i-1+$tso, $j-$i);
             }
-            
+
             if (!($tmr & 1))
             { 
                 foreach ($rgntext[$rgn] as $k => $v) $rgntext[$rgn][$k] = strrev($v);
@@ -527,6 +562,7 @@ echo "</p>";*/
     }
 
     echo "\n";
+    echo "<!-- ".print_r($tmrstartoff, true)." -->\n";
 
     $ltl = [];
     $rc = 
@@ -539,10 +575,25 @@ echo "</p>";*/
         6 =>  intval($receptor['region']['TMR6']['end']),
         7 =>  intval($receptor['region']['TMR7']['start']),
     ];
+    $rtop =
+    [
+        1 => 0,
+        2 => 0.5,
+        3 => 0,
+        4 => 2,
+        5 => 1,
+        6 => 1.5,
+        7 => 2,
+    ];
+
+    if (substr($fam, 0, 2) == "OR" && intval(substr($fam, 2)) >= 50) $rtop[6] -= 1;
+    if ($fam == "TAAR") $rtop[7] -= 2;
 
     for ($i=1; $i<=7; $i++) $rc[$i] -= $tmrstartoff[$i];
 
     echo "<!-- ".print_r($rc, true)." -->\n";
+    $fs = 13;
+    $lh = $fs+3;
 
     for ($i=0; $i<$mxrt; $i++)
     {
@@ -554,7 +605,7 @@ echo "</p>";*/
                 $tl = strlen($text[$i]);
                 $tl1 = strlen(trim($text[$i]));
                 if ($tl==3 || @$ltl[$rgn] == 4) echo " ";
-                
+
                 if ($tmr & 1)
                 {
                     $text[$i] = strrev($text[$i]);
@@ -566,11 +617,14 @@ echo "</p>";*/
                     $ch = substr($text[$i],$j,1);
                     // $col = aacolor($ch);
                     echo "<span ";
-                    
+
                     $bw = bw_from_resno($rcpid, $rc[$tmr]); // $rc[$tmr] + 50 - $receptor['bw']["$tmr.50"];
-                    
+
                     if ($ch != ' ') echo "title=\"$bw {$aminos[$ch]}{$rc[$tmr]}\" ";
                     echo "style=\"";
+
+                    $toppx = intval($lh * $rtop[$tmr]);
+                    echo "font-size: {$fs}px; line-height: {$lh}px; position: relative; top: {$toppx}px; ";
 
                     if (isset($bsr["$bw"]))
                     {
@@ -591,7 +645,7 @@ echo "</p>";*/
                     else echo substr($text[$i],$j,1);
                     echo "</span>";
                     echo " ";
-                    
+
                     if ($ch != ' ')
                     { 
                         /*if ($tmr & 1) $rc[$tmr]++;
@@ -599,16 +653,16 @@ echo "</p>";*/
                     }
                 }
                 if ($tl==3 || @$ltl[$rgn] == 4) echo " ";
-                
+
                 $ltl[$rgn] = $tl;
             }
             else echo "        ";
-            
+
             echo " ";
-        
+
             if ($tmr & 1) $rc[$tmr] += $tl1+1;
         }
-    
+
         echo "\n";
     }
     ?>
