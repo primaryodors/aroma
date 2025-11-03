@@ -53,6 +53,7 @@ class Restraint
     public:
     virtual void define(Molecule* m, Atom* a);
     virtual float check(Point pt);
+    virtual std::ostream& operator<<(std::ostream& os);
 
     Atom* self = nullptr;
 
@@ -67,6 +68,7 @@ class DistanceRestraint : public Restraint
     DistanceRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
+    virtual std::ostream& operator<<(std::ostream& os) override;
 
     protected:
     float r_optimal = 0;
@@ -78,6 +80,7 @@ class AngleRestraint : public Restraint
     AngleRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
+    virtual std::ostream& operator<<(std::ostream& os) override;
 
     int offset = 0;
 
@@ -92,6 +95,7 @@ class ChiralRestraint : public Restraint
     ChiralRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
+    virtual std::ostream& operator<<(std::ostream& os) override;
 
     protected:
     Atom *atom1 = nullptr, *atom2 = nullptr;            // The idea is that the normal of self, atom1, and atom2 must point to atom0.

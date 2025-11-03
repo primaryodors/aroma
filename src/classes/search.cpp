@@ -1477,6 +1477,10 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
         base_lp[i].atom = ligand->get_atom(i);
         base_lp[i].from_spheroid(lcen, lsz);
         base_lp[i].apply_weights(p);
+
+        #if _dbg_restrained_assembly
+        cout << "Atom " << base_lp[i].atom->name << "'s base locprobs include " << base_lp[i].num_locations << " possible locations." << endl << flush;
+        #endif
     }
 
     // Next, generate and store distance restraints for atoms >= 1.
@@ -1484,6 +1488,9 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
     for (i=1; i<n; i++)
     {
         restd[i].define(ligand, ligand->get_atom(i));
+        #if _dbg_restrained_assembly
+        cout << &restd[i] << endl << flush;
+        #endif
     }
 
     // And angle restraints for atoms >= 2.
@@ -1509,6 +1516,9 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
             if (j >= (m-1)) throw 0xbadc0de;
             resta[i][j].offset = h;
             resta[i][j].define(ligand, a);
+            #if _dbg_restrained_assembly
+            cout << &resta[i][j] << endl << flush;
+            #endif
             j++;
         }
         nresta[i] = j;
@@ -1536,30 +1546,56 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
         Point pt = base_lp[0].get_weighted_random();
         a->move(pt);
         placed++;
+        #if _dbg_restrained_assembly
+        cout << "Placed " << a->name << endl << flush;
+        #endif
 
         // Narrow down the oneth atom's original locprobs using the distance restraint.
         // If the result is an empty set, indicated by num_locations == 0, then abandon the attempt and continue the loop.
         a = ligand->get_atom(1);
         LocProbs llp = base_lp[1].apply_restraint(&restd[1]);
-        if (!llp.num_locations) continue;
+        if (!llp.num_locations)
+        {
+            #if _dbg_restrained_assembly
+            cout << "Nowhere to place " << a->name << "; distance restraint not met." << endl << flush;
+            #endif
+            continue;
+        }
 
         // Place the oneth atom anywhere in its locprobs.
         pt = llp.get_weighted_random();
         a->move(pt);
         placed++;
+        #if _dbg_restrained_assembly
+        cout << "Placed " << a->name << endl << flush;
+        #endif
 
         // For every subsequent atom:
         for (i=2; i<n; i++)
         {
+            a = ligand->get_atom(i);
+
             // Narrow down the atom's original locprobs using its distance restraint. If empty, abandon and goto the beginning of the loop.
             llp = base_lp[i].apply_restraint(&restd[i]);
-            if (!llp.num_locations) goto _tryagain_restassbly;
+            if (!llp.num_locations)
+            {
+                #if _dbg_restrained_assembly
+                cout << "Nowhere to place " << a->name << "; distance restraint not met." << endl << flush;
+                #endif
+                goto _tryagain_restassbly;
+            }
 
             // Narrow down the atom's original locprobs using its angle restraints. If empty, abandon and goto the beginning of the loop.
             for (j=0; j < nresta[i]; j++)
             {
                 llp = llp.apply_restraint(&resta[i][j]);
-                if (!llp.num_locations) goto _tryagain_restassbly;
+                if (!llp.num_locations)
+                {
+                    #if _dbg_restrained_assembly
+                    cout << "Nowhere to place " << a->name << "; angle restraints not met." << endl << flush;
+                    #endif
+                    goto _tryagain_restassbly;
+                }
             }
 
             // If the atom's bonded-zero is a chiral center, keep track of how many bonded-tos have been added to that atom so far.
@@ -1571,10 +1607,12 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
             }
 
             // Place the atom randomly inside its locprobs.
-            a = ligand->get_atom(i);
             pt = llp.get_weighted_random();
             a->move(pt);
             placed++;
+            #if _dbg_restrained_assembly
+            cout << "Placed " << a->name << endl << flush;
+            #endif
         }
 
         // If all atoms placed, exit loop.
@@ -1585,10 +1623,19 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
     for (i=2; i<n; i++) if (resta && resta[i]) delete[] resta[i];
 
     // If every atom has been successfully placed, return true.
-    if (placed == n) return true;
+    if (placed == n)
+    {
+        #if _dbg_restrained_assembly
+        cout << "Placed " << placed << " atoms; function successful." << endl << flush;
+        #endif
+        return true;
+    }
 
     // Otherwise, the ligand cannot fit in the docking space in the number of tries indicated. Return false to indicate dock failure.
     was.restore_state(ligand);
+    #if _dbg_restrained_assembly
+    cout << "Did not find placement for atoms; function unsuccessful." << endl << flush;
+    #endif
     return false;
 }
 
@@ -2271,6 +2318,12 @@ float Restraint::check(Point pt)
     return 0.0f;
 }
 
+std::ostream &Restraint::operator<<(std::ostream &os)
+{
+    os << "(empty restraint)";
+    return os;
+}
+
 DistanceRestraint::DistanceRestraint()
 {
     ;
@@ -2286,6 +2339,17 @@ float DistanceRestraint::check(Point pt)
 {
     if (self && atom0) return fabs(r_optimal - self->distance_to(atom0));
     return 0.0f;
+}
+
+std::ostream &DistanceRestraint::operator<<(std::ostream &os)
+{
+    os << "Restraint: ";
+    if (self) os << self->name;
+    else os << "(null atom)";
+    os << " must maintain a distance of " << r_optimal << "A from ";
+    if (atom0) os << atom0->name;
+    else os << "(null atom)";
+    return os;
 }
 
 AngleRestraint::AngleRestraint()
@@ -2321,6 +2385,20 @@ float AngleRestraint::check(Point pt)
     if (!self || !atomd || !atom0) return 0.0f;
     float theta = find_3d_angle(self->loc, atomd->loc, atom0->loc);
     return cos(theta - theta_optimal) * self->distance_to(atom0);
+}
+
+std::ostream &AngleRestraint::operator<<(std::ostream &os)
+{
+    os << "Restraint: ";
+    if (self) os << self->name;
+    else os << "(null atom)";
+    os << " must maintain an angle of " << (theta_optimal*fiftyseven) << "deg from ";
+    if (atomd) os << atomd->name;
+    else os << "(null atom)";
+    os << " relative to ";
+    if (atom0) os << atom0->name;
+    else os << "(null atom)";
+    return os;
 }
 
 ChiralRestraint::ChiralRestraint()
@@ -2402,4 +2480,21 @@ float ChiralRestraint::check(Point pt)
     float rn = npt.get_3d_distance(atom0->loc);
 
     return (r > rn) ? Avogadro : 0;
+}
+
+std::ostream &ChiralRestraint::operator<<(std::ostream &os)
+{
+    os << "Restraint: The normal of the plane defined by [";
+    if (self) os << self->name;
+    else os << "(null atom)";
+    os << ", ";
+    if (atom1) os << atom1->name;
+    else os << "(null atom)";
+    os << ", ";
+    if (atom2) os << atom2->name;
+    else os << "(null atom)";
+    os << "] must point toward ";
+    if (atom0) os << atom0->name;
+    else os << "(null atom)";
+    return os;
 }

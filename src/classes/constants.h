@@ -378,6 +378,7 @@
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0
 #define _dbg_residue_poses 0
+#define _dbg_restrained_assembly 1
 #define _dbg_rock_pic 0
 #define _dbg_soft 0
 #define _dbg_softpivot 0
