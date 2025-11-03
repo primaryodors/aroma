@@ -1378,6 +1378,11 @@ int interpret_config_line(char** words)
             pdpst = pst_best_binding;
             return 1;
         }
+        if (!strcmp(words[1], "RA"))
+        {
+            pdpst = pst_restrained;
+            return 1;
+        }
         else if (!strcmp(words[1], "TS"))
         {
             pdpst = pst_tumble_spheres;
@@ -3255,6 +3260,10 @@ _try_again:
                             if (output) *output << endl;
                         }
                     }
+                }
+                else if (pdpst == pst_restrained)
+                {
+                    Search::do_restraint_assembly(protein, ligand, loneliest, size);
                 }
                 else if (pdpst == pst_copyfrom)
                 {
