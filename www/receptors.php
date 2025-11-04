@@ -103,13 +103,9 @@ echo "<h1>Receptors</h1>\n";
 <div class="box">
 <div class="row header">
 <p>
-<a href="receptors.php" class="<?php if ($filter == '') echo "hilite" ?>">All</a>
+<a href="receptors.php" class="<?php if ($filter == '' && !@$_REQUEST['s']) echo "hilite" ?>">By Family</a>
 |
-<a href="receptors.php?f=e95" class="<?php if ($filter == 'e' && $fnum == 95) echo "hilite" ?>">Near Universally Expressed</a>
-|
-<a href="receptors.php?f=e75" class="<?php if ($filter == 'e' && $fnum == 75) echo "hilite" ?>">&#x2a7e;3/4 Expressed</a>
-|
-<a href="receptors.php?f=e50" class="<?php if ($filter == 'e' && $fnum == 50) echo "hilite" ?>">&#x2a7e;1/2 Expressed</a>
+<a href="receptors.php?s=x" class="<?php if (@$_REQUEST['s'] == 'x') echo "hilite" ?>">By Expression</a>
 |
 <a href="receptors.php?f=a55" class="<?php if ($filter == 'a' && $fnum == 55) echo "hilite" ?>">Big Five</a>
 |
@@ -142,7 +138,39 @@ echo "<h1>Receptors</h1>\n";
 
 $ffam = "OR1";
 $echoed = $total = 0;
-foreach ($prots as $protid => $p)
+if (@$_REQUEST["s"] == 'x')
+{
+    $xprvals = [];
+    foreach ($prots as $protid => $p) if (isset($p['expression'])) $xprvals[intval($p['expression'])] = true;
+    $xprvals[0] = true;
+    krsort($xprvals);
+    foreach (array_keys($xprvals) as $xv)
+    {
+        if ($xv) echo "<hr><h3>$xv% Expression:</h3>\n";
+        else echo "<hr><h3>Unknown Rate of Expression:</h3>\n";
+        $ffam = false;
+        foreach ($prots as $protid => $p)
+        {
+            if (intval(@$p['expression']) == $xv)
+            {
+                $fam = family_from_protid($protid);
+                if ($fam == "MS4A") break;
+                if ($ffam && $fam != $ffam)
+                {
+                    echo " &bull; ";
+                }
+
+                if (filter_prot($protid, $filter))
+                {
+                    echo "<a class=\"rcptile\" href=\"receptor.php?r=$protid\">$protid</a>\n";
+                    $total++;
+                }
+                $ffam = $fam;
+            }
+        }
+    }
+}
+else foreach ($prots as $protid => $p)
 {
     if (!@$p['region']) continue;
     $fam = family_from_protid($protid);

@@ -29,6 +29,13 @@ class LigandTarget
 class BestBindingResult
 {
     public:
+    float score(Point ligand_center, Cavity* container = nullptr);
+    void add_to_candidates();
+    int num_assigned();
+    bool is_equivalent(BestBindingResult* bbr2);
+    float estimate_DeltaS();
+    Point barycenter();
+
     Protein* protein = nullptr;
     Molecule* ligand = nullptr;
     AminoAcid* pri_res = nullptr;
@@ -40,12 +47,8 @@ class BestBindingResult
     float probability = 0;
     float cached_score = 0;
 
-    float score(Point ligand_center, Cavity* container = nullptr);
-    void add_to_candidates();
-    int num_assigned();
-    bool is_equivalent(BestBindingResult* bbr2);
-    float estimate_DeltaS();
-    Point barycenter();
+    protected:
+    float entropic_score = 0;
 };
 
 class Search

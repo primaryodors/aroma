@@ -199,6 +199,7 @@ void InteratomicForce::read_dat_line(char* line)
        )
     {
         char ea[3], eab[3], eb[3], ebb[3];
+        ea[0] = eab[0] = eb[0] = ebb[0] = 0;
 
         if (words[0][1] >= 'A' && words[0][1] <= 'Z')
         {

@@ -1724,7 +1724,7 @@ void apply_protein_specific_settings(Protein* p)
         {
             if (!strstr(nfwarned.c_str(), words[1]))
             {
-                cout << "Warning: residue " << words[1] << " not found." << endl;
+                cout << "Residue " << words[1] << " not present in protein; this ATOMTO command will have no effect." << endl;
                 nfwarned += (std::string)" " + (std::string)words[1];
             }
             continue;
@@ -1734,7 +1734,7 @@ void apply_protein_specific_settings(Protein* p)
         {
             if (!strstr(nfwarned.c_str(), words[3]))
             {
-                cout << "Warning: residue " << words[3] << " not found." << endl;
+                cout << "Residue " << words[3] << " not present in protein; this ATOMTO command will have no effect." << endl;
                 nfwarned += (std::string)" " + (std::string)words[3];
             }
             continue;

@@ -326,6 +326,7 @@ table.rcplist tr:nth-of-type(odd), table.liglist tr:nth-of-type(odd)
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: 15px;
     padding: 3px;
+    line-height: 30px;
 }
 
 .fam

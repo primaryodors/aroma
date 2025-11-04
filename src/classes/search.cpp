@@ -830,7 +830,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             #endif
 
                             bbr.cached_score = score;
-                            // bbr.add_to_candidates();
+                            bbr.add_to_candidates();
                             if (score > best
                                 && (has_ionic || !best_ionic)
                                 && (has_neutral_polar || !best_neutral_polar)
@@ -1566,8 +1566,8 @@ std::string LigandTarget::to_std_string()
 
 std::ostream& operator<<(std::ostream& os, const LigandTarget& lt)
 {
-    if (lt.single_atom) os << lt.single_atom->name;
-    else if (lt.conjgrp) os << *lt.conjgrp;
+    if (lt.conjgrp) os << *lt.conjgrp;
+    else if (lt.single_atom) os << lt.single_atom->name;
     else os << "(null)";
 
     return os;
@@ -1588,7 +1588,7 @@ std::ostream &operator<<(std::ostream &os, const BestBindingResult &bbr)
     return os;
 }
 
-float BestBindingResult::score(Point ligcen, Cavity* container)
+float BestBindingResult::score(Point ligcen, Cavity *container)
 {
     float lchg=0, lpol=0, lcba;
     int lpi;
@@ -1827,7 +1827,7 @@ float BestBindingResult::score(Point ligcen, Cavity* container)
     cout << "e:" << score << " ";
     #endif
 
-    cached_score = score;
+    entropic_score = score;
     add_to_candidates();
 
     // Effect of priority.
@@ -1859,7 +1859,7 @@ void BestBindingResult::add_to_candidates()
     {
         if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
 
-        if (cached_score > bbr_candidates[i].cached_score)
+        if (entropic_score > bbr_candidates[i].entropic_score)
         {
             for (j=nc+1; j>i; j--) bbr_candidates[j] = bbr_candidates[j-1];
             bbr_candidates[i] = *this;
@@ -1923,7 +1923,7 @@ float BestBindingResult::estimate_DeltaS()
     for (i=0; i<MAX_BBR_CANDIDATES; i++)
     {
         if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
-        sum += bbr_candidates[i].cached_score;
+        sum += bbr_candidates[i].entropic_score;
     }
 
     // Based on the melting point of water, the entropy contribution for forming each hydrogen bond in a
@@ -1931,5 +1931,25 @@ float BestBindingResult::estimate_DeltaS()
     // dissociation energy at 298K vs, 0K (https://en.wikipedia.org/wiki/Bond_dissociation_energy) gives a
     // value of 0.021 kJ/mol/K.
     // The following calculation is based on the latter number.
-    return -((float)num_assigned()*0.021)*(sum-cached_score)/sum;
+    float result = -((float)num_assigned()*0.021)*(sum-entropic_score)/sum;
+
+    // The result should NEVER be positive.
+    if (result > 0)
+    {
+        cout << "***** ABJECT FAILURE! POSITIVE VALUE FOR T{Delta}S. *****" << endl;
+        cout << "Post-mortem follows:" << endl;
+        cout << "Assigned Best-Binding pairs: " << num_assigned() << endl;
+        cout << "Number of candidates: " << i << endl;
+        cout << "Sum " << sum << " minus score of chosen candidate " << entropic_score 
+            << " divided by sum = " << ((sum-entropic_score)/sum) << endl;
+        cout << "Candidate scores are as follows:" << endl;
+        for (i=0; i<MAX_BBR_CANDIDATES; i++)
+        {
+            if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
+            cout << i << "Score: " << bbr_candidates[i].entropic_score << endl;
+        }
+        throw 0xbadc0de;
+    }
+
+    return result;
 }
