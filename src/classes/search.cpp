@@ -2276,6 +2276,7 @@ LocProbs::LocProbs(LocProbs &&other)
     this->mcen = other.mcen;
     this->msz = other.msz;
     this->num_locs = other.num_locs;
+    this->locations = other.locations;
     other.locations = nullptr;
 }
 
@@ -2307,6 +2308,7 @@ LocProbs &LocProbs::operator=(LocProbs &&other)
         this->mcen = other.mcen;
         this->msz = other.msz;
         this->num_locs = other.num_locs;
+        this->locations = other.locations;
         other.locations = nullptr;
     }
 
