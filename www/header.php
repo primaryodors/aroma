@@ -14,6 +14,7 @@ if ($extra_js  && !is_array($extra_js )) $extra_js  = [$extra_js ];
 ?>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><?php echo @$page_title ?: @$customizations['title'] ?: "AROMA Web App"; ?></title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script src="https://www.lactame.com/lib/openchemlib/5.2.0/openchemlib-minimal.js"></script>

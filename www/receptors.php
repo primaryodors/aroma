@@ -3,6 +3,24 @@ chdir(__DIR__);
 require_once("../data/protutils.php");
 require_once("../data/odorutils.php");
 
+function is_mobile()
+{
+    $ua = $_SERVER['HTTP_USER_AGENT'];
+    $mk = array(
+        'android', 'avantgo', 'blackberry', 'bolt', 'boost',
+        'cricket', 'docomo', 'fone', 'hiptop', 'iphone',
+        'ipad', 'ipod', 'mini', 'mobi', 'palm',
+        'phone', 'pie', 'tablet', 'up.browser', 'up.link',
+        'webos', 'wos',
+    );
+
+    foreach ($mk as $kw)
+        if (stripos($ua, $kw) !== false)
+            return true;
+
+    return false;
+}
+
 function filter_prot($protid, $filter)
 {
     global $fnum, $prots, $dock_results;
@@ -187,6 +205,24 @@ echo "<pre>";
 
 if (@$_REQUEST['bt']) echo "<a href=\"receptors.php?tree=1&bt=".substr($_REQUEST['bt'], 0, strlen($_REQUEST['bt'])-1)."\">&#x21b0;</a>\n";
 
+if (!is_mobile())
+{
+    // These look great on desktop, but they're a steaming pile on mobile browsers.
+    $plussym = "&#x252c;";
+    $minusym = "&#x2500;";
+    $baktick = "&#x2514;";
+    $pipesym = "&#x2502;";
+    $mptyspc = "&nbsp;";
+}
+else
+{
+    $plussym = "+";
+    $minusym = "-";
+    $baktick = "`";
+    $pipesym = "|";
+    $mptyspc = "&nbsp;";
+}
+
 $prev = [];
 $path1 = "";
 $lno = 0;
@@ -194,7 +230,6 @@ $ktree = array_keys($tree);
 foreach ($tree as $path => $protids)
 {
     $curr = str_split($path);
-    // echo str_pad($path, 50);
     foreach ($curr as $i => $c)
     {
         if ($c == 0)
@@ -223,24 +258,24 @@ foreach ($tree as $path => $protids)
         {
             if (substr($path1, 0, $i+1) != substr($path, 0, $i+1))
             {
-                if ($c === '0') echo "&#x252c;&#x2500;&#x2500;&#x2500;";       // +
-                else if (substr($path1, 0, $i) == substr($path, 0, $i)) echo "&#x2514;&#x2500;&#x2500;&#x2500;";                  // `
-                else echo "&#x2500;&#x2500;&#x2500;&#x2500;";                      // -
+                if ($c === '0') echo "$plussym$minusym$minusym$minusym";       // +
+                else if (substr($path1, 0, $i) == substr($path, 0, $i)) echo "$baktick$minusym$minusym$minusym";                  // `
+                else echo "$minusym$minusym$minusym$minusym";                      // -
             }
             else
             {
-                if ($c === '0') echo "&#x2502;&nbsp;&nbsp;&nbsp;";       // |
-                else echo "&nbsp;&nbsp;&nbsp;&nbsp;";                         //
+                if ($c === '0') echo "$pipesym$mptyspc$mptyspc$mptyspc";       // |
+                else echo "$mptyspc$mptyspc$mptyspc$mptyspc";                         //
             }
         }
         else
         {
-            if ($c == 0) echo "&#x252c;&#x2500;&#x2500;&#x2500;";              // +
-            else echo "&#x2500;&#x2500;&#x2500;&#x2500;";                      // -
+            if ($c == 0) echo "$plussym$minusym$minusym$minusym";              // +
+            else echo "$minusym$minusym$minusym$minusym";                      // -
         }
     }
 
-    echo "&#x2500;&#x2500;&#x2500;";
+    echo "$minusym$minusym$minusym";
     foreach ($protids as $r)
     {
         echo " <a href=\"receptor.php?r=$r\">$r</a>";
