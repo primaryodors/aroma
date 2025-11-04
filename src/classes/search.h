@@ -1,6 +1,8 @@
 
 #include <memory>
 #include <algorithm>
+#include <iostream>
+#include <string>
 #include "protein.h"
 #include "cavity.h"
 
@@ -53,13 +55,15 @@ class Restraint
     public:
     virtual void define(Molecule* m, Atom* a);
     virtual float check(Point pt);
-    virtual std::ostream& operator<<(std::ostream& os);
 
     Atom* self = nullptr;
 
     protected:
     Restraint();
     Atom* atom0 = nullptr;
+
+    public:
+    const Atom* const& atom_zero = atom0;
 };
 
 class DistanceRestraint : public Restraint
@@ -68,10 +72,12 @@ class DistanceRestraint : public Restraint
     DistanceRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
-    virtual std::ostream& operator<<(std::ostream& os) override;
 
     protected:
     float r_optimal = 0;
+
+    public:
+    const float& optimal_distance = r_optimal;
 };
 
 class AngleRestraint : public Restraint
@@ -80,13 +86,16 @@ class AngleRestraint : public Restraint
     AngleRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
-    virtual std::ostream& operator<<(std::ostream& os) override;
 
     int offset = 0;
 
     protected:
     Atom* atomd = nullptr;
     float theta_optimal = 0;
+
+    public:
+    const Atom* const& reference_atom = atomd;
+    const float& optimal_angle = theta_optimal;
 };
 
 class ChiralRestraint : public Restraint
@@ -95,11 +104,19 @@ class ChiralRestraint : public Restraint
     ChiralRestraint();
     void define(Molecule* m, Atom* a) override;
     float check(Point pt) override;
-    virtual std::ostream& operator<<(std::ostream& os) override;
 
     protected:
     Atom *atom1 = nullptr, *atom2 = nullptr;            // The idea is that the normal of self, atom1, and atom2 must point to atom0.
+
+    public:
+    const Atom* const& atom_1 = atom1;
+    const Atom* const& atom_2 = atom2;
 };
+
+static std::ostream& operator<<(std::ostream& os, Restraint& r);
+static std::ostream& operator<<(std::ostream& os, DistanceRestraint& r);
+static std::ostream& operator<<(std::ostream& os, AngleRestraint& r);
+static std::ostream& operator<<(std::ostream& os, ChiralRestraint& r);
 
 class LocProbs
 {
@@ -111,7 +128,7 @@ class LocProbs
     LocProbs& operator=(LocProbs&& other);
     ~LocProbs();
 
-    int from_spheroid(Point center, Point size, float density = 0.1);
+    int from_spheroid(Point center, Point size, float density = 0.5);
     bool apply_weights(Protein* p);                                         // make sure to set atom before calling this ftn
     void trim_noughts();
     LocProbs apply_restraint(Restraint* r);

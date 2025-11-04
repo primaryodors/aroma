@@ -1489,7 +1489,7 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
     {
         restd[i].define(ligand, ligand->get_atom(i));
         #if _dbg_restrained_assembly
-        cout << &restd[i] << endl << flush;
+        cout << restd[i] << endl << flush;
         #endif
     }
 
@@ -1499,12 +1499,14 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
     for (i=2; i<n; i++)
     {
         nresta[i] = 0;
+        resta[i] = nullptr;
         Atom* a = ligand->get_atom(i);
         Bond* b = a->get_bond_by_idx(0);
         if (!b->atom2) continue;
         Atom* a0 = b->atom2;
-        g = a->get_geometry();
-        m = a->get_bonded_atoms_count();
+        g = a0->get_geometry();
+        m = a0->get_bonded_atoms_count();
+        if (m < 2) continue;
         resta[i] = new AngleRestraint[m];
 
         j = 0;
@@ -1517,7 +1519,7 @@ bool Search::do_restraint_assembly(Protein *p, Molecule *ligand, Point lcen, Poi
             resta[i][j].offset = h;
             resta[i][j].define(ligand, a);
             #if _dbg_restrained_assembly
-            cout << &resta[i][j] << endl << flush;
+            cout << resta[i][j] << endl << flush;
             #endif
             j++;
         }
@@ -2115,7 +2117,7 @@ int LocProbs::from_spheroid(Point cen, Point sz, float d)
     msz = sz;
     density = d;
 
-    int nl = (int)(4.0/3 * M_PI * (sz.x+1) * (sz.y+1) * (sz.z+1));
+    int nl = (int)(4.0/3 * M_PI * (sz.x*2/d+1) * (sz.y*2/d+1) * (sz.z*2/d+1));
     locations = new Point[nl];
     Point cursor;
     num_locs = 0;
@@ -2257,7 +2259,11 @@ Point LocProbs::get_weighted_random()
 
 LocProbs::LocProbs(const LocProbs &other)
 {
-    *this = other;
+    this->atom = other.atom;
+    this->density = other.density;
+    this->mcen = other.mcen;
+    this->msz = other.msz;
+    this->num_locs = other.num_locs;
     this->locations = new Point[num_locs+4];
     int i;
     for (i=0; i<num_locs; i++) this->locations[i] = other.locations[i];
@@ -2265,7 +2271,11 @@ LocProbs::LocProbs(const LocProbs &other)
 
 LocProbs::LocProbs(LocProbs &&other)
 {
-    *this = other;
+    this->atom = other.atom;
+    this->density = other.density;
+    this->mcen = other.mcen;
+    this->msz = other.msz;
+    this->num_locs = other.num_locs;
     other.locations = nullptr;
 }
 
@@ -2274,7 +2284,11 @@ LocProbs &LocProbs::operator=(const LocProbs &other)
     if (this != &other)
     {
         if (this->locations) delete this->locations;
-        *this = other;
+        this->atom = other.atom;
+        this->density = other.density;
+        this->mcen = other.mcen;
+        this->msz = other.msz;
+        this->num_locs = other.num_locs;
         this->locations = new Point[num_locs+4];
         int i;
         for (i=0; i<num_locs; i++) this->locations[i] = other.locations[i];
@@ -2288,7 +2302,11 @@ LocProbs &LocProbs::operator=(LocProbs &&other)
     if (this != &other)
     {
         if (this->locations) delete this->locations;
-        *this = other;
+        this->atom = other.atom;
+        this->density = other.density;
+        this->mcen = other.mcen;
+        this->msz = other.msz;
+        this->num_locs = other.num_locs;
         other.locations = nullptr;
     }
 
@@ -2318,7 +2336,7 @@ float Restraint::check(Point pt)
     return 0.0f;
 }
 
-std::ostream &Restraint::operator<<(std::ostream &os)
+std::ostream& operator<<(std::ostream &os, Restraint &r)
 {
     os << "(empty restraint)";
     return os;
@@ -2341,13 +2359,13 @@ float DistanceRestraint::check(Point pt)
     return 0.0f;
 }
 
-std::ostream &DistanceRestraint::operator<<(std::ostream &os)
+std::ostream& operator<<(std::ostream &os, DistanceRestraint &r)
 {
     os << "Restraint: ";
-    if (self) os << self->name;
+    if (r.self) os << r.self->name;
     else os << "(null atom)";
-    os << " must maintain a distance of " << r_optimal << "A from ";
-    if (atom0) os << atom0->name;
+    os << " must maintain a distance of " << r.optimal_distance << "A from ";
+    if (r.atom_zero) os << r.atom_zero->name;
     else os << "(null atom)";
     return os;
 }
@@ -2387,16 +2405,16 @@ float AngleRestraint::check(Point pt)
     return cos(theta - theta_optimal) * self->distance_to(atom0);
 }
 
-std::ostream &AngleRestraint::operator<<(std::ostream &os)
+std::ostream& operator<<(std::ostream &os, AngleRestraint &r)
 {
     os << "Restraint: ";
-    if (self) os << self->name;
+    if (r.self) os << r.self->name;
     else os << "(null atom)";
-    os << " must maintain an angle of " << (theta_optimal*fiftyseven) << "deg from ";
-    if (atomd) os << atomd->name;
+    os << " must maintain an angle of " << (r.optimal_angle*fiftyseven) << "deg from ";
+    if (r.reference_atom) os << r.reference_atom->name;
     else os << "(null atom)";
     os << " relative to ";
-    if (atom0) os << atom0->name;
+    if (r.atom_zero) os << r.atom_zero->name;
     else os << "(null atom)";
     return os;
 }
@@ -2482,19 +2500,19 @@ float ChiralRestraint::check(Point pt)
     return (r > rn) ? Avogadro : 0;
 }
 
-std::ostream &ChiralRestraint::operator<<(std::ostream &os)
+std::ostream& operator<<(std::ostream &os, ChiralRestraint& r)
 {
     os << "Restraint: The normal of the plane defined by [";
-    if (self) os << self->name;
+    if (r.self) os << r.self->name;
     else os << "(null atom)";
     os << ", ";
-    if (atom1) os << atom1->name;
+    if (r.atom_1) os << r.atom_1->name;
     else os << "(null atom)";
     os << ", ";
-    if (atom2) os << atom2->name;
+    if (r.atom_2) os << r.atom_2->name;
     else os << "(null atom)";
     os << "] must point toward ";
-    if (atom0) os << atom0->name;
+    if (r.atom_zero) os << r.atom_zero->name;
     else os << "(null atom)";
     return os;
 }

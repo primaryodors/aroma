@@ -3263,7 +3263,14 @@ _try_again:
                 }
                 else if (pdpst == pst_restrained)
                 {
-                    Search::do_restraint_assembly(protein, ligand, loneliest, size);
+                    bool result = Search::do_restraint_assembly(protein, ligand, loneliest, size);
+                    if (!result)
+                    {
+                        #if _dbg_restrained_assembly
+                        cout << "Restrained assembly failed." << endl << flush;
+                        #endif
+                        continue;
+                    }
                 }
                 else if (pdpst == pst_copyfrom)
                 {
