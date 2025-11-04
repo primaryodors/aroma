@@ -3,7 +3,7 @@
 #include "moiety.h"
 
 Point loneliest;
-Point size(10,10,10);
+Point search_size(10,10,10);
 std::vector<int> exclusion;
 
 int agqty = 0;
@@ -21,7 +21,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
 
     // Begin tumble sphere behavior.
     AminoAcid* tsphres[SPHREACH_MAX+4];
-    int tsphsz = protein->fetch_residues_near(l_pocket_cen, size.magnitude()+6, tsphres);
+    int tsphsz = protein->fetch_residues_near(l_pocket_cen, search_size.magnitude()+6, tsphres);
     float outer_sphere[tsphsz+4], inner_sphere[tsphsz+4];
 
     for (i=0; i<tsphsz+4; i++) outer_sphere[i] = inner_sphere[i] = 0;
@@ -54,7 +54,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
         inner_sphere[i] = tsphres[i]->get_reach() / 3 + 1;
     }
 
-    const SCoord xaxis = Point(1,0,0), yaxis = Point(0,1,0), zaxis = Point(0,0,1);
+    const Vector xaxis = Point(1,0,0), yaxis = Point(0,1,0), zaxis = Point(0,0,1);
     float loneliness=0, blone=0, xrad, yrad, zrad, lrad, step, bestxr, bestyr, bestzr, score, worth, weight, bestscore;
     const int ac = ligand->get_atom_count();
     Pose besp(ligand);
@@ -1170,7 +1170,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
                                     align_targets(ligand, avg, &bbr, 1);
                                     if (ll<0)
                                     {
-                                        SCoord nudge = loneliest.subtract(ligand->get_barycenter());
+                                        Vector nudge = loneliest.subtract(ligand->get_barycenter());
                                         nudge.r = 1;
                                         ligand->move(nudge);
                                     }
@@ -1195,7 +1195,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
                                         for (it=0; it<10; it++)
                                         {
                                             if (!ligand->clash1 || !ligand->clash2) break;
-                                            SCoord nudge = ligand->clash1->loc.subtract(ligand->clash2->loc);
+                                            Vector nudge = ligand->clash1->loc.subtract(ligand->clash2->loc);
                                             nudge.r = nudgeamt;
                                             ligand->move(nudge);
                                             f = ligand->get_intermol_binding((Molecule**)aaarr);
@@ -1331,7 +1331,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     else
     {
         Point cen = ligand->get_barycenter();
-        SCoord rel = pocketcen.subtract(cen);
+        Vector rel = pocketcen.subtract(cen);
         rel.r *= amt;
         ligand->move(rel);
     }
@@ -1352,7 +1352,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     // cout << endl << endl; return;
 
     // Scooch.
-    SCoord rel;
+    Vector rel;
     #if enable_bb_scooch
     aaaa = bbr->pri_res->get_nearest_atom(pocketcen);
     if (!aaaa->vanished)
@@ -1407,7 +1407,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     // Rotisserie align tertiary.
     if (!bbr->tert_res || !bbr->tert_tgt) return;
     ref = bbr->pri_tgt->barycenter();
-    SCoord axis = bbr->sec_tgt->barycenter().subtract(ref);
+    Vector axis = bbr->sec_tgt->barycenter().subtract(ref);
     float theta = find_angle_along_vector(bbr->tert_tgt->barycenter(), 
         bbr->tert_res->get_nearest_atom(pocketcen)->loc.randomize(bb_stochastic_A), ref, axis);
     LocatedVector lv = axis;

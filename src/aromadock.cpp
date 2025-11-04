@@ -105,7 +105,7 @@ Protein* metald_prot = nullptr;
 int seql = 0;
 int addl_resno[256];
 const Region* regions;
-SCoord region_clashes[85][3];
+Vector region_clashes[85][3];
 Molecule* ligand;
 std::vector<std::string> isomers;
 int copylig = 0;
@@ -114,7 +114,7 @@ int isono = 0;
 Molecule** waters = nullptr;
 Molecule** owaters = nullptr;
 Point ligcen_target;
-SCoord path[256];
+Vector path[256];
 int pathnodes = 0;				// The pocketcen is the initial node.
 int poses = 10;
 int iters = 50;
@@ -264,9 +264,9 @@ float teleport_water(Molecule* mol)
     for (i=0; i<_water_teleport_tries; i++)
     {
         Point teleport(
-            ligcen_target.x + frand(-size.x, size.x),
-            ligcen_target.y + frand(-size.y, size.y),
-            ligcen_target.z + frand(-size.z, size.z)
+            ligcen_target.x + frand(-search_size.x, search_size.x),
+            ligcen_target.y + frand(-search_size.y, search_size.y),
+            ligcen_target.z + frand(-search_size.z, search_size.z)
                       );
         waters[j]->recenter(teleport);
         e = waters[j]->get_intermol_binding(gcfmols).summed();
@@ -440,7 +440,7 @@ void do_pivotal_hbond_rot_and_scoot()
     #endif
 
     // Measure the distance between atoms and move the ligand to optimize that distance.
-    SCoord scooch = pivotal_hbond_aaa->loc.subtract(pivotal_hbond_la->loc);
+    Vector scooch = pivotal_hbond_aaa->loc.subtract(pivotal_hbond_la->loc);
     if (scooch.r > 2.0)
     {
         scooch.r -= 2.0;
@@ -454,7 +454,7 @@ void do_pivotal_hbond_rot_and_scoot()
     }
 
     // Rotate the ligand about the hbond in order to minimize the intermolecular energy.
-    SCoord v = pivotal_hbond_la->loc.subtract(pivotal_hbond_aaa->loc);
+    Vector v = pivotal_hbond_la->loc.subtract(pivotal_hbond_aaa->loc);
     lv = v;
     lv.origin = pivotal_hbond_aaa->loc;
     float theta = 0, th, step = M_PI/50, clash;
@@ -491,7 +491,7 @@ void output_iter(int iter, Molecule** mols, std::string mesg)
         int foff = 0;
 
         #if _dock_result_in_iter
-        DockResult ldr(protein, ligand, size, nullptr, pose, waters, true);
+        DockResult ldr(protein, ligand, search_size, nullptr, pose, waters, true);
         ldr.include_pdb_data = false;
         ldr.display_clash_atoms = true;
         std::stringstream stst;
@@ -537,7 +537,7 @@ void abhor_vacuum(int iter, Molecule** mols)
         Atom* a1 = ligand->get_atom(i);
         Point vail = a1->loc;
         Atom* a2 = protein->get_nearest_atom(vail);
-        SCoord d = a2->loc.subtract(vail);
+        Vector d = a2->loc.subtract(vail);
         d.r -= a1->vdW_radius;
         d.r -= a2->vdW_radius;
         if (d.r > 0)
@@ -571,7 +571,7 @@ void abhor_vacuum(int iter, Molecule** mols)
             );
     }
 
-    SCoord motion = rel;
+    Vector motion = rel;
     motion.r *= frand(0,1);
     if (motion.r > speed_limit/5) motion.r = speed_limit/5;
     Pose putitback(ligand);
@@ -854,7 +854,7 @@ void iteration_callback(int iter, Molecule** mols)
             float r = a->distance_to(b);
             if (r <= optimal) continue;
 
-            SCoord movamt = a->loc.subtract(b->loc);
+            Vector movamt = a->loc.subtract(b->loc);
             movamt.r = fmin(speed_limit, (r-optimal)/5);
             waters[i]->move(movamt);
             
@@ -1426,19 +1426,19 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "SIZE"))
     {
-        size.x = atof(words[1]);
+        search_size.x = atof(words[1]);
         if (words[2])
         {
-            size.y = atof(words[2]);
-            size.z = atof(words[3]);
+            search_size.y = atof(words[2]);
+            search_size.z = atof(words[3]);
         }
-        else size.z = size.y = size.x;
-        if (!size.x || !size.y || !size.z)
+        else search_size.z = search_size.y = search_size.x;
+        if (!search_size.x || !search_size.y || !search_size.z)
         {
             cout << "Pocket size cannot be zero in any dimension." << endl << flush;
             throw 0xbad512e;
         }
-        optsecho = "Interatomic radius limit: " + to_string(size.x) + (std::string)"," + to_string(size.y) + (std::string)"," + to_string(size.z);
+        optsecho = "Interatomic radius limit: " + to_string(search_size.x) + (std::string)"," + to_string(search_size.y) + (std::string)"," + to_string(search_size.z);
         return 3;
     }
     else if (!strcmp(words[0], "SOFT"))
@@ -1691,7 +1691,7 @@ void apply_protein_specific_settings(Protein* p)
     strcpy(buffer, CEN_buf[cenbuf_idx].c_str());
     char** words = chop_spaced_words(buffer);
     pocketcen = pocketcen_from_config_words(words, nullptr);
-    loneliest = protein->find_loneliest_point(pocketcen, size);
+    loneliest = protein->find_loneliest_point(pocketcen, search_size);
     loneliest = loneliest_from_cavities(loneliest);
     delete[] words;
 
@@ -2032,7 +2032,7 @@ int main(int argc, char** argv)
     output = new std::ofstream(outfname, std::ofstream::out);
     if (!output) return -1;
 
-    pre_ligand_flex_radius = size.magnitude();
+    pre_ligand_flex_radius = search_size.magnitude();
     pre_ligand_multimol_radius = pre_ligand_flex_radius + (default_pre_ligand_multimol_radius - default_pre_ligand_flex_radius);
 
     #if _DBG_STEPBYSTEP
@@ -2204,9 +2204,9 @@ int main(int argc, char** argv)
         for (i=0; i<maxh2o; i++)
         {
             waters[i]->recenter(Point(
-                pocketcen.x + frand(-size.x * szscale, size.x * szscale),
-                pocketcen.y + frand(-size.y * szscale, size.y * szscale),
-                pocketcen.z + frand(-size.z * szscale, size.z * szscale)
+                pocketcen.x + frand(-search_size.x * szscale, search_size.x * szscale),
+                pocketcen.y + frand(-search_size.y * szscale, search_size.y * szscale),
+                pocketcen.z + frand(-search_size.z * szscale, search_size.z * szscale)
             ));
         }
     }
@@ -2495,7 +2495,7 @@ _try_again:
     regions = protein->get_regions();
     for (i=0; regions[i].start; i++)
     {
-        region_clashes[i][0] = region_clashes[i][1] = region_clashes[i][2] = SCoord(0,0,0);
+        region_clashes[i][0] = region_clashes[i][1] = region_clashes[i][2] = Vector(0,0,0);
     }
 
     n = nmtlcoords;
@@ -2719,7 +2719,7 @@ _try_again:
                         Point sloc = protein->get_atom_location(sr, "CA"),
                               eloc = protein->get_atom_location(er, "CA");
 
-                        LocatedVector lv = (SCoord)(sloc.subtract(eloc));
+                        LocatedVector lv = (Vector)(sloc.subtract(eloc));
                         lv.origin = sloc;
 
                         int resno;
@@ -2754,7 +2754,7 @@ _try_again:
                 #endif
             }
 
-            loneliest = protein->find_loneliest_point(nodecen, size);
+            loneliest = protein->find_loneliest_point(nodecen, search_size);
             loneliest = loneliest_from_cavities(loneliest);
             // cout << "Loneliest is " << loneliest << endl;
 
@@ -2808,7 +2808,7 @@ _try_again:
             cout << endl << endl;
             #endif
 
-            Point lsz = size;
+            Point lsz = search_size;
             lsz.multiply(0.75);
             sphres = protein->get_residues_can_clash_ligand(reaches_spheroid[nodeno], ligand, nodecen, lsz, addl_resno);
             for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = NULL;
@@ -3469,7 +3469,7 @@ _try_again:
 
             protein->optimize_hydrogens();
 
-            dr[drcount][nodeno] = DockResult(protein, ligand, size, addl_resno, drcount, waters);
+            dr[drcount][nodeno] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
             dr[drcount][nodeno].out_per_res_e = out_per_res_e;
             dr[drcount][nodeno].out_per_btyp_e = out_per_btyp_e;
             dr[drcount][nodeno].out_itemized_e_cutoff = out_itemized_e_cutoff;
@@ -3798,7 +3798,7 @@ _try_again:
             {
                 if (dr[j][0].kJmol <= kJmol_cutoff)
                 {
-                    if (dr[j][0].proximity > size.magnitude()) continue;
+                    if (dr[j][0].proximity > search_size.magnitude()) continue;
                     if (dr[j][0].worst_nrg_aa > clash_limit_per_aa) continue;
 
                     auths += (std::string)" " + std::to_string(dr[j][0].auth);

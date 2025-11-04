@@ -14,11 +14,11 @@ DockResult::DockResult()
     ;
 }
 
-DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl_resno, int drcount, Molecule** waters, bool is_movie)
+DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, int* addl_resno, int drcount, Molecule** waters, bool is_movie)
 {
     int end1 = SPHREACH_MAX+4;
     AminoAcid* reaches_spheroid[end1];
-    int sphres = protein->get_residues_can_clash_ligand(reaches_spheroid, ligand, ligand->get_barycenter(), size, addl_resno);
+    int sphres = protein->get_residues_can_clash_ligand(reaches_spheroid, ligand, ligand->get_barycenter(), search_size, addl_resno);
     // cout << "sphres " << sphres << endl;
     mprot = protein;
     mlig = ligand;
@@ -195,12 +195,12 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
     int prot_seq_len = protein->get_end_resno();
     #if compute_clashdirs
     residue_clash = new float[prot_seq_len+8];
-    res_clash_dir = new SCoord[prot_seq_len+8];
+    res_clash_dir = new Vector[prot_seq_len+8];
 
     for (i=0; i<=prot_seq_len; i++)
     {
         residue_clash[i] = 0;
-        res_clash_dir[i] = SCoord(0,0,0);
+        res_clash_dir[i] = Vector(0,0,0);
     }
     #endif
 
@@ -276,7 +276,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
                     bond = heavy->get_bond_by_idx(0);
                     if (!bond || !bond->atom2 || !bond->can_rotate) continue;
 
-                    SCoord axis = heavy->loc.subtract(bond->atom2->loc);
+                    Vector axis = heavy->loc.subtract(bond->atom2->loc);
                     float theta = find_angle_along_vector(H->loc, target->loc, heavy->loc, axis);
                     if (targetH && heavy->distance_to(targetH) < target->distance_to(H)) theta += M_PI;
 
@@ -329,7 +329,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point size, int* addl
         if (lb > 0 && ligand->clash1 && ligand->clash2)
         {
             residue_clash[resno] += lb;
-            SCoord clashdir = ligand->clash2->loc.subtract(ligand->clash1->loc);
+            Vector clashdir = ligand->clash2->loc.subtract(ligand->clash1->loc);
             clashdir.r = ligand->clash1->vdW_radius + ligand->clash2->vdW_radius - ligand->clash1->distance_to(ligand->clash2);
             res_clash_dir[resno] = res_clash_dir[resno].add(clashdir);
         }

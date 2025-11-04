@@ -306,7 +306,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             {
                 Point A = aa->get_CA_location();
                 foravg[l++] = A;
-                SCoord AB = A.subtract(ligand->get_nearest_atom(A)->loc);
+                Vector AB = A.subtract(ligand->get_nearest_atom(A)->loc);
                 AB.r = pow(c, 1.0/3);
                 if (!isinf(AB.r) && !isnan(AB.r))
                 {
@@ -328,7 +328,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             if (!aa1 || !aa2) continue;
             Atom *CA1 = aa1->get_atom("CA"), *CA2 = aa2->get_atom("CA");
             float ra = CA1->distance_to(CA2) - softrgns[i].get_contact_original_distance(j);
-            SCoord ctpull = CA2->loc.subtract(CA1->loc);
+            Vector ctpull = CA2->loc.subtract(CA1->loc);
             ctpull.r = ra * soft_contact_elasticity * frand(0,1);
             softpush = softpush.subtract(ctpull);
             pullmagn += ctpull.r;
@@ -345,9 +345,9 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             rotation_share /= roxl;
             translation_share /= roxl;
 
-            SCoord AB = softpush;
+            Vector AB = softpush;
             AB.r = pushmax;
-            SCoord ABr = AB, ABx = AB;
+            Vector ABr = AB, ABx = AB;
             ABr.r *= rotation_share;
             ABx.r *= translation_share;
             ABr.r = fmin(fmax(0, ABr.r), speed_limit);
@@ -356,7 +356,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             // Do the translation stepwise and stop when contacts anomaly exceeds threshold.
             float translation_accomplished;
             float translation_step = 0.05;
-            SCoord ABx_step = ABx;
+            Vector ABx_step = ABx;
             ABx_step.r *= translation_step;
             float cwaybefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                 + protein->get_intermol_clashes(ligand) + softrgns[i].contact_distance_anomaly(protein);

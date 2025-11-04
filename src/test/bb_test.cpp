@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     }
 
     Point pocketcen = p.get_region_center(1, p.get_end_resno());
-    size = Point(100,100,100);
+    search_size = Point(100,100,100);
 
     int maxlt = m.get_heavy_atom_count()+8;
     LigandTarget lt[maxlt];
@@ -237,10 +237,10 @@ int main(int argc, char** argv)
             }
 
             pocketcen = average_of_points(pt4avg, j);
-            size = size_of_point_space(pt4avg, j);
+            search_size = size_of_point_space(pt4avg, j);
         }
 
-        loneliest = p.find_loneliest_point(pocketcen, size);
+        loneliest = p.find_loneliest_point(pocketcen, search_size);
         cout << "Loneliest point = " << loneliest << endl;
 
         AminoAcid* reaches_spheroid[256];

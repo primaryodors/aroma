@@ -522,7 +522,7 @@ void Cavity::compute_vdW_surface(float d)
     float step = halfstep * 2;
 
     int i, ivdW = 0;
-    SCoord v;
+    Vector v;
     for (i=0; i<pallocd && partials[i].s.radius; i++)
     {
         Point ploc = partials[i].s.center;
@@ -693,9 +693,9 @@ float Cavity::find_best_containment(Molecule* m, bool mbt)
     float bestviol = Avogadro;
     LocatedVector lv;
 
-    SCoord axisx = Point(1,0,0);
-    SCoord axisy = Point(0,1,0);
-    SCoord axisz = Point(0,0,1);
+    Vector axisx = Point(1,0,0);
+    Vector axisy = Point(0,1,0);
+    Vector axisz = Point(0,0,1);
     int i, j, k, l, n = m->get_atom_count();
     float thx, thy, thz;
 
@@ -879,7 +879,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
     for (m=0; m<matches; m++)
     {
         // Each match, try centering the atom inside the partial.
-        SCoord mov = mpart[m]->s.center.subtract(matom[m]->loc);
+        Vector mov = mpart[m]->s.center.subtract(matom[m]->loc);
         ligand->move(mov);
 
         AminoAcid* reaches[SPHREACH_MAX+4];
@@ -887,9 +887,9 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
         if (prot) resnos(prot, reaches);
 
         // Do 3-axis rotations to maximize containment.
-        SCoord axisx = Point(1,0,0);
-        SCoord axisy = Point(0,1,0);
-        SCoord axisz = Point(0,0,1);
+        Vector axisx = Point(1,0,0);
+        Vector axisy = Point(0,1,0);
+        Vector axisz = Point(0,0,1);
         Pose best(ligand);
         float bestc = 0;
         LocatedVector lv;

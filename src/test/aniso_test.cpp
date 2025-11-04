@@ -70,7 +70,7 @@ int main(int argc, char** argv)
         else if (!strcmp(argv[i], "--asciiart")) colors = false;
     }
 
-    const int size=22;
+    const int search_size=22;
     const float ar = 2.1;		// Aspect ratio.
     int x, y;
     const char* asciiart = " .':+=inm@";
@@ -157,19 +157,19 @@ int main(int argc, char** argv)
     minimum_searching_aniso = 0;
 
     float best_energy = 0;
-    for (y=-size; y<=size; y++)
+    for (y=-search_size; y<=search_size; y++)
     {
-        for (x=-size*ar; x<=size*ar; x++)
+        for (x=-search_size*ar; x<=search_size*ar; x++)
         {
             float lx = (float)x/ar;
             float r = sqrt(lx*lx + y*y);
-            if (r > size) cout << " ";
+            if (r > search_size) cout << " ";
             else
             {
                 float phi = find_angle(lx, y);
-                float theta = (1.0-r/(size))*(M_PI/2);
+                float theta = (1.0-r/(search_size))*(M_PI/2);
 
-                SCoord v(hb->get_distance(), theta, phi);
+                Vector v(hb->get_distance(), theta, phi);
                 Point loc = anisoa->loc.add(&v);
 
                 probe.move(&loc);
@@ -205,7 +205,7 @@ int main(int argc, char** argv)
                 if (!x && !y)
                 {
                     int anisg = anisoa->get_geometry();
-                    SCoord* anisgeo = anisoa->get_geometry_aligned_to_bonds();
+                    Vector* anisgeo = anisoa->get_geometry_aligned_to_bonds();
                     Molecule mptemp("Very temporary");
 
                     int n = mp.get_atom_count();

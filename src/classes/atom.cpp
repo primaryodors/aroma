@@ -563,7 +563,7 @@ bool Atom::move(Point* pt)
     return true;
 }
 
-bool Atom::move_rel(SCoord* v)
+bool Atom::move_rel(Vector* v)
 {
     #if debug_break_on_move
     if (break_on_move) throw 0xb16fa7012a96eca7;
@@ -595,7 +595,7 @@ int Atom::move_assembly(Point* pt, Atom* excluding)
     //cout << "Moving assembly starting with " << name << " excluding " << excluding->name << endl;
 
     int i, atomct=0;
-    SCoord mov, alignv;
+    Vector mov, alignv;
 
     mov = v_from_pt_sub(*pt, location);
     alignv = v_from_pt_sub(excluding->location, *pt);
@@ -1551,7 +1551,7 @@ void Atom::print_bond_angles()
     }
 }
 
-SCoord Bond::get_axis()
+Vector Bond::get_axis()
 {
     return atom2->loc.subtract(atom1->loc);
 }
@@ -1598,7 +1598,7 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
     Point cen = atom2->loc;
     Point bas = atom1->loc;
     Point dir = cen.subtract(&bas);
-    SCoord v(&dir);
+    Vector v(&dir);
 
     Rotation rot;
     rot.v = v;
@@ -1730,7 +1730,7 @@ Point Bond::ring_rotate(float theta, Atom* sa)
     Point cen = atom2->loc;
     Point bas = atom1->loc;
     Point dir = cen.subtract(&bas);
-    SCoord v(&dir);
+    Vector v(&dir);
 
     Rotation rot;
     rot.v = v;
@@ -1806,8 +1806,8 @@ float Ring::flip_atom(Atom* wa)
     Bond* byx = ya->get_bond_between(xa);
     float rvw = bvw->optimal_radius;
     float rxw = bxw->optimal_radius;
-    SCoord auv = va->loc.subtract(ua->loc);
-    SCoord ayx = xa->loc.subtract(ya->loc);
+    Vector auv = va->loc.subtract(ua->loc);
+    Vector ayx = xa->loc.subtract(ya->loc);
 
     float theta = 0, step = 0.1*fiftyseventh;
     Point ol = wa->loc;
@@ -1841,7 +1841,7 @@ float Ring::flip_atom(Atom* wa)
                 wa->fetch_bonds(wbonds);
                 int i, j;
                 Point origin = xa->loc;
-                SCoord axis = origin.subtract(va->loc);
+                Vector axis = origin.subtract(va->loc);
                 float vxtheta = -find_angle_along_vector(wa->loc, ol, origin, axis);
                 for (i=0; wbonds[i]; i++)
                 {
@@ -1885,7 +1885,7 @@ void Atom::rotate_geometry(Rotation rot)
     {
         Point pt(&geov[i]);
         pt = rotate3D(&pt, &center, &rot);
-        SCoord v(&pt);
+        Vector v(&pt);
         geov[i] = v;
     }
 }
@@ -1910,7 +1910,7 @@ bool Bond::is_equivalent(Bond* cmp_to)
         fabs(mw_cardsum - cmp_to->mw_cardsum) < 0.001;
 }
 
-void Bond::swing(SCoord newdir)
+void Bond::swing(Vector newdir)
 {
     if (!moves_with_atom2) fill_moves_with_cache();
     if (!moves_with_atom2) return;
@@ -1934,9 +1934,9 @@ void Bond::swing(SCoord newdir)
 }
 
 
-SCoord* Atom::get_basic_geometry()
+Vector* Atom::get_basic_geometry()
 {
-    SCoord* retval = new SCoord[abs(geometry)+8];
+    Vector* retval = new Vector[abs(geometry)+8];
 
     int i, j;
     float x, y, z;
@@ -1945,19 +1945,19 @@ SCoord* Atom::get_basic_geometry()
     {
         for (i=0; i<-geometry; i++)
         {
-            SCoord v(1, 0, M_PI/abs(geometry/2)*i);
+            Vector v(1, 0, M_PI/abs(geometry/2)*i);
             retval[i] = v;
         }
     }
     else if (geometry == 1)
     {
-        SCoord v1(1, M_PI/2, 0);
+        Vector v1(1, M_PI/2, 0);
         retval[0] = v1;
     }
     else if (geometry == 2)
     {
-        SCoord v1(1, M_PI*0.5, 0);
-        SCoord v2(1, M_PI*1.5, 0);
+        Vector v1(1, M_PI*0.5, 0);
+        Vector v2(1, M_PI*1.5, 0);
         retval[0] = v1;
         retval[1] = v2;
     }
@@ -1965,30 +1965,30 @@ SCoord* Atom::get_basic_geometry()
     {
         for (i=0; i<geometry; i++)
         {
-            SCoord v(1, 0, M_PI/1.5*i);
+            Vector v(1, 0, M_PI/1.5*i);
             retval[i] = v;
         }
     }
     else if (geometry == 4)
     {
-        SCoord v1(1, M_PI/2, 0);
+        Vector v1(1, M_PI/2, 0);
         retval[0] = v1;
 
         for (i=1; i<geometry; i++)
         {
-            SCoord v(1, M_PI/2-tetrahedral, M_PI/1.5*(i-1));
+            Vector v(1, M_PI/2-tetrahedral, M_PI/1.5*(i-1));
             retval[i] = v;
         }
     }
     else if (geometry == 5)
     {
-        SCoord v1(1, M_PI*0.5, 0);
-        SCoord v2(1, M_PI*1.5, 0);
+        Vector v1(1, M_PI*0.5, 0);
+        Vector v2(1, M_PI*1.5, 0);
         retval[0] = v1;
 
         for (i=1; i<geometry-1; i++)
         {
-            SCoord v(1, 0, M_PI/1.5*(i-1));
+            Vector v(1, 0, M_PI/1.5*(i-1));
             retval[i] = v;
         }
 
@@ -1996,13 +1996,13 @@ SCoord* Atom::get_basic_geometry()
     }
     else if (geometry == 6)
     {
-        SCoord v1(1, M_PI*0.5, 0);
-        SCoord v2(1, M_PI*1.5, 0);
+        Vector v1(1, M_PI*0.5, 0);
+        Vector v2(1, M_PI*1.5, 0);
         retval[0] = v1;
 
         for (i=1; i<geometry-1; i++)
         {
-            SCoord v(1, 0, M_PI/2*(i-1));
+            Vector v(1, 0, M_PI/2*(i-1));
             retval[i] = v;
         }
 
@@ -2012,12 +2012,12 @@ SCoord* Atom::get_basic_geometry()
     {
         for (i=0; i<3; i++)
         {
-            SCoord v(1, M_PI/4, M_PI/1.5*i);
+            Vector v(1, M_PI/4, M_PI/1.5*i);
             retval[i] = v;
         }
         for (i=3; i<geometry; i++)
         {
-            SCoord v(1, M_PI/2+M_PI/4, M_PI/2*(i-3));
+            Vector v(1, M_PI/2+M_PI/4, M_PI/2*(i-3));
             retval[i] = v;
         }
     }
@@ -2025,12 +2025,12 @@ SCoord* Atom::get_basic_geometry()
     {
         for (i=0; i<4; i++)
         {
-            SCoord v(1, M_PI/4, M_PI/2*i);
+            Vector v(1, M_PI/4, M_PI/2*i);
             retval[i] = v;
         }
         for (i=4; i<geometry; i++)
         {
-            SCoord v(1, M_PI/2+M_PI/4, M_PI/2*(i-4));
+            Vector v(1, M_PI/2+M_PI/4, M_PI/2*(i-4));
             retval[i] = v;
         }
     }
@@ -2038,12 +2038,12 @@ SCoord* Atom::get_basic_geometry()
     {
         for (i=0; i<5; i++)
         {
-            SCoord v(1, M_PI/4, M_PI/2.5*i);
+            Vector v(1, M_PI/4, M_PI/2.5*i);
             retval[i] = v;
         }
         for (i=5; i<geometry; i++)
         {
-            SCoord v(1, M_PI/2+M_PI/4, M_PI/2.5*(i-5));
+            Vector v(1, M_PI/2+M_PI/4, M_PI/2.5*(i-5));
             retval[i] = v;
         }
     }
@@ -2053,7 +2053,7 @@ SCoord* Atom::get_basic_geometry()
 
 void Atom::swing_all(int startat)
 {
-    SCoord* v = get_geometry_aligned_to_bonds();
+    Vector* v = get_geometry_aligned_to_bonds();
     int i;
 
     for (i=startat; i<geometry; i++)
@@ -2062,7 +2062,7 @@ void Atom::swing_all(int startat)
     }
 }
 
-float Atom::get_bond_angle_anomaly(SCoord v, Atom* ignore)
+float Atom::get_bond_angle_anomaly(Vector v, Atom* ignore)
 {
     if (!bonded_to) return 0;
     int i;
@@ -2077,7 +2077,7 @@ float Atom::get_bond_angle_anomaly(SCoord v, Atom* ignore)
             if (bonded_to[i].atom2 == ignore) continue;
 
             //cout << bonded_to[i].atom2->location << " - " << location;
-            SCoord vb = bonded_to[i].atom2->location.subtract(location);
+            Vector vb = bonded_to[i].atom2->location.subtract(location);
             //cout << " = " << (Point)vb << endl;
             float theta = find_3d_angle(v, vb, Point(0,0,0));
             anomaly += fabs(theta-lga);
@@ -2161,7 +2161,7 @@ Bond* Atom::get_bond_closest_to(Point pt)
     return retval;
 }
 
-SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
+Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 {
     if (geov && !geometry_dirty) return geov;
 
@@ -2169,7 +2169,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 
     if (origgeo == 2 && bc == 1)
     {
-        if (!geov) geov = new SCoord[origgeo];
+        if (!geov) geov = new Vector[origgeo];
         geov[0] = bonded_to[0].get_axis();
         geov[1] = Point(0,0,0).subtract(geov[0]);
         geometry_dirty = false;
@@ -2202,7 +2202,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 
     if (bonded_to && bonded_to[0].atom2)
     {
-        SCoord B0 = bonded_to[0].atom2->location.subtract(this->location);
+        Vector B0 = bonded_to[0].atom2->location.subtract(this->location);
         Rotation rot = align_points_3d(geov[0], B0, center);
         for (i=0; i<=geometry; i++)
         {
@@ -2212,7 +2212,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
         if (geometry>1)
         for (j=1; j<geometry; j++) if (bonded_to[j].atom2)
         {
-            SCoord B1 = bonded_to[j].atom2->location.subtract(this->location);
+            Vector B1 = bonded_to[j].atom2->location.subtract(this->location);
             float theta = find_angle_along_vector(geov[j], B1, center, B0);
 
             Point old = geov[j];
@@ -2243,7 +2243,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 
         if (j == 1)
         {
-            // SCoord align_to[3];
+            // Vector align_to[3];
             // for (i=0; i<3; i++) align_to[i] = bonded_to[k].atom2->geov[i];
 
             if (bonded_to[k].atom2->is_pi()) mirror_geo = k;
@@ -2265,7 +2265,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
         if (_DBGGEO) cout << "avg: " << avg.printable() << endl;
 
         j=1;
-        SCoord* bgeov = b->atom2->get_geometry_aligned_to_bonds(true);		// RECURSION!
+        Vector* bgeov = b->atom2->get_geometry_aligned_to_bonds(true);		// RECURSION!
 
         for (i=0; i<b->atom2->geometry; i++)
         {
@@ -2273,7 +2273,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
             {
                 Point bgp(&bgeov[i]);
                 bgp = bgp.add(b->atom2->location);
-                if (_DBGGEO) cout << "bgp: " << bgp.printable() << " from SCoord φ=" << bgeov[i].phi << " θ=" << bgeov[i].theta << " r=" << bgeov[i].r << endl;
+                if (_DBGGEO) cout << "bgp: " << bgp.printable() << " from Vector φ=" << bgeov[i].phi << " θ=" << bgeov[i].theta << " r=" << bgeov[i].r << endl;
                 Point mirr = avg.subtract(bgp.subtract(&avg));
                 if (_DBGGEO) cout << "mirr: " << mirr.printable() << endl;
                 if (flip_mirror) mirr = rotate3D(&mirr, &avg, &geov[mirror_geo], M_PI);
@@ -2290,7 +2290,7 @@ SCoord* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
     return geov;
 }
 
-SCoord Atom::get_next_free_geometry(float lcard)
+Vector Atom::get_next_free_geometry(float lcard)
 {
     int lgeo = geometry;
     if (lcard > 1)
@@ -2299,8 +2299,8 @@ SCoord Atom::get_next_free_geometry(float lcard)
         if (geov) delete[] geov;
         geov = 0;
     }
-    SCoord* v = get_geometry_aligned_to_bonds();
-    SCoord retval;
+    Vector* v = get_geometry_aligned_to_bonds();
+    Vector retval;
     if (!bonded_to) retval = v[0];
     else
     {
@@ -3016,7 +3016,7 @@ Point Ring::get_center()
     return average_of_points(_4avg, atcount);
 }
 
-SCoord Ring::get_normal()
+Vector Ring::get_normal()
 {
     int i, j, k;
     float w=0, x=0, y=0, z=0;
@@ -3038,7 +3038,7 @@ SCoord Ring::get_normal()
     }
 
     Point pt1(x/w, y/w, z/w);
-    return (SCoord)pt1;
+    return (Vector)pt1;
 }
 
 bool Ring::is_conjugated()

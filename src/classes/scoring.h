@@ -12,7 +12,7 @@ class DockResult
 {
     public:
     DockResult();
-    DockResult(Protein* prot, Molecule* lig, Point size, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
+    DockResult(Protein* prot, Molecule* lig, Point search_size, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
 
     bool clashes_with(DockResult* other);
     DockResult merge(DockResult* other);
@@ -41,7 +41,7 @@ class DockResult
     Atom* worst_clash_2 = nullptr;
     #if compute_clashdirs
     float* residue_clash = nullptr;
-    SCoord* res_clash_dir = nullptr;
+    Vector* res_clash_dir = nullptr;
     #endif
     #if compute_missed_connections
     float* missed_connections = 0;

@@ -138,7 +138,7 @@ public:
 
     // Spatial functions.
     Point get_barycenter(bool bond_weighted = false) const;
-    virtual void move(SCoord move_amt, bool override_residue = false);
+    virtual void move(Vector move_amt, bool override_residue = false);
     virtual void move(Point move_amt, bool override_residue = false);
     virtual void recenter(Point new_location);
     const Point* obtain_vdW_surface(float density);
@@ -146,7 +146,7 @@ public:
     int get_vdW_vertex_count() { return vdw_vertex_count; }
     int get_atom_vdW_vertex_count(Atom* a);
     void wipe_vdw_surface();
-    void rotate(SCoord* SCoord, float theta, bool bond_weighted = false);
+    void rotate(Vector* Vector, float theta, bool bond_weighted = false);
     void rotate(LocatedVector vec, float theta);
     void rotate(Rotation rot);
     void rotate(Rotation rot, Point origin);
@@ -210,7 +210,7 @@ public:
     bool ring_is_coplanar(int ringid);
     bool ring_is_aromatic(int ringid) const;
     Point get_ring_center(int ringid);
-    SCoord get_ring_normal(int ringid);
+    Vector get_ring_normal(int ringid);
     Atom** get_ring_atoms(int ringid);
     int get_ring_num_atoms(int ringid);
     void identify_cages();
@@ -260,7 +260,7 @@ public:
     void conform_atom_to_location(int atom_idx, Point target, int iterations = 50, float optimal_distance = 0);
     void conform_atom_to_location(const char* atom_name, Point target, int iterations = 20, float optimal_distance = 0);
     void conform_atom_to_location(Atom* a, Atom* target, int iterations = 50, float optimal_distance = 0);
-    SCoord motion_to_optimal_contact(Molecule* ligand);
+    Vector motion_to_optimal_contact(Molecule* ligand);
 
     // Returns the sum of all possible atom-molecule interactions if all distances and anisotropies were somehow optimal.
     float get_atom_mol_bind_potential(Atom* a);

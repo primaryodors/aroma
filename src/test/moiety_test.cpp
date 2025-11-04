@@ -21,11 +21,11 @@ int main(int argc, char** argv)
             FILE* fp = fopen(argv[1], "rb");
 
             fseek(fp, 0L, SEEK_END);
-            int size = ftell(fp);
+            int fsize = ftell(fp);
             rewind(fp);
 
-            char contents[size+4];
-            int got = fread(contents, size, 1, fp);
+            char contents[fsize+4];
+            int got = fread(contents, fsize, 1, fp);
             fclose(fp);
             m.from_sdf(contents);
         }

@@ -68,7 +68,7 @@ class Search
     static bool any_resnos_priority;
 };
 
-extern Point size, loneliest;
+extern Point search_size, loneliest;
 extern std::vector<int> exclusion;
 
 #define MAX_CS_RES 4096

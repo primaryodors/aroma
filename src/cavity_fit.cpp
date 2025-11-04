@@ -159,7 +159,7 @@ int main(int argc, char** argv)
         if (frand(0,1) < 0.01) m.crumple(frand(0, hexagonal));
 
         // Perform random rotations.
-        SCoord axis = Point(1, 0, 0);
+        Vector axis = Point(1, 0, 0);
         m.rotate(axis, frand(-M_PI, M_PI));
         axis = Point(0, 1, 0);
         m.rotate(axis, frand(-M_PI, M_PI));
@@ -255,7 +255,7 @@ int main(int argc, char** argv)
         ligconf[i].restore_state(&m);
         for (l=0; l<iters; l++)
         {
-            SCoord mov = Point(frand(-1, 1), frand(-1, 1), frand(-1, 1));
+            Vector mov = Point(frand(-1, 1), frand(-1, 1), frand(-1, 1));
 
             if (npolarpart && npolarat)
             {
@@ -290,7 +290,7 @@ int main(int argc, char** argv)
                 }
             }
 
-            SCoord axis;
+            Vector axis;
             std::vector<Atom*> lda;
             if (frand(0,1) < 0.2) lda = m.longest_dimension();
             if (lda.size() > 1) axis = lda[1]->loc.subtract(lda[0]->loc);

@@ -26,13 +26,13 @@ int main(int argc, char** argv)
             Atom* a = aa->get_atom(j);
             if (!a) continue;
             int ag = a->get_geometry();
-            SCoord* abgeo = a->get_geometry_aligned_to_bonds(true);
+            Vector* abgeo = a->get_geometry_aligned_to_bonds(true);
 
             for (k=0; k<ag; k++)
             {
                 Bond* b = a->get_bond_by_idx(k);
                 if (!b || !b->atom2) continue;
-                SCoord AB = b->atom2->loc.subtract(a->loc);
+                Vector AB = b->atom2->loc.subtract(a->loc);
 
                 float theta;
                 for (l=0; l<=ag; l++)

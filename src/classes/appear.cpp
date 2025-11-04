@@ -4,7 +4,7 @@ void Appear::update(Protein *prot, int effective_iter)
 {
     if (effective_iter != disappear_iter && effective_iter != reappear_iter) return;
     int i, j, m, n = prot->get_end_resno();
-    SCoord ldisp;
+    Vector ldisp;
     start.resolve_resno(prot);
     end.resolve_resno(prot);
 

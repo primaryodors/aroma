@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     mon1->rotate(rot);
     rot = align_points_3d(H2->loc, S2->loc.add(S2->loc.subtract(S1->loc)), S2->loc);
     mon2->rotate(rot);
-    SCoord mov = S1->loc.subtract(S2->loc);
+    Vector mov = S1->loc.subtract(S2->loc);
     mov.r -= 4;
     mon2->move(mov);
 
