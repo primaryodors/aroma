@@ -593,6 +593,13 @@ void iteration_callback(int iter, Molecule** mols)
     float progress, bbest;
     Point bary;
 
+    float occl = ligand->surface_occlusion(mols);
+    if (occl < frand(0.4, 0.7))
+    {
+        ligand->recenter(loneliest);
+        Search::align_targets(ligand, loneliest, &g_bbr[0], 1);
+    }
+
     Interaction e = ligand->get_intermol_binding(mols);
     if (e.summed() >= 50*max(1, (int)fabs(ligand->get_charge()))
         && ligand->get_worst_clash() <= clash_limit_per_atom)
@@ -748,7 +755,7 @@ void iteration_callback(int iter, Molecule** mols)
         // TODO:
     }
     #endif
-    
+
     bary = ligand->get_barycenter();
 
     for (i=0; i < ac; i++)
@@ -3482,6 +3489,13 @@ _try_again:
             dr[drcount][nodeno].out_vdw_repuls = out_vdw_repuls;
             dr[drcount][nodeno].mbbr = &g_bbr[0];
             dr[drcount][nodeno].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
+
+            if (dr[drcount][nodeno].ligand_pocket_occlusion < 0.65)
+            {
+                dr[drcount][nodeno].disqualified = true;
+                std::string reason = "Insufficient occlusion";
+                dr[drcount][nodeno].disqualify_reason += reason;
+            }
 
             if (nsoftrgn)
             {

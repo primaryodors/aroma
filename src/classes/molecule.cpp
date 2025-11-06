@@ -5027,12 +5027,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         if (frand(0,1) < best_pose_reset_frequency) for (abc=0; mm[abc]; abc++) absolute_best[abc].restore_state(mm[abc]);
         for (i=0; mm[i]; i++) mm[i]->lastbind = 0;
 
-        #if mclashables_as_residue_nearbys
-        Molecule** nearby;
-        Molecule* closeby[nmm+8];
-        #else
-        Molecule* nearby[nmm+8];
-        #endif
+        Molecule* nearby[2048];
         bool do_full_rotation = _allow_fullrot && ((iter % _fullrot_every) == 0);
 
         for (i=0; mm[i]; i++)
@@ -5041,11 +5036,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (a->movability & MOV_PINNED) continue;
             bool flipped_rings = false;
             int ares = a->is_residue();
-
-            #if mclashables_as_residue_nearbys
-            if (ares) nearby = a->mclashables;
-            else nearby = closeby;
-            #endif
 
             if (a->movability & MOV_BKGRND) continue;
 
@@ -5056,15 +5046,18 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             Point aloc = a->get_barycenter();
 
             Interaction benerg = 0;
-            #if mclashables_as_residue_nearbys
             if (!ares)
             {
-            #endif
                 l = 0;
                 for (j=0; mm[j]; j++)
                 {
                     if (j==i) continue;
                     Molecule* b = mm[j];
+
+                    #if mclashables_as_residue_nearbys
+                    if (ares && b->is_residue()) continue;
+                    #endif
+
                     Point bloc = b->get_barycenter();
 
                     Atom* na = a->get_nearest_atom(bloc);
@@ -5073,10 +5066,14 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     if (r > _INTERA_R_CUTOFF+2.5) continue;
                     nearby[l++] = b;
                 }
+                #if mclashables_as_residue_nearbys
+                if (ares)
+                {
+                    for (j=0; a->mclashables[j]; j++) nearby[l++] = a->mclashables[j];
+                }
+                #endif
                 nearby[l] = 0;
-            #if mclashables_as_residue_nearbys
             }
-            #endif
             benerg = cfmol_multibind(a, nearby);
 
             #if _dbg_fitness_plummet
@@ -5248,15 +5245,14 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 for (l=0; mm[i]->hisflips[l]; l++)
                 {
                     #if _DBG_HISFLIP
-                    cout << "Flipping " << mm[i]->name << endl;
+                    cout << i << ": Flipping " << mm[i]->name << endl;
                     #endif
                     mm[i]->do_histidine_flip(mm[i]->hisflips[l]);
                     if (audit) sprintf(triedchange, "histidine flip");
 
                     tryenerg = cfmol_multibind(a, nearby);
-                    
 
-                    if (tryenerg.improved(benerg))
+                    if (tryenerg.improved(benerg) || tryenerg.attractive > benerg.attractive)
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
