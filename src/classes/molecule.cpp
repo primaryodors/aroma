@@ -5028,6 +5028,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         for (i=0; mm[i]; i++) mm[i]->lastbind = 0;
 
         Molecule* nearby[2048];
+        memset(nearby, 0, sizeof(Molecule*) * 2048);
         bool do_full_rotation = _allow_fullrot && ((iter % _fullrot_every) == 0);
 
         for (i=0; mm[i]; i++)
