@@ -128,59 +128,61 @@ switch ($fam)
     }
     else $knowns = "$consOR2";
     break;
-    
+
     case 'OR3':
     $knowns = "$consOR1";
     break;
-    
+
     case 'OR4':
     $knowns = "$consOR4";
     break;
-    
+
     case 'OR5':
     if ($rcpid == "OR5V1") $knowns = "$consOR4";
     else $knowns = "$consOR1";
     break;
-    
+
     case 'OR6':
-    $knowns = "$consOR4";
+    $knowns = "$consOR1, $consOR4";
+    if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
+        $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
     break;
-    
+
     case 'OR7':
     $knowns = "$consOR1";
     break;
-    
+
     case 'OR8':
     if ($rcpid == "OR8S1") $knowns = "$consOR4";
     else $knowns = "$consOR1";
     break;
-    
+
     case 'OR9':
     $knowns = "$consOR1";
     break;
-    
+
     case 'OR10':
     if ($rcpid == "OR10AD1") $knowns = "$consOR2";
     else $knowns = "$consOR4";
     break;
-    
+
     case 'OR11':
     $knowns = "$consOR4";
     break;
-    
+
     case 'OR12':
     $knowns = "$consOR4";
     break;
-    
+
     case 'OR13':
     if ($famsub == "OR13A" || $famsub == "OR13G") $knowns = "$consOR1";             // OR13A/G are actually OR3s.
     else $knowns = "$consOR2";
     break;
-    
+
     case 'OR14':
     $knowns = "$consOR2";
     break;
-    
+
     case 'OR51':
     if ($rcpid == "OR51E2")
     {
@@ -305,13 +307,17 @@ if ($knowns)
     foreach ($restraints_misc as $rm)
     {
         list($bw1, $bw2, $rmr) = explode('|',$rm);
+        if (false!==strpos($bw1, ":")) list($bw1, $a1) = explode(':', $bw1);
+        else $a1 = "CA";
+        if (false!==strpos($bw2, ":")) list($bw2, $a2) = explode(':', $bw2);
+        else $a2 = "CA";
         $rno1 = resno_from_bw($rcpid, $bw1);
         $rno2 = resno_from_bw($rcpid, $bw2);
         if (!$rno1 || !$rno2) continue;
         $rmr = floatval($rmr);
         $restraints_misc_str .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['CA:$rno1:A'],
-                                                          at['CA:$rno2:A']),
+                                feature=features.Distance(at['$a1:$rno1:A'],
+                                                          at['$a2:$rno2:A']),
                                 mean=$rmr, stdev=1.2))\n";
     }
 
