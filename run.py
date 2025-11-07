@@ -41,7 +41,7 @@ for rcpid in data.protutils.prots.keys():
     if protid:
         if rcpid != protid: continue
     else:
-        if popt != "*" and popt != "emp":
+        if popt != "*" and popt != "emp" and popt != "ago":
             if re.match("e[0-9]+", popt):
                 if not "expression" in data.protutils.prots[rcpid]: continue
                 minexpr = int(popt[1:])
@@ -61,6 +61,21 @@ for rcpid in data.protutils.prots.keys():
                 acv = o["activity"][url]
                 if rcpid in acv: isemp = True
             if not isemp: continue
+        elif popt == "ago" or lopt == "ago":
+            if not "activity" in o: continue
+            isago = False
+            for url in o["activity"].keys():
+                acv = o["activity"][url]
+                if rcpid in acv:
+                    if "adjusted_curve_top" in acv[rcpid]:
+                        if float(acv[rcpid]["adjusted_curve_top"]) > 0:
+                            isago = True
+                    elif "type" in acv[rcpid]:
+                        if acv[rcpid]["type"] in ["vsa", "sa", "ma", "wa", "pa", "a"]:
+                            isago = True
+                    elif "ec50" in acv[rcpid]:
+                        isago = True
+            if not isago: continue
         elif not oid:
             isnote = False
             if "aroma" in o:
