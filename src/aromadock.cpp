@@ -897,6 +897,93 @@ void iteration_callback(int iter, Molecule** mols)
     if (output_each_iter) output_iter(iter, mols, "dock iteration");
 }
 
+void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
+{
+
+    cout << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
+    if (output) *output << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
+
+    drjk->energy_mult = energy_mult;
+    drjk->do_output_colors = do_output_colors;
+    drjk->include_pdb_data = (output == nullptr);
+    cout << *drjk;
+    drjk->do_output_colors = false;
+    drjk->include_pdb_data = true;
+    if (output) *output << *drjk;
+
+    if (!lnodeno && outpdb.length() && pose <= outpdb_poses)
+    {
+        char protn[64];
+        strcpy(protn, strrchr(protfname, '/')+1);
+        char* dot = strchr(protn, '.');
+        if (dot) *dot = 0;
+
+        char lign[64];
+        strcpy(lign, strrchr(ligfname, '/')+1);
+        dot = strchr(lign, '.');
+        if (dot) *dot = 0;
+
+        // std::string temp_pdb_fn = (std::string)"tmp/pose" + std::to_string(j+1) + (std::string)".pdb";
+        std::string out_pdb_fn = std::regex_replace(outpdb, std::regex("[%][p]"), protn);
+        out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][l]"), lign);
+        out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][o]"), to_string(pose));
+
+        // FILE* pftmp = fopen(temp_pdb_fn.c_str(), "rb");
+        FILE* pfout = fopen(out_pdb_fn.c_str(), "wb");
+        if (/*!pftmp ||*/ !pfout)
+        {
+            cerr << "Failed to open " << out_pdb_fn << " for writing." << endl;
+            throw 0xbadf12e;
+        }
+
+        int j1;
+        int n1 = protein->get_end_resno();
+        for (j1=1; j1 <= n1; j1++)
+        {
+            AminoAcid* aa = protein->get_residue(j1);
+            if (aa) aa->set_pdb_chain('A');
+            if (aa /* && aa->been_flexed */)
+            {
+                // tmp_pdb_residue[j+1][j1].restore_state_relative(aa, "CA");
+                #if _dbg_residue_poses
+                cout << "tmp_pdb_residue[" << (j+1) << "][" << j1 << "].restore_state_relative(" 
+                    << aa->get_name() << ")" << endl;
+                #endif
+            }
+        }
+        // tmp_pdb_ligand[j+1].restore_state(ligand);
+
+        #if recapture_ejected_ligand
+        float r = ligand->get_barycenter().get_3d_distance(nodecens[k]);
+        if (r > size.magnitude()/2) goto _next_pose;
+        #endif
+
+        protein->save_pdb(pfout, ligand);
+
+        int atno_offset = protein->last_saved_atom_number;
+        if (waters)
+        {
+            for (j1=0; waters[j1]; j1++)
+            {
+                tmp_pdb_water[j1].restore_state(waters[j1]);
+                waters[j1]->save_pdb(pfout, atno_offset);
+                atno_offset += waters[j1]->get_atom_count();
+            }
+        }
+
+        n1 = nmtlcoords;
+        for (j1=0; j1 < n1; j1++)
+        {
+            mtlcoords[j1].mtl->move(tmp_pdb_metal_loc[j1]);
+            mtlcoords[j1].mtl->save_pdb_line(pfout, ++atno_offset);
+        }
+
+        protein->end_pdb(pfout);
+
+        fclose(pfout);
+    }
+}
+
 void search_callback(std::string mesg)
 {
     if (output_each_iter)
@@ -3845,17 +3932,6 @@ _try_again:
                             continue;
                         }*/
 
-                        cout << "Pose: " << pose << endl << "Node: " << k << endl;
-                        if (output) *output << "Pose: " << pose << endl << "Node: " << k << endl;
-
-                        dr[j][k].energy_mult = energy_mult;
-                        dr[j][k].do_output_colors = do_output_colors;
-                        dr[j][k].include_pdb_data = (output == nullptr);
-                        cout << dr[j][k];
-                        dr[j][k].do_output_colors = false;
-                        dr[j][k].include_pdb_data = true;
-                        if (output) *output << dr[j][k];
-
                         if (!k)
                         {
                             if (auditfn.length()) audit = fopen(auditfn.c_str(), "ab");
@@ -3865,80 +3941,7 @@ _try_again:
                                 fclose(audit);
                             }
                         }
-
-
-                        if (!k && outpdb.length() && pose <= outpdb_poses)
-                        {
-                            char protn[64];
-                            strcpy(protn, strrchr(protfname, '/')+1);
-                            char* dot = strchr(protn, '.');
-                            if (dot) *dot = 0;
-
-                            char lign[64];
-                            strcpy(lign, strrchr(ligfname, '/')+1);
-                            dot = strchr(lign, '.');
-                            if (dot) *dot = 0;
-
-                            // std::string temp_pdb_fn = (std::string)"tmp/pose" + std::to_string(j+1) + (std::string)".pdb";
-                            std::string out_pdb_fn = std::regex_replace(outpdb, std::regex("[%][p]"), protn);
-                            out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][l]"), lign);
-                            out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][o]"), to_string(pose));
-
-                            // FILE* pftmp = fopen(temp_pdb_fn.c_str(), "rb");
-                            FILE* pfout = fopen(out_pdb_fn.c_str(), "wb");
-                            if (/*!pftmp ||*/ !pfout)
-                            {
-                                cerr << "Failed to open " << out_pdb_fn << " for writing." << endl;
-                                return -1;
-                            }
-
-                            int j1;
-                            int n1 = protein->get_end_resno();
-                            for (j1=1; j1 <= n1; j1++)
-                            {
-                                AminoAcid* aa = protein->get_residue(j1);
-                                if (aa) aa->set_pdb_chain('A');
-                                if (aa /* && aa->been_flexed */)
-                                {
-                                    // tmp_pdb_residue[j+1][j1].restore_state_relative(aa, "CA");
-                                    #if _dbg_residue_poses
-                                    cout << "tmp_pdb_residue[" << (j+1) << "][" << j1 << "].restore_state_relative(" 
-                                        << aa->get_name() << ")" << endl;
-                                    #endif
-                                }
-                            }
-                            // tmp_pdb_ligand[j+1].restore_state(ligand);
-
-                            #if recapture_ejected_ligand
-                            float r = ligand->get_barycenter().get_3d_distance(nodecens[k]);
-                            if (r > size.magnitude()/2) goto _next_pose;
-                            #endif
-
-                            protein->save_pdb(pfout, ligand);
-
-                            int atno_offset = protein->last_saved_atom_number;
-                            if (waters)
-                            {
-                                for (j1=0; waters[j1]; j1++)
-                                {
-                                    tmp_pdb_waters[pose][j1].restore_state(waters[j1]);
-                                    waters[j1]->save_pdb(pfout, atno_offset);
-                                    atno_offset += waters[j1]->get_atom_count();
-                                }
-                            }
-
-                            n1 = nmtlcoords;
-                            for (j1=0; j1 < n1; j1++)
-                            {
-                                mtlcoords[j1].mtl->move(tmp_pdb_metal_locs[pose][j1]);
-                                mtlcoords[j1].mtl->save_pdb_line(pfout, ++atno_offset);
-                            }
-
-                            protein->end_pdb(pfout);
-
-                            fclose(pfout);
-                        }
-
+                        do_pose_output(&dr[j][k], k, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
 
                         if (!k) found_poses++;
                     }
@@ -3948,7 +3951,22 @@ _try_again:
                 {
                     if (i == 1)
                     {
-                        if (kcal)
+                        if (output_something_even_if_it_is_wrong)
+                        {
+                            float leastbad = Avogadro;
+                            int lbi = 0;
+                            for (l=0; l<poses; l++)
+                            {
+                                if (dr[l][0].kJmol < leastbad)
+                                {
+                                    leastbad = Avogadro;
+                                    lbi = l;
+                                }
+                                pose = 1;
+                                do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
+                            }
+                        }
+                        else if (kcal)
                         {
                             cout << "No poses found within kcal/mol limit." << endl;
                             if (output) *output << "No poses found within kcal/mol limit." << endl;
