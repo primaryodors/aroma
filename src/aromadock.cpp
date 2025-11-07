@@ -3951,22 +3951,7 @@ _try_again:
                 {
                     if (i == 1)
                     {
-                        if (output_something_even_if_it_is_wrong)
-                        {
-                            float leastbad = Avogadro;
-                            int lbi = 0;
-                            for (l=0; l<poses; l++)
-                            {
-                                if (dr[l][0].kJmol < leastbad)
-                                {
-                                    leastbad = Avogadro;
-                                    lbi = l;
-                                }
-                                pose = 1;
-                                do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
-                            }
-                        }
-                        else if (kcal)
+                        if (kcal)
                         {
                             cout << "No poses found within kcal/mol limit." << endl;
                             if (output) *output << "No poses found within kcal/mol limit." << endl;
@@ -3996,9 +3981,27 @@ _exitposes:
         goto _try_again;
     }
 
-    cout << found_poses << " pose(s) found." << endl;
-    if (output) *output << found_poses << " pose(s) found." << endl;
-    if (debug) *debug << found_poses << " pose(s) found." << endl;
+    if (!found_poses && output_something_even_if_it_is_wrong)
+    {
+        float leastbad = Avogadro;
+        int lbi = 0;
+        for (l=0; l<poses; l++)
+        {
+            if (dr[l][0].kJmol && dr[l][0].kJmol < leastbad)
+            {
+                leastbad = Avogadro;
+                lbi = l;
+            }
+        }
+        pose = 1;
+        do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
+    }
+    else 
+    {
+        cout << found_poses << " pose(s) found." << endl;
+        if (output) *output << found_poses << " pose(s) found." << endl;
+        if (debug) *debug << found_poses << " pose(s) found." << endl;
+    }
 
     cout << "Best candidate pose energy: " << (kcal ? best_energy/_kcal_per_kJ : best_energy) << (kcal ? " kcal/mol." : " kJ/mol.") << endl;
     if (output) *output << "Best candidate pose energy: " << (kcal ? best_energy/_kcal_per_kJ : best_energy) << (kcal ? " kcal/mol." : " kJ/mol.") << endl;
