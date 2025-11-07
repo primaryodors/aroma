@@ -56,6 +56,7 @@ char* get_file_ext(char* filename)
 }
 
 bool output_each_iter = false;
+bool output_something_even_if_it_is_wrong = false;
 bool progressbar = false;
 Progressbar progb;
 std::string itersfname;
@@ -1210,6 +1211,10 @@ int interpret_config_line(char** words)
         activation_node = atoi(words[1]);
         strcpy(protafname, words[2]);
         optsecho = "Active PDB " + (std::string)protafname + " for node " + to_string(activation_node);
+    }
+    else if (!strcmp(words[0], "NOFAIL"))
+    {
+        output_something_even_if_it_is_wrong = true;
     }
     else if (!strcmp(words[0], "OUT"))
     {
@@ -3552,7 +3557,7 @@ _try_again:
                 dr[drcount][nodeno].miscdata += (std::string)"Soft contact anomaly: " + std::to_string(anomaly) + (std::string)" kJ/mol.\n";
                 dr[drcount][nodeno].miscdata += (std::string)"Soft spatial anomaly: " + std::to_string(sanomaly) + (std::string)" A.\n";
 
-                if (dr[drcount][nodeno].kJmol > 0)
+                if (dr[drcount][nodeno].kJmol > 0 && !output_something_even_if_it_is_wrong)
                 {
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason += (std::string)"Unfavorable ligand binding energy. ";
@@ -3810,7 +3815,7 @@ _try_again:
 
             if (dr[j][0].pose == i && dr[j][0].pdbdat.length())
             {
-                if (dr[j][0].kJmol <= kJmol_cutoff)
+                if (dr[j][0].kJmol <= kJmol_cutoff || (output_something_even_if_it_is_wrong && !j))
                 {
                     if (dr[j][0].proximity > search_size.magnitude()) continue;
                     if (dr[j][0].worst_nrg_aa > clash_limit_per_aa) continue;
@@ -3822,7 +3827,7 @@ _try_again:
                     for (k=0; k<=pathnodes; k++)
                     {
                         // If pathnode is not within kJ/mol cutoff, abandon it and all subsequent pathnodes of the same pose.
-                        if (dr[j][k].kJmol > kJmol_cutoff)
+                        if (dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
                         {
                             cout << "Pose " << pose << " node " << k
                                  << " energy " << dr[j][k].kJmol*energy_mult
@@ -3886,7 +3891,6 @@ _try_again:
                                 cerr << "Failed to open " << out_pdb_fn << " for writing." << endl;
                                 return -1;
                             }
-
 
                             int j1;
                             int n1 = protein->get_end_resno();
