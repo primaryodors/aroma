@@ -27,14 +27,6 @@ colors = \
         "FWY": "\033[38;5;171m"
     }
 
-bsrs = \
-    [
-        "2.53", "3.29", "3.32", "3.33", "3.36", "3.37", "3.40", "3.41",
-        "4.53", "4.57", "4.60", "45.49", "45.51", "45.52", "45.53",
-        "5.39", "5.42", "5.43", "5.46", "5.47",
-        "6.48", "6.51", "6.55", "6.59", "7.38", "7.39", "7.42"
-    ]
-
 colorless = "\033[0m"
 orphan = "\033[2m\033[3m"
 deorphan = ""; # "\033[1m"
@@ -52,7 +44,7 @@ pattlc = rcppatt[-1:]
 bwnos = []
 for a in sys.argv[2:]:
     if a == 'bsr':
-        bwnos = bwnos + bsrs
+        bwnos = bwnos + data.protutils.bsrs
     else:
         bwnos.append(a)
 
@@ -69,7 +61,7 @@ for rcpid in data.protutils.prots.keys():
         print(rcpid.ljust(10, " "), end="" )
     else:
         print(orphan + rcpid.ljust(10, " ") + reset, end="")
-    
+
     for bw in bwnos:
         bwl = len(bw)+1
         resno = data.protutils.resno_from_bw(rcpid, bw)
