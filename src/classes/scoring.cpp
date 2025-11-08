@@ -207,6 +207,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
     int mtlmetric = -1;
     mcoord_charge_repulsion = 0;
     ninterall = 0;
+    interpot = 0;
     atomlvl = "";
     reaches_spheroid[sphres] = nullptr;
     for (i=0; i<sphres; i++)
@@ -294,6 +295,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
         mc_bpotential = 0;
         compute_interall = true;
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
+        interpot += ligand->get_intermol_potential(reaches_spheroid[i], false);
         compute_interall = false;
         float clash = lb.clash;
         if (ligand->get_worst_clash() > worst_energy)
@@ -805,12 +807,19 @@ _btyp_unassigned:
     }
     output << "Worst atom clash: " << dr.worst_energy*dr.energy_mult << endl;
 
-    if (dr.out_lig_int_e) output << "Ligand internal energy: " << dr.ligand_self*dr.energy_mult << endl << endl;
+    if (dr.out_lig_int_e) output << "Ligand internal energy: " << dr.ligand_self*dr.energy_mult << endl;
+
+    if (dr.interpot)
+    {
+        output << "Potential enthalpy: " << dr.interpot << endl;
+    }
 
     if (dr.estimated_TDeltaS)
     {
-        output << "Estimated TDeltaS: " << dr.estimated_TDeltaS << endl;
+        output << "Estimated T_Delta_S: " << dr.estimated_TDeltaS << endl;
     }
+
+    output << endl;
 
     if (dr.miscdata.size())
     {

@@ -22,6 +22,7 @@ class DockResult
     float kJmol = 0;
     float ikJmol = 0;
     float kJmol_raw = 0;
+    float interpot = 0;
     char** metric = nullptr;
     float* mkJmol = nullptr;
     float* mstab = nullptr;

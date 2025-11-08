@@ -160,7 +160,7 @@ foreach ($prots as $protid => $p)
                 {
                     $occl = floatval(substr($ln, 25));
                 }
-                else if (!$occl && substr($ln, 0, 19) == "Estimated TDeltaS: ")
+                else if (!$occl && substr($ln, 0, 19) == "Estimated T_Delta_S: ")
                 {
                     $tds = floatval(substr($ln, 19));
                 }
