@@ -830,7 +830,10 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
     if (achg) apol += achg;
     if (bchg) bpol += bchg;
 
-    if (apol && sgn(apol) == sgn(bpol))
+    bool ahal = a->get_family() == HALOGEN && a->is_bonded_to(TETREL);
+    bool bhal = b->get_family() == HALOGEN && b->is_bonded_to(TETREL);
+
+    if (apol && sgn(apol) == sgn(bpol) && !ahal && !bhal)
     {
         float pr = polar_repulsion / pow(fmax(1, r), 2) * fabs(apol) * fabs(bpol);
 
@@ -1259,14 +1262,14 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                 partial *= fmax(current_type == ionic?0:1, fabs(achg)) * fmax(current_type == ionic?0:1, fabs(bchg));
             }
 
-            if (current_type == hbond && fabs(apol) && fabs(bpol))
+            /*if (current_type == hbond && fabs(apol) && fabs(bpol) && !ahal && !bhal)
             {
                 float f = fabs(apol) * fabs(bpol);
-                float aneg = a->get_electronegativity(), bneg = b->get_electronegativity();
+                // float aneg = a->get_electronegativity(), bneg = b->get_electronegativity();
                 // if (aneg > 2.2) f /= (aneg - 2.2);
                 // if (bneg > 2.2) f /= (bneg - 2.2);
                 partial *= f;
-            }
+            }*/
 
             # if 0
             //if (current_type == polarpi || current_type == mcoord)

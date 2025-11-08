@@ -134,7 +134,7 @@ for rcpid in data.protutils.prots.keys():
         newcfg.append("NOFAIL")
 
         cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-5.0", "nooil"]
-        print(" ".join(cmd), "\n\n")
+        print(" ".join(cmd))
         proc = subprocess.run(cmd, stdout=subprocess.PIPE)
         for ln in proc.stdout.decode().split('\n'):
             # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
@@ -180,10 +180,10 @@ for rcpid in data.protutils.prots.keys():
 
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         cmd = ["bin/aromadock", "tmp/" + outfna]
-        print(" ".join(cmd), "\n\n")
+        print(" ".join(cmd))
         subprocess.run(cmd)
         cmd = ["bin/aromadock", "tmp/" + outfni]
-        print(" ".join(cmd), "\n\n")
+        print(" ".join(cmd))
         subprocess.run(cmd)
 
         if os.path.exists("tmp/nodelete"):

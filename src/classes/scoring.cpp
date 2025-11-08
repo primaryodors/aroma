@@ -295,7 +295,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
         mc_bpotential = 0;
         compute_interall = true;
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
-        interpot += ligand->get_intermol_potential(reaches_spheroid[i], false);
+        interpot -= ligand->get_intermol_potential(reaches_spheroid[i], false);
         compute_interall = false;
         float clash = lb.clash;
         if (ligand->get_worst_clash() > worst_energy)
@@ -809,10 +809,13 @@ _btyp_unassigned:
 
     if (dr.out_lig_int_e) output << "Ligand internal energy: " << dr.ligand_self*dr.energy_mult << endl;
 
+    #if 0
+    // this feature isn't working yet.
     if (dr.interpot)
     {
         output << "Potential enthalpy: " << dr.interpot << endl;
     }
+    #endif
 
     if (dr.estimated_TDeltaS)
     {

@@ -4135,7 +4135,7 @@ float Molecule::get_intermol_potential(Molecule** ligands, bool pure)
 
                 if (iff) for (n=0; iff[n]; n++)
                 {
-                    if (iff[n]->get_type() == vdW) continue;
+                    if (iff[n]->get_type() == covalent) continue;
 
                     if (pure || r < iff[n]->get_distance())
                         kJmol += iff[n]->get_kJmol();
