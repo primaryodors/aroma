@@ -252,11 +252,23 @@ foreach ($prots as $protid => $p)
 
         echo "<td>";
         echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">";
-        echo round($benerg_active, 4) ?: "-";
+        $dispe = "-";
+        if ($benerg_active)
+        {
+            if ($benerg_active >= 200) $dispe = "(fail)";
+            else $dispe = round($benerg_active, 4);
+        }
+        echo $dispe;
         echo "</a>";
         echo " / ";
         echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=inactive\" target=\"_dock\">";
-        echo round($benerg_inactive, 4) ?: "-";
+        $dispe = "-";
+        if ($benerg_inactive)
+        {
+            if ($benerg_inactive >= 200) $dispe = "(fail)";
+            else $dispe = round($benerg_inactive, 4);
+        }
+        echo $dispe;
         echo "</a>";
         echo "</td>";
 
