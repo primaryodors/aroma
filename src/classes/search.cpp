@@ -1316,6 +1316,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
 void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt)
 {
     ligand->movability = MOV_ALL;
+    Pose p(ligand);
 
     int i;
     Bond** bb;
@@ -1336,6 +1337,10 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         ligand->move(rel);
     }
 
+    AminoAcid* rs[SPHREACH_MAX];
+    int sphres = bbr->protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, ligand->get_bounding_box());
+    Interaction e, enew;
+
     // Align primary.
     Atom* aaaa = bbr->pri_res->coordmtl ? bbr->pri_res->coordmtl : bbr->pri_res->get_nearest_atom(pocketcen);       // amino acid alignment atom
     #if bb_find_empty_space
@@ -1346,6 +1351,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     #endif
     rot.a *= amt;
     if (!aaaa->vanished) ligand->rotate(rot, pocketcen);
+    e = ligand->get_intermol_binding((Molecule**)rs);
+    p.copy_state(ligand);
 
     // cout << "Rotated " << *bbr->pri_tgt << " " << (rot.a*fiftyseven) << "deg to face " << *bbr->pri_res << endl;
 
@@ -1365,7 +1372,31 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
             ligand->move(rel);
         }
     }
+    enew = ligand->get_intermol_binding((Molecule**)rs);
+    if (enew.improved(e))
+    {
+        p.copy_state(ligand);
+        e = enew;
+    }
+    else p.restore_state(ligand);
     #endif
+
+    // Rotate about pocketcen-primary axis to find best energy.
+    int n = 30;
+    float step = M_PI*2.0 / n;
+    LocatedVector lv = (Vector)bbr->pri_res->get_barycenter().subtract(pocketcen);
+    lv.origin = pocketcen;
+    for (i=0; i<n; i++)
+    {
+        ligand->rotate(lv, step);
+        enew = ligand->get_intermol_binding((Molecule**)rs);
+        if (enew.improved(e))
+        {
+            p.copy_state(ligand);
+            e = enew;
+        }
+    }
+    p.restore_state(ligand);
 
     // return;
 
@@ -1403,6 +1434,13 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         rot.a *= amt;
         ligand->rotate(rot, ref);
     }
+    enew = ligand->get_intermol_binding((Molecule**)rs);
+    if (enew.improved(e))
+    {
+        p.copy_state(ligand);
+        e = enew;
+    }
+    else p.restore_state(ligand);
 
     // Rotisserie align tertiary.
     if (!bbr->tert_res || !bbr->tert_tgt) return;
@@ -1410,9 +1448,16 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     Vector axis = bbr->sec_tgt->barycenter().subtract(ref);
     float theta = find_angle_along_vector(bbr->tert_tgt->barycenter(), 
         bbr->tert_res->get_nearest_atom(pocketcen)->loc.randomize(bb_stochastic_A), ref, axis);
-    LocatedVector lv = axis;
+    lv = axis;
     lv.origin = ref;
     if (!aaaa->vanished) ligand->rotate(lv, theta*amt);
+    enew = ligand->get_intermol_binding((Molecule**)rs);
+    if (enew.improved(e))
+    {
+        p.copy_state(ligand);
+        e = enew;
+    }
+    else p.restore_state(ligand);
 
     // Tertiary scooch
     if (bbr->sec_tgt->polarity() < hydrophilicity_cutoff && bbr->tert_tgt->polarity() >= hydrophilicity_cutoff)
@@ -1426,6 +1471,13 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
             ligand->move(rel);
         }
     }
+    enew = ligand->get_intermol_binding((Molecule**)rs);
+    if (enew.improved(e))
+    {
+        p.copy_state(ligand);
+        e = enew;
+    }
+    else p.restore_state(ligand);
 }
 
 bool Search::target_compatibility(float chg1, float chg2, float pol1, float pol2, int pi1, int pi2, bool hba1, bool hba2, bool hbd1, bool hbd2)
