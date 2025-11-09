@@ -24447,7 +24447,7 @@
         "smiles": "CC(=CCCC1=CCC(CC1)C=O)C",
         "isomers":
         {
-            "(R)": "CC(=CCCC1=CC[C@@H](CC1)C=O)C|rflp C9",
+            "(R)": "CC(=CCCC1=CC[C@@H](CC1)C=O)C",
             "(S)": "CC(=CCCC1=CC[C@H](CC1)C=O)C"
         },
         "aroma":
