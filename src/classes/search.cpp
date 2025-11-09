@@ -1339,7 +1339,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
 
     AminoAcid* rs[SPHREACH_MAX];
     int sphres = bbr->protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, ligand->get_bounding_box());
-    Interaction e, enew;
+    float e, enew;
 
     // Align primary.
     Atom* aaaa = bbr->pri_res->coordmtl ? bbr->pri_res->coordmtl : bbr->pri_res->get_nearest_atom(pocketcen);       // amino acid alignment atom
@@ -1351,7 +1351,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     #endif
     rot.a *= amt;
     if (!aaaa->vanished) ligand->rotate(rot, pocketcen);
-    e = ligand->get_intermol_binding((Molecule**)rs);
+    e = ligand->get_intermol_clashes((Molecule**)rs);
     p.copy_state(ligand);
 
     // cout << "Rotated " << *bbr->pri_tgt << " " << (rot.a*fiftyseven) << "deg to face " << *bbr->pri_res << endl;
@@ -1372,8 +1372,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
             ligand->move(rel);
         }
     }
-    enew = ligand->get_intermol_binding((Molecule**)rs);
-    if (enew.improved(e))
+    enew = ligand->get_intermol_clashes((Molecule**)rs);
+    if (!enew || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
@@ -1389,8 +1389,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     for (i=0; i<n; i++)
     {
         ligand->rotate(lv, step);
-        enew = ligand->get_intermol_binding((Molecule**)rs);
-        if (enew.improved(e))
+        enew = ligand->get_intermol_clashes((Molecule**)rs);
+        if (!enew || enew < e)
         {
             p.copy_state(ligand);
             e = enew;
@@ -1434,8 +1434,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         rot.a *= amt;
         ligand->rotate(rot, ref);
     }
-    enew = ligand->get_intermol_binding((Molecule**)rs);
-    if (enew.improved(e))
+    enew = ligand->get_intermol_clashes((Molecule**)rs);
+    if (!enew || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
@@ -1451,8 +1451,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     lv = axis;
     lv.origin = ref;
     if (!aaaa->vanished) ligand->rotate(lv, theta*amt);
-    enew = ligand->get_intermol_binding((Molecule**)rs);
-    if (enew.improved(e))
+    enew = ligand->get_intermol_clashes((Molecule**)rs);
+    if (!enew || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
@@ -1471,8 +1471,8 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
             ligand->move(rel);
         }
     }
-    enew = ligand->get_intermol_binding((Molecule**)rs);
-    if (enew.improved(e))
+    enew = ligand->get_intermol_clashes((Molecule**)rs);
+    if (!enew || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
