@@ -217,8 +217,8 @@
 // Best-Binding constants.
 #define bb_avoid_eclipsing_contacts 1
 #define bb_disqualification_energy 1000
-#define bb_eclipsing_divisor 2
-#define bb_eclipsing_limit 1
+#define bb_eclipsing_divisor 10
+#define bb_eclipsing_limit 2
 #define bb_enable_residue_disqualifications 0
 #define bb_find_empty_space 1
 #define bb_group_distance_cutoff 4.3
