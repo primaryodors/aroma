@@ -1373,12 +1373,21 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         }
     }
     enew = ligand->get_intermol_clashes((Molecule**)rs);
-    if (!enew || enew < e)
+    if (enew < bb_clash_avoidance_threshold || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
+        #if _dbg_bb_clash_avoidance
+        cout << "Accepted BB scooch with new energy " << enew << endl << flush;
+        #endif
     }
-    else p.restore_state(ligand);
+    else
+    {
+        p.restore_state(ligand);
+        #if _dbg_bb_clash_avoidance
+        cout << "Rejected BB scooch with bad energy " << enew << endl << flush;
+        #endif
+    }
     #endif
 
     // Rotate about pocketcen-primary axis to find best energy.
@@ -1390,7 +1399,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     {
         ligand->rotate(lv, step);
         enew = ligand->get_intermol_clashes((Molecule**)rs);
-        if (!enew || enew < e)
+        if (enew < bb_clash_avoidance_threshold || enew < e)
         {
             p.copy_state(ligand);
             e = enew;
@@ -1435,12 +1444,21 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         ligand->rotate(rot, ref);
     }
     enew = ligand->get_intermol_clashes((Molecule**)rs);
-    if (!enew || enew < e)
+    if (enew < bb_clash_avoidance_threshold || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
+        #if _dbg_bb_clash_avoidance
+        cout << "Accepted secondary alignment with new energy " << enew << endl << flush;
+        #endif
     }
-    else p.restore_state(ligand);
+    else
+    {
+        p.restore_state(ligand);
+        #if _dbg_bb_clash_avoidance
+        cout << "Rejected secondary alignment with bad energy " << enew << endl << flush;
+        #endif
+    }
 
     // Rotisserie align tertiary.
     if (!bbr->tert_res || !bbr->tert_tgt) return;
@@ -1452,12 +1470,21 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     lv.origin = ref;
     if (!aaaa->vanished) ligand->rotate(lv, theta*amt);
     enew = ligand->get_intermol_clashes((Molecule**)rs);
-    if (!enew || enew < e)
+    if (enew < bb_clash_avoidance_threshold || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
+        #if _dbg_bb_clash_avoidance
+        cout << "Accepted rotisserie motion with new energy " << enew << endl << flush;
+        #endif
     }
-    else p.restore_state(ligand);
+    else
+    {
+        p.restore_state(ligand);
+        #if _dbg_bb_clash_avoidance
+        cout << "Rejected rotisserie motion with bad energy " << enew << endl << flush;
+        #endif
+    }
 
     // Tertiary scooch
     if (bbr->sec_tgt->polarity() < hydrophilicity_cutoff && bbr->tert_tgt->polarity() >= hydrophilicity_cutoff)
@@ -1472,12 +1499,25 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         }
     }
     enew = ligand->get_intermol_clashes((Molecule**)rs);
-    if (!enew || enew < e)
+    if (enew < bb_clash_avoidance_threshold || enew < e)
     {
         p.copy_state(ligand);
         e = enew;
+        #if _dbg_bb_clash_avoidance
+        cout << "Accepted tertiary scooch with new energy " << enew << endl << flush;
+        #endif
     }
-    else p.restore_state(ligand);
+    else
+    {
+        p.restore_state(ligand);
+        #if _dbg_bb_clash_avoidance
+        cout << "Rejected tertiary scooch with bad energy " << enew << endl << flush;
+        #endif
+    }
+
+    #if _dbg_bb_clash_avoidance
+    throw 0x7e57196;
+    #endif
 }
 
 bool Search::target_compatibility(float chg1, float chg2, float pol1, float pol2, int pi1, int pi2, bool hba1, bool hba2, bool hbd1, bool hbd2)

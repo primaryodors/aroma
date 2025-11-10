@@ -3,6 +3,8 @@ import json
 import re
 import os
 import subprocess
+from rdkit import Chem
+from rdkit.Chem import AllChem
 import data.globals
 
 def load_odors():
@@ -87,15 +89,21 @@ def check_isomers(ligname, randomize=True):
 
     result = []
     for iso in odor["isomers"].keys():
-        result.append(iso+"-"+odor["full_name"])
+        if "preiso" in odor.keys():
+            l = len(odor['preiso'])
+            result.append(odor["full_name"][0:l] + iso + odor["full_name"][l:])
+        else:
+            result.append(iso+"-"+odor["full_name"])
     return result
 
 def ensure_sdf_exists(odorant):
     o = find_odorant(odorant)
     if not "sdfname" in o:
-        cmd = ["obabel", "-:"+o["smiles"], "--gen3D", "-osdf", "-Osdf/" + o['full_name'].replace(' ', '_') + ".sdf"]
-        print(" ".join(cmd), "\n")
-        subprocess.run(cmd)
+        # cmd = ["obabel", "-:"+o["smiles"], "--gen3D", "-osdf", "-Osdf/" + o['full_name'].replace(' ', '_') + ".sdf"]
+        # print(" ".join(cmd), "\n")
+        # subprocess.run(cmd)
+        output_file = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
+        smiles_to_sdf(o['smiles'], output_file)
 
     isomers = check_isomers(o['full_name'])
     if isomers:
@@ -107,9 +115,10 @@ def ensure_sdf_exists(odorant):
                 if not os.path.exists(fname):
                     pettias = o["isomers"][iso].split("|")
                     smiles = pettias[0]
-                    cmd = ["obabel", "-:"+smiles, "--gen3D", "-osdf", "-O" + fname]
-                    print(" ".join(cmd), "\n")
-                    subprocess.run(cmd)
+                    # cmd = ["obabel", "-:"+smiles, "--gen3D", "-osdf", "-O" + fname]
+                    # print(" ".join(cmd), "\n")
+                    # subprocess.run(cmd)
+                    smiles_to_sdf(smiles, fname)
 
                     if 1 in pettias:
                         sub4 = pettias[1][0:4]
@@ -121,3 +130,18 @@ def ensure_sdf_exists(odorant):
                             print(" ".join(cmd), "\n")
                             subprocess.run(cmd)
 
+def smiles_to_sdf(smiles, output_file):
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol)
+        AllChem.UFFOptimizeMolecule(mol)
+        if mol:
+            with Chem.SDWriter(output_file) as writer:
+                writer.removeHs = False
+                writer.write(mol)
+            print(f"Saved {output_file}")
+        else:
+            print(f"Invalid SMILES string: {smiles}")
+    except Exception as e:
+        print(f"Error occurred generating 3D structure: {e}")

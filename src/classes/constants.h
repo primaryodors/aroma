@@ -216,6 +216,7 @@
 
 // Best-Binding constants.
 #define bb_avoid_eclipsing_contacts 1
+#define bb_clash_avoidance_threshold 5e8
 #define bb_disqualification_energy 1000
 #define bb_eclipsing_divisor 10
 #define bb_eclipsing_limit 2
@@ -320,6 +321,7 @@
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
+#define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
 #define _dbg_bb_pairs 0
 #define _dbg_bb_pullaway 0

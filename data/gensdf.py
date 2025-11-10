@@ -49,5 +49,6 @@ os.chdir('..')
 with open("data/odorant.json", "wb") as f:
     f.write(data.protutils.json_encode_pretty(odors1).encode())
 
-subprocess.run(["obabel", "-:"+canonical, "--gen3D", "-osdf", "-Osdf/"+name+".sdf"])
+output_file = f"sdf/{name}.sdf"
+data.odorutils.smiles_to_sdf(canonical, output_file)
 

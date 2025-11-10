@@ -18090,7 +18090,8 @@
     },
     "69baf8c3ae06503d2eb15426ec314b05":
     {
-        "full_name": "filbertone",
+        "full_name": "filbert heptenone",
+        "name1": "filbertone",
         "smiles": "O=C(\\C=C\\C)C(C)CC",
         "isomers":
         {
@@ -19375,6 +19376,22 @@
             }
         },
         "oid": "706087dc19d604fa4a9b517df206f8b5"
+    },
+    "70c5a16191e960574eed19a52151b6c6":
+    {
+        "full_name": "2-acetyl-4-methyl thiazole",
+        "smiles": "Cc1csc(n1)C(=O)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "cooked",
+                "meaty",
+                "nutty",
+                "burnt"
+            ]
+        },
+        "oid": "70c5a16191e960574eed19a52151b6c6"
     },
     "713f9f7af71447813289c58fd58169df":
     {
@@ -26130,7 +26147,12 @@
         {
             "http://www.thegoodscentscompany.com":
             [
-                "roasted", "beefy", "chicken", "meaty", "sulfurous", "alliaceous"
+                "roasted",
+                "beefy",
+                "chicken",
+                "meaty",
+                "sulfurous",
+                "alliaceous"
             ]
         },
         "activity":
@@ -31632,6 +31654,18 @@
             }
         },
         "oid": "b9317b0192fbc8c1f27e10022a6244d9"
+    },
+    "b95ad2892d13aea2be08fc0dd7c10beb":
+    {
+        "full_name": "ethyl gamma-cyclogeranate",
+        "smiles": "CC1(C(C(CCC1)=C)C(=O)OCC)C",
+        "preiso": "ethyl ",
+        "isomers":
+        {
+            "(R)": "CC1([C@H](C(CCC1)=C)C(=O)OCC)C",
+            "(S)": "CC1([C@@H](C(CCC1)=C)C(=O)OCC)C"
+        },
+        "oid": "b95ad2892d13aea2be08fc0dd7c10beb"
     },
     "b984499508e50402f1998274a7eac486":
     {
@@ -37232,7 +37266,16 @@
         {
             "http://www.thegoodscentscompany.com":
             [
-                "nutty", "popcorn", "peanut", "roasted", "peanut", "hazelnut", "toasted", "corn_chip", "raw", "bready"
+                "nutty",
+                "popcorn",
+                "peanut",
+                "roasted",
+                "peanut",
+                "hazelnut",
+                "toasted",
+                "corn_chip",
+                "raw",
+                "bready"
             ]
         },
         "activity":
@@ -38132,6 +38175,20 @@
             }
         },
         "oid": "e1e4ed83c6afb458cfd9a1314cc3239a"
+    },
+    "e24392a4b883291d158b586a37d79d2f":
+    {
+        "full_name": "2-hydroxythiophenol",
+        "smiles": "Oc1ccccc1S",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "burnt",
+                "rubbery"
+            ]
+        },
+        "oid": "e24392a4b883291d158b586a37d79d2f"
     },
     "e27df19eb19010d180969a650c4846f8":
     {
@@ -43138,6 +43195,25 @@
             }
         },
         "oid": "fdaffc5868432cad0ecfdd3d12a837ff"
+    },
+    "fdfb34ed3a278eeddc830a02713612a9":
+    {
+        "full_name": "applelide",
+        "smiles": "CCOC(=O)CC(=O)OC(C1CCCC(C1)(C)C)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "powdery",
+                "creamy",
+                "warm",
+                "musk",
+                "fresh",
+                "fruity",
+                "apple"
+            ]
+        },
+        "oid": "fdfb34ed3a278eeddc830a02713612a9"
     },
     "fe39d5314aa62ad42f78627f3749c982":
     {

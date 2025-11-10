@@ -331,6 +331,13 @@ bool file_exists(std::string fname)
 
 void colorrgb(int r, int g, int b)
 {
+    // ANSI color codes do not work by default in Windows and it's not worth the trouble of making the call to SetConsoleMode().
+    // With all the $#!+ Microsoft is pulling now making the latest version dependent on a chip not every system has
+    // and obsoleting machines that aren't particularly old, it's better to just upgrade to a *nix OS.
+    #if defined(_WIN32) || defined(_WIN64)
+    return;
+    #endif
+
     r = max(0, min(255, r));
     g = max(0, min(255, g));
     b = max(0, min(255, b));
@@ -340,6 +347,10 @@ void colorrgb(int r, int g, int b)
 
 void colorize(float f)
 {
+    #if defined(_WIN32) || defined(_WIN64)
+    return;
+    #endif
+
     float red, green, blue;
 
     f = -f;
@@ -364,6 +375,10 @@ void colorize(float f)
 
 void colorless()
 {
+    #if defined(_WIN32) || defined(_WIN64)
+    return;
+    #endif
+
     cout << "\x1b[0m";
 }
 
