@@ -174,7 +174,17 @@ dockdata;
             }
         }
     }
-    $sim = similar_receptors($protid, array_keys($lbsr));
+    $sim = similar_receptors($protid); // , array_keys($lbsr));
+    $lbsrn = [];
+    $frist = true;
+    foreach (array_keys($sim[$protid]) as $bw)
+    {
+        if (!$frist) echo " | ";
+        $lbsrn[$bw] = resno_from_bw($protid, $bw);
+        $bwx = str_replace('.', 'x', $bw);
+        echo "<a href=\"#\" onclick=\"$('.show$bwx').toggle();\">{$lbsrn[$bw]}</a>";
+        $frist = false;
+    }
     ?>
     <table class="simr">
         <?php
@@ -187,23 +197,29 @@ dockdata;
                 echo "<th>&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
-                    $resno = resno_from_bw($protid, $bw);
-                    echo "<th>$resno</th>\n";
+                    $display = isset($lbsr[$bw]) ? "" : "display: none;";
+                    $resno = $lbsrn[$bw];
+                    $bwx = str_replace('.', 'x', $bw);
+                    echo "<th style=\"$display\" class=\"show$bwx\">$resno</th>\n";
                 }
                 echo "</tr>\n";
                 echo "<tr>\n";
                 echo "<th>&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
-                    echo "<th>$bw</th>\n";
+                    $display = isset($lbsr[$bw]) ? "" : "display: none;";
+                    $bwx = str_replace('.', 'x', $bw);
+                    echo "<th style=\"$display\" class=\"show$bwx\">$bw</th>\n";
                 }
                 echo "</tr>\n";
             }
             echo "<tr>\n";
             echo "<th><a href=\"receptor.php?r=$id\">$id</a></th>";
-            foreach ($lb as $aa)
+            foreach ($lb as $bw => $aa)
             {
-                echo "<td class=\"aacolor$aa\">$aa</td>\n";
+                $display = isset($lbsr[$bw]) ? "" : "display: none;";
+                $bwx = str_replace('.', 'x', $bw);
+                echo "<td class=\"aacolor$aa show$bwx\" style=\"$display\">$aa</td>\n";
             }
             echo "</tr>\n";
             if ($frist)
@@ -212,8 +228,10 @@ dockdata;
                 echo "<th>&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
+                    $display = isset($lbsr[$bw]) ? "" : "display: none;";
                     $la = $lbsr[$bw];
-                    echo "<th>$la</th>\n";
+                    $bwx = str_replace('.', 'x', $bw);
+                    echo "<th style=\"$display\" class=\"show$bwx\">$la</th>\n";
                 }
                 echo "</tr>\n";
             }
