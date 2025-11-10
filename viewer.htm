@@ -2776,8 +2776,9 @@ function show_hide_sett()
 
 window.onresize = function()
 {
-    var w = parseInt(window.visualViewport.width - $("#viewport")[0].getBoundingClientRect().top - 5);
-    var h = parseInt(window.visualViewport.height - 5);
+	var parent = $('#viewport')[0].parentElement;
+    var w = parseInt( /* window.visualViewport.width */ parent.getBoundingClientRect().width - $("#viewport")[0].getBoundingClientRect().top - 5);
+    var h = parseInt( /* window.visualViewport.height */ parent.getBoundingClientRect().height - 5);
     $('#viewport').css("width", w+"px").css("height",h+"px");
     stage.setSize(w, h);
 };

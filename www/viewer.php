@@ -126,7 +126,7 @@ if (@$_REQUEST['view'] == "dock")
 
     // $c = str_replace("	var lligbs = get_ligbs_from_orid();\n", $ligbs, $c);
     $c = str_replace("var literal_pdb = false;\n", "var literal_pdb = `$txt`;\n", $c);
-    $c = str_replace("var literal_fname = \"\";\n", "var literal_fname = \"$protid.$odor.$mode.dock\";\n", $c);
+    $c = str_replace("var literal_fname = \"\";\n", "var literal_fname = \"$protid~$odor.$mode.dock\";\n", $c);
 
     $c .= <<<dockdata
 
@@ -135,6 +135,101 @@ $('#dockfloat span')[0].innerText = `{$dockdisp[0]}`;
 </script>
 dockdata;
 
+    echo "<link rel=\"stylesheet\" href=\"assets/style.css\">\n";
+    echo "<div style=\"display: flex;\">";
+    echo "<div style=\"display: block; width: 50%; height: 100vh; overflow: auto;\">";
+
+    echo "<h1>$protid ~ $odor</h1>";
+
+    $dockfname = "../output/$fam/$protid/$protid~$odor.$mode.dock";
+    // if (!file_exists($dockfname)) die("oops");
+    $lbsr = [];
+    $lbstr = [];
+    $d = file_get_contents($dockfname);
+    $lines = explode("\n", $d);
+    foreach ($lines as $ln) 
+    {
+        if (trim($ln) == "# PDB Data") break;
+        if (trim($ln) == "Pose: 2") break;
+        if (false!==strpos($ln, "~(ligand)"))
+        {
+            list($lcntct, $strength) = explode(": ", $ln, 2);
+            $strength = floatval($strength);
+            if ($strength <= -0.1)
+            {
+                $liga = false;
+                $resno = false;
+                list($I, $II) = explode('~', $lcntct);
+                list($res, $resa) = explode(':', $I);
+                list($lig, $liga) = explode(':', $II);
+                if (!$liga) continue;
+                $resno = intval(preg_replace("/[^0-9]/", "", $res));
+                if (!$resno) continue;
+                $bw = bw_from_resno($protid, $resno);
+                if (!isset($lbstr[$bw]) || $strength < $lbstr[$bw])
+                {
+                    $lbsr[$bw] = $liga;
+                    $lbstr[$bw] = $strength;
+                }
+            }
+        }
+    }
+    $sim = similar_receptors($protid, array_keys($lbsr));
+    ?>
+    <table class="simr">
+        <?php
+        $frist = true;
+        foreach ($sim as $id => $lb)
+        {
+            if ($frist)
+            {
+                echo "<tr>\n";
+                echo "<th>&nbsp;</th>";
+                foreach (array_keys($lb) as $bw)
+                {
+                    $resno = resno_from_bw($protid, $bw);
+                    echo "<th>$resno</th>\n";
+                }
+                echo "</tr>\n";
+                echo "<tr>\n";
+                echo "<th>&nbsp;</th>";
+                foreach (array_keys($lb) as $bw)
+                {
+                    echo "<th>$bw</th>\n";
+                }
+                echo "</tr>\n";
+            }
+            echo "<tr>\n";
+            echo "<th><a href=\"receptor.php?r=$id\">$id</a></th>";
+            foreach ($lb as $aa)
+            {
+                echo "<td class=\"aacolor$aa\">$aa</td>\n";
+            }
+            echo "</tr>\n";
+            if ($frist)
+            {
+                echo "<tr>\n";
+                echo "<th>&nbsp;</th>";
+                foreach (array_keys($lb) as $bw)
+                {
+                    $la = $lbsr[$bw];
+                    echo "<th>$la</th>\n";
+                }
+                echo "</tr>\n";
+            }
+            $frist = false;
+        }
+        ?>
+    </table>
+    <?php
+
+    echo "</div>";
+    echo "<div style=\"display: block; width: 50%; height: 100vh;\">";
+    $c = str_replace("<div id=\"viewport\" style=\"width:1800px;", "<div id=\"viewport\" style=\"width:60%;", $c);
+    echo $c;
+    echo "</div>";
+    echo "</div>";
+    exit;
 }
 
 echo $c;
