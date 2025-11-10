@@ -40,7 +40,7 @@ To enable the web app:
   which is usually correct for Apache2 installations), make sure you have write permissions in the 
   folder (or use `sudo`), and execute `www/symlink.sh` in a command line.
 - The `data` and `www/assets` folders and all contents must also be recursively made writable by the web user.
-- If on a local server, you will now have an instance of the web app at http://127.0.0.1/primarydock/ whereas if you are using a web host
+- If on a local server, you will now have an instance of the web app at http://127.0.0.1/aroma/ whereas if you are using a web host
   then you may have to configure your hosting to point one of your registered domains or subfolders to the `aroma/www` folder.
 
 If you get a 403 Forbidden error, please make sure that every containing folder of the `aroma/www` folder has public execute access.
