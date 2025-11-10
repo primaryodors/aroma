@@ -30,7 +30,13 @@ if (isset($odor["isomers"]))
     if (@$_REQUEST['iso'])
     {
         $iso = $_REQUEST['iso'];
-        $sdfname = str_replace(' ','_',"sdf/$iso-$fullname.sdf");
+        if (isset($odor["preiso"]))
+        {
+            $l = strlen($odor["preiso"]);
+            $isoname = substr($fullname, 0, $l).$iso."-".substr($fullname, $l);
+            $sdfname = str_replace(' ','_',"sdf/$isoname.sdf");
+        }
+        else $sdfname = str_replace(' ','_',"sdf/$iso-$fullname.sdf");
     }
     else $sdfname = str_replace(' ','_',"sdf/".(array_keys($odor["isomers"])[0])."-$fullname.sdf");
 }

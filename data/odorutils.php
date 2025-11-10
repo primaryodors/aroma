@@ -333,7 +333,13 @@ function ensure_sdf_exists($ligname)
 		{
 			$parts = explode("|", $ismiles);
 			$ismiles = $parts[0];
-			$isofname = substr(escapeshellarg("sdf/$iso-$fullname.sdf"), 1, -1);
+			if (isset($o["preiso"]))
+			{
+				$l = strlen($o["preiso"]);
+				$isoname = substr($fullname, 0, $l).$iso."-".substr($fullname, $l);
+				$isofname = substr(escapeshellarg("sdf/$isoname.sdf"), 1, -1);
+			}
+			else $isofname = substr(escapeshellarg("sdf/$iso-$fullname.sdf"), 1, -1);
 			if (!file_exists($isofname) || filesize($isofname) < 20)
 			{
 				if (false===strpos($ismiles, "{")) $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";

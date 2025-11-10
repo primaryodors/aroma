@@ -91,7 +91,7 @@ def check_isomers(ligname, randomize=True):
     for iso in odor["isomers"].keys():
         if "preiso" in odor.keys():
             l = len(odor['preiso'])
-            result.append(odor["full_name"][0:l] + iso + odor["full_name"][l:])
+            result.append((odor["full_name"][0:l] + iso + "-" + odor["full_name"][l:]).replace(' ', '_'))
         else:
             result.append(iso+"-"+odor["full_name"])
     return result
@@ -111,7 +111,11 @@ def ensure_sdf_exists(odorant):
         os.chdir("..")
         if len(isomers):
             for iso in o["isomers"].keys():
-                fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
+                if "preiso" in o.keys():
+                    l = len(o['preiso'])
+                    fname = "sdf/" + (o["full_name"][0:l] + iso + "-" + o["full_name"][l:]).replace(' ', '_') + ".sdf"
+                else:
+                    fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
                     pettias = o["isomers"][iso].split("|")
                     smiles = pettias[0]
