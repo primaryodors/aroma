@@ -349,6 +349,7 @@ else
     <button class="tablinks <?php if (@$_REQUEST['cmp']) echo "default"; ?>" id="tabComparison" onclick="openTab(this, 'Comparison');">Comparison</button>
     <?php } ?>
     <button class="tablinks" id="tabStructure" onclick="load_viewer(this);">3D Structure</button>
+    <button class="tablinks" id="tabSimilar" onclick="openTab(this, 'Similar');">Similar</button>
 </div>
 
 <div id="Info" class="tabcontent">
@@ -1080,6 +1081,42 @@ foreach ($lrefs as $idx => $refurl)
 <div id="Structure" class="tabcontent">
     <iframe id="viewer"></iframe>
 </div>
+
+
+<div id="Similar" class="tabcontent">
+<div class="box">
+<div class="row content scrollh">
+    <?php $sim = similar_receptors($rcpid); ?>
+    <table class="simr">
+        <?php
+        $frist = true;
+        foreach ($sim as $id => $lbsr)
+        {
+            if ($frist)
+            {
+                echo "<tr>\n";
+                echo "<th>&nbsp;</th>";
+                foreach (array_keys($lbsr) as $bw)
+                {
+                    echo "<th>$bw</th>\n";
+                }
+                echo "</tr>\n";
+                $frist = false;
+            }
+            echo "<tr>\n";
+            echo "<th><a href=\"receptor.php?r=$id\">$id</a></th>";
+            foreach ($lbsr as $aa)
+            {
+                echo "<td class=\"aacolor$aa\">$aa</td>\n";
+            }
+            echo "</tr>\n";
+        }
+        ?>
+    </table>
+</div>
+</div>
+</div>
+
 
 
 </div>

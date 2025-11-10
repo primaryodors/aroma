@@ -350,3 +350,76 @@ table.rcplist tr:nth-of-type(odd), table.liglist tr:nth-of-type(odd)
     width: fit-content;
     padding: 8px;
 }
+
+table.simr
+{
+    border-collapse: collapse;
+}
+
+table.simr th, table.simr td
+{
+    min-width: 44px;
+    padding: 3px;
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+table.simr td
+{
+    background-color: #000;
+}
+
+table.simr th:first-child, table.simr td:first-child
+{
+    padding-right: 15px;
+}
+
+table.simr .aacolorP, table.simr .aacolorA, table.simr .aacolorI, table.simr .aacolorL, table.simr .aacolorV
+{
+    color: #999;
+}
+
+table.simr .aacolorG
+{
+    color: #666;
+}
+
+table.simr .aacolorM
+{
+    color: #cc6;
+}
+
+table.simr .aacolorC
+{
+    color: #fc3;
+}
+
+table.simr .aacolorF, table.simr .aacolorW, table.simr .aacolorY
+{
+    color: #c6c;
+}
+
+table.simr .aacolorH
+{
+    color: #76c;
+}
+
+table.simr .aacolorS, table.simr .aacolorT
+{
+    color: #6da;
+}
+
+table.simr .aacolorN, table.simr .aacolorQ
+{
+    color: #0fc;
+}
+
+table.simr .aacolorE, table.simr .aacolorD
+{
+    color: #f00;
+}
+
+table.simr .aacolorR, table.simr .aacolorK
+{
+    color: #03f;
+}

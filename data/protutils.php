@@ -7,6 +7,33 @@
 
 global $prots, $aminos;
 
+function amino_similarity($letter1, $letter2)
+{
+	if ($letter1 == $letter2) return 1;
+	if (false != strpos("MAILVG", $letter1) && false != strpos("MAILVG", $letter2)) return 0.95;
+	if (false != strpos("MAILVGP", $letter1) && false != strpos("MAILVGP", $letter2)) return 0.9;
+	if (false != strpos("FWY", $letter1) && false != strpos("FWY", $letter2)) return 0.9;
+	if (false != strpos("MAILVGPFWY", $letter1) && false != strpos("MAILVGPFWY", $letter2)) return 0.7;
+	if (false != strpos("HY", $letter1) && false != strpos("HY", $letter2)) return 0.6;
+	if (false != strpos("FHWY", $letter1) && false != strpos("FHWY", $letter2)) return 0.6;
+	if (false != strpos("MC", $letter1) && false != strpos("MC", $letter2)) return 0.6;
+	if (false != strpos("MAILVGC", $letter1) && false != strpos("MAILVGC", $letter2)) return 0.5;
+
+	if (false != strpos("ST", $letter1) && false != strpos("ST", $letter2)) return 0.95;
+	if (false != strpos("DE", $letter1) && false != strpos("DE", $letter2)) return 0.95;
+	if (false != strpos("RK", $letter1) && false != strpos("RK", $letter2)) return 0.95;
+	if (false != strpos("HRK", $letter1) && false != strpos("ST", $letter2)) return 0.8;
+	if (false != strpos("STNQ", $letter1) && false != strpos("STNQ", $letter2)) return 0.9;
+	if (false != strpos("STNQED", $letter1) && false != strpos("STNQED", $letter2)) return 0.8;
+	if (false != strpos("DREKSTNQ", $letter1) && false != strpos("DREKSTNQ", $letter2)) return 0.7;
+	if (false != strpos("STYNQCED", $letter1) && false != strpos("STYNQCED", $letter2)) return 0.5;
+
+	if (false != strpos("CST", $letter1) && false != strpos("CST", $letter2)) return 0.5;
+	if (false != strpos("CYST", $letter1) && false != strpos("CYST", $letter2)) return 0.3;
+
+	return 0;
+}
+
 function bw_insdel($prot, $tmrno, $offset)
 {
 	$insdel = 0;
@@ -219,6 +246,69 @@ function split_pdb_to_rigid_and_flex($protid, $pdblines, $flxr_array)
 	}
 
 	return [$rigid,$flex];
+}
+
+function similar_receptors($rcpid, $lbsr = [])
+{
+	global $prots;
+	if (!is_array($lbsr) || !count($lbsr)) $lbsr =
+        [
+            "2.53",
+            "3.29", "3.32", "3.33", "3.36", "3.37", "3.40", "3.41",
+            "4.53", "4.57", "4.60",
+            "45.49", "45.51", "45.52", "45.53",
+            "5.39", "5.42", "5.43", "5.46", "5.47",
+            "6.48", "6.51", "6.55", "6.59",
+            "7.38", "7.39", "7.42",
+        ];
+
+	$pbsr = [];
+	foreach ($lbsr as $bw)
+	{
+		try
+		{
+			$pbsr[$bw] = letter_at_bw($rcpid, $bw);
+		}
+		catch (Exception $ex)
+		{
+			$pbsr[$bw] = '-';
+		}
+	}
+
+	$results = [$rcpid => $pbsr];
+	$sortable = [];
+	$tmp = [];
+	foreach ($prots as $id => $p)
+	{
+		if ($id == $rcpid) continue;
+		$score = 0.0;
+		$tbsr = [];
+		foreach ($lbsr as $bw)
+		{
+			try
+			{
+				$tbsr[$bw] = letter_at_bw($id, $bw);
+			}
+			catch (Exception $ex)
+			{
+				$tbsr[$bw] = '-';
+			}
+			$score += amino_similarity(@$pbsr[$bw], $tbsr[$bw]);
+		}
+		$score /= count($lbsr);
+		echo "<!-- $id score $score -->\n";
+
+		if ($score >= 0.75)
+		{
+			$tmp[$id] = $tbsr;
+			$sortable[$id] = $score;
+		}
+	}
+
+	arsort($sortable);
+	foreach ($sortable as $id => $v) $results[$id] = $tmp[$id];
+
+	return $results;
 }
 
 $cwd = getcwd();
