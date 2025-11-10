@@ -176,7 +176,7 @@ foreach ($prots as $protid => $p)
                 {
                     list($lcntct, $strength) = explode(": ", $ln, 2);
                     $strength = floatval($strength);
-                    if ($strength <= -1)
+                    if ($strength <= -0.5)
                     {
                         $liga = false;
                         $resno = false;
