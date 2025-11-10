@@ -178,6 +178,8 @@ foreach ($prots as $protid => $p)
                     $strength = floatval($strength);
                     if ($strength <= -1)
                     {
+                        $liga = false;
+                        $resno = false;
                         list($I, $II) = explode('~', $lcntct);
                         list($res, $resa) = explode(':', $I);
                         list($lig, $liga) = explode(':', $II);
