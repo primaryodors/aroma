@@ -288,12 +288,7 @@ foreach ($prots as $protid => $p)
                     o >= 0.85 - (H + 15)/100
         */
 
-        $prediction = 0;
-        $benerg_active = floatval($benerg_active);
-        $occl_active = floatval($occl_active);
-        if ($benerg_active > 0)             $prediction = max(0, 100.0 * ($occl_active - (1.0 - (15 - $benerg_active)/100)));
-        else if ($benerg_active > -15)      $prediction = max(0, 100.0 * ($occl_active - 0.85));
-        else                                $prediction = max(0, 100.0 * ($occl_active - (0.85 - $benerg_active + 15)/100));
+        $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;
         $prediction = round($prediction, 2);
 
         $color = "";

@@ -99,9 +99,6 @@ def check_isomers(ligname, randomize=True):
 def ensure_sdf_exists(odorant):
     o = find_odorant(odorant)
     if not "sdfname" in o:
-        # cmd = ["obabel", "-:"+o["smiles"], "--gen3D", "-osdf", "-Osdf/" + o['full_name'].replace(' ', '_') + ".sdf"]
-        # print(" ".join(cmd), "\n")
-        # subprocess.run(cmd)
         output_file = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
         smiles_to_sdf(o['smiles'], output_file)
 
@@ -119,9 +116,6 @@ def ensure_sdf_exists(odorant):
                 if not os.path.exists(fname):
                     pettias = o["isomers"][iso].split("|")
                     smiles = pettias[0]
-                    # cmd = ["obabel", "-:"+smiles, "--gen3D", "-osdf", "-O" + fname]
-                    # print(" ".join(cmd), "\n")
-                    # subprocess.run(cmd)
                     smiles_to_sdf(smiles, fname)
 
                     if 1 in pettias:
