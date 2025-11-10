@@ -17,7 +17,12 @@ $nih = 25;
 $nt = 20;
 $noh = $nih + $nt;
 $nw = 18;
-$filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z"
+$filter_svgdat = "m 0,0 $fw,$fh 0,$nih $nw,$nt 0,-$noh $fw,-$fh Z";
+
+
+$dockbsr = [];
+$dbsrfn = "../output/dockbsr.json";
+if (file_exists($dbsrfn)) $dockbsr = json_decode(file_get_contents($dbsrfn), true);
 
 ?>
 <style>
@@ -134,6 +139,7 @@ foreach ($prots as $protid => $p)
             $nump = 0;
             $occl = 0;
             $tds = 0;
+            set_time_limit(600);
             foreach ($lines as $ln) 
             {
                 if (!$benerg && substr($ln, 0, 7) == "Total: ")
@@ -165,6 +171,25 @@ foreach ($prots as $protid => $p)
                     $tds = floatval(substr($ln, 19));
                 }
                 else if (substr($ln, 0, 6) == "Pose: ") $nump++;
+
+                if (false!==strpos($ln, "~(ligand)"))
+                {
+                    list($lcntct, $strength) = explode(": ", $ln, 2);
+                    $strength = floatval($strength);
+                    if ($strength <= -1)
+                    {
+                        list($I, $II) = explode('~', $lcntct);
+                        list($res, $resa) = explode(':', $I);
+                        list($lig, $liga) = explode(':', $II);
+                        if (!$liga) continue;
+                        $resno = intval(preg_replace("/[^0-9]/", "", $res));
+                        if (!$resno) continue;
+                        $bw = bw_from_resno($protid, $resno);
+                        if (!isset($dockbsr[$protid])) $dockbsr[$protid] = [];
+                        if (!isset($dockbsr[$protid][$odor])) $dockbsr[$protid][$odor] = [];
+                        $dockbsr[$protid][$odor][$bw] = $liga;
+                    }
+                }
             }
             if (!$nump) $nump = "-";
 
@@ -228,6 +253,7 @@ foreach ($prots as $protid => $p)
     }
 
     file_put_contents($cachefn, json_encode_pretty($cached));
+    file_put_contents($dbsrfn, json_encode_pretty($dockbsr));
 
     foreach ($rows as $k => $r)
     {
