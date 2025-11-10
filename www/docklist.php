@@ -172,7 +172,7 @@ foreach ($prots as $protid => $p)
                 }
                 else if (substr($ln, 0, 6) == "Pose: ") $nump++;
 
-                if ($nump < 2 && false!==strpos($ln, "~(ligand)"))
+                if ($mode == "active" && $nump < 2 && false!==strpos($ln, "~(ligand)"))
                 {
                     list($lcntct, $strength) = explode(": ", $ln, 2);
                     $strength = floatval($strength);
