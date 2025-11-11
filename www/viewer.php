@@ -137,7 +137,7 @@ dockdata;
 
     echo "<link rel=\"stylesheet\" href=\"assets/style.css\">\n";
     echo "<div style=\"display: flex;\">";
-    echo "<div style=\"display: block; width: 50%; height: 100vh; overflow: auto;\">";
+    echo "<div style=\"display: block; width: 50%; height: 100vh; padding-left: 15px; overflow: auto;\">";
 
     echo "<h1>$protid ~ $odor</h1>";
 
@@ -176,15 +176,16 @@ dockdata;
     }
     $sim = similar_receptors($protid); // , array_keys($lbsr));
     $lbsrn = [];
-    $frist = true;
+    echo "<p>Toggle:";
     foreach (array_keys($sim[$protid]) as $bw)
     {
-        if (!$frist) echo " | ";
+        echo " &nbsp; ";
         $lbsrn[$bw] = resno_from_bw($protid, $bw);
+        $aa = letter_at_bw($protid, $bw);
         $bwx = str_replace('.', 'x', $bw);
-        echo "<a href=\"#\" onclick=\"$('.show$bwx').toggle();\">{$lbsrn[$bw]}</a>";
-        $frist = false;
+        echo "<a href=\"#\" onclick=\"$('.show$bwx').toggle();\">$aa{$lbsrn[$bw]}</a>";
     }
+    echo "</p>";
     ?>
     <table class="simr">
         <?php

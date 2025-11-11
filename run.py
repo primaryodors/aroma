@@ -152,6 +152,11 @@ for rcpid in data.protutils.prots.keys():
                     pocket["atomto"] = [pocket["atomto"]]
                 for a2 in pocket["atomto"]:
                     newcfg.append("ATOMTO " + a2)
+            if "bridge" in pocket:
+                if isinstance(pocket["bridge"], str):
+                    pocket["bridge"] = [pocket["bridge"]]
+                for st in pocket["bridge"]:
+                    newcfg.append("BRIDGE " + st)
             if "flxr" in pocket:
                 if isinstance(pocket["flxr"], str):
                     pocket["flxr"] = [pocket["flxr"]]
@@ -191,4 +196,6 @@ for rcpid in data.protutils.prots.keys():
         else:
             os.remove("tmp/" + outfna)
             os.remove("tmp/" + outfni)
+
+        print("Completed", rcpid, o["full_name"])
 
