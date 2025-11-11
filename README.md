@@ -3,7 +3,7 @@ http://www.primaryodors.org
 
 # DEPENDENCIES
 
-g++ openbabel python3-pybel librdkit1 python3-rdkit rdkit-data php php-curl php-gd
+g++ make openbabel python3 python3-pybel librdkit1 python3-rdkit rdkit-data php php-curl php-gd
 
 
 # Performing Docks
