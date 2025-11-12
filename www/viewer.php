@@ -295,44 +295,44 @@ function svg_from_smiles(smiles, w, h)
                 </td>
                 </tr>
                 <script>
-                $("#skel<?php echo $id; ?>")[0].innerHTML = svg_from_smiles("<?php echo $o["smiles"]; ?>", 780, 300);
-                var cx = 0, cy = 0, x0, x1, y0, y1;
-                var i, n = ax.length;
-                for (i=0; i<n; i++)
+                window.setTimeout(function()
                 {
-                    if (!i || ax[i] < x0) x0 = ax[i];
-                    if (!i || ax[i] > x1) x1 = ax[i];
-                    if (!i || ay[i] < y0) y0 = ay[i];
-                    if (!i || ay[i] > y1) y1 = ay[i];
-                }
-                cx = (x0 + x1) / 2;
-                cy = (y0 + y1) / 2;
-                var rect = $("#skel<?php echo $id; ?> svg")[0].getBoundingClientRect();
-                var fku = document.createElement("span");
-                fku.innerHTML = "&#x1F595;";
-                fku.style.position = 'absolute';
-                fku.style.top = parseInt(rect.top + rect.height/2).toString() + "px";
-                fku.style.left = parseInt(rect.left + rect.width/2).toString() + "px";
-                $("#skel<?php echo $id; ?>")[0].appendChild(fku);
-                <?php
-                $aayoff = [];
-                foreach ($lb as $bw => $aa)
-                {
-                    $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
-                    $ay = @$aayoff[$i] ?: 0;
-                    if ($i < 0) continue;
-                    echo "                var x = parseInt((ax[$i]-cx)*50-8), y = parseInt((ay[$i]-cy)*50+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
-                    var aa = document.createElement("span");
-                    aa.innerHTML = ih;
-                    aa.className = cls;
-                    aa.style.position = 'absolute';
-                    aa.style.top = parseInt(rect.top + rect.height/2 + y).toString() + "px";
-                    aa.style.left = parseInt(rect.left + rect.width/2 + x).toString() + "px";
-                    $("#skel<?php echo $id; ?>")[0].appendChild(aa);
+                    $("#skel<?php echo $id; ?>")[0].innerHTML = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
+                    var cx = 0, cy = 0, x0, x1, y0, y1;
+                    var i, n = ax.length;
+                    for (i=0; i<n; i++)
+                    {
+                        if (!i || ax[i] < x0) x0 = ax[i];
+                        if (!i || ax[i] > x1) x1 = ax[i];
+                        if (!i || ay[i] < y0) y0 = ay[i];
+                        if (!i || ay[i] > y1) y1 = ay[i];
+                    }
+                    cx = (x0 + x1) / 2;
+                    cy = (y0 + y1) / 2;
+                    var rect = $("#skel<?php echo $id; ?> svg")[0].getClientRects()[0];
+                    console.log(rect);
                     <?php
-                    $aayoff[$i] = $ay+1;
-                }
-                ?>
+                    $aayoff = [];
+                    foreach ($lb as $bw => $aa)
+                    {
+                        $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
+                        $ay = @$aayoff[$i] ?: 0;
+                        if ($i < 0) continue;
+                        echo "                var x = parseInt((ax[$i]-cx)*40-8), y = parseInt((ay[$i]-cy)*50+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
+                        var aa = document.createElement("span");
+                        aa.innerHTML = ih;
+                        aa.className = cls;
+                        aa.style.position = 'absolute';
+                        if (x < 0) x -= 15;
+                        if (y < 20) y -= 20;
+                        aa.style.top = parseInt(rect.top + rect.height/2 + y).toString() + "px";
+                        aa.style.left = parseInt(rect.left + rect.width/2 + x).toString() + "px";
+                        $("#skel<?php echo $id; ?>")[0].appendChild(aa);
+                        <?php
+                        $aayoff[$i] = $ay+1;
+                    }
+                    ?>
+                }, 250);
                 </script>
                 <?php
             }
