@@ -364,7 +364,7 @@ table.simr th, table.simr td
     font-family: 'Courier New', Courier, monospace;
 }
 
-table.simr td
+table.simr tr
 {
     background-color: #222;
 }
@@ -446,7 +446,7 @@ table.simr .smaller
 
 table.simr .basic
 {
-    background-color: #224;
+    background-color: #226;
 }
 
 table.simr .acidic
@@ -456,10 +456,10 @@ table.simr .acidic
 
 table.simr .phater
 {
-    background-color: #313;
+    background-color: #232;
 }
 
 table.simr .ener
 {
-    background-color: #232;
+    background-color: #313;
 }

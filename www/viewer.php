@@ -87,6 +87,7 @@ dockdata;
 if (@$_REQUEST['view'] == "dock")
 {
     require("../data/protutils.php");
+    require("../data/odorutils.php");
     $protid = $_REQUEST["prot"];
     $fam = family_from_protid($protid);
     $odor = $_REQUEST["odor"];
@@ -131,6 +132,7 @@ if (@$_REQUEST['view'] == "dock")
     $c .= <<<dockdata
 
 <script>
+
 $('#dockfloat span')[0].innerText = `{$dockdisp[0]}`;
 </script>
 dockdata;
@@ -138,6 +140,32 @@ dockdata;
     echo "<link rel=\"stylesheet\" href=\"assets/style.css\">\n";
     echo "<div style=\"display: flex;\">";
     echo "<div style=\"display: block; width: 50%; height: 100vh; padding-left: 15px; overflow: auto;\">";
+
+    ?>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://www.lactame.com/lib/openchemlib/5.2.0/openchemlib-minimal.js"></script>
+<script>
+
+var ax = [], ay = [];
+function svg_from_smiles(smiles, w, h)
+{
+    var molecule=OCL.Molecule.fromSmiles(smiles);
+    result = molecule.toSVG(w, h, Math.random.toString(36), {fontWeight: 900})
+        .replace(/rgb\(0,0,0\)/g,"rgb(255,255,255)")
+        .replace(/fill=\"rgb\(160,0,0\)\">.*<\/text/g, '></text')
+        .replace(/rgb\(160,0,0\)/g,"rgb(170,187,204)")
+        ;
+    var n = molecule.getAllAtoms();
+    var i;
+    for (i=0; i<n; i++)
+    {
+        ax[i] = molecule.getAtomX(i);
+        ay[i] = molecule.getAtomY(i);
+        // console.log(molecule.getAtomLabel(i) + ": X="+ax[i] + ", Y="+ay[i]);
+    }
+    return result;
+}
+    </script><?php
 
     echo "<h1>$protid ~ $odor</h1>";
 
@@ -196,6 +224,7 @@ dockdata;
         <?php
         $frist = true;
         $lataa = [];
+        $o = find_odorant($odor);
         foreach ($sim as $id => $lb)
         {
             if ($fam != family_from_protid($id)) continue;
@@ -221,8 +250,11 @@ dockdata;
                 }
                 echo "</tr>\n";
             }
-            echo "<tr>\n";
-            echo "<th><a href=\"receptor.php?r=$id\">$id</a></th>";
+            echo "<tr onclicqk=\"$('.skeltr').hide(); $('#skeltr$id').show();\">\n";
+            echo "<td style=\"text-align: left;\">";
+            echo "<b><a href=\"receptor.php?r=$id\">$id</a></b>";
+            if (isset($prots[$id]['expression'])) echo " {$prots[$id]['expression']}%";
+            echo "</td>";
             foreach ($lb as $bw => $aa)
             {
                 $display = isset($lbsr[$bw]) ? "" : "display: none;";
@@ -252,6 +284,53 @@ dockdata;
                 echo "<td class=\"aacolor$aa show$bwx $relstyle\" style=\"$display\">$aa</td>\n";
             }
             echo "</tr>\n";
+            echo "<tr class=\"skeltr\" id=\"skeltr$id\"";
+            if (!$frist) echo " style=\"display: none;\"";
+            echo ">\n";
+            if ($frist)
+            {
+                ?>
+                <td colspan="16">
+                <div id="skel<?php echo $id; ?>"></div>
+                </td>
+                </tr>
+                <script>
+                $("#skel<?php echo $id; ?>")[0].innerHTML = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
+                var cx = 0, cy = 0;
+                var i, n = ax.length;
+                for (i=0; i<n; i++)
+                {
+                    cx += ax[i];
+                    cy += ay[i];
+                }
+                if (n)
+                {
+                    cx /= n;
+                    cy /= n;
+                }
+                <?php
+                $aayoff = [];
+                foreach ($lb as $bw => $aa)
+                {
+                    $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
+                    $ay = @$aayoff[$i] ?: 0;
+                    if ($i < 0) continue;
+                    echo "                var x = parseInt((ax[$i]-cx)*50-8), y = parseInt((ay[$i]-cy)*40+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
+                    var rect = $("#skel<?php echo $id; ?>")[0].getBoundingClientRect();
+                    var aa = document.createElement("span");
+                    aa.innerHTML = ih;
+                    aa.className = cls;
+                    aa.style.position = 'absolute';
+                    aa.style.top = parseInt(rect.top + rect.height/2 + y).toString() + "px";
+                    aa.style.left = parseInt(rect.left + rect.width/2 + x).toString() + "px";
+                    $("#skeltr<?php echo $id; ?>")[0].appendChild(aa);
+                    <?php
+                    $aayoff[$i] = $ay+1;
+                }
+                ?>
+                </script>
+                <?php
+            }
             if ($frist)
             {
                 echo "<tr>\n";
@@ -259,15 +338,30 @@ dockdata;
                 foreach (array_keys($lb) as $bw)
                 {
                     $display = isset($lbsr[$bw]) ? "" : "display: none;";
-                    $la = $lbsr[$bw];
+                    echo "<th style=\"$display\" class=\"show$bwx\">$bw</th>\n";
+                    /* $la = $lbsr[$bw];
                     $bwx = str_replace('.', 'x', $bw);
-                    echo "<th style=\"$display\" class=\"show$bwx\">$la</th>\n";
+                    echo "<th style=\"$display\" class=\"show$bwx\">$la</th>\n"; */
                 }
                 echo "</tr>\n";
             }
             $frist = false;
         }
         ?>
+        <tr>
+            <td colspan="16">&nbsp;</td>
+        </tr>
+        <tr>
+            <th>Legend:</th>
+            <td colspan="2" class="bigger">bigger</td>
+            <td colspan="2" class="smaller">smaller</td>
+            <td colspan="2" class="wetter">wetter</td>
+            <td colspan="2" class="drier">drier</td>
+            <td colspan="2" class="acidic">more acid</td>
+            <td colspan="2" class="basic">more base</td>
+            <td colspan="2" class="ener">more pi</td>
+            <td colspan="2" class="phater">less pi</td>
+        </tr>
     </table>
     <?php
 

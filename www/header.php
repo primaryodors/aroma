@@ -22,11 +22,18 @@ if ($extra_js  && !is_array($extra_js )) $extra_js  = [$extra_js ];
         function svg_from_smiles(smiles, w, h)
         {
             var molecule=OCL.Molecule.fromSmiles(smiles);
-            return molecule.toSVG(w, h, Math.random.toString(36), {fontWeight: 900})
+            result = molecule.toSVG(w, h, Math.random.toString(36), {fontWeight: 900})
                 .replace(/rgb\(0,0,0\)/g,"rgb(255,255,255)")
                 .replace(/fill=\"rgb\(160,0,0\)\">.*<\/text/g, '></text')
                 .replace(/rgb\(160,0,0\)/g,"rgb(170,187,204)")
                 ;
+            var n = molecule.getAllAtoms();
+            var i;
+            for (i=0; i<n; i++)
+            {
+                console.log(molecule.getAtomLabel(i) + ": X="+molecule.getAtomX(i) + ", Y="+molecule.getAtomY(i));
+            }
+            return result;
         }
         </script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
