@@ -10,28 +10,161 @@ global $prots, $aminos;
 function amino_similarity($letter1, $letter2)
 {
 	if ($letter1 == $letter2) return 1;
-	if (false != strpos("MAILVG", $letter1) && false != strpos("MAILVG", $letter2)) return 0.95;
-	if (false != strpos("MAILVGP", $letter1) && false != strpos("MAILVGP", $letter2)) return 0.9;
-	if (false != strpos("FWY", $letter1) && false != strpos("FWY", $letter2)) return 0.9;
-	if (false != strpos("MAILVGPFWY", $letter1) && false != strpos("MAILVGPFWY", $letter2)) return 0.7;
-	if (false != strpos("HY", $letter1) && false != strpos("HY", $letter2)) return 0.6;
-	if (false != strpos("FHWY", $letter1) && false != strpos("FHWY", $letter2)) return 0.6;
-	if (false != strpos("MC", $letter1) && false != strpos("MC", $letter2)) return 0.6;
-	if (false != strpos("MAILVGC", $letter1) && false != strpos("MAILVGC", $letter2)) return 0.5;
+	if (false !== strpos("MAILVG", $letter1) && false !== strpos("MAILVG", $letter2)) return 0.95;
+	if (false !== strpos("MAILVGP", $letter1) && false !== strpos("MAILVGP", $letter2)) return 0.9;
+	if (false !== strpos("FWY", $letter1) && false !== strpos("FWY", $letter2)) return 0.9;
+	if (false !== strpos("MAILVGPFWY", $letter1) && false !== strpos("MAILVGPFWY", $letter2)) return 0.7;
+	if (false !== strpos("HY", $letter1) && false !== strpos("HY", $letter2)) return 0.6;
+	if (false !== strpos("FHWY", $letter1) && false !== strpos("FHWY", $letter2)) return 0.6;
+	if (false !== strpos("MC", $letter1) && false !== strpos("MC", $letter2)) return 0.6;
+	if (false !== strpos("MAILVGC", $letter1) && false !== strpos("MAILVGC", $letter2)) return 0.5;
 
-	if (false != strpos("ST", $letter1) && false != strpos("ST", $letter2)) return 0.95;
-	if (false != strpos("DE", $letter1) && false != strpos("DE", $letter2)) return 0.95;
-	if (false != strpos("RK", $letter1) && false != strpos("RK", $letter2)) return 0.95;
-	if (false != strpos("HRK", $letter1) && false != strpos("ST", $letter2)) return 0.8;
-	if (false != strpos("STNQ", $letter1) && false != strpos("STNQ", $letter2)) return 0.9;
-	if (false != strpos("STNQED", $letter1) && false != strpos("STNQED", $letter2)) return 0.8;
-	if (false != strpos("DREKSTNQ", $letter1) && false != strpos("DREKSTNQ", $letter2)) return 0.7;
-	if (false != strpos("STYNQCED", $letter1) && false != strpos("STYNQCED", $letter2)) return 0.5;
+	if (false !== strpos("ST", $letter1) && false !== strpos("ST", $letter2)) return 0.95;
+	if (false !== strpos("DE", $letter1) && false !== strpos("DE", $letter2)) return 0.95;
+	if (false !== strpos("RK", $letter1) && false !== strpos("RK", $letter2)) return 0.95;
+	if (false !== strpos("HRK", $letter1) && false !== strpos("ST", $letter2)) return 0.8;
+	if (false !== strpos("STNQ", $letter1) && false !== strpos("STNQ", $letter2)) return 0.9;
+	if (false !== strpos("STNQED", $letter1) && false !== strpos("STNQED", $letter2)) return 0.8;
+	if (false !== strpos("DREKSTNQ", $letter1) && false !== strpos("DREKSTNQ", $letter2)) return 0.7;
+	if (false !== strpos("STYNQCED", $letter1) && false !== strpos("STYNQCED", $letter2)) return 0.5;
 
-	if (false != strpos("CST", $letter1) && false != strpos("CST", $letter2)) return 0.5;
-	if (false != strpos("CYST", $letter1) && false != strpos("CYST", $letter2)) return 0.3;
+	if (false !== strpos("CST", $letter1) && false !== strpos("CST", $letter2)) return 0.5;
+	if (false !== strpos("CYST", $letter1) && false !== strpos("CYST", $letter2)) return 0.3;
 
 	return 0;
+}
+
+function amino_cmp_hydro($letter, $comparedto)
+{
+	if (false !== strpos("MAILVGPFWC", $comparedto))
+	{
+		return (false !== strpos("SHTYNKQERD", $letter)) ? 1 : 0;
+	}
+	else if ($comparedto == 'Y')
+	{
+		if (false !== strpos("SHTNKQERD", $letter)) return 1;
+		else if (false !== strpos("CMAILVGPFW", $letter)) return -1;
+		return 0;
+	}
+	else if ($comparedto == 'H')
+	{
+		if (false !== strpos("STNKQERD", $letter)) return 1;
+		else if (false !== strpos("CMAILVGPFWY", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("STNQ", $comparedto))
+	{
+		if (false !== strpos("KERD", $letter)) return 1;
+		else if (false !== strpos("CMAILVGPFHWY", $letter)) return -1;
+		return 0;
+	}
+	else
+	{
+		if (false !== strpos("STNQCMAILVGPFHWY", $letter)) return -1;
+		return 0;
+	}
+}
+
+function amino_cmp_size($letter, $comparedto)
+{
+	if ($comparedto == 'W')
+	{
+		if ($letter == 'W') return 0;
+		return -1;
+	}
+	if (false !== strpos("FYR", $comparedto))
+	{
+		if ($letter == 'W') return 1;
+		else if (false !== strpos("ANDCEQGHILKMPSTV", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("LEQH", $comparedto))
+	{
+		if (false !== strpos("WFYR", $letter)) return 1;
+		else if (false !== strpos("ANDCGIKMPSTV", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("I", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQH", $letter)) return 1;
+		else if (false !== strpos("ANDCGKMPSTV", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("KM", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHI", $letter)) return 1;
+		else if (false !== strpos("ANDCGPSTV", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("ND", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHIKM", $letter)) return 1;
+		else if (false !== strpos("ACGPSTV", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("PTV", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHIKMND", $letter)) return 1;
+		else if (false !== strpos("ACGS", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("CS", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHIKMNDPTV", $letter)) return 1;
+		else if (false !== strpos("AG", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("A", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHIKMNDPTVCS", $letter)) return 1;
+		else if (false !== strpos("G", $letter)) return -1;
+		return 0;
+	}
+	else if (false !== strpos("G", $comparedto))
+	{
+		if (false !== strpos("WFYRLEQHIKMNDPTVCSA", $letter)) return 1;
+		return 0;
+	}
+}
+
+function amino_cmp_charge($letter, $comparedto)
+{
+	if (false !== strpos("RK", $comparedto))
+	{
+		if (false !== strpos("RK", $letter)) return 0;
+		return -1;
+	}
+	else if ($comparedto == "H")
+	{
+		if (false !== strpos("RK", $letter)) return 1;
+		else if ($letter == $comparedto) return 0;
+		return -1;
+	}
+	else if (false !== strpos("DE", $comparedto))
+	{
+		if (false !== strpos("DE", $letter)) return 0;
+		return 1;
+	}
+	else
+	{
+		if (false !== strpos("DE", $letter)) return -1;
+		else if (false !== strpos("RK", $letter)) return 1;
+		return 0;
+	}
+}
+
+function amino_cmp_pi($letter, $comparedto)
+{
+	if (false !== strpos("RNDEQHFWY", $comparedto))
+	{
+		if (false !== strpos("RNDEQHFWY", $letter)) return 0;
+		return -1;
+	}
+	else
+	{
+		if (false !== strpos("RNDEQHFWY", $letter)) return 1;
+		return 0;
+	}
 }
 
 function bw_insdel($prot, $tmrno, $offset)
@@ -298,7 +431,7 @@ function similar_receptors($rcpid, $lbsr = [])
 		$score /= count($lbsr);
 		echo "<!-- $id score $score -->\n";
 
-		if ($score >= 0.75)
+		if ($score >= 0.8)
 		{
 			$tmp[$id] = $tbsr;
 			$sortable[$id] = $score;

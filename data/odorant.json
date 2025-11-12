@@ -18544,6 +18544,11 @@
     {
         "full_name": "pepperwood",
         "smiles": "C=CC(OC(=O)N(C)C)(CCC=C(C)C)C",
+        "isomers":
+        {
+            "(R)": "C=C[C@](OC(=O)N(C)C)(CCC=C(C)C)C",
+            "(S)": "C=C[C@@](OC(=O)N(C)C)(CCC=C(C)C)C"
+        },
         "aroma":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":

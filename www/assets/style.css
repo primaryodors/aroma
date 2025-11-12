@@ -366,7 +366,7 @@ table.simr th, table.simr td
 
 table.simr td
 {
-    background-color: #000;
+    background-color: #222;
 }
 
 table.simr th:first-child, table.simr td:first-child
@@ -422,4 +422,44 @@ table.simr .aacolorE, table.simr .aacolorD
 table.simr .aacolorR, table.simr .aacolorK
 {
     color: #03f;
+}
+
+table.simr .wetter
+{
+    background-color: #245;
+}
+
+table.simr .drier
+{
+    background-color: #210;
+}
+
+table.simr .bigger
+{
+    background-color: #444;
+}
+
+table.simr .smaller
+{
+    background-color: #111;
+}
+
+table.simr .basic
+{
+    background-color: #224;
+}
+
+table.simr .acidic
+{
+    background-color: #520;
+}
+
+table.simr .phater
+{
+    background-color: #313;
+}
+
+table.simr .ener
+{
+    background-color: #232;
 }

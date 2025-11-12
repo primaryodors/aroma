@@ -141,8 +141,9 @@ dockdata;
 
     echo "<h1>$protid ~ $odor</h1>";
 
+    $bsr4sim = array_values(similar_receptors($protid))[0];
+
     $dockfname = "../output/$fam/$protid/$protid~$odor.$mode.dock";
-    // if (!file_exists($dockfname)) die("oops");
     $lbsr = [];
     $lbstr = [];
     $d = file_get_contents($dockfname);
@@ -171,10 +172,14 @@ dockdata;
                     $lbsr[$bw] = $liga;
                     $lbstr[$bw] = $strength;
                 }
+                if (!isset($bsr4sim[$bw])) $bsr4sim[$bw] = $resa;
             }
         }
     }
-    $sim = similar_receptors($protid); // , array_keys($lbsr));
+
+    ksort($bsr4sim);
+
+    $sim = similar_receptors($protid, array_keys($bsr4sim));
     $lbsrn = [];
     echo "<p>Toggle:";
     foreach (array_keys($sim[$protid]) as $bw)
@@ -190,8 +195,10 @@ dockdata;
     <table class="simr">
         <?php
         $frist = true;
+        $lataa = [];
         foreach ($sim as $id => $lb)
         {
+            if ($fam != family_from_protid($id)) continue;
             if ($frist)
             {
                 echo "<tr>\n";
@@ -220,7 +227,29 @@ dockdata;
             {
                 $display = isset($lbsr[$bw]) ? "" : "display: none;";
                 $bwx = str_replace('.', 'x', $bw);
-                echo "<td class=\"aacolor$aa show$bwx\" style=\"$display\">$aa</td>\n";
+                if ($frist) $lataa[$bw] = $aa;
+                $relstyle = "";
+                if ($lataa[$bw] != $aa)
+                {
+                    $cmp = amino_cmp_size($aa, $lataa[$bw]);
+                    if ($cmp > 0) $relstyle = "bigger";
+                    else if ($cmp < 0) $relstyle = "smaller";
+                    else
+                    {
+                        $cmp = amino_cmp_pi($aa, $lataa[$bw]);
+                        if ($cmp > 0) $relstyle = "ener";
+                        else if ($cmp < 0) $relstyle = "phater";
+                    }
+
+                    $cmp = amino_cmp_hydro($aa, $lataa[$bw]);
+                    if ($cmp > 0) $relstyle = "wetter";
+                    else if ($cmp < 0) $relstyle = "drier";
+
+                    $cmp = amino_cmp_charge($aa, $lataa[$bw]);
+                    if ($cmp > 0) $relstyle = "basic";
+                    else if ($cmp < 0) $relstyle = "acidic";
+                }
+                echo "<td class=\"aacolor$aa show$bwx $relstyle\" style=\"$display\">$aa</td>\n";
             }
             echo "</tr>\n";
             if ($frist)
