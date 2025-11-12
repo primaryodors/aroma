@@ -296,18 +296,17 @@ function svg_from_smiles(smiles, w, h)
                 </tr>
                 <script>
                 $("#skel<?php echo $id; ?>")[0].innerHTML = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
-                var cx = 0, cy = 0;
+                var cx = 0, cy = 0, x0, x1, y0, y1;
                 var i, n = ax.length;
                 for (i=0; i<n; i++)
                 {
-                    cx += ax[i];
-                    cy += ay[i];
+                    if (!i || ax[i] < x0) x0 = ax[i];
+                    if (!i || ax[i] > x1) x1 = ax[i];
+                    if (!i || ay[i] < y0) y0 = ay[i];
+                    if (!i || ay[i] > y1) y1 = ay[i];
                 }
-                if (n)
-                {
-                    cx /= n;
-                    cy /= n;
-                }
+                cx = (x0 + x1) / 2;
+                cy = (y0 + y1) / 2;
                 <?php
                 $aayoff = [];
                 foreach ($lb as $bw => $aa)
@@ -315,7 +314,7 @@ function svg_from_smiles(smiles, w, h)
                     $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
                     $ay = @$aayoff[$i] ?: 0;
                     if ($i < 0) continue;
-                    echo "                var x = parseInt((ax[$i]-cx)*50-8), y = parseInt((ay[$i]-cy)*40+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
+                    echo "                var x = parseInt((ax[$i]-cx)*50-8), y = parseInt((ay[$i]-cy)*50+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
                     var rect = $("#skel<?php echo $id; ?>")[0].getBoundingClientRect();
                     var aa = document.createElement("span");
                     aa.innerHTML = ih;
@@ -323,7 +322,7 @@ function svg_from_smiles(smiles, w, h)
                     aa.style.position = 'absolute';
                     aa.style.top = parseInt(rect.top + rect.height/2 + y).toString() + "px";
                     aa.style.left = parseInt(rect.left + rect.width/2 + x).toString() + "px";
-                    $("#skeltr<?php echo $id; ?>")[0].appendChild(aa);
+                    $("#skel<?php echo $id; ?>")[0].appendChild(aa);
                     <?php
                     $aayoff[$i] = $ay+1;
                 }
