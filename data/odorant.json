@@ -4646,7 +4646,7 @@
         "smiles": "CC1=CCC(CC1)C(C)(C)O",
         "isomers":
         {
-            "(R)": "CC1=CC[C@@H](CC1)C(C)(C)O|rflp C5",
+            "(R)": "CC1=CC[C@@H](CC1)C(C)(C)O",
             "(S)": "CC1=CC[C@H](CC1)C(C)(C)O"
         },
         "aroma":
@@ -6153,7 +6153,7 @@
         "smiles": "OC(CCC)CCC1C(CCCC1(C)C)C",
         "isomers":
         {
-            "(1'R,3S,6'S)": "O[C@@H](CCC)CC[C@@H]1[C@H](CCCC1(C)C)C|rflp C8 C9 C11",
+            "(1'R,3S,6'S)": "O[C@@H](CCC)CC[C@@H]1[C@H](CCCC1(C)C)C",
             "(1'S,3S,6'R)": "O[C@@H](CCC)CC[C@H]1[C@@H](CCCC1(C)C)C"
         },
         "aroma":
