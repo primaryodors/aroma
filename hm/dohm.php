@@ -201,8 +201,8 @@ switch ($fam)
     $knowns = "$consOR51, $consOR52";
     break;
 
-    default:        // remaining Class II ORs
-    $knowns = "$consOR1, $consOR2, $consOR4, $consOR51, $consOR52, $mTAAR, $TAAR1";      // , $LPAR1
+    default:
+    $knowns = "$consOR1, $consOR2, $consOR4, $consOR51, $consOR52, $mTAAR, $TAAR1";
 }
 
 if ($knowns)
