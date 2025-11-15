@@ -337,14 +337,16 @@ function ensure_sdf_exists($ligname)
 			{
 				$l = strlen($o["preiso"]);
 				$isoname = substr($fullname, 0, $l).$iso."-".substr($fullname, $l);
-				$isofname = substr(escapeshellarg("sdf/$isoname.sdf"), 1, -1);
+				$isofname = "sdf/$isoname.sdf";
 			}
-			else $isofname = substr(escapeshellarg("sdf/$iso-$fullname.sdf"), 1, -1);
+			else $isofname = "sdf/$iso-$fullname.sdf";
+
 			if (!file_exists($isofname) || filesize($isofname) < 20)
 			{
-				if (false===strpos($ismiles, "{")) $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";
+				$isofname = substr(escapeshellarg($isofname), 1, -1);
+				if (false===strpos($ismiles, "{")) $cmd = "python3 -c \"import data.odorutils; data.odorutils.smiles_to_sdf(\\\"$ismiles\\\", \\\"$isofname\\\")\" "; // $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";
 				else $cmd = "test/mol_assem_test \"$ismiles\" '$isofname'";
-				echo "$cmd\n";
+				// echo "$cmd\n";			// this breaks the web app.
 				exec($cmd);
 				if (@$parts[1])
 				{

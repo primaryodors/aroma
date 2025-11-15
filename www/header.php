@@ -27,12 +27,6 @@ if ($extra_js  && !is_array($extra_js )) $extra_js  = [$extra_js ];
                 .replace(/fill=\"rgb\(160,0,0\)\">.*<\/text/g, '></text')
                 .replace(/rgb\(160,0,0\)/g,"rgb(170,187,204)")
                 ;
-            var n = molecule.getAllAtoms();
-            var i;
-            for (i=0; i<n; i++)
-            {
-                console.log(molecule.getAtomLabel(i) + ": X="+molecule.getAtomX(i) + ", Y="+molecule.getAtomY(i));
-            }
             return result;
         }
         </script>
