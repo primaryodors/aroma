@@ -12853,6 +12853,15 @@
                 "medicinal",
                 "savory",
                 "meaty"
+            ],
+            "https://primaryodors.org/":
+            [
+                "woody",
+                "balsamic",
+                "sweet",
+                "smoky",
+                "phenolic",
+                "burnt"
             ]
         },
         "activity":

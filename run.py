@@ -21,6 +21,8 @@ import data.dyncenter
 data.protutils.load_prots()
 data.odorutils.load_odors()
 
+onlynew = False
+
 if not sys.argv[1] in data.protutils.prots.keys():
     protid = False
     popt = sys.argv[1]
@@ -35,6 +37,10 @@ if not o:
 else:
     oid = o["oid"]
     lopt = "*"
+
+if len(sys.argv) > 3:
+    for i in range(3, len(sys.argv)):
+        if sys.argv[i] == "resume": onlynew = True
 
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
@@ -93,6 +99,23 @@ for rcpid in data.protutils.prots.keys():
 
         pocket = data.dyncenter.get_pocket(rcpid, o["full_name"])
         # print(pocket)
+
+        conffna = rcpid + "~" + lignu + ".active.config"
+        conffni = rcpid + "~" + lignu + ".inactive.config"
+        if not os.path.exists("output"): os.mkdir("output")
+        if not os.path.exists("output/" + fam): os.mkdir("output/" + fam)
+        if not os.path.exists("output/" + fam + "/" + rcpid): os.mkdir("output/" + fam + "/" + rcpid)
+
+        if onlynew:
+            outfna = f"output/{fam}/{rcpid}/{rcpid}~{lignu}.active.dock"
+            if os.path.exists(outfna) and os.path.getsize(outfna) > 1e5:
+                fmt = os.path.getmtime(outfna)
+                if fmt > os.path.getmtime("data/binding_pocket.json") \
+                and fmt > os.path.getmtime(f"sdf/{lignu}.sdf") \
+                and fmt > os.path.getmtime(f"pdbs/{fam}/{rcpid}.active.pdb") \
+                and fmt > os.path.getmtime(f"pdbs/{fam}/{rcpid}.inactive.pdb") \
+                and fmt > os.path.getmtime("bin/aromadock"):
+                    continue
 
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         with open("example.config") as f:
@@ -168,34 +191,28 @@ for rcpid in data.protutils.prots.keys():
                 for st in pocket["stcr"]:
                     newcfg.append("STCR " + st)
 
-        if not os.path.exists("output"): os.mkdir("output")
-        if not os.path.exists("output/" + fam): os.mkdir("output/" + fam)
-        if not os.path.exists("output/" + fam + "/" + rcpid): os.mkdir("output/" + fam + "/" + rcpid)
-
-        outfna = rcpid + "~" + lignu + ".active.config"
-        outfni = rcpid + "~" + lignu + ".inactive.config"
-        with open("tmp/" + outfna, 'w') as f:
+        with open("tmp/" + conffna, 'w') as f:
             f.write("\n".join(newcfg) + "\n\n")
         for i in range(len(newcfg)):
             ln = newcfg[i]
             if ln[0:4] == "PROT" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
-        with open("tmp/" + outfni, 'w') as f:
+        with open("tmp/" + conffni, 'w') as f:
             f.write("\n".join(newcfg) + "\n\n")
 
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
-        cmd = ["bin/aromadock", "tmp/" + outfna]
+        cmd = ["bin/aromadock", "tmp/" + conffna]
         print(" ".join(cmd))
         subprocess.run(cmd)
-        cmd = ["bin/aromadock", "tmp/" + outfni]
+        cmd = ["bin/aromadock", "tmp/" + conffni]
         print(" ".join(cmd))
         subprocess.run(cmd)
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config file because you have the debug \"nodelete\" option selected.")
         else:
-            os.remove("tmp/" + outfna)
-            os.remove("tmp/" + outfni)
+            os.remove("tmp/" + conffna)
+            os.remove("tmp/" + conffni)
 
         print("Completed", rcpid, o["full_name"])
 

@@ -5,4 +5,4 @@ LIG="$2"
 
 make bin/aromadock bin/ic
 
-python3 run.py "$PROT" "$LIG"
+python3 run.py "$@"
