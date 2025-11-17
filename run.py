@@ -22,6 +22,7 @@ data.protutils.load_prots()
 data.odorutils.load_odors()
 
 onlynew = False
+onlymissing = False
 
 if not sys.argv[1] in data.protutils.prots.keys():
     protid = False
@@ -40,7 +41,8 @@ else:
 
 if len(sys.argv) > 3:
     for i in range(3, len(sys.argv)):
-        if sys.argv[i] == "resume": onlynew = True
+        if sys.argv[i] == "refresh": onlynew = True
+        if sys.argv[i] == "resume": onlymissing = True
 
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
@@ -106,9 +108,10 @@ for rcpid in data.protutils.prots.keys():
         if not os.path.exists("output/" + fam): os.mkdir("output/" + fam)
         if not os.path.exists("output/" + fam + "/" + rcpid): os.mkdir("output/" + fam + "/" + rcpid)
 
-        if onlynew:
+        if onlynew or onlymissing:
             outfna = f"output/{fam}/{rcpid}/{rcpid}~{lignu}.active.dock"
             if os.path.exists(outfna) and os.path.getsize(outfna) > 1e5:
+                if onlymissing: continue
                 fmt = os.path.getmtime(outfna)
                 if fmt > os.path.getmtime("data/binding_pocket.json") \
                 and fmt > os.path.getmtime(f"sdf/{lignu}.sdf") \

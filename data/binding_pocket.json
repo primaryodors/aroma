@@ -166,12 +166,8 @@
     "OR10*":
     {
         "pocket": "STNQRK3.37! 4.56 STNQ5.43! 5.47 6.55 STNQ7.38! STNQ7.42!",
-        "atomto":
-        [
-            "FWY7.41 EXTENT 7.37"
-        ],
         "flxr": "NDT3.37",
-        "stcr": "NY7.41"
+        "#stcr": "NY7.41"
     },
     "OR1[1234][A-Z]+[0-9]+":
     {
