@@ -120,7 +120,7 @@ for rcpid in data.protutils.prots.keys():
                 and fmt > os.path.getmtime("bin/aromadock"):
                     continue
 
-        print(f"Beginning {rcpid} ~ {o["full_name"]}...")
+        print(f"Beginning {rcpid} ~ "+o["full_name"]+"...")
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         with open("example.config") as f:
             cfg = f.read()

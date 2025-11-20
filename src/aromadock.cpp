@@ -2913,6 +2913,7 @@ _try_again:
             sphres = protein->get_residues_can_clash_ligand(reaches_spheroid[nodeno], ligand, nodecen, lsz, addl_resno);
             for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = NULL;
 
+            #if point_hydro_side_chains_inward
             for (i=0; i<sphres; i++)
             {
                 AminoAcid* aa = reaches_spheroid[nodeno][i];
@@ -2940,6 +2941,7 @@ _try_again:
                 Interaction f = aa->get_intermol_binding(protein->clashable_residues(aa->get_residue_no()));
                 if (f.clash > clash_limit_per_aa*2 || f.summed() > e.summed()+clash_limit_per_aa*2) was.restore_state(aa);
             }
+            #endif
 
             #if 0
             if (pose==1)
