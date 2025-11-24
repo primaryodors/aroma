@@ -2038,6 +2038,13 @@ bool AminoAcid::is_tyrosine_like()
     return false;
 }
 
+bool AminoAcid::is_histidine_like()
+{
+    if (fabs(hydrophilicity()) >= hydrophilicity_cutoff) return false;
+    if (is_tyrosine_like()) return false;
+    return (has_hbond_acceptors() || has_hbond_donors());
+}
+
 bool AminoAcid::is_glycine()
 {
     if (!atoms) return false;

@@ -573,7 +573,9 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
         {
             float jchg = pocketres[j]->get_charge();
             float jpol = pocketres[j]->hydrophilicity();
-            if (jpol < hydrophilicity_cutoff) jpol = 0;
+            bool jhis = pocketres[j]->is_histidine_like();
+            // cout << pocketres[j]->get_name() << " his? " << (jhis ? "Y" : "N") << endl;
+            if (jpol < hydrophilicity_cutoff && !jhis) jpol = 0;
             int jpi = pocketres[j]->has_pi_atoms(false);
             float jcba = pocketres[j]->CB_angle(loneliest);
             bool jhba = pocketres[j]->has_hbond_acceptors();
@@ -599,7 +601,6 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
             if (ntarg < 2 || npr < 2)
             {
-
                 bbr.ligand = ligand;
                 bbr.pri_tgt = &targets[i];
                 bbr.pri_res = pocketres[j];
@@ -648,7 +649,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
                     lchg = pocketres[l]->get_charge();
                     lpol = pocketres[l]->hydrophilicity();
-                    if (lpol < hydrophilicity_cutoff) lpol = 0;
+                    bool lhis = pocketres[l]->is_histidine_like();
+                    if (lpol < hydrophilicity_cutoff && !lhis) lpol = 0;
                     lpi = pocketres[l]->has_pi_atoms(false);
                     lcba = pocketres[l]->CB_angle(loneliest);
                     lhba = pocketres[l]->has_hbond_acceptors();
@@ -704,6 +706,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             {
                                 nchg = pocketres[n]->get_charge();
                                 npol = pocketres[n]->hydrophilicity();
+                                bool nhis = pocketres[n]->is_histidine_like();
+                                if (npol < hydrophilicity_cutoff && !nhis) npol = 0;
                                 npi = pocketres[n]->has_pi_atoms(false);
                                 ncba = pocketres[n]->CB_angle(loneliest);
                                 nhba = pocketres[n]->has_hbond_acceptors();
@@ -1315,6 +1319,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
 
 void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt)
 {
+    if (!bbr || !bbr->protein) return;
     ligand->movability = MOV_ALL;
     Pose p(ligand);
 
@@ -2017,6 +2022,8 @@ float BestBindingResult::estimate_DeltaS()
         if (!bbr_candidates[i].pri_res || !bbr_candidates[i].pri_tgt) break;
         sum += bbr_candidates[i].entropic_score;
     }
+
+    if (!sum) return 0;
 
     // Based on the melting point of water, the entropy contribution for forming each hydrogen bond in a
     // two state system must be around 1/8 kJ/mol/K. However, using the value of 1.5 kcal/mol for alkyl-H

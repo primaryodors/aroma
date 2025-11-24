@@ -101,6 +101,7 @@ public:
         return aadef;
     }
     bool is_tyrosine_like();		// An amino acid is tyrosine-like if it has an aromatic ring and a non-backbone H-bond acceptor not part of the ring.
+    bool is_histidine_like();       // Histidine-like in this context means nonpolar at biological pH but capable of hydrogen bonding.
     bool is_glycine();              // Glycine is a special case where there are no non-backbone heavy atoms.
     bool is_amide();
     bool conditionally_basic() const;

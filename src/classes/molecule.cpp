@@ -1544,6 +1544,10 @@ int Molecule::has_hbond_donors()
         if (atoms[i]->get_heavy_atom()->get_family() == TETREL) continue;
         if (atoms[i]->is_polar() >= hydrophilicity_cutoff)
         {
+            if (atoms[i]->Z == 1)
+            {
+                if (atoms[i]->get_heavy_atom()->get_family() == CHALCOGEN && atoms[i]->get_heavy_atom()->get_electronegativity() < 2.8) continue;
+            }
             result++;
             // if (get_charge() < 0.5) cout << name << ":" << atoms[i]->name << " is an hbond donor." << endl;
         }
@@ -1562,6 +1566,7 @@ int Molecule::has_hbond_acceptors()
     {
         if (atoms[i]->is_backbone) continue;
         if (atoms[i]->get_family() == TETREL) continue;
+        if (atoms[i]->get_family() == CHALCOGEN && atoms[i]->get_electronegativity() < 2.8) continue;
         if (atoms[i]->get_family() == HALOGEN && atoms[i]->is_bonded_to(TETREL)) continue;
         if (atoms[i]->get_bonded_atoms_count() > 3) continue;
         if (atoms[i]->is_polar() <= -hydrophilicity_cutoff) result++;
