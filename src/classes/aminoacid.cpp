@@ -2126,8 +2126,8 @@ void AminoAcid::set_conditional_basicity(Molecule** nearby_mols)
                 if (fabs(atoms[j]->get_charge()) > 0.2) continue;
 
                 Atom* a = nearby_mols[i]->get_nearest_atom(atoms[j]->loc);
-                if (a->Z == 1) a = a->get_bond_by_idx(0)->atom2;
                 if (!a) continue;
+                if (a->Z == 1) a = a->get_bond_by_idx(0)->atom2;
 
                 if (a->get_charge() <= -0.5 || a->is_conjugated_to_charge() <= -0.5)
                 {

@@ -5052,7 +5052,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             Point aloc = a->get_barycenter();
 
             Interaction benerg = 0;
-            if (!ares)
+            if (1) // !ares)
             {
                 l = 0;
                 for (j=0; mm[j]; j++)
@@ -5383,6 +5383,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             float best_theta = 0;
                             Pose prior_state;
                             prior_state.copy_state(a);
+                            benerg = cfmol_multibind(a, nearby);
                             for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
                             {
                                 prior_state.restore_state(a);
