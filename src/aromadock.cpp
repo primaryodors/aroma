@@ -3298,19 +3298,30 @@ _try_again:
                                 j++;
                             }
 
-                            if (g_bbr[l].pri_tgt->single_atom) llig->stay_close_mine = g_bbr[l].pri_tgt->single_atom;
-                            else if (g_bbr[l].pri_tgt->conjgrp) llig->stay_close_mine = g_bbr[l].pri_tgt->conjgrp->get_nearest_atom(g_bbr[l].pri_res->get_CA_location());
-                            llig->stay_close_mol = g_bbr[l].pri_res;
-                            if (g_bbr[l].pri_res->coordmtl) llig->stay_close_other = g_bbr[l].pri_res->coordmtl;
-                            else llig->stay_close_other = g_bbr[l].pri_res->get_reach_atom(g_bbr[l].pri_tgt->best_interaction());
-                            if (!llig->stay_close_other) llig->stay_close_other = g_bbr[l].pri_res->get_nearest_atom(g_bbr[l].pri_tgt->barycenter());
-                            if (llig->stay_close_other) llig->stay_close_optimal = InteratomicForce::optimal_distance(llig->stay_close_mine, llig->stay_close_other);
-                            llig->stay_close_tolerance = 0.5;
+                            if ((g_bbr[l].pri_res->has_hbond_acceptors() && g_bbr[l].pri_tgt->has_hb_donors())
+                                    || (g_bbr[l].pri_res->has_hbond_donors() && g_bbr[l].pri_tgt->has_hb_acceptors())
+                                    || (g_bbr[l].pri_res->coordmtl)
+                                    )
+                            {
+                                if (g_bbr[l].pri_tgt->single_atom) llig->stay_close_mine = g_bbr[l].pri_tgt->single_atom;
+                                else if (g_bbr[l].pri_tgt->conjgrp) llig->stay_close_mine = g_bbr[l].pri_tgt->conjgrp->get_nearest_atom(g_bbr[l].pri_res->get_CA_location());
+                                llig->stay_close_mol = g_bbr[l].pri_res;
+                                if (g_bbr[l].pri_res->coordmtl) llig->stay_close_other = g_bbr[l].pri_res->coordmtl;
+                                else llig->stay_close_other = g_bbr[l].pri_res->get_reach_atom(g_bbr[l].pri_tgt->best_interaction());
+                                if (!llig->stay_close_other) llig->stay_close_other = g_bbr[l].pri_res->get_nearest_atom(g_bbr[l].pri_tgt->barycenter());
+                                if (llig->stay_close_other) llig->stay_close_optimal = InteratomicForce::optimal_distance(llig->stay_close_mine, llig->stay_close_other);
+                                llig->stay_close_tolerance = 0.5;
 
-                            if (pose <= 1 && llig->stay_close_other) cout << "Staying " << llig->stay_close_mine->name << " near " 
-                                << g_bbr[l].pri_res->get_residue_no() << ":" << llig->stay_close_other->name << endl;
+                                if (pose <= 1 && llig->stay_close_other) cout << "Staying " << llig->stay_close_mine->name << " near " 
+                                    << g_bbr[l].pri_res->get_residue_no() << ":" << llig->stay_close_other->name << endl;
+                            }
 
-                            if (g_bbr[l].sec_res && g_bbr[l].sec_tgt)
+                            if (g_bbr[l].sec_res && g_bbr[l].sec_tgt
+                                && ((g_bbr[l].sec_res->has_hbond_acceptors() && g_bbr[l].sec_tgt->has_hb_donors())
+                                    || (g_bbr[l].sec_res->has_hbond_donors() && g_bbr[l].sec_tgt->has_hb_acceptors())
+                                    || (g_bbr[l].sec_res->coordmtl)
+                                    )
+                                )
                             {
                                 if (g_bbr[l].sec_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].sec_tgt->single_atom;
                                 else if (g_bbr[l].sec_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].sec_tgt->conjgrp->get_nearest_atom(g_bbr[l].sec_res->get_CA_location());
@@ -3322,6 +3333,16 @@ _try_again:
 
                                 if (pose <= 1 && llig->stay_close2_other) cout << "Staying " << llig->stay_close2_mine->name << " near " 
                                     << g_bbr[l].sec_res->get_residue_no() << ":" << llig->stay_close2_other->name << endl;
+                            }
+
+                            if (llig->stay_close2_mine && !llig->stay_close_mine)
+                            {
+                                llig->stay_close_mine = llig->stay_close2_mine;
+                                llig->stay_close_mol = llig->stay_close2_mol;
+                                llig->stay_close_optimal = llig->stay_close2_optimal;
+                                llig->stay_close_other = llig->stay_close2_other;
+                                llig->stay_close2_mine = nullptr;
+                                llig->stay_close2_other = nullptr;
                             }
 
                             // ligand->propagate_stays();
