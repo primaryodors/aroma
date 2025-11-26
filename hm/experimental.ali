@@ -347,6 +347,18 @@ structure:8uy0:8    :A:305  :A:Consensus olfactory receptor consOR2:Homo sapiens
 ------------------------------------------------------------------------------------------------NKEVKGALRRVLG*
 ---------------------------------------------------------------------------------------------------*
 
+>P1;8uy0b
+structure:8uy0b:8    :A:305  :A:Consensus olfactory receptor consOR2:Homo sapiens: 3.20: 0.20
+------------------------------------------------------------------STDFILLGLFDHPRLELLLFVLILLIYLLALLGNGLIILLIH----------------------
+--------------------------------------------------------------------------------LDSRLHTPMYFFLSQLSLMDLCYTSTTVPKMLVNLL--------------
+----------------------------------------------------------------SGDKTISFAGCGAQLFLYLTLGGTECLLLAVMAYDRYVAICH------------------------
+-------------------------------------------------------------------------------PLRYPVLMNPRVCLLLAAGSWLLGSLDSLIHTVLTL---------------
+------------------------------------------------------SLPFCGSREINHFFCEVPALLKLACADTSLNETVMFVCCVLMLLIPLSLILVSYGRILLAVLRM------------
+-----------------------------------------------------------------------------EGRRKAFSTCSSHLTVVGLFYGAAIYMYL------------------------
+---------------------------------------------------------------------------------EQDKVVSLFYTILTPMLNPLIYSLR------------------------
+------------------------------------------------------------------------------------------------NKEVKGALRRVLG*
+---------------------------------------------------------------------------------------------------*
+
 >P1;8uyq
 structure:8uyq:5    :A:310  :A:Consensus olfactory receptor consOR4:Homo sapiens: 3.50: 0.20
 ---------------------------------------------------------------HSNVTEFILLGLTQSPELQLFLFVVFLLFYVATVLGNLLIVVTVT----------------------

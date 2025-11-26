@@ -627,7 +627,7 @@ ROTATE @axis &angle %start_resno %end_resno
 ROTATE @axis &angle %center_resno %start_resno %end_resno
 ```
 
-Rotates the entire protein about its center, using the first parameter as a _relative_ axis of rotation,
+If two arguments are given, rotates the entire protein about its center, using the first parameter as a _relative_ axis of rotation,
 and the second parameter as the rotation angle in degrees.
 In other words, the first param is added to the protein center to get the true axis of rotation.
 

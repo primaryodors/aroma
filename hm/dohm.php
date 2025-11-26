@@ -72,6 +72,7 @@ $consOR52 = "'8hti'";
 $OR51E2 = "'8f76'";
 $consOR1 = "'8uxy'";
 $consOR2 = "'8uy0'";
+$consOR2b = "'8uy0b'";
 $consOR4 = "'8uyq'";
 $CLASSII = "$consOR1, $consOR2, $consOR4";
 $TAAR1 = "'8jln', '8jlo', '8jlp', '8jlq', '8jlr', '8jso'";
@@ -95,6 +96,7 @@ $restraints_misc = [];
 $fam = family_from_protid($rcpid);
 $sub = subfamily_from_protid($rcpid);
 $famsub = "$fam$sub";
+
 switch ($fam)
 {
     case 'TAAR':
@@ -126,7 +128,7 @@ switch ($fam)
         $knowns = "$CHRM1, $CLASSII";
         $restraints_misc[] = "3.33|5.42|7.3";
     }
-    else $knowns = "$consOR2";
+    else $knowns = "$CLASSII";
     break;
 
     case 'OR3':
@@ -224,6 +226,8 @@ if ($knowns)
         else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
         else if ($aa4552 == 'D') $atom4551 = "OD1:$rno4552:A";
         else if ($aa4552 == 'E') $atom4551 = "OE1:$rno4552:A";
+
+        if ($aa4551 == 'E' || $aa4552 == 'E') $knowns = "$consOR2b";
     }
 
     if ($atom655 && $atom4551)

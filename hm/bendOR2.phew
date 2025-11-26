@@ -1,0 +1,22 @@
+
+LOAD "pdbs/OR2/consOR2.pdb"
+ATOMTO 179 CD 257
+
+DELETE 260 267
+
+LET @axis = 248:C
+LET @origin = 248
+LET @axis = @axis - @origin
+ROTATE @axis 9 248 248 258
+
+LET @axis = 252:C
+LET @origin = 252
+LET @axis = @axis - @origin
+ROTATE @axis 10 252 252 258
+
+WIND 248 258 -3
+ROTBOND 258 CA CB 25
+ROTBOND 258 CZ OH 180
+
+SAVE "pdbs/OR2/consOR2_bent.pdb"
+SAVE "hm/8uy0b.pdb"

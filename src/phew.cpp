@@ -459,6 +459,7 @@ Point interpret_single_point(const char* param, Point old_value = Point(0,0,0))
     int n;
     Point pt = old_value;
     AminoAcid* aa;
+    const char* sep = nullptr;
 
     if (param[0] == '@')
     {
@@ -480,7 +481,12 @@ Point interpret_single_point(const char* param, Point old_value = Point(0,0,0))
         aa = working->get_residue(atoi(param));
         if (aa)
         {
-            pt = aa->get_CA_location();
+            if (sep = strchr(param, ':'))
+            {
+                sep++;
+                pt = aa->get_atom_location(sep);
+            }
+            else pt = aa->get_CA_location();
             return pt;
         }
     }
