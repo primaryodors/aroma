@@ -22728,7 +22728,11 @@
     "8296b7d6e979e52ebb7b9fdcc8fb9ee9":
     {
         "full_name": "rosyfolia",
-        "smiles": "OCC1(C)CC1C(CC=C(C)C)C",
+        "smiles": "OC[C@@]1(C)C[C@@H]1[C@@H](CC=C(C)C)C",
+        "refs":
+        [
+            "https://doi.org/10.1002/anie.202005719"
+        ],
         "activity":
         {
             "https://patents.google.com/patent/WO2024126820A1/en":
