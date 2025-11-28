@@ -212,6 +212,26 @@ function sigmoid($x)
     return 1.0 / (1+$emx);
 }
 
+// https://www.masterorganicchemistry.com/2023/08/02/equilibrium-constant-delta-g-calculations-organic-chemistry/
+define("R", 0.00831446261815324);
+define("body_temperature", 310.2);
+
+function DeltaG($K)
+{
+    return (-R * body_temperature)*log($K);
+}
+
+function K($DeltaG)
+{
+    return exp($DeltaG / (-R * body_temperature));
+}
+
+function equilibrium($kJmol1, $kJmol2)
+{
+    $DeltaG = $kJmol2 - $kJmol1;
+    $K = K($DeltaG);
+    return $K/($K+1);
+}
 
 
 

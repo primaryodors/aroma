@@ -1620,6 +1620,7 @@ void read_config_file(FILE* pf)
 
     while (!feof(pf))
     {
+        buffer[0] = 0;
         char* wgas = fgets(buffer, 1015, pf);
         char* hash = strchr(buffer, '#');
         if (hash) *hash = 0;

@@ -2,6 +2,7 @@
 chdir(__DIR__);
 require_once("../data/protutils.php");
 require_once("../data/odorutils.php");
+require_once("../data/statistics.php");
 require_once("dlmenu.php");
 
 $extra_js = ['js/tabs.js'];
@@ -208,6 +209,7 @@ foreach ($prots as $protid => $p)
             ];
         }
 
+        $rows[$rowid]["benerg_raw_$mode"] = $benerg;
         $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
@@ -260,6 +262,10 @@ foreach ($prots as $protid => $p)
     foreach ($rows as $k => $r)
     {
         list($protid, $odor) = explode("~", $k);
+        $benerg_active = 0;
+        $benerg_inactive = 0;
+        $benerg_raw_active = 0;
+        $benerg_raw_inactive = 0;
         extract($r);
         echo "<tr>\n";
 
@@ -305,18 +311,9 @@ foreach ($prots as $protid => $p)
 
         echo @"<td>$agonist</td>\n";
 
-        /*
-            let o = occlusion, H = active enthalpy
-
-            if H >= 0:
-                    o >= 1 - (15 - H)/100
-            if -15 < H < 0:
-                    o >= 0.85
-            if H <= -15:
-                    o >= 0.85 - (H + 15)/100
-        */
-
-        $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;
+        // $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;
+        $prediction = max(0, -$benerg_raw_active * max(0, $occl_active - 0.73)) * 4.0
+            * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0);
         $prediction = round($prediction, 2);
 
         $color = "";
@@ -385,9 +382,9 @@ foreach ($prots as $protid => $p)
 }
 
 ?></table>
-
 <?php echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%</p>"; ?>
 
+<?php if (0) { ?>
 <table>
     <tr>
         <th>Active enthalpy vs. occlusion, agonists</th>
@@ -440,6 +437,6 @@ foreach ($prots as $protid => $p)
     </tr>
 </table>
 
-<?php
+<?php }
 
 output_dlmenu_div();
