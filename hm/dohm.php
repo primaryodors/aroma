@@ -223,11 +223,13 @@ if ($knowns)
         $aa4551 = substr($p['sequence'], $rno4551-1, 1);
         $aa4552 = substr($p['sequence'], $rno4552-1, 1);
         if ($aa4551 == 'D') $atom4551 = "OD1:$rno4551:A";
+        else if ($aa4551 == 'N') $atom4551 = "OD1:$rno4551:A";
         else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
+        else if ($aa4551 == 'Q') $atom4551 = "OE1:$rno4551:A";
         else if ($aa4552 == 'D') $atom4551 = "OD1:$rno4552:A";
         else if ($aa4552 == 'E') $atom4551 = "OE1:$rno4552:A";
 
-        if ($aa4551 == 'E' || $aa4552 == 'E') $knowns = "$consOR2b";
+        if ($aa4551 == 'E' || $aa4551 == 'Q' || $aa4552 == 'E') $knowns = "$consOR2b";
     }
 
     if ($atom655 && $atom4551)
