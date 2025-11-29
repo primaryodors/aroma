@@ -230,7 +230,9 @@ function equilibrium($kJmol1, $kJmol2)
 {
     $DeltaG = $kJmol2 - $kJmol1;
     $K = K($DeltaG);
-    return $K/($K+1);
+    if (is_infinite($K)) return 1;
+    $result = $K/($K+1);
+    return $result;
 }
 
 
