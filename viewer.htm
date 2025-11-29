@@ -66,6 +66,10 @@ var mtl_licorice = 0.0;
 var mtl_cartoon = 0.1;
 var mtl_metal = 0.5;
 
+var complex_spcfill = false;
+var complex_spcfill_opacity_mult = 0.2;
+var complex_spcfill_skeleton = "ball+stick";
+
 var molid = getParameterByName('mol') ? getParameterByName('mol') : 'rand';
 var protid = getParameterByName('prot') ? getParameterByName('prot') : false;
 
@@ -461,7 +465,16 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 									colorScheme: PODefScheme,
 									metalness: mtl_metal,
 								};
-								comp2.addRepresentation( "spacefill", rp);
+								if (complex_spcfill)
+								{
+									var rp1 = structuredClone(rp);
+									rp1.opacity *= complex_spcfill_opacity_mult;
+									rp.opacity = 1;
+									comp2.addRepresentation(complex_spcfill_skeleton, rp);
+									comp2.addRepresentation("spacefill", rp1);
+								}
+								else
+									comp2.addRepresentation("spacefill", rp);
 								gmodel.push(comp2);
 								gmvisible.push(true);
 								mdlligands.push(comp2);
@@ -3172,7 +3185,16 @@ function spaceFill(resno = -1)
 				p.opacity = 1;
 				if (!hydrogens) p.sele = "* and not hydrogen";
 				else p.sele = "";
-				gmodel[i].addRepresentation("spacefill", p);
+				if (complex_spcfill)
+				{
+					var p1 = structuredClone(p);
+					p1.opacity *= complex_spcfill_opacity_mult;
+					p.opacity = 1;
+					gmodel[i].addRepresentation(complex_spcfill_skeleton, p);
+					gmodel[i].addRepresentation("spacefill", p1);
+				}
+				else
+					gmodel[i].addRepresentation("spacefill", p);
 			}
 		}
 		if (curr_ligand)
@@ -3182,7 +3204,16 @@ function spaceFill(resno = -1)
 			p.opacity = 1;
 			if (!hydrogens) p.sele = "* and not hydrogen";
 			else p.sele = "";
-			curr_ligand.addRepresentation("spacefill", p);
+			if (complex_spcfill)
+			{
+				var p1 = structuredClone(p);
+				p1.opacity *= complex_spcfill_opacity_mult;
+				p.opacity = 1;
+				curr_ligand.addRepresentation(complex_spcfill_skeleton, p);
+				curr_ligand.addRepresentation("spacefill", p1);
+			}
+			else
+				curr_ligand.addRepresentation("spacefill", p);
 		}
 		spcfill = true;
 		hydrogens=true;
@@ -4076,7 +4107,16 @@ function apply_pdb(poresult)
 				colorScheme: PODefScheme,
 				metalness: mtl_metal,
 			};
-			comp4.addRepresentation( "spacefill", rp);
+			if (complex_spcfill)
+			{
+				var rp1 = structuredClone(rp);
+				rp1.opacity *= complex_spcfill_opacity_mult;
+				rp.opacity = 1;
+				comp4.addRepresentation(complex_spcfill_skeleton, rp);
+				comp4.addRepresentation("spacefill", rp1);
+			}
+			else
+				comp4.addRepresentation("spacefill", rp);
 			gmodel.push(comp4);
 			gmvisible.push(true);
 			mdlligands.push(comp4);
@@ -4483,7 +4523,16 @@ function showNode(n)
 					var lparam = Object.assign({}, mrparams[i]);
 					lparam.sele = resno.toString();
 					lparam.opacity = 1.0;
-					model[i].addRepresentation("spacefill", lparam);
+					if (complex_spcfill)
+					{
+						var lparam1 = structuredClone(lparam);
+						lparam1.opacity *= complex_spcfill_opacity_mult;
+						lparam.opacity = 1;
+						model[i].addRepresentation(complex_spcfill_skeleton, lparam)
+						model[i].addRepresentation("spacefill", lparam1);
+					}
+					else
+						model[i].addRepresentation("spacefill", lparam);
 				});
 			}
         }
