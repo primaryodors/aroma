@@ -1235,6 +1235,21 @@
         },
         "oid": "04af15f8c9fa593e59b787fca7a558be"
     },
+    "04bd20ce3c439a0f2351327c41602a57":
+    {
+        "full_name": "ortho-floralozone",
+        "smiles": "O=CC(Cc1ccccc1CC)(C)C",
+        "notes":
+        {
+            "text": "Occurs as an impurity at 15-35% in the synthesis of floralozone, and is not removed or isolated.",
+            "refs":
+            [
+                "https://www.scentree.co/en/Floralozone%C2%AE.html",
+                "https://perfumerflavorist.texterity.com/perfumerflavorist/200905/MobilePagedReplica.action?pm=2&folio=18#pg20"
+            ]
+        },
+        "oid": "04bd20ce3c439a0f2351327c41602a57"
+    },
     "04fe7798b98b328eded44988c7192fb0":
     {
         "full_name": "ortho-xylene",
@@ -37279,6 +37294,20 @@
             }
         },
         "oid": "d9a2e452040486d8a9d3242d89f663da"
+    },
+    "d9f0ea59f269eab0020b01028f4f5d98":
+    {
+        "full_name": "meta-floralozone",
+        "smiles": "O=CC(Cc1cccc(c1)CC)(C)C",
+        "notes":
+        {
+            "text": "Occurs as an impurity at 5% in the synthesis of floralozone, and is not removed or isolated.",
+            "refs":
+            [
+                "https://perfumerflavorist.texterity.com/perfumerflavorist/200905/MobilePagedReplica.action?pm=2&folio=18#pg20"
+            ]
+        },
+        "oid": "d9f0ea59f269eab0020b01028f4f5d98"
     },
     "da22ccba6e93bcb8a592776a566e7a34":
     {
