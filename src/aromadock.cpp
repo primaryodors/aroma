@@ -1258,6 +1258,14 @@ int interpret_config_line(char** words)
         isomers.push_back(words[1]);
         return 1;
     }
+    else if (!strcmp(words[0], "FORM"))
+    {
+        // Even though no constraint requires a form to be an isomer,
+        // e.g. hydrolyzed forms of lactones are allowed, in the code we
+        // treat them identically to isomers since there's no difference in processing.
+        isomers.push_back(words[1]);
+        return 1;
+    }
     else if (!strcmp(words[0], "SMILES"))
     {
         strcpy(smiles, words[1]);

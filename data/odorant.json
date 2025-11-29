@@ -3088,6 +3088,11 @@
             "(S)-(-)": "CC[C@H]1CCC(=O)O1",
             "(R)-(+)": "CC[C@@H]1CCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CC[C@H](O)CCC(=O)[O-]",
+            "open (R)-(+)": "CC[C@@H](O)CCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -9235,6 +9240,10 @@
     {
         "full_name": "cis-whisky lactone",
         "smiles": "O1C(=O)C[C@@H](C)[C@H](1)CCCC",
+        "forms":
+        {
+            "open": "[O-]C(=O)C[C@@H](C)[C@H](O)CCCC"
+        },
         "aroma":
         {
             "https://doi.org/10.1016/j.foodchem.2021.131680":
@@ -11024,6 +11033,11 @@
             "(S)-(-)": "CCCCCCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCCCCCC[C@@H]1CCCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCCCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCCCCCC[C@@H](O)CCCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -11491,6 +11505,11 @@
             "(S)-(-)": "CCCCC[C@H]1CC=CC(=O)O1",
             "(R)-(+)": "CCCCC[C@@H]1CC=CC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCC[C@H](O)CC=CC(=O)[O-]",
+            "open (R)-(+)": "CCCCC[C@@H](O)CC=CC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -11524,6 +11543,11 @@
         {
             "(S)-(-)": "CCC[C@H]1CCC(=O)O1",
             "(R)-(+)": "CCC[C@@H]1CCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (S)-(-)": "CCC[C@H](O)CCC(=O)[O-]",
+            "open (R)-(+)": "CCC[C@@H](O)CCC(=O)[O-]"
         },
         "smiles": "CCCC1CCC(=O)O1",
         "activity":
@@ -13516,6 +13540,11 @@
         {
             "(S)-(-)": "CCCCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCCCC[C@@H]1CCCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCCCC[C@@H](O)CCCC(=O)[O-]"
         },
         "aroma":
         {
@@ -15867,6 +15896,11 @@
             "(S)-(-)": "CCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCC[C@@H]1CCCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCC[C@@H](O)CCCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -16280,6 +16314,10 @@
     {
         "full_name": "wine lactone",
         "smiles": "O=C1O[C@H]2/C=C(\\CC[C@H]2[C@@H]1C)C",
+        "forms":
+        {
+            "open": "O[C@H]2/C=C(\\CC[C@H]2[C@H](C)C(=O)[O-])C"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -19902,6 +19940,11 @@
             "(S)-(-)": "CCCCCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCCCCC[C@@H]1CCCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCCCCC[C@@H](O)CCCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -21059,6 +21102,11 @@
             "(R)-(+)": "CCCC[C@@H]1CCC(=O)O1",
             "(S)-(-)": "CCCC[C@H]1CCC(=O)O1"
         },
+        "forms":
+        {
+            "open (R)-(+)": "CCCC[C@@H](O)CCC(=O)[O-]",
+            "open (S)-(-)": "CCCC[C@H](O)CCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -21228,6 +21276,11 @@
         {
             "(S)-(-)": "CCCCCCCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCCCCCCC[C@@H]1CCCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCCCCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCCCCCCC[C@@H](O)CCCC(=O)[O-]"
         },
         "aroma":
         {
@@ -22800,6 +22853,11 @@
             "(S)-(-)": "C[C@H]1CCC(=O)O1",
             "(R)-(+)": "C[C@@H]1CCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "C[C@H](O)CCC(=O)[O-]",
+            "open (R)-(+)": "C[C@@H](O)CCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -23537,6 +23595,13 @@
             "(4aR,8aS)": "C1CC[C@H]2[C@H](C1)CCC(=O)O2",
             "(4aR,8aR)": "C1CC[C@@H]2[C@H](C1)CCC(=O)O2",
             "(4aS,8aS)": "C1CC[C@H]2[C@@H](C1)CCC(=O)O2"
+        },
+        "forms":
+        {
+            "open (4aS,8aR)": "C1CC[C@@H](O)[C@@H](C1)CCC(=O)[O-]",
+            "open (4aR,8aS)": "C1CC[C@H](O)[C@H](C1)CCC(=O)[O-]",
+            "open (4aR,8aR)": "C1CC[C@@H](O)[C@H](C1)CCC(=O)[O-]",
+            "open (4aS,8aS)": "C1CC[C@H](O)[C@@H](C1)CCC(=O)[O-]"
         },
         "aroma":
         {
@@ -26037,6 +26102,11 @@
             "(R)-(+)": "CCCCCCCC[C@@H]1CCC(=O)O1",
             "(S)-(-)": "CCCCCCCC[C@H]1CCC(=O)O1"
         },
+        "forms":
+        {
+            "open (R)-(+)": "CCCCCCCC[C@@H](O)CCC(=O)[O-]",
+            "open (S)-(-)": "CCCCCCCC[C@H](O)CCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -28262,6 +28332,11 @@
             "(R)-(+)": "CCCCC[C@@H]1CCC(=O)O1",
             "(S)-(-)": "CCCCC[C@H]1CCC(=O)O1"
         },
+        "forms":
+        {
+            "open (R)-(+)": "CCCCC[C@@H](O)CCC(=O)[O-]",
+            "open (S)-(-)": "CCCCC[C@H](O)CCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -28836,6 +28911,11 @@
         {
             "(R)-(+)": "CCC[C@@H]1CCCC(=O)O1",
             "(S)-(-)": "CCC[C@H]1CCCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (R)-(+)": "CCC[C@@H](O)CCCC(=O)[O-]",
+            "open (S)-(-)": "CCC[C@H](O)CCCC(=O)[O-]"
         },
         "aroma":
         {
@@ -30101,6 +30181,11 @@
             "(S)-(-)": "CCCCC[C@H]1CCCC(=O)O1",
             "(R)-(+)": "CCCCC[C@@H]1CCCC(=O)O1"
         },
+        "forms":
+        {
+            "open (S)-(-)": "CCCCC[C@H](O)CCCC(=O)[O-]",
+            "open (R)-(+)": "CCCCC[C@@H](O)CCCC(=O)[O-]"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -30477,6 +30562,11 @@
         {
             "(R)-(+)": "CCCCCC[C@@H]1CCC(=O)O1",
             "(S)-(-)": "CCCCCC[C@H]1CCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (R)-(+)": "CCCCCC[C@@H](O)CCC(=O)[O-]",
+            "open (S)-(-)": "CCCCCC[C@H](O)CCC(=O)[O-]"
         },
         "aroma":
         {
@@ -34275,6 +34365,11 @@
         {
             "(R)-(+)": "CCCCCCC[C@@H]1CCC(=O)O1",
             "(S)-(-)": "CCCCCCC[C@H]1CCC(=O)O1"
+        },
+        "forms":
+        {
+            "open (R)-(+)": "CCCCCCC[C@@H](O)CCC(=O)[O-]",
+            "open (S)-(-)": "CCCCCCC[C@H](O)CCC(=O)[O-]"
         },
         "aroma":
         {

@@ -25,26 +25,29 @@ $fullname = $odor['full_name'];
 ensure_sdf_exists($fullname);
 $sdfname = str_replace(' ','_',"sdf/$fullname.sdf");
 
-if (isset($odor["isomers"]))
+$forms = [];
+if (@$odor['isomers']) $forms = array_merge($forms, $odor['isomers']);
+if (@$odor['forms']) $forms = array_merge($forms, $odor['forms']);
+if (count($forms))
 {
-    if (@$_REQUEST['iso'])
+    if (@$_REQUEST['iso'] || @$_REQUEST['form'])
     {
-        $iso = $_REQUEST['iso'];
-        if (isset($odor["preiso"]))
+        $form = @$_REQUEST['iso'] ?: @$_REQUEST['form'];
+        if (isset($odor["preiso"]) || isset($odor["preform"]))
         {
-            $l = strlen($odor["preiso"]);
-            $isoname = substr($fullname, 0, $l).$iso."-".substr($fullname, $l);
-            $sdfname = str_replace(' ','_',"sdf/$isoname.sdf");
+            $l = strlen(@$odor["preiso"] ?: @$odor["preform"]);
+            $formname = substr($fullname, 0, $l).$form."-".substr($fullname, $l);
+            $sdfname = str_replace(' ','_',"sdf/$formname.sdf");
         }
-        else $sdfname = str_replace(' ','_',"sdf/$iso-$fullname.sdf");
+        else $sdfname = str_replace(' ','_',"sdf/$form-$fullname.sdf");
     }
-    else $sdfname = str_replace(' ','_',"sdf/".(array_keys($odor["isomers"])[0])."-$fullname.sdf");
+    else if (isset($odor['isomers'])) $sdfname = str_replace(' ','_',"sdf/".(array_keys($odor["isomers"])[0])."-$fullname.sdf");
 }
 if (file_exists($sdfname))
 {
     $sdfdat = file_get_contents($sdfname);
 }
-else die("File not found.\n");
+else die("File not found $sdfname.\n");
 
 $sdfdat = explode("\n", $sdfdat);
 $sdfdat[0] = $fullname;

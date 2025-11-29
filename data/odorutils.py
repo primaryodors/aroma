@@ -96,6 +96,20 @@ def check_isomers(ligname, randomize=True):
             result.append(iso+"-"+odor["full_name"])
     return result
 
+def check_forms(ligname, randomize=True):
+    odor = find_odorant(ligname)
+    if not odor: raise Exception("Odorant not found "+ligname)
+    if not "forms" in odor: return False
+
+    result = []
+    for form in odor["forms"].keys():
+        if "preform" in odor.keys():
+            l = len(odor['preform'])
+            result.append((odor["full_name"][0:l] + form + "-" + odor["full_name"][l:]).replace(' ', '_'))
+        else:
+            result.append(form+"-"+odor["full_name"])
+    return result
+
 def ensure_sdf_exists(odorant):
     o = find_odorant(odorant)
     if not "sdfname" in o:
@@ -103,6 +117,8 @@ def ensure_sdf_exists(odorant):
         smiles_to_sdf(o['smiles'], output_file)
 
     isomers = check_isomers(o['full_name'])
+    forms = check_forms(o['full_name'])
+    print(forms)
     if isomers:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         os.chdir("..")
@@ -110,11 +126,33 @@ def ensure_sdf_exists(odorant):
             for iso in o["isomers"].keys():
                 if "preiso" in o.keys():
                     l = len(o['preiso'])
-                    fname = "sdf/" + (o["full_name"][0:l] + iso + "-" + o["full_name"][l:]).replace(' ', '_') + ".sdf"
+                    fname = ("sdf/" + (o["full_name"][0:l] + iso + "-" + o["full_name"][l:])).replace(' ', '_') + ".sdf"
                 else:
-                    fname = "sdf/" + iso + "-"+o["full_name"].replace(' ', '_') + ".sdf"
+                    fname = ("sdf/" + iso + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
                     pettias = o["isomers"][iso].split("|")
+                    smiles = pettias[0]
+                    smiles_to_sdf(smiles, fname)
+
+                    if 1 in pettias:
+                        sub4 = pettias[1][0:4]
+                        rest = pettias[1][4:]
+                        if sub4 == "rflp":
+                            cmd = ["bin/ringflip"]
+                            for larg in rest.strip().split(" "):
+                                cmd.append(larg)
+                            print(" ".join(cmd), "\n")
+                            subprocess.run(cmd)
+    if forms:
+        if len(forms):
+            for form in o["forms"].keys():
+                if "preform" in o.keys():
+                    l = len(o['preform'])
+                    fname = ("sdf/" + (o["full_name"][0:l] + form + "-" + o["full_name"][l:])).replace(' ', '_') + ".sdf"
+                else:
+                    fname = ("sdf/" + form + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
+                if not os.path.exists(fname):
+                    pettias = o["forms"][form].split("|")
                     smiles = pettias[0]
                     smiles_to_sdf(smiles, fname)
 

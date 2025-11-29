@@ -130,13 +130,22 @@ function load_viewer(obj)
                 var filediv = $("#filediv", embdd.contentDocument)[0];
                 $("#posey", embdd.contentDocument).css("position", "absolute").css("left", "-262144px");
 
-                <?php if (@$odor['isomers'])
+                <?php
+                $forms = [];
+                if (@$odor['isomers']) $forms = array_merge($forms, $odor['isomers']);
+                if (@$odor['forms']) $forms = array_merge($forms, $odor['forms']);
+
+                if (count($forms))
                 {
                     echo "filediv.innerHTML = \"".@$odor['full_name'];
-                    foreach (array_keys($odor['isomers']) as $iso)
+                    if (!@$odor['isomers'])
                     {
-                        $isou = urlencode($iso);
-                        echo " &#xb7; <small><a href=\\\"#\\\" onclick=\\\"load_remote_sdf('sdf.php?mol={$odor['oid']}&iso=$isou');\\\">$iso</a></small>";
+                        echo " &#xb7; <small><a href=\\\"#\\\" onclick=\\\"load_remote_sdf('sdf.php?mol={$odor['oid']}');\\\">(normal)</a></small>";
+                    }
+                    foreach (array_keys($forms) as $form)
+                    {
+                        $formu = urlencode($form);
+                        echo " &#xb7; <small><a href=\\\"#\\\" onclick=\\\"load_remote_sdf('sdf.php?mol={$odor['oid']}&form=$formu');\\\">$form</a></small>";
                     }
                     echo "\";";
                 }

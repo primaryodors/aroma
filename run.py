@@ -97,6 +97,7 @@ for rcpid in data.protutils.prots.keys():
 
         lignu = o["full_name"].replace(' ', '_')
         isomers = data.odorutils.check_isomers(o["full_name"])
+        forms = data.odorutils.check_forms(o["full_name"])
         data.odorutils.ensure_sdf_exists(o["full_name"])
 
         pocket = data.dyncenter.get_pocket(rcpid, o["full_name"])
@@ -137,6 +138,9 @@ for rcpid in data.protutils.prots.keys():
                     if isomers and len(isomers):
                         for iso in isomers:
                             ln += "\nISO sdf/" + iso.replace(' ', '_') + ".sdf"
+                    if forms and len(forms):
+                        for form in forms:
+                            ln += "\nFORM sdf/" + form.replace(' ', '_') + ".sdf"
                 elif ln[0:4] == "CEN ":
                     if pocket:
                         if isinstance(pocket["pocket"], str):
