@@ -165,10 +165,9 @@ function svg_from_smiles(smiles, w, h)
     }
     return result;
 }
-    </script><?php
-
+</script>
+<?php
     echo "<h1>$protid ~ $odor</h1>";
-
     $bsr4sim = array_values(similar_receptors($protid))[0];
 
     $dockfname = "../output/$fam/$protid/$protid~$odor.$mode.dock";
@@ -371,7 +370,7 @@ function svg_from_smiles(smiles, w, h)
     <?php
 
     echo "</div>";
-    echo "<div style=\"display: block; width: 50%; height: 100vh;\">";
+    echo "<div id=\"wrapport\" style=\"background-color: #000; display: block; width: 50%; height: 100vh;\">";
     $c = str_replace("<div id=\"viewport\" style=\"width:1800px;", "<div id=\"viewport\" style=\"width:60%;", $c);
     echo $c;
     echo "</div>";
