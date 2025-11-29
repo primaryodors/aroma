@@ -218,6 +218,8 @@ foreach ($prots as $protid => $p)
         $pair = best_empirical_pair($protid, $odor, true);
         if ($pair)
         {
+            if (isset($pair["adjusted_curve_top"])) $rows[$rowid]["top"] = round($pair["adjusted_curve_top"], 3);
+            if (isset($pair["ec50"])) $rows[$rowid]["ec50"] = $pair["ec50"];
             if (isset($pair["adjusted_curve_top"]))
             {
                 $act = floatval($pair["adjusted_curve_top"]);
@@ -266,6 +268,7 @@ foreach ($prots as $protid => $p)
         $benerg_inactive = 0;
         $benerg_raw_active = 0;
         $benerg_raw_inactive = 0;
+        $top = $ec50 = false;
         extract($r);
         echo "<tr>\n";
 
@@ -309,10 +312,12 @@ foreach ($prots as $protid => $p)
         echo @"<td>" . (round($occl_active, 3) ?: "-") . " / " . (round($occl_inactive, 3) ?: "-") . "</td>\n";
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
 
-        echo @"<td>$agonist</td>\n";
+        if (!$top) $top = "-";
+        if (!$ec50) $ec50 = "-";
+        echo @"<td>$agonist $top/$ec50</td>\n";
 
         // $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;
-        $prediction = max(0, -$benerg_raw_active * max(0, $occl_active - 0.73)) * 4.0
+        $prediction = max(0, -$benerg_raw_active * equilibrium(-$benerg_raw_active, 0) * sqrt($occl_active)) * 1.0
             * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0);
         $prediction = round($prediction, 2);
 
