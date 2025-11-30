@@ -118,7 +118,6 @@ def ensure_sdf_exists(odorant):
 
     isomers = check_isomers(o['full_name'])
     forms = check_forms(o['full_name'])
-    print(forms)
     if isomers:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         os.chdir("..")
