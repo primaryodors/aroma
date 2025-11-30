@@ -221,6 +221,17 @@ Atom* Conjugation::get_nearest_atom(Conjugation* conj)
     return a;
 }
 
+int Conjugation::count_atoms(bool oh) const
+{
+    if (!atoms) return 0;
+    int i, j=0;
+    for (i=0; atoms[i]; i++)
+    {
+        if (!oh || atoms[i]->Z > 1) j++;
+    }
+    return j;
+}
+
 std::string Conjugation::to_std_string()
 {
     std::string result;

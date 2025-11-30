@@ -20,7 +20,7 @@
 #define temperature 310.2
 #define R 0.00831446261815324
 #define pH 6.0
-#define hydrophilicity_cutoff 0.25
+#define hydrophilicity_cutoff 0.28
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8

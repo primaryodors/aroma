@@ -22,7 +22,7 @@ class Conjugation
     Point get_barycenter();
     Atom* get_nearest_atom(Point pt);
     Atom* get_nearest_atom(Conjugation* conj);
-    int count_atoms() const { if (!atoms) return 0; int i; for (i=0; atoms[i]; i++); return i; }
+    int count_atoms(bool only_heavy = false) const;
     Atom* get_atom(int i) const { if (!atoms) return nullptr; return atoms[i]; }
     bool has_hb_acceptors();
     bool has_hb_donors();

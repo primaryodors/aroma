@@ -484,7 +484,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 {
     int i, j, k, l, m, n, ii;
     float best = 0;
-    bool best_ionic = false, best_neutral_polar = false, best_pi = false;
+    bool require_ionic = false, require_neutral_polar = false, require_pi = false;
     Point ligcen = ligand->get_barycenter();
     int ntarg, npr;
     bool override_target_compatibility = false;
@@ -553,11 +553,28 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
     cout << ntarg << " targets, " << i << " pocket residues." << endl;
     #endif
 
-    _new_attempt_no_tgt_comp:
     for (i=0; i<ntarg; i++)
     {
         float ichg = targets[i].charge();
         float ipol = targets[i].polarity();
+        if (ipol < hydrophilicity_cutoff) ipol = 0;
+        for (j=0; pocketres[j]; j++)
+        {
+            float jchg = pocketres[j]->get_charge();
+            float jpol = pocketres[j]->hydrophilicity();
+            bool jhis = pocketres[j]->is_histidine_like();
+            if (jpol < hydrophilicity_cutoff && !jhis) jpol = 0;
+
+            if (ichg && jchg && sgn(ichg) == -sgn(jchg)) require_ionic = true;
+            if (ipol && jpol) require_neutral_polar = true;
+        }
+    }
+
+    _new_attempt_no_tgt_comp:
+    for (i=0; i<ntarg; i++)
+    {
+        float ichg = targets[i].charge();
+        float ipol = targets[i].polarity() / targets[i].count_heavy_atoms();
         if (ipol < hydrophilicity_cutoff) ipol = 0;
         int ifam = targets[i].single_atom ? targets[i].single_atom->get_family() : -1;
         int iZ = targets[i].single_atom ? targets[i].single_atom->Z : -1;
@@ -628,7 +645,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 if (targets[k].contains(&targets[i])) continue;
                 if (targets[i].contains(&targets[k])) continue;
                 float kchg = targets[k].charge();
-                float kpol = targets[k].polarity();
+                float kpol = targets[k].polarity() / targets[k].count_heavy_atoms();
                 if (kpol < hydrophilicity_cutoff) kpol = 0;
                 int kfam = targets[k].single_atom ? targets[k].single_atom->get_family() : -1;
                 int kZ = targets[k].single_atom ? targets[k].single_atom->Z : -1;
@@ -676,7 +693,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             if (targets[k].contains(&targets[m])) continue;
 
                             mchg = targets[m].charge();
-                            mpol = targets[m].polarity();
+                            mpol = targets[m].polarity() / targets[m].count_heavy_atoms();
                             if (mpol < hydrophilicity_cutoff) mpol = 0;
                             mfam = targets[m].single_atom ? targets[m].single_atom->get_family() : -1;
                             mZ = targets[m].single_atom ? targets[m].single_atom->Z : -1;
@@ -828,17 +845,18 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                             if (has_neutral_polar) cout << "n";
                             if (has_pi) cout << "p";
                             cout << " ";
-                            if (best_ionic) cout << "I";
-                            if (best_neutral_polar) cout << "N";
-                            if (best_pi) cout << "P";
+                            if (require_ionic) cout << "I";
+                            if (require_neutral_polar) cout << "N";
+                            if (require_pi) cout << "P";
                             #endif
 
                             bbr.cached_score = score;
                             bbr.add_to_candidates();
                             if (score > best
-                                && (has_ionic || !best_ionic)
-                                && (has_neutral_polar || !best_neutral_polar)
-                                && (has_pi || !best_pi))
+                                && (has_ionic || !require_ionic)
+                                && (has_neutral_polar || !require_neutral_polar)
+                                && (has_pi || !require_pi)
+                               )
                             {
                                 // Assign by importance.
                                 int i1, i2, i3, j1, j2, j3;
@@ -922,16 +940,16 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 output->probability = 1;
                                 best = score;
 
-                                if (has_ionic) best_ionic = true;
-                                if (has_neutral_polar) best_neutral_polar = true;
-                                if (has_pi) best_pi = true;
+                                if (has_ionic) require_ionic = true;
+                                if (has_neutral_polar) require_neutral_polar = true;
+                                if (has_pi) require_pi = true;
 
                                 #if _dbg_bb_scoring
                                 cout << " *** ";
                                 cout << score;
                                 #endif
                             }
-                            
+
                             #if _dbg_bb_scoring
                             cout << endl;
                             #endif
@@ -1608,6 +1626,13 @@ bool LigandTarget::has_hb_donors()
     }
     else if (conjgrp) return conjgrp->has_hb_donors();
     return false;
+}
+
+int LigandTarget::count_heavy_atoms()
+{
+    if (single_atom) return 1;
+    else if (conjgrp) return conjgrp->count_atoms(true);
+    return 0;
 }
 
 float LigandTarget::importance(Molecule *mol)

@@ -19,6 +19,7 @@ class LigandTarget
     bool is_pi();
     bool has_hb_acceptors();
     bool has_hb_donors();
+    int count_heavy_atoms();
     float importance(Molecule* mol);
     bool contains(LigandTarget* lt);
     bool contains(Atom* a);
