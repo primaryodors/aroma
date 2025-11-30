@@ -89,6 +89,7 @@ $graphdat =
     3 => []
 ];
 $right = $wrong = 0;
+$topxy = $ec50xy = ["x" => [], "y" => []];
 foreach ($prots as $protid => $p)
 {
     if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
@@ -270,6 +271,7 @@ foreach ($prots as $protid => $p)
         $benerg_raw_inactive = 0;
         $top = $ec50 = false;
         extract($r);
+
         echo "<tr>\n";
 
         echo "<td><a href=\"receptor.php?r=$protid\">$protid</a>";
@@ -312,13 +314,26 @@ foreach ($prots as $protid => $p)
         echo @"<td>" . (round($occl_active, 3) ?: "-") . " / " . (round($occl_inactive, 3) ?: "-") . "</td>\n";
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
 
-        if (!$top) $top = "-";
-        if (!$ec50) $ec50 = "-";
-        echo @"<td>$agonist $top/$ec50</td>\n";
+        $dtop = $top ?: "-";
+        $dec50 = $ec50 ?: "-";
+        echo @"<td>$agonist $dtop/$dec50</td>\n";
 
+        if ($benerg_inactive > 0) $benerg_inactive = 0;
         // $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;
         $prediction = max(0, -$benerg_raw_active * equilibrium(-$benerg_raw_active, 0) * sqrt($occl_active)) * 1.0
             * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0);
+
+        if ($top)
+        {
+            $topxy['x'][] = floatval($top);
+            $topxy['y'][] = $prediction;
+        }
+        if ($ec50)
+        {
+            $ec50xy['x'][] = floatval($ec50);
+            $ec50xy['y'][] = $prediction;
+        }
+
         $prediction = round($prediction, 2);
 
         $color = "";
@@ -387,7 +402,16 @@ foreach ($prots as $protid => $p)
 }
 
 ?></table>
-<?php echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%</p>"; ?>
+<?php 
+if ($right + $wrong)
+{
+    echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%<br>";
+    echo "Correlations:";
+    if (count($topxy['x']) > 3) echo " Top = " . round(correlationCoefficient($topxy['x'], $topxy['y']), 4);
+    if (count($ec50xy['x']) > 3) echo " EC<sub>50</sub> = " . round(correlationCoefficient($ec50xy['x'], $ec50xy['y']), 4);
+    echo "</p>"; 
+}
+?>
 
 <?php if (0) { ?>
 <table>
