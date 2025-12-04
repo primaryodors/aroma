@@ -491,6 +491,11 @@ DELATOM %45.50 HG
 CONECT %3.25 SG %45.50 SG
 _not_disulfide:
 
+IF $6.55 != "Y" GOTO _not_456_hbond
+IF $45.51 = "D" OR $45.51 = "E" OR $45.51 = "N" OR $45.51 = "Q" OR $45.51 = "H" OR $45.51 = "Y" THEN BRIDGE %6.55 %45.51
+ELSE IF $45.52 = "D" THEN BRIDGE %6.55 %45.52
+_not_456_hbond:
+
 IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
 IF $5.39 != "M" GOTO _not_Cu_539
 MEASURE %5.39 "SD" %5.42 "SG" &sdist
@@ -526,8 +531,6 @@ if ($famsub == "OR5K")
     passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb 4 7");
     passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb -3 6");
 }
-
-exit;
 
 chdir(__DIR__);
 // Only delete temporary files if the HM was successful. Few things are more frustrating than finding an unsuccessful HM
