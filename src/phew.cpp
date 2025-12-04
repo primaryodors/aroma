@@ -1275,6 +1275,69 @@ int main(int argc, char** argv)
                 working->move_piece(1, 9999, newcen);
             }	// CENTER
 
+            else if (!strcmp(words[0], "CONECT"))
+            {
+                l = 1;
+                int resno1, resno2;
+                char *atno1, *atno2;
+                if (!words[l]) raise_error("Insufficient parameters given for CONECT.");
+                resno1 = interpret_single_int(words[l++]);
+                if (!words[l]) raise_error("Insufficient parameters given for CONECT.");
+                atno1 = interpret_single_string(words[l++]);
+                if (!words[l]) raise_error("Insufficient parameters given for CONECT.");
+                resno2 = interpret_single_int(words[l++]);
+                if (!words[l]) raise_error("Insufficient parameters given for CONECT.");
+                atno2 = interpret_single_string(words[l++]);
+
+                AminoAcid *aa1, *aa2;
+                aa1 = working->get_residue(resno1);
+                if (!aa1) raise_error((std::string)"Residue " + std::to_string(resno1) + (std::string)" not found in protein.");
+                aa2 = working->get_residue(resno2);
+                if (!aa2) raise_error((std::string)"Residue " + std::to_string(resno2) + (std::string)" not found in protein.");
+
+                Atom *a1, *a2;
+                a1 = aa1->get_atom(atno1);
+                if (!a1) raise_error((std::string)"Atom " + (std::string)atno1 + (std::string)" not found in residue " + std::to_string(resno1));
+                a2 = aa2->get_atom(atno2);
+                if (!a2) raise_error((std::string)"Atom " + (std::string)atno2 + (std::string)" not found in residue " + std::to_string(resno2));
+
+                if (a1->get_bond_card_sum() > a1->get_valence() - 1)
+                {
+                    Atom *H = a1->is_bonded_to("H");
+                    if (H)
+                    {
+                        Bond* b = a1->get_bond_by_idx(0);
+                        if (b)
+                        {
+                            float theta = find_angle_along_vector(H->loc, a2->loc, b->atom1->loc, b->get_axis());
+                            b->rotate(theta);
+                        }
+                        aa1->delete_atom(H);
+                    }
+                    else raise_error((std::string)"Cannot connect atom " + std::to_string(resno1) + (std::string)":" + (std::string)atno1
+                        + (std::string)": atom is bonded to full valence and has no hydrogen to remove.");
+                }
+
+                if (a2->get_bond_card_sum() > a2->get_valence() - 1)
+                {
+                    Atom *H = a2->is_bonded_to("H");
+                    if (H)
+                    {
+                        Bond* b = a2->get_bond_by_idx(0);
+                        if (b)
+                        {
+                            float theta = find_angle_along_vector(H->loc, a1->loc, b->atom1->loc, b->get_axis());
+                            b->rotate(theta);
+                        }
+                        aa2->delete_atom(H);
+                    }
+                    else raise_error((std::string)"Cannot connect atom " + std::to_string(resno2) + (std::string)":" + (std::string)atno2
+                        + (std::string)": atom is bonded to full valence and has no hydrogen to remove.");
+                }
+
+                a1->bond_to(a2, 1);
+            }	// CONECT
+
             else if (!strcmp(words[0], "CONNECT"))
             {
                 l=1;

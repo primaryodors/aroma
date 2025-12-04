@@ -14,17 +14,23 @@ $riglig = $hetatms = false;
 if (in_array("riglig", $argv)) $riglig = true;
 
 $disulfs = $hb = $hetatmln = $restraint345 = $helices = "";
-foreach ($p["region"] as $rgname => $rgnse)
+$do_tmr_helix_restraints = true;
+$do_tmr6_helix_restraints = false;              // TMR6 is highly variable among ORs.
+$do_exr2_helix_restraint = true;
+
+if ($do_tmr_helix_restraints) foreach ($p["region"] as $rgname => $rgnse)
 {
     $nmsub3 = substr($rgname, 0, 3);
     if ($nmsub3 != "TMR" && $nmsub3 != "HXR") continue;
+    $tmrno = intval(preg_replace("/[^0-9]/", "", $rgname));
+    if (!$do_tmr6_helix_restraints && ($tmrno == 6)) continue;
     if (($rcpid == "OR10Q1" || $rcpid == "OR52A1" || $rcpid == "OR52A4") && $nmsub3 == "HXR") continue;
     $rgs = $rgnse['start'];
     $rge = $rgnse['end'];
     $helices .= "        rsr.add(secondary_structure.Alpha(self.residue_range('$rgs:A', '$rge:A')))\n";
 }
 
-if (substr($rcpid, 0, 2) == "OR")
+if ($do_exr2_helix_restraint && (substr($rcpid, 0, 2) == "OR"))
 {
     $rgs = resno_from_bw($rcpid, "45.52");
     $rge = resno_from_bw($rcpid, "45.58");
@@ -482,6 +488,7 @@ $adjustments
 IF $3.25 != "C" OR $45.50 != "C" GOTO _not_disulfide
 DELATOM %3.25 HG
 DELATOM %45.50 HG
+CONECT %3.25 SG %45.50 SG
 _not_disulfide:
 
 IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
@@ -519,6 +526,8 @@ if ($famsub == "OR5K")
     passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb 4 7");
     passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb -3 6");
 }
+
+exit;
 
 chdir(__DIR__);
 // Only delete temporary files if the HM was successful. Few things are more frustrating than finding an unsuccessful HM
