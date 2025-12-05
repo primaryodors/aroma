@@ -238,6 +238,13 @@ if ($knowns)
         if ($aa4551 == 'E' || $aa4551 == 'Q' || $aa4552 == 'E') $knowns = "$consOR2b";
     }
 
+    $ipdbfname = "pdbs/$fam/$rcpid.inactive.pdb";
+    if (file_exists($ipdbfname))
+    {
+        copy($ipdbfname, $ipdbid = "{$rcpid}.i");
+        $knowns .= ", '$ipdbid'";
+    }
+
     if ($atom655 && $atom4551)
         $restraint456 = "        rsr.add(forms.Gaussian(group=physical.xy_distance,
                                 feature=features.Distance(at['$atom655'],
@@ -492,8 +499,8 @@ CONECT %3.25 SG %45.50 SG
 _not_disulfide:
 
 IF $6.55 != "Y" GOTO _not_456_hbond
-IF $45.51 = "D" OR $45.51 = "E" OR $45.51 = "N" OR $45.51 = "Q" OR $45.51 = "H" OR $45.51 = "Y" THEN BRIDGE %6.55 %45.51
-ELSE IF $45.52 = "D" THEN BRIDGE %6.55 %45.52
+# IF $45.51 = "D" OR $45.51 = "E" OR $45.51 = "N" OR $45.51 = "Q" OR $45.51 = "H" OR $45.51 = "Y" BRIDGE %6.55 %45.51
+# ELSE IF $45.52 = "D" BRIDGE %6.55 %45.52
 _not_456_hbond:
 
 IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site

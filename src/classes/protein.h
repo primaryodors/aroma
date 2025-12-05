@@ -157,6 +157,7 @@ public:
     Point get_region_center(int startres, int endres);
     Vector get_region_axis(int startres, int endres);
     float get_helix_orientation(int startres, int endres);
+    float aa_angle_about_helical_axis(int resno);
     Point find_loneliest_point(Point search_center, Point search_size = Point(_INTERA_R_CUTOFF*2, _INTERA_R_CUTOFF*2, _INTERA_R_CUTOFF*2), float* pminr = nullptr);
     float total_mclashes();
     Point estimate_pocket_size(AminoAcid** ba);

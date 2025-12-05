@@ -219,7 +219,10 @@ int find_var_index(const char* varname, char** out_varname = nullptr)
         {
             Star s;
             if (*c == '%') s.n = interpret_single_int(buffer1);
-            if (*c == '$') s.psz = interpret_single_string(buffer1);
+            if (*c == '$')
+            {
+                s.psz = interpret_single_string(buffer1);
+            }
 
             if (s.n)
             {
@@ -337,7 +340,7 @@ int interpret_special_resno(const char* varname, char* strandid = nullptr)
         member = atoi(varname+5);
         if (strandid) *strandid = varname[0];
     }
-    else return 0;
+    else return atoi(varname);
 
     int bw50 = p->get_bw50(rgno);
     if (!bw50) return 0;
@@ -763,11 +766,90 @@ int main(int argc, char** argv)
 
         _interpret_command:
 
+            if (!strcmp(words[0], "THEN")) words = &words[1];
+
             // Interpret the script.
             if (0)
             {
                 ;
             }
+            else if (!strcmp(words[0], "AAANGLES"))
+            {
+                l = 1;
+                if (!words[l]) raise_error("Insufficient parameters given for AAANGLES.");
+                int resno = interpret_single_int(words[l++]);
+
+                AminoAcid* aa = working->get_residue(resno);
+                if (!aa) raise_error((std::string)"Residue " + std::to_string(resno) + (std::string)" not found in protein.");
+
+                Star s;
+                if (words[l])
+                {
+                    s.f = aa->get_phi() * fiftyseven;
+                    set_variable(words[l++], s);
+                    if (words[l])
+                    {
+                        s.f = aa->get_psi() * fiftyseven;
+                        set_variable(words[l++], s);
+                        if (words[l])
+                        {
+                            s.f = aa->get_omega() * fiftyseven;
+                            set_variable(words[l++], s);
+                        }
+                    }
+                }
+                if (words[l]) raise_error("Too many parameters given for AAANGLES.");
+            }   // AAANGLES
+            else if (!strcmp(words[0], "AAAT"))
+            {
+                l = 1;
+                if (!words[l]) raise_error("Insufficient parameters given for AAAT.");
+                int resno = interpret_single_int(words[l++]);
+                if (!words[l]) raise_error("Insufficient parameters given for AAAT.");
+
+                Star s;
+                AminoAcid* aa = working->get_residue(resno);
+                if (!aa)
+                {
+                    s.psz = new char[2];
+                    strcpy(s.psz, "");
+                    set_variable(words[l++], s);
+                }
+                else
+                {
+                    s.psz = new char[2];
+                    s.psz[0] = aa->get_letter();
+                    s.psz[1] = 0;
+                    set_variable(words[l++], s);
+                }
+                if (words[l]) raise_error("Too many parameters given for AAAT.");
+            }   // AAAT
+            else if (!strcmp(words[0], "AAHXTHETA"))
+            {
+                l = 1;
+                if (!words[l]) raise_error("Insufficient parameters given for AAHXTHETA.");
+                int resno = interpret_single_int(words[l++]);
+                if (!words[l]) raise_error("Insufficient parameters given for AAHXTHETA.");
+                j = l;
+                l++;
+
+                Star s;
+                AminoAcid* aa = working->get_residue(resno);
+                if (!aa) raise_error((std::string)"Residue " + std::to_string(resno) + (std::string)" not found in protein.");
+                s.f = working->aa_angle_about_helical_axis(resno) * fiftyseven;
+
+                if (words[l])
+                {
+                    int refno = interpret_single_int(words[l++]);
+                    aa = working->get_residue(refno);
+                    if (!aa) raise_error((std::string)"Residue " + std::to_string(refno) + (std::string)" not found in protein.");
+                    s.f -= (working->aa_angle_about_helical_axis(refno) * fiftyseven);
+                }
+
+                set_variable(words[j], s);
+
+                if (words[l]) raise_error("Too many parameters given for AAHXTHETA.");
+            }   // AAHXTHETA
             else if (!strcmp(words[0], "A100"))
             {
                 l = 1;
@@ -2122,7 +2204,7 @@ int main(int argc, char** argv)
                 }
 
                 program_counter++;
-                if (!script_lines[program_counter].c_str()) break;
+                if (program_counter >= script_lines.size() || !script_lines[program_counter].c_str()) break;
                 strcpy(buffer, script_lines[program_counter].c_str());
                 words = chop_spaced_words(buffer);
                 if (!words || !words[0]) goto _pc_continue;

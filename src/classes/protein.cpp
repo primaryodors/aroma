@@ -1057,7 +1057,7 @@ void Protein::allocate_undo_poses()
     l = get_end_resno();
     if (undo_poses)
     {
-        for (i=1; i<l+4; i++) if (undo_poses[i]) undo_poses[i]->deallocate();
+        for (i=1; i<l+4; i++) if (reinterpret_cast<__uint128_t>(undo_poses[i]) > sizeof(Protein)) undo_poses[i]->deallocate();
         delete[] undo_poses;
     }
 
@@ -2866,6 +2866,39 @@ float Protein::get_helix_orientation(int startres, int endres)
     }
 
     return retval/j;
+}
+
+float Protein::aa_angle_about_helical_axis(int resno)
+{
+    AminoAcid* aa = get_residue(resno);
+    if (!aa) return 0;
+    int i, j, k, l;
+    j=k=0;
+    Point pt4avgm[6], pt4avgp[6];
+    for (l=4; l>2; l += (l==4?1:-2))
+    {
+        if (aa->is_helix(l))
+        {
+            for (i=resno-l; i<=resno+l; i++)
+            {
+                AminoAcid* aa1 = get_residue(i);
+                if (aa1 && aa1->is_helix(l))
+                {
+                    if (i <= resno) pt4avgm[j++] = aa1->get_CA_location();
+                    if (i >= resno) pt4avgp[k++] = aa1->get_CA_location();
+                }
+            }
+        }
+
+        if (j>2 && k>2)
+        {
+            Point avgm = average_of_points(pt4avgm, j), avgp = average_of_points(pt4avgp, k);
+            Point aaCA = aa->get_CA_location();
+            return find_angle_along_vector(aaCA, Point(0,0,10000), avgm, avgp.subtract(avgm));
+        }
+    }
+
+    return 0;
 }
 
 float Protein::orient_helix(int startres, int endres, int stopat, float angle, int iters)
