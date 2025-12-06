@@ -2920,6 +2920,7 @@ _try_again:
             Point lsz = search_size;
             lsz.multiply(0.75);
             sphres = protein->get_residues_can_clash_ligand(reaches_spheroid[nodeno], ligand, nodecen, lsz, addl_resno);
+            if (!sphres) cerr << "Warning: No binding pocket residues found." << endl;
             for (i=sphres; i<SPHREACH_MAX; i++) reaches_spheroid[nodeno][i] = NULL;
 
             #if point_hydro_side_chains_inward
@@ -2952,7 +2953,7 @@ _try_again:
             }
             #endif
 
-            #if 0
+            #if _dbg_bb_scoring
             if (pose==1)
             {
                 cout << endl << "BSR:";
@@ -3104,9 +3105,9 @@ _try_again:
             #endif
 
             for (i=0; i<_INTER_TYPES_LIMIT; i++) total_binding_by_type[i] = 0;
+            #if use_exclusions
             for (i=0; i<sphres; i++)
             {
-                #if use_exclusions
                 if (exclusion.size()
                         &&
                         std::find(exclusion.begin(), exclusion.end(), reaches_spheroid[nodeno][i]->get_residue_no())!=exclusion.end()
@@ -3116,8 +3117,9 @@ _try_again:
                     sphres--;
                     reaches_spheroid[nodeno][sphres] = nullptr;
                 }
-                #endif
             }
+            if (!sphres) cerr << "Warning: No binding pocket residues left after applying exclusions." << endl;
+            #endif
 
             // float driftamt = 1.0 / (iters/25+1);
             // cout << pose << ":" << nodeno << " drift " << driftamt << endl;
@@ -3227,6 +3229,9 @@ _try_again:
                         j = 0;
                         AminoAcid** lrs = new AminoAcid*[SPHREACH_MAX];
                         memcpy(lrs, reaches_spheroid[nodeno], sizeof(AminoAcid**)*SPHREACH_MAX);
+                        #if _dbg_bb_scoring
+                        cout << "Node " << nodeno << "; sphres = " << sphres << endl;
+                        #endif
                         Point searchcen = loneliest;
                         for (l = 0; !l || l < copylig; l++)
                         {

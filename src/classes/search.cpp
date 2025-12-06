@@ -422,6 +422,8 @@ void Search::copy_ligand_position_from_file(Protein* protein, Molecule* ligand, 
 int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *results, int max_results)
 {
     int found = 0, i, j, n = ligand->get_heavy_atom_count();
+    Atom* reserve[64];
+    int nreserve = 0;
     for (i=0; i<n; i++)
     {
         Atom* a = ligand->get_atom(i);
@@ -437,7 +439,16 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
             {
                 if (a->conjugation) continue;
                 int nhb = a->get_bonded_heavy_atoms_count();
-                if (nhb > 1) continue;
+                if (nhb > 1)
+                {
+                    if (!a->num_rings()) continue;
+                    Ring** rr = a->get_rings();
+                    int ringsz = rr[0]->get_atom_count();
+                    delete[] rr;
+                    if (ringsz > 6 && frand(0, 1) > 0.25) continue;
+                    reserve[nreserve++] = a;
+                    continue;
+                }
             }
 
             results[found].single_atom = a;
@@ -476,6 +487,17 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
             }
         }
     }
+
+    if (found < 5)
+    {
+        for (i=0; i<nreserve; i++)
+        {
+            results[found].single_atom = reserve[i];
+            results[found].conjgrp = nullptr;
+            found++;
+        }
+    }
+
     return found;
 }
 
@@ -550,7 +572,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
     for (npr=0; pocketres[npr]; npr++);                                                 // count
 
     #if _dbg_bb_scoring
-    cout << ntarg << " targets, " << i << " pocket residues." << endl;
+    cout << ntarg << " targets, " << npr << " pocket residues." << endl;
     #endif
 
     for (i=0; i<ntarg; i++)
@@ -603,8 +625,10 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
             #if 0
             int jrno = pocketres[j]->get_residue_no();
-            if (jrno == 111) 
-                cout << jrno 
+            if (1) 
+                cout
+                    << targets[i] << " ~ "
+                    << jrno 
                     << " ichg " << ichg << " jchg " << jchg
                     << " ipol " << ipol << " jpol " << jpol
                     << " ipi " << ipi << " jpi " << jpi
@@ -942,7 +966,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
                                 if (has_ionic) require_ionic = true;
                                 if (has_neutral_polar) require_neutral_polar = true;
-                                if (has_pi) require_pi = true;
+                                // if (has_pi) require_pi = true;
 
                                 #if _dbg_bb_scoring
                                 cout << " *** ";
@@ -991,8 +1015,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
     #if _dbg_bb_pairs
     if (output->pri_res && output->pri_tgt) cout << "Primary pairing: " << *output->pri_tgt << " to " << (output->pri_res)->get_name() << endl;
-    if (*outbbr->sec_res && *outtgt2) cout << "Secondary pairing: " << **outtgt2 << " to " << (*outbbr->sec_res)->get_name() << endl;
-    if (*outbbr->tert_res && *outtgt3) cout << "Tertiary pairing: " << **outtgt3 << " to " << (*outbbr->tert_res)->get_name() << endl;
+    if (output->sec_res && output->sec_tgt) cout << "Secondary pairing: " << *output->sec_tgt << " to " << (output->sec_res)->get_name() << endl;
+    if (output->tert_res && output->tert_tgt) cout << "Tertiary pairing: " << *output->tert_tgt << " to " << (output->tert_res)->get_name() << endl;
     cout << endl;
     #endif
 }
