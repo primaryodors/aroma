@@ -249,7 +249,7 @@
 #define progressively_increase_elasticity 1
 #define repack_soft_clashes false
 #define soft_repack_iterations 20
-#define soft_contact_elasticity_progress 0.05
+#define soft_contact_elasticity_progress 0.01
 #define soft_iter_min 10
 #define soft_push_multiplier 0.01
 

@@ -1970,7 +1970,7 @@ void apply_protein_specific_settings(Protein* p)
                 }
             }
         }
-    
+
         for (i=0; i<n_soft_contact; i++)
         {
             soft_contact_a[i].resolve_resno(p);
