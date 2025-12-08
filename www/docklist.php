@@ -316,7 +316,7 @@ foreach ($prots as $protid => $p)
 
         $dtop = $top ?: "-";
         $dec50 = $ec50 ?: "-";
-        echo @"<td>$agonist $dtop/$dec50</td>\n";
+        echo @"<td>$agonist $dec50/$dtop</td>\n";
 
         if ($benerg_inactive > 0) $benerg_inactive = 0;
         // $prediction = ($occl_active >= 0.65) ? max(0, -$benerg_active) : 0;

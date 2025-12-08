@@ -4783,6 +4783,33 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby)
     return result;
 }
 
+bool Molecule::faces_any_ligand(Molecule **ligands)
+{
+    if (!ligands) return false;
+    if (!has_hbond_acceptors() && !has_hbond_donors()) return false;
+    int i=0, j;
+    bool result = false;
+    for (j=0; ligands[j]; j++)
+    {
+        if (ligands[j] == this) continue;
+        if (ligands[j]->is_residue()) continue;
+        if (ligands[j]->is_water()) continue;
+        if (!ligands[j]->has_hbond_acceptors() && !ligands[j]->has_hbond_donors()) continue;
+
+        Atom** ra = get_most_bindable();
+        if (!ra) continue;
+        if (!ra[0]) continue;
+        Atom* la = ligands[j]->get_nearest_atom(ra[0]->loc, hbond);
+        if (!la) continue;
+
+        Bond* b = ra[0]->get_bond_by_idx(0);
+        if (!b) continue;
+        if (!b->atom1 || !b->atom2) continue;
+        if (b->atom2->distance_to(la) < b->atom1->distance_to(la)) result = true;
+    }
+    return result;
+}
+
 void Molecule::conform_molecules(Molecule** mm, Molecule** bkg, int iters, void (*cb)(int, Molecule**),
     void (*progress)(float))
 {
@@ -4977,7 +5004,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 {
     if (!mm) return;
     int i, imer, j, l, n, iter;
-    
+
     int mmmono = 0;
     for (i=0; mm[i]; i++) if (mm[i]->nmonomers) mmmono += mm[i]->nmonomers;
     if (mmmono)
@@ -5095,6 +5122,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!iter) a->iters_without_change = 0;
 
             Interaction tryenerg;
+            bool fal, wfal;
             Pose pib;
             // pib.copy_state(a);
 
@@ -5253,12 +5281,14 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     #if _DBG_HISFLIP
                     cout << i << ": Flipping " << mm[i]->name << endl;
                     #endif
+                    if (ares) wfal = mm[i]->faces_any_ligand(mm);
                     mm[i]->do_histidine_flip(mm[i]->hisflips[l]);
+                    fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                     if (audit) sprintf(triedchange, "histidine flip");
 
                     tryenerg = cfmol_multibind(a, nearby);
 
-                    if (tryenerg.improved(benerg) || tryenerg.attractive > benerg.attractive)
+                    if ((!wfal || fal) && (tryenerg.improved(benerg) || tryenerg.attractive > benerg.attractive))
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
@@ -5280,6 +5310,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if ((!iter % 3) && (a->movability & MOV_CAN_AXIAL) && !(a->movability & MOV_FORBIDDEN))
             {
                 pib.copy_state(a);
+                if (ares) wfal = a->faces_any_ligand(mm);
                 Point ptrnd(frand(-1,1), frand(-1,1), frand(-1,1));
                 if (frand(0,1) < 0.4 && a->best_intera && a->best_other_intera)
                 {
@@ -5301,8 +5332,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     if (audit) sprintf(triedchange, "stochastic rotation %f deg.", theta*fiftyseven);
                     a->enforce_stays(multimol_stays_enforcement);
                     tryenerg = cfmol_multibind(a, nearby);
+                    fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
-                    if (tryenerg.improved(benerg))
+                    if ((fal || !wfal) && tryenerg.improved(benerg))
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
@@ -5346,6 +5378,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 {
                     int q, rang=0, qiter;
                     float bbodds = 1;
+                    if (ares) wfal = a->faces_any_ligand(mm);
                     for (qiter=0; qiter<flexion_sub_iterations; qiter++) for (q=0; bb[q]; q++)
                     {
                         if (!bb[q]->atom1 || !bb[q]->atom2) continue;         // Sanity check, otherwise we're sure to get random foolish segfaults.
@@ -5391,13 +5424,14 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 a->enforce_stays(multimol_stays_enforcement);
                                 tryenerg = cfmol_multibind(a, nearby);
                                 tryenerg.clash += a->total_eclipses();
+                                fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                                 if (audit) sprintf(triedchange, "fullrot flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
 
                                 #if _dbg_mol_flexion
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
-                                if (tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
+                                if ((fal || !wfal) && tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
                                 {
                                     benerg = tryenerg;
                                     best_theta = theta;
@@ -5418,6 +5452,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         else
                         {
                             theta = frand(-flexion_maxangle, flexion_maxangle);
+                            if (ares) wfal = a->faces_any_ligand(mm);
 
                             if (!bb[q]->can_rotate)
                             {
@@ -5443,12 +5478,13 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby);
                             tryenerg.clash += a->total_eclipses();
+                            fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
                             #if _dbg_mol_flexion
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if (tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
+                            if ((fal || !wfal) && tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
                             {
                                 // Leaving this in case the "nearbys" feature misses any more clashable residues.
                                 // If it does, adjust the constants on the cosine in AminoAcid::can_reach().
@@ -7012,6 +7048,18 @@ bool Molecule::is_thiol()
     }
 
     return false;
+}
+
+bool Molecule::is_water()
+{
+    int i = get_heavy_atom_count();
+    if (i != 1) return false;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->Z != 1 && atoms[i]->Z != 8) return false;
+    }
+
+    return true;
 }
 
 void Molecule::identify_cages()

@@ -189,6 +189,7 @@ std::string outpdb;
 std::string auditfn = "";
 int outpdb_poses = 0;
 bool outdisq = false;
+bool warn_absent_residue = true;
 std::string outdisqrs = "";
 
 std::vector<int>flexible_resnos;
@@ -1083,6 +1084,10 @@ int interpret_config_line(char** words)
     {
         atomto.push_back(origbuff);
     }
+    else if (!strcmp(words[0], "NORESWARN"))
+    {
+        warn_absent_residue = false;
+    }
     else if (!strcmp(words[0], "AUDIT"))
     {
         auditfn = "tmp/dock_audit";
@@ -1830,7 +1835,7 @@ void apply_protein_specific_settings(Protein* p)
 
         if (!aa)
         {
-            if (!strstr(nfwarned.c_str(), words[1]))
+            if (warn_absent_residue && !strstr(nfwarned.c_str(), words[1]))
             {
                 cout << "Residue " << words[1] << " not present in protein; this ATOMTO command will have no effect." << endl;
                 nfwarned += (std::string)" " + (std::string)words[1];
@@ -1840,7 +1845,7 @@ void apply_protein_specific_settings(Protein* p)
 
         if (!target)
         {
-            if (!strstr(nfwarned.c_str(), words[3]))
+            if (warn_absent_residue && !strstr(nfwarned.c_str(), words[3]))
             {
                 cout << "Residue " << words[3] << " not present in protein; this ATOMTO command will have no effect." << endl;
                 nfwarned += (std::string)" " + (std::string)words[3];

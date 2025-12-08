@@ -134,6 +134,7 @@ public:
     float get_charge() const;
     int is_residue();
     bool is_thiol();
+    bool is_water();
     float pi_stackability(bool include_backbone = false);
 
     // Spatial functions.
@@ -370,6 +371,7 @@ protected:
     float get_atom_error(int atom_idx, LocatedVector* best_lv, bool hemispherical = true);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols);
+    bool faces_any_ligand(Molecule** ligands);
 
     public:
     const int& num_monomers = nmonomers;
