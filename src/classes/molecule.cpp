@@ -5583,6 +5583,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 pib.restore_state(a);
                                 break;
                             }
+                            a->been_flexed = true;
                         }
                     }
                 }
