@@ -3446,6 +3446,44 @@ void Molecule::mutual_closest_atoms(Molecule* mol, Atom** a1, Atom** a2)
     }
 }
 
+void Molecule::mutual_closest_hbond_pair(Molecule *mol, Atom **a1, Atom **a2)
+{
+    if (!a1 || !a2) return;
+
+    *a1 = *a2 = nullptr;
+
+    int i, j, m, n;
+    Atom *a, *b;
+    float rbest = Avogadro;
+
+    m = get_atom_count();
+    n = mol->get_atom_count();
+    for (i=0; i<m; i++)
+    {
+        a = get_atom(i);
+        if (fabs(a->is_polar()) < hydrophilicity_cutoff) continue;
+        if (!a) break;
+        int aZ = a->Z;
+        for (j=0; j<n; j++)
+        {
+            b = mol->get_atom(j);
+            if (fabs(b->is_polar()) < hydrophilicity_cutoff) continue;
+            if (sgn(b->is_polar()) == sgn(a->is_polar())) continue;
+            if (!b) break;
+            int bZ = b->Z;
+            if (aZ == 1 && bZ == 1) continue;
+
+            float r = a->distance_to(b);
+            if (r < rbest)
+            {
+                rbest = r;
+                *a1 = a;
+                *a2 = b;
+            }
+        }
+    }
+}
+
 void Molecule::move(Vector move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
@@ -5525,6 +5563,31 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                 mm[i]->lastbind = benerg.summed();
             }   // if MOV_CAN_FLEX
+
+            if (ares)
+            {
+                Atom *la, *ra;
+                mm[0]->mutual_closest_hbond_pair(a, &la, &ra);
+                if (la && ra)
+                {
+                    float rtarget;
+                    for (rtarget = 4; rtarget >= 2.5; rtarget -= 0.5)
+                    {
+                        if (ra->distance_to(la) < rtarget) break;
+
+                        pib.copy_state(a);
+                        benerg = cfmol_multibind(a, nearby);
+                        a->conform_atom_to_location(ra, la, 20, rtarget);
+                        tryenerg = cfmol_multibind(a, nearby);
+                        if (!tryenerg.improved(benerg))
+                        {
+                            pib.restore_state(a);
+                            break;
+                        }
+                    }
+                }
+            }
+
             #endif
 
             #if _dbg_fitness_plummet
