@@ -5562,31 +5562,31 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 #endif
 
                 mm[i]->lastbind = benerg.summed();
-            }   // if MOV_CAN_FLEX
 
-            if (ares)
-            {
-                Atom *la, *ra;
-                mm[0]->mutual_closest_hbond_pair(a, &la, &ra);
-                if (la && ra)
+                if (ares)
                 {
-                    float rtarget;
-                    for (rtarget = 4; rtarget >= 2.5; rtarget -= 0.5)
+                    Atom *la, *ra;
+                    mm[0]->mutual_closest_hbond_pair(a, &la, &ra);
+                    if (la && ra)
                     {
-                        if (ra->distance_to(la) < rtarget) break;
-
-                        pib.copy_state(a);
-                        benerg = cfmol_multibind(a, nearby);
-                        a->conform_atom_to_location(ra, la, 20, rtarget);
-                        tryenerg = cfmol_multibind(a, nearby);
-                        if (!tryenerg.improved(benerg))
+                        float rtarget;
+                        for (rtarget = 4; rtarget >= 2.5; rtarget -= 0.5)
                         {
-                            pib.restore_state(a);
-                            break;
+                            if (ra->distance_to(la) < rtarget) break;
+
+                            pib.copy_state(a);
+                            benerg = cfmol_multibind(a, nearby);
+                            a->conform_atom_to_location(ra, la, 20, rtarget);
+                            tryenerg = cfmol_multibind(a, nearby);
+                            if (!tryenerg.improved(benerg))
+                            {
+                                pib.restore_state(a);
+                                break;
+                            }
                         }
                     }
                 }
-            }
+            }   // if MOV_CAN_FLEX
 
             #endif
 
