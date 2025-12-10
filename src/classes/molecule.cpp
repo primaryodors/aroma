@@ -4788,6 +4788,8 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby)
     Interaction result = -a->total_eclipses();
     if (a->is_residue()) result += reinterpret_cast<AminoAcid*>(a)->initial_eclipses;
 
+    result.clash += a->get_internal_clashes();              // Removing this may result in self clashes of side chains.
+
     int i, j;
     if (a->mclashables)
     {
@@ -5563,7 +5565,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                 mm[i]->lastbind = benerg.summed();
 
-                if (ares)
+                if (ares && frand(0,1) < 0.2)
                 {
                     Atom *la, *ra;
                     mm[0]->mutual_closest_hbond_pair(a, &la, &ra);
@@ -5578,7 +5580,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             benerg = cfmol_multibind(a, nearby);
                             a->conform_atom_to_location(ra, la, 20, rtarget);
                             tryenerg = cfmol_multibind(a, nearby);
-                            if (!tryenerg.improved(benerg))
+                            if (tryenerg.clash <= benerg.clash)
                             {
                                 pib.restore_state(a);
                                 break;
