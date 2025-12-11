@@ -30,7 +30,7 @@ CPL=g++
 CFLAGS=-O3 -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS=-g -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
+CFLAGS=-g -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # For gprof
 # example command line:
