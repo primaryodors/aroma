@@ -37,7 +37,7 @@ int main(int argc, char** argv)
             fseek(fp, 0, 0);
 
             char buffer[filesize+16];
-            fread(buffer, 1, filesize, fp);
+            int idgaf = fread(buffer, 1, filesize, fp);         // piece of junk throws a warning if we just eat the return value.
             fclose(fp);
 
             if (!existing.get_atom_count()) existing.from_sdf(buffer);
