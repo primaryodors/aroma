@@ -178,6 +178,7 @@ public:
     {
         return atoms[a_idx];
     }
+    Atom* get_atom_by_pdbidx(const int pdbidx) const;
     int count_atoms_by_element(const char* esym);
     Point get_atom_location(const char* aname);
     Point get_atom_location(int idx);

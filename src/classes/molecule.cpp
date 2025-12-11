@@ -776,7 +776,15 @@ int Molecule::get_hydrogen_count()
     return retval;
 }
 
-int Molecule::count_atoms_by_element(const char* esym)
+Atom *Molecule::get_atom_by_pdbidx(const int pdbidx) const
+{
+    if (!atoms || !atcount) return nullptr;
+    int i;
+    for (i=0; atoms[i]; i++) if (atoms[i]->pdbidx == pdbidx) return atoms[i];
+    return nullptr;
+}
+
+int Molecule::count_atoms_by_element(const char *esym)
 {
     if (noAtoms(atoms)) return 0;
     int findZ = Atom::Z_from_esym(esym);
@@ -1927,6 +1935,8 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                     Point aloc(atof(words[5+offset]), atof(words[6+offset]),atof(words[7+offset]));
 
                     Atom* a = add_atom(esym, words[2], &aloc, 0, 0, charge);
+                    a->pdbidx = atoi(words[1]);
+                    if (offset) a->pdbchain = words[4][0];
                     added++;
 
                     // a->residue = atoi(words[4]);
@@ -1946,6 +1956,31 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                 catch (int ex)
                 {
                     ;
+                }
+            }
+            else if (!strcmp(words[0], "CONECT") && words[1] && words[2])
+            {
+                int ia1 = atoi(words[1]), ia2 = atoi(words[2]);
+                Atom *a1 = get_atom_by_pdbidx(ia1), *a2 = get_atom_by_pdbidx(ia2);
+                if (a1 && a2)
+                {
+                    float card = 1;
+                    if (words[3] && strchr(words[3], '.'))
+                    {
+                        card = atof(words[3]);
+                        a1->bond_to(a2, card);
+                    }
+                    else
+                    {
+                        a1->bond_to(a2, card);
+                        int l;
+                        for (l=3; words[l]; l++)
+                        {
+                            ia2 = atoi(words[l]);
+                            a2 = get_atom_by_pdbidx(ia2);
+                            if (a2) a1->bond_to(a2, card);
+                        }
+                    }
                 }
             }
         }
