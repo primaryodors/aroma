@@ -3536,6 +3536,12 @@ _try_again:
             if (audit) fclose(audit);
             audit = nullptr;
 
+            for (i=0; cfmol_known_good[i]; i++)
+            {
+                delete cfmol_known_good[i];
+                cfmol_known_good[i] = 0;
+            }
+
             #if optimize_internal_contacts_post_iterations
             if (nsoftrgn)
             {
