@@ -322,6 +322,7 @@ protected:
 
     Atom** atoms = 0;
     int atcount = 0;
+    int atcallocd = 0;
     char* name = 0;
     char* smiles = 0;
     Molecule** monomers = nullptr;

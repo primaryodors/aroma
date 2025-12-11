@@ -556,11 +556,12 @@ void Molecule::reset_conformer_momenta()
 
 void Molecule::reallocate()
 {
-    if (!(atcount % _def_atc))
+    // if (!(atcount % _def_atc))
+    if (atcount >= atcallocd-8)
     {
         int oac = atcount;
         int ac1 = oac + _def_atc;
-        Atom** latoms = new Atom*[ac1+10];
+        Atom** latoms = new Atom*[atcallocd = ac1+16];
 
         // if (atcount) cout << "Molecule " << (name?name:"(no name)") << " has " << atcount << " atoms." << endl;
 

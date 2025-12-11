@@ -4,7 +4,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
-#include "classes/scoring.h"
+#include "classes/protein.h"
+#include "classes/progress.h"
 
 using namespace std;
 
@@ -61,10 +62,15 @@ int main(int argc, char** argv)
     existing.recenter(Point(0,0,0));
     added.recenter(Point(0,0,0));
 
-    float x, y, z, step=hexagonal/2;
+    float x, y, z, step=2.0*fiftyseventh;
     Vector ax = Point(1,0,0), ay = Point(0,1,0), az = Point(0,0,1);
     Pose best(&added);
     float bestc = 0;
+
+    Progressbar pgb;
+    pgb.maximum = M_PI*2;
+    pgb.set_color(192, 64, 80);
+    cout << endl;
 
     for (x=0; x<M_PI*2; x+=step)
     {
@@ -86,7 +92,9 @@ int main(int argc, char** argv)
         }
 
         added.rotate(&ax, step, false);
+        pgb.update(x);
     }
+    pgb.erase();
 
     best.restore_state(&added);
 
