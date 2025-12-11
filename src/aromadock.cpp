@@ -114,6 +114,7 @@ bool estimate_copylig = false;
 int isono = 0;
 Molecule** waters = nullptr;
 Molecule** owaters = nullptr;
+Pose* cfmol_known_good[SPHREACH_MAX+100];
 Point ligcen_target;
 Vector path[256];
 int pathnodes = 0;				// The pocketcen is the initial node.
@@ -594,6 +595,29 @@ void iteration_callback(int iter, Molecule** mols)
     int i, j, l, n, ac;
     float progress, bbest;
     Point bary;
+
+    if (!cfmol_known_good[0])
+    {
+        for (i=0; mols[i]; i++)
+        {
+            cfmol_known_good[i] = new Pose(mols[i]);
+        }
+        cfmol_known_good[i] = nullptr;
+    }
+
+    // STOP IT WITH THE FUCKING INTERNAL CLASHES IN SIDE CHAINS, RETARD!
+    for (i=0; mols[i]; i++)
+    {
+        if (!cfmol_known_good[i]) continue;
+        if (mols[i]->get_internal_clashes() > clash_limit_per_aa*2)
+        {
+            cfmol_known_good[i]->restore_state(mols[i]);
+        }
+        else
+        {
+            cfmol_known_good[i]->copy_state(mols[i]);
+        }
+    }
 
     float occl = ligand->surface_occlusion(mols);
     if (occl < frand(0.4, 0.7))
@@ -2022,6 +2046,9 @@ int main(int argc, char** argv)
 
     for (i=0; i<256; i++)
         configfname[i] = protfname[i] = protafname[i] = ligfname[i] = cvtyfname[i] = 0;
+
+    for (i=0; i<SPHREACH_MAX+100; i++)
+        cfmol_known_good[i] = nullptr;
 
     time_t began = time(NULL);
 
