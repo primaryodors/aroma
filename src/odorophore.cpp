@@ -38,12 +38,23 @@ int main(int argc, char** argv)
             fseek(fp, 0, 0);
 
             char buffer[filesize+16];
-            filesize = fread(buffer, 1, filesize, fp);         // piece of junk throws a warning if we just eat the return value.
+            filesize = fread(buffer, 1, filesize, fp);          // piece of junk throws a warning if we just eat the return value.
             buffer[filesize] = 0;
             fclose(fp);
 
             if (!existing.get_atom_count()) existing.from_sdf(buffer);
             else added.from_sdf(buffer);
+        }
+        else if (ext = strstr(argv[i], ".pdb"))                 // ANC
+        {
+            fp = fopen(argv[i], "r");
+            if (!fp)
+            {
+                cerr << "Failed to open " << argv[i] << " for reading." << endl;
+            }
+
+            if (!existing.get_atom_count()) existing.from_pdb(fp, true);
+            else added.from_pdb(fp, true);
         }
     }
 
