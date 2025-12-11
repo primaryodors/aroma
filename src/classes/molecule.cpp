@@ -1391,6 +1391,7 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
     float total_occlusions = 0;
     Sphere octant_atoms[8];
     float octant_atom_pol[8];
+    float octant_atom_charge[8];
 
     for (i=0; i<8; i++) octant_atoms[i].radius = octant_atom_pol[i] = 0;
 
@@ -1415,6 +1416,7 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
                 octant_atoms[octi].center = rel;
                 octant_atoms[octi].radius = a->vdW_radius + b->vdW_radius;
                 octant_atom_pol[octi] = fabs(a->is_polar());
+                octant_atom_charge[octi] = a->get_charge() * b->get_charge();
                 #if _dbg_octant_occlusion
                 cout << "Atom " << ligands[i]->name << ":" << a->name << " for octant " << octi << endl;
                 #endif
@@ -1452,7 +1454,8 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
             #endif
             if (ip)
             {
-                partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(3.44-2.20)));
+                if (octant_atom_charge[j] < -hydrophilicity_cutoff) partial = 0;
+                else partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(3.44-2.20)));
             }
             total_occlusions += partial/4;
         }
