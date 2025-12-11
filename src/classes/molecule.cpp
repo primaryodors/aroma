@@ -27,6 +27,10 @@ bool allow_ligand_360_flex = true;
 
 bool cfmols_have_metals = false;
 
+int nconects = 0;
+Atom *conecta1[65536], *conecta2[65536];
+float conectcard[65536];
+
 Molecule *worst_clash_1 = nullptr, *worst_clash_2 = nullptr;
 float worst_mol_clash = 0;
 FILE* audit = nullptr;
@@ -2144,14 +2148,35 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
 void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
 {
-    int i;
+    int i, j, l;
 
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
+        for (j=sgn(i); j<atoms[i]->get_valence(); j++)
+        {
+            Bond* b = atoms[i]->get_bond_by_idx(j);
+            if (b && b->cardinality >= 0.333 && b->atom2)
+            {
+                conecta1[nconects] = atoms[i];
+                conecta2[nconects] = b->atom2;
+                conectcard[nconects] = b->cardinality;
+                nconects++;
+            }
+        }
     }
 
-    if (endpdb) fprintf(os, "\nTER\nEND\n\n");
+    if (endpdb)
+    {
+        for (i=0; i<nconects; i++)
+        {
+            j = conecta1[i]->pdbidx;
+            l = conecta2[i]->pdbidx;
+            fprintf(os, "CONECT %d %d %.2f\n", j, l, conectcard[i]);
+        }
+        fprintf(os, "\nTER\nEND\n\n");
+        nconects = 0;
+    }
     else fprintf(os, "\n\n");
 }
 

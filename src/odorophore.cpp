@@ -11,8 +11,8 @@ using namespace std;
 
 void show_usage()
 {
-    cout << "Usage: ummm... lemme get back to you on that." << endl << endl;
-    cout << "" << endl;
+    cout << "Example usage:" << endl << endl;
+    cout << "bin/odorophore sdf/[molecule #1's .sdf file] sdf/[molecule #2's .sdf file]" << endl;
 }
 
 int main(int argc, char** argv)
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
     {
         cerr << "Failed to open " << outfname << " for reading." << endl;
     }
-    existing.save_pdb(fp);
+    existing.save_pdb(fp, 0, true);
     fclose(fp);
 
     return 0;

@@ -396,6 +396,9 @@ extern float worst_mol_clash;
 extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
+extern int nconects;
+extern Atom *conecta1[65536], *conecta2[65536];
+extern float conectcard[65536];
 
 #if _dbg_improvements_only_rule
 extern Molecule** check_mols;
