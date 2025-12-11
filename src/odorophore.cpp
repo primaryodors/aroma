@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     existing.recenter(Point(0,0,0));
     added.recenter(Point(0,0,0));
 
-    float x, y, z, step=2.0*fiftyseventh;
+    float x, y, z, step=3.0*fiftyseventh;
     Vector ax = Point(1,0,0), ay = Point(0,1,0), az = Point(0,0,1);
     Pose best(&added);
     float bestc = 0;
