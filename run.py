@@ -162,7 +162,7 @@ for rcpid in data.protutils.prots.keys():
         newcfg.append("NODEL 45.52 5.39")
         newcfg.append("NODEL 7.49 7.55")
         newcfg.append("OUTBBP")
-        newcfg.append("OUTMC 1")
+        # newcfg.append("OUTMC 1")
         newcfg.append("NORESWARN")
         newcfg.append("NOFAIL")
 

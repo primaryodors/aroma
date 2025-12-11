@@ -3700,6 +3700,15 @@ _try_again:
                 else dr[drcount][nodeno].kJmol += anomaly;
             }
 
+            for (i=0; cfmols[i]; i++)
+            {
+                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*2)
+                {
+                    dr[drcount][nodeno].disqualified = true;
+                    dr[drcount][nodeno].disqualify_reason += (std::string)"AromaDock is a fuckin piece of shit. ";
+                }
+            }
+
             float btot = dr[drcount][nodeno].kJmol;
             float pstot = dr[drcount][nodeno].polsat;
             if (isomers.size()) dr[drcount][nodeno].isomer = ligand->get_name();

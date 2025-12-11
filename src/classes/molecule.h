@@ -165,8 +165,8 @@ public:
     int atoms_inside_sphere(Sphere container, bool* byindex, float radius_multiplier = 1);     // If byindex is not null, sets byindex[n] to true for atoms inside the sphere, but does not set to false.
     float surface_occlusion(Molecule** ligands);
     float surface_occlusion(Molecule* ligand);
-    float octant_occlusion(Molecule** ligands);
-    float octant_occlusion(Molecule* ligand);
+    float octant_occlusion(Molecule** ligands, bool ignore_polar = false);
+    float octant_occlusion(Molecule* ligand, bool ignore_polar = false);
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);

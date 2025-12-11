@@ -1268,15 +1268,15 @@ float Molecule::surface_occlusion(Molecule *ligand)
     return surface_occlusion(tmp);
 }
 
-float Molecule::octant_occlusion(Molecule *ligand)
+float Molecule::octant_occlusion(Molecule *ligand, bool ip)
 {
     Molecule* tmp[2];
     tmp[0] = ligand;
     tmp[1] = nullptr;
-    return octant_occlusion(tmp);
+    return octant_occlusion(tmp, ip);
 }
 
-float Molecule::octant_occlusion(Molecule **ligands)
+float Molecule::octant_occlusion(Molecule **ligands, bool ip)
 {
     if (!atoms) return 0;
     int h, i, j, l;
@@ -1390,8 +1390,9 @@ float Molecule::octant_occlusion(Molecule **ligands)
     #else
     float total_occlusions = 0;
     Sphere octant_atoms[8];
+    float octant_atom_pol[8];
 
-    for (i=0; i<8; i++) octant_atoms[i].radius = 0;
+    for (i=0; i<8; i++) octant_atoms[i].radius = octant_atom_pol[i] = 0;
 
     #if _dbg_octant_occlusion
     cout << endl;
@@ -1413,6 +1414,7 @@ float Molecule::octant_occlusion(Molecule **ligands)
             {
                 octant_atoms[octi].center = rel;
                 octant_atoms[octi].radius = a->vdW_radius + b->vdW_radius;
+                octant_atom_pol[octi] = fabs(a->is_polar());
                 #if _dbg_octant_occlusion
                 cout << "Atom " << ligands[i]->name << ":" << a->name << " for octant " << octi << endl;
                 #endif
@@ -1448,6 +1450,10 @@ float Molecule::octant_occlusion(Molecule **ligands)
             #if _dbg_octant_occlusion
             cout << " / " << r << " = " << partial << endl;
             #endif
+            if (ip)
+            {
+                partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(3.44-2.20)));
+            }
             total_occlusions += partial/4;
         }
     }
@@ -3035,7 +3041,7 @@ float Molecule::solvent_free_energy(float epsilon, float kappa, bool csa)
     DeltaGGB = polsurf * (epsilon/80) * _solve_np2pol;
     #else
     // Hoping someone with a solid math background can find out why the following is not giving accurate numbers at all.
-    // Nobody is going to help the uneducated disgraced former code monkey.
+    // Everyone knows not to help the uneducated disgraced former code monkey.
     int i, j;
     for (i=0; atoms[i]; i++)
     {
