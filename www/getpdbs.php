@@ -13,6 +13,7 @@ define("_ZHANGLAB",  17);
 define("_DEFSRC", _ALPHAFOLD);
 
 $source = _DEFSRC;
+$tmcutoff = strtotime("2025-12-11");
 
 foreach (@$argv as $a)
 {
@@ -73,6 +74,7 @@ foreach ($prots as $protid => $p)
         die("Unknwon source $source.\n");
     }
 
+
     $fam = family_from_protid($protid);
     if (!file_exists("pdbs")) mkdir("pdbs");
     if (!file_exists("pdbs/$fam")) mkdir("pdbs/$fam");
@@ -80,11 +82,12 @@ foreach ($prots as $protid => $p)
     $infname = "pdbs/$fam/import/".substr($url, strrpos($url, "/")+2);
     $outfname = "pdbs/$fam/$protid.inactive.pdb";
 
-    if (file_exists($outfname)) continue;
+    if (file_exists($infname) && file_exists($outfname) && filemtime($outfname) >= $tmcutoff) continue;
 
     $antitax_server = true;
     if (!file_exists($infname))
     {
+        echo "$infname\n";
         echo ($cmd = "wget -O \"$infname\" \"$url\"");
         echo "\n";
         passthru($cmd);
