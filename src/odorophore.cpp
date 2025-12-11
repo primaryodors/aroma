@@ -78,11 +78,12 @@ int main(int argc, char** argv)
         {
             for (z=0; z<M_PI*2; z+=step)
             {
-                Interaction e = existing.get_intermol_clashes(&added);
-                if (e.clash > bestc)
+                // Interaction e = existing.get_intermol_clashes(&added);
+                float p = existing.similar_atom_proximity(&added);
+                if (p > bestc)
                 {
                     best.copy_state(&added);
-                    bestc = e.clash;
+                    bestc = p;
                 }
                 
                 added.rotate(&az, step, false);

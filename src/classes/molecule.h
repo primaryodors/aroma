@@ -277,6 +277,8 @@ public:
     Atom** get_most_bindable(int max_num = 3);						// Return the atoms with the greatest potential intermol binding.
     Atom** get_most_bindable(int max_num, Atom* for_atom);
 
+    float similar_atom_proximity(Molecule* other);
+
     void allocate_mandatory_connections(int mcmax);
     void add_mandatory_connection(Molecule* addmol);
     void remove_mandatory_connection(Molecule* rmvmol);

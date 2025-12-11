@@ -554,6 +554,38 @@ void Molecule::reset_conformer_momenta()
     }
 }
 
+#define similarity_charged 1.0
+#define similarity_polar 1.0
+#define similarity_antipolar 0.75
+#define similarity_pi 0.13
+float Molecule::similar_atom_proximity(Molecule* o)
+{
+    if (o == this) return 1;
+    int i, j;
+    float similarity, result=0;
+
+    for (i=0; atoms[i]; i++)
+    {
+        for (j=0; o->atoms[j]; j++)
+        {
+            similarity = 0;
+            float apol = atoms[i]->is_polar(), bpol = o->atoms[j]->is_polar();
+            if (sgn(atoms[i]->get_charge()) == sgn(o->atoms[j]->get_charge())) similarity += similarity_charged;
+            if (sgn(apol) == sgn(bpol)) similarity += similarity_polar / (1.0+fabs(apol-bpol));
+            else if (sgn(apol) == -sgn(bpol)) similarity += similarity_antipolar / (1.0+fabs(apol+bpol));
+            if (atoms[i]->is_pi() == o->atoms[j]->is_pi()) similarity += similarity_pi;
+
+            similarity /= (similarity_charged + similarity_polar + similarity_pi);
+
+            float r = atoms[i]->distance_to(o->atoms[j]);
+            result += similarity / (1.0 + r);
+        }
+    }
+
+    result /= (i * sqrt(j));
+    return result;
+}
+
 void Molecule::reallocate()
 {
     // if (!(atcount % _def_atc))
