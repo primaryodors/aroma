@@ -21,6 +21,7 @@ int main(int argc, char** argv)
 
     int i, n;
     FILE* fp;
+    bool existsdf = false, addedsdf = false;
 
     for (i=1; i<argc; i++)
     {
@@ -38,12 +39,20 @@ int main(int argc, char** argv)
             fseek(fp, 0, 0);
 
             char buffer[filesize+16];
-            filesize = fread(buffer, 1, filesize, fp);          // piece of junk throws a warning if we just eat the return value.
+            filesize = fread(buffer, 1, filesize, fp);          // piece of ju k throws a war ing if we just eat the retur  value.
             buffer[filesize] = 0;
             fclose(fp);
 
-            if (!existing.get_atom_count()) existing.from_sdf(buffer);
-            else added.from_sdf(buffer);
+            if (!existing.get_atom_count())
+            {
+                existing.from_sdf(buffer);
+                existsdf = true;
+            }
+            else
+            {
+                added.from_sdf(buffer);
+                addedsdf = true;
+            }
         }
         else if (ext = strstr(argv[i], ".pdb"))                 // ANC
         {
@@ -65,10 +74,16 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    existing.movability = MOV_ALL;
-    added.movability = MOV_ALL;
-    existing.minimize_internal_clashes();
-    added.minimize_internal_clashes();
+    if (existsdf)
+    {
+        existing.movability = MOV_ALL;
+        existing.minimize_internal_clashes();
+    }
+    if (addedsdf)
+    {
+        added.movability = MOV_ALL;
+        added.minimize_internal_clashes();
+    }
 
     existing.recenter(Point(0,0,0));
     added.recenter(Point(0,0,0));
@@ -96,7 +111,7 @@ int main(int argc, char** argv)
                     best.copy_state(&added);
                     bestc = p;
                 }
-                
+
                 added.rotate(&az, step, false);
             }
 
@@ -112,12 +127,55 @@ int main(int argc, char** argv)
 
     Atom *a1, *a2;
 
-    // a1 = existing.get_most_bindable()
+    bestc = 0;
+    Atom** mb1 = existing.get_most_bindable(1);
+    Atom** mb2 = added.get_most_bindable(1);
+    Vector axis;
+    if (mb1 && mb1[0] && mb2 && mb2[0])
+    {
+        a1 = mb1[0];
+        a2 = mb2[0];
+        axis = a1->loc.subtract(a2->loc);
+        step = axis.r / 31;
+        Vector v = axis;
+        v.r = step;
+        // cout << a2->name << " => " << a1->name << ": ";
+        for (x=0; x<axis.r; x+=step)
+        {
+            float p = existing.similar_atom_proximity(&added);
+            // cout << p << " ";
+            if (p > bestc)
+            {
+                best.copy_state(&added);
+                bestc = p;
+            }
+
+            added.move(v, true);
+        }
+        // cout << endl;
+    }
+    if (mb1) delete[] mb1;
+    if (mb2) delete[] mb2;
+
+    best.restore_state(&added);
+
+    char lastchain = 'A';
+
+    n = existing.get_atom_count();
+    for (i=0; i<n; i++)
+    {
+        a1 = existing.get_atom(i);
+        if (a1->pdbchain < 'A') a1->pdbchain = 'A';
+        if (a1->pdbchain > lastchain) lastchain = a1->pdbchain;
+    }
+
+    lastchain++;
 
     n = added.get_atom_count();
     for (i=0; i<n; i++)
     {
         a2 = added.get_atom(i);
+        a2->pdbchain = lastchain;
         existing.add_existing_atom(a2);
     }
 

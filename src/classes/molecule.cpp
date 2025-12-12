@@ -561,6 +561,7 @@ void Molecule::reset_conformer_momenta()
 #define similarity_charged 1.0
 #define similarity_polar 1.0
 #define similarity_antipolar 0.75
+#define similarity_nonpolar 0.333
 #define similarity_pi 0.13
 float Molecule::similar_atom_proximity(Molecule* o)
 {
@@ -570,18 +571,25 @@ float Molecule::similar_atom_proximity(Molecule* o)
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->Z < 2) continue;
         for (j=0; o->atoms[j]; j++)
         {
+            if (o->atoms[j]->Z < 2) continue;
+            float r = atoms[i]->distance_to(o->atoms[j]);
+            if (r > _INTERA_R_CUTOFF) continue;
+
             similarity = 0;
             float apol = atoms[i]->is_polar(), bpol = o->atoms[j]->is_polar();
+            if (fabs(apol) < hydrophilicity_cutoff) apol = 0;
+            if (fabs(bpol) < hydrophilicity_cutoff) bpol = 0;
             if (sgn(atoms[i]->get_charge()) == sgn(o->atoms[j]->get_charge())) similarity += similarity_charged;
-            if (sgn(apol) == sgn(bpol)) similarity += similarity_polar / (1.0+fabs(apol-bpol));
+            if (!apol && !bpol) similarity += similarity_nonpolar;
+            else if (sgn(apol) == sgn(bpol)) similarity += similarity_polar / (1.0+fabs(apol-bpol));
             else if (sgn(apol) == -sgn(bpol)) similarity += similarity_antipolar / (1.0+fabs(apol+bpol));
             if (atoms[i]->is_pi() == o->atoms[j]->is_pi()) similarity += similarity_pi;
 
             similarity /= (similarity_charged + similarity_polar + similarity_pi);
 
-            float r = atoms[i]->distance_to(o->atoms[j]);
             result += similarity / (1.0 + r);
         }
     }
@@ -2191,7 +2199,7 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
         for (j=sgn(i); j<atoms[i]->get_valence(); j++)
         {
             Bond* b = atoms[i]->get_bond_by_idx(j);
-            if (b && b->cardinality >= 0.333 && b->atom2)
+            if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i])
             {
                 conecta1[nconects] = atoms[i];
                 conecta2[nconects] = b->atom2;
@@ -6649,9 +6657,8 @@ Atom** Molecule::get_most_bindable(int max_count)
             score += 20;
         else if (atoms[i]->is_polar())
             score += 100 * fabs(atoms[i]->is_polar());
-
-        if (atoms[i]->is_pi())
-            score += 50;
+        else if (atoms[i]->is_pi())
+            score += 5;
 
         if (!score) score += 5;		// van der Waals.
 
