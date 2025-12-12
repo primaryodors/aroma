@@ -8613,6 +8613,8 @@
     "2de2ed1ab796f4f14292cb6198994497":
     {
         "full_name": "(-)-ambroxide",
+        "name1": "ambroxan",
+        "name2": "ambrofix",
         "smiles": "C[C@]12CCCC([C@@H]1CC[C@@]3([C@@H]2CCO3)C)(C)C",
         "aroma":
         {
@@ -8696,6 +8698,18 @@
                 "OR7E24":
                 {
                     "ec50": "-6.85"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7A17":
+                {
+                    "ec50": "-5.89"
+                },
+                "OR7E24":
+                {
+                    "type": "a",
+                    "ec50": "-5.11"
                 }
             }
         },
@@ -9341,46 +9355,6 @@
             }
         },
         "oid": "2ffb69f14540bfcbfc679c4afb0f9d44"
-    },
-    "30365d704dc367894c1d4a062f07992a":
-    {
-        "full_name": "ambroxan",
-        "name1": "ambrofix",
-        "smiles": "CC1(C)CCC[C@]2([C@H]1CC[C@@]1([C@@H]2CCO1)C)C",
-        "aroma":
-        {
-            "http://www.thegoodscentscompany.com":
-            [
-                "ambergris",
-                "sweet",
-                "labdanum",
-                "dry",
-                "woody",
-                "pine",
-                "cedar",
-                "green",
-                "seedy",
-                "tea",
-                "fresh",
-                "nutty"
-            ]
-        },
-        "activity":
-        {
-            "https://patents.google.com/patent/WO2024126820A1/en":
-            {
-                "OR7A17":
-                {
-                    "ec50": "-5.89"
-                },
-                "OR7E24":
-                {
-                    "type": "a",
-                    "ec50": "-5.11"
-                }
-            }
-        },
-        "oid": "30365d704dc367894c1d4a062f07992a"
     },
     "3085d446d6702f5497196af67e16f143":
     {

@@ -135,6 +135,7 @@ int main(int argc, char** argv)
     {
         a1 = mb1[0];
         a2 = mb2[0];
+        added.conform_atom_to_location(a2, a1);
         axis = a1->loc.subtract(a2->loc);
         step = axis.r / 31;
         Vector v = axis;
