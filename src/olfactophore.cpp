@@ -8,7 +8,7 @@
 #include "classes/progress.h"
 
 #define phore_polar_maxr 3.5
-#define phore_aliphatic_maxr 1.5
+#define phore_aliphatic_maxr 0.5
 #define phore_pi_maxr 2.5
 
 #define feature_type_hbacc 0x04b0
@@ -206,6 +206,7 @@ int main(int argc, char** argv)
         if (fabs(pol1) < hydrophilicity_cutoff) pol1 = 0;
         if (fam1 == TETREL) pol1 = 0;
         bool pi1 = a1->is_pi();
+        if (fam1 == PNICTOGEN && (a1->get_bonded_atoms_count() > 2 || a1->is_bonded_to("H"))) pol1 = 0;
         for (j=i+1; j<n; j++)
         {
             if (dirty[j]) continue;
@@ -216,6 +217,7 @@ int main(int argc, char** argv)
             if (fabs(pol2) < hydrophilicity_cutoff) pol2 = 0;
             if (fam2 == TETREL) pol2 = 0;
             bool pi2 = a2->is_pi();
+            if (fam2 == PNICTOGEN && (a2->get_bonded_atoms_count() > 2 || a2->is_bonded_to("H"))) pol2 = 0;
 
             float rij = a1->distance_to(a2);
             m = -1;
@@ -227,18 +229,21 @@ int main(int argc, char** argv)
                 )
             {
                 float pol3;
+                int fam3;
                 bool pi3;
+                float best3 = 0;
                 for (l=j+1; l<n; l++)
                 {
                     if (dirty[l]) continue;
                     a3 = existing.get_atom(l);
-                    int fam3 = a3->get_family();
+                    fam3 = a3->get_family();
                     if (a3->pdbchain == a1->pdbchain && a3->is_bonded_to(a1)) continue;
                     if (a3->pdbchain == a2->pdbchain && a3->is_bonded_to(a2)) continue;
                     pol3 = a3->is_polar();
                     if (fabs(pol3) < hydrophilicity_cutoff) pol3 = 0;
                     if (fam3 == TETREL) pol3 = 0;
                     pi3 = a3->is_pi();
+                    if (fam3 == PNICTOGEN && (a3->get_bonded_atoms_count() > 2 || a3->is_bonded_to("H"))) pol3 = 0;
 
                     float ril = a1->distance_to(a3);
                     float rjl = a2->distance_to(a3);
@@ -250,9 +255,26 @@ int main(int argc, char** argv)
                         (!pol1 && !pol2 && !pol3 && ril <= phore_aliphatic_maxr && rjl <= phore_aliphatic_maxr)
                         )
                     {
-                        m = l;
-                        break;
+                        float f = 0;
+                        if (pol1 && pol2 && pol3) f += 35;
+                        if (pi1 && pi2 && pi3) f += 5;
+                        if (!pol1 && !pol2 && !pol3) f += 15;
+                        if (f > best3)
+                        {
+                            m = l;
+                            best3 = f;
+                        }
                     }
+                }
+
+                if (m>=0)
+                {
+                    a3 = existing.get_atom(m);
+                    pol3 = a3->is_polar();
+                    if (fabs(pol3) < hydrophilicity_cutoff) pol3 = 0;
+                    if (fam3 == TETREL) pol3 = 0;
+                    pi3 = a3->is_pi();
+                    if (fam3 == PNICTOGEN && (a3->get_bonded_atoms_count() > 2 || a3->is_bonded_to("H"))) pol3 = 0;
                 }
 
                 Point featcen = a1->loc.add(a2->loc);

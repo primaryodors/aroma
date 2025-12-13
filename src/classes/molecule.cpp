@@ -1881,6 +1881,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
     */
     char buffer[1024];
     int added=0;
+    bool has_conects = false;
 
     while (!feof(is))
     {
@@ -1944,22 +1945,11 @@ int Molecule::from_pdb(FILE* is, bool het_only)
 
                     Atom* a = add_atom(esym, words[2], &aloc, 0, 0, charge);
                     a->pdbidx = atoi(words[1]);
+                    // cout << "Load " << a->name << " as pdbidx " << a->pdbidx << endl;
                     if (offset) a->pdbchain = words[4][0];
                     added++;
 
                     // a->residue = atoi(words[4]);
-
-                    for (i=0; atoms[i]; i++)
-                    {
-                        if (atoms[i] == a) continue;
-                        float r = aloc.get_3d_distance(atoms[i]->loc);
-                        if (r < 5)
-                        {
-                            if (r < 1.05* InteratomicForce::covalent_bond_radius(a, atoms[i], 1))
-                                a->bond_to(atoms[i], 1);
-                        }
-                    }
-
                 }
                 catch (int ex)
                 {
@@ -1968,6 +1958,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
             }
             else if (!strcmp(words[0], "CONECT") && words[1] && words[2])
             {
+                has_conects = true;
                 int ia1 = atoi(words[1]), ia2 = atoi(words[2]);
                 Atom *a1 = get_atom_by_pdbidx(ia1), *a2 = get_atom_by_pdbidx(ia2);
                 if (a1 && a2)
@@ -1977,16 +1968,22 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                     {
                         card = atof(words[3]);
                         a1->bond_to(a2, card);
+                        // cout << a1->name << " bond to " << a2->name << " card " << card << endl;
                     }
                     else
                     {
                         a1->bond_to(a2, card);
+                        // cout << a1->name << " bond to " << a2->name << " &c" << endl;
                         int l;
                         for (l=3; words[l]; l++)
                         {
                             ia2 = atoi(words[l]);
                             a2 = get_atom_by_pdbidx(ia2);
-                            if (a2) a1->bond_to(a2, card);
+                            if (a2)
+                            {
+                                a1->bond_to(a2, card);
+                                // cout << a1->name << " bond to " << a2->name << endl;
+                            }
                         }
                     }
                 }
@@ -1995,6 +1992,23 @@ int Molecule::from_pdb(FILE* is, bool het_only)
         buffer[0] = 0;
 
         delete words;
+    }
+
+    if (!has_conects)
+    {
+        int i, j;
+        for (i=0; atoms[i]; i++)
+        {
+            for (j=i+1; atoms[j]; j++)
+            {
+                float r = atoms[i]->distance_to(atoms[j]);
+                if (r < 5)
+                {
+                    if (r < 1.05* InteratomicForce::covalent_bond_radius(atoms[i], atoms[j], 1))
+                        atoms[i]->bond_to(atoms[j], 1);
+                }
+            }
+        }
     }
 
     identify_conjugations();
@@ -2196,13 +2210,16 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
-        for (j=sgn(i); j<atoms[i]->get_valence(); j++)
+        l = atoms[i]->get_bonded_atoms_count();
+        // cout << "Save " << atoms[i]->name << " as pdbidx " << atoms[i]->pdbidx << " bonded to " << l << " atoms" << endl;
+        for (j=0; j<l; j++)
         {
             Bond* b = atoms[i]->get_bond_by_idx(j);
             if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i])
             {
                 conecta1[nconects] = atoms[i];
                 conecta2[nconects] = b->atom2;
+                // cout << conecta1[nconects]->name << " is bonded to " << conecta2[nconects]->name << endl;
                 conectcard[nconects] = b->cardinality;
                 nconects++;
             }
@@ -2215,6 +2232,9 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
         {
             j = conecta1[i]->pdbidx;
             l = conecta2[i]->pdbidx;
+            /*cout << "Save " << conecta1[i]->name << " pdbidx=" << conecta1[i]->pdbidx
+                << " bonded to " << conecta2[i]->name << " pdbidx=" << conecta2[i]->pdbidx
+                << endl;*/
             fprintf(os, "CONECT %d %d %.2f\n", j, l, conectcard[i]);
         }
         fprintf(os, "\nTER\nEND\n\n");
