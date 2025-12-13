@@ -14911,7 +14911,7 @@
     "59dfe62ed331a252bfd9c75814530149":
     {
         "full_name": "1-octyl-2-pyrrolidone",
-        "smiles": "CCCCCCCC[NH2+]1CCCC1=O",
+        "smiles": "CCCCCCCCN1CCCC1=O",
         "activity":
         {
             "http://chemcom.be/wp-content/uploads/2014/12/2014-OR1D2-is-a-broadly-tuned-human-olfactory-receptor.pdf":

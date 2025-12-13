@@ -8,11 +8,12 @@
 #include "classes/progress.h"
 
 #define phore_polar_maxr 3.5
-#define phore_aliphatic_maxr 0.5
+#define phore_aliphatic_maxr 1.0
 #define phore_pi_maxr 2.5
 
 #define feature_type_hbacc 0x04b0
 #define feature_type_hbdon 0x04b1
+#define feature_type_sulph 0x05b0
 #define feature_type_aliph 0x0a20
 #define feature_type_pi    0x0b11
 #define feature_type_excl  0xf000
@@ -148,7 +149,10 @@ int main(int argc, char** argv)
     {
         a1 = mb1[0];
         a2 = mb2[0];
+        Pose putitback(&added);
+        float p = existing.similar_atom_proximity(&added);
         added.conform_atom_to_location(a2, a1);
+        if (existing.similar_atom_proximity(&added) < 0.75*p) putitback.restore_state(&added);
         axis = a1->loc.subtract(a2->loc);
         step = axis.r / 31;
         Vector v = axis;
@@ -156,7 +160,7 @@ int main(int argc, char** argv)
         // cout << a2->name << " => " << a1->name << ": ";
         for (x=0; x<axis.r; x+=step)
         {
-            float p = existing.similar_atom_proximity(&added);
+            p = existing.similar_atom_proximity(&added);
             // cout << p << " ";
             if (p > bestc)
             {
@@ -247,7 +251,9 @@ int main(int argc, char** argv)
                     float ril = a1->distance_to(a3);
                     float rjl = a2->distance_to(a3);
 
-                    if ((pol1 && sgn(pol2) == sgn(pol1) && sgn(pol2) == sgn(pol3) && ril <= phore_polar_maxr && rjl <= phore_polar_maxr)
+                    if ((fam1 == CHALCOGEN && fam2 == CHALCOGEN && fam3 == CHALCOGEN && ril <= phore_polar_maxr && rjl <= phore_polar_maxr)
+                        ||
+                        (pol1 && sgn(pol2) == sgn(pol1) && sgn(pol2) == sgn(pol3) && ril <= phore_polar_maxr && rjl <= phore_polar_maxr)
                         ||
                         (!pol1 && !pol2 && !pol3 && pi1 && pi2 && pi3 && ril <= phore_pi_maxr && rjl <= phore_pi_maxr)
                         ||
@@ -270,6 +276,7 @@ int main(int argc, char** argv)
                 {
                     a3 = existing.get_atom(m);
                     pol3 = a3->is_polar();
+                    fam3 = a3->get_family();
                     if (fabs(pol3) < hydrophilicity_cutoff) pol3 = 0;
                     if (fam3 == TETREL) pol3 = 0;
                     pi3 = a3->is_pi();
@@ -291,15 +298,23 @@ int main(int argc, char** argv)
                 feature[nfeature] = featcen;
                 featurer[nfeature] = featr;
 
-                if (pol1 < 0 && pol2 < 0 && (m<0 || pol3 < 0))
-                    feattype[nfeature] = feature_type_hbacc;
+                /*cout << a1->pdbchain << ":" << a1->name << " "
+                    << a2->pdbchain << ":" << a2->name << " "
+                    << (m<0 ? ' ' : a3->pdbchain) << ":" << (m<0 ? "" : a3->name) << endl;*/
+                if (fam1 == CHALCOGEN && fam2 == CHALCOGEN && (m<0 || fam3 == CHALCOGEN) && a1->Z > 10 && a2->Z > 10 && (m<0 || a3->Z > 10))
+                    feattype[nfeature] = feature_type_sulph;
+                else if (pol1 < 0 && pol2 < 0 && (m<0 || pol3 < 0))
+                    feattype[nfeature] = (a1->Z < 10 && a2->Z < 10 && (m<0 || a3->Z < 10)) ? feature_type_hbacc : feature_type_sulph;
                 else if (pol1 > 0 && pol2 > 0 && (m<0 || pol3 > 0))
-                    feattype[nfeature] = feature_type_hbdon;
+                    feattype[nfeature] = (a1->get_heavy_atom()->Z < 10 && a2->get_heavy_atom()->Z < 10 
+                        && (m<0 || a3->get_heavy_atom()->Z < 10)) ? feature_type_hbdon : feature_type_sulph;
                 else if (m>=0 && a1->Z > 1 && a2->Z > 1 && a3->Z > 1 && !pol1 && !pol2 && !pol3 && pi1 && pi2 && pi3)
                     feattype[nfeature] = feature_type_pi;
                 else if (m>=0 && a1->Z > 1 && a2->Z > 1 && a3->Z > 1 && !pol1 && !pol2 && !pol3)
                     feattype[nfeature] = feature_type_aliph;
                 else continue;
+
+                // cout << hex << feattype[nfeature] << dec << endl;
 
                 nfeature++;
 
@@ -321,9 +336,10 @@ int main(int argc, char** argv)
 
     for (i=0; i<nfeature; i++)
     {
-        fprintf(fp, "REMARK 821 0 %.3f %.3f %.3f %.3f ...%c.%c%c \n",
+        fprintf(fp, "REMARK 821 0 %.3f %.3f %.3f %.3f ...%c%c%c%c \n",
             feature[i].x, feature[i].y, feature[i].z, featurer[i],
             feattype[i] == feature_type_hbacc ? 'A' : (feattype[i] == feature_type_hbdon ? 'D' : '.'),
+            feattype[i] == feature_type_sulph ? 'S' : '.',
             feattype[i] == feature_type_pi ? 'P' : '.',
             feattype[i] == feature_type_excl ? 'X' : '.'
         );
@@ -331,6 +347,7 @@ int main(int argc, char** argv)
 
     existing.save_pdb(fp, 0, true);
     fclose(fp);
+    cout << "Wrote " << outfname << endl;
 
     return 0;
 }
