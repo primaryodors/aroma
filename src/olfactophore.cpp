@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     existing.recenter(Point(0,0,0));
     added.recenter(Point(0,0,0));
 
-    float x, y, z, step=2.5*fiftyseventh;
+    float x, y, z, step=3.5*fiftyseventh;
     Vector ax = Point(1,0,0), ay = Point(0,1,0), az = Point(0,0,1);
     Pose best(&added);
     float bestc = 0;
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
             for (z=0; z<M_PI*2; z+=step)
             {
                 // Interaction e = existing.get_intermol_clashes(&added);
-                float p = existing.similar_atom_proximity(&added);
+                float p = existing.similar_atom_proximity(&added) + 0.03 * existing.get_intermol_clashes(&added);
                 if (p > bestc)
                 {
                     best.copy_state(&added);
