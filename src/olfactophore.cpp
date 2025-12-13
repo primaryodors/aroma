@@ -37,9 +37,17 @@ int main(int argc, char** argv)
     float featurer[256];
     int feattype[256];
     int nfeature = 0;
+    char *infname1 = nullptr, *infname2 = nullptr;
+    std::string outfname = "olfactophore.pdb";
 
     for (i=1; i<argc; i++)
     {
+        if (!strcmp(argv[i], "-o"))
+        {
+            outfname = argv[++i];
+            continue;
+        }
+
         char* ext = strstr(argv[i], ".sdf");
         if (ext)
         {
@@ -60,11 +68,13 @@ int main(int argc, char** argv)
 
             if (!existing.get_atom_count())
             {
+                infname1 = argv[i];
                 existing.from_sdf(buffer);
                 existsdf = true;
             }
             else
             {
+                infname2 = argv[i];
                 added.from_sdf(buffer);
                 addedsdf = true;
             }
@@ -77,17 +87,28 @@ int main(int argc, char** argv)
                 cerr << "Failed to open " << argv[i] << " for reading." << endl;
             }
 
-            if (!existing.get_atom_count()) existing.from_pdb(fp, true);
-            else added.from_pdb(fp, true);
+            if (!existing.get_atom_count())
+            {
+                existing.from_pdb(fp, true);
+                infname1 = argv[i];
+            }
+            else
+            {
+                added.from_pdb(fp, true);
+                infname2 = argv[i];
+            }
         }
     }
 
-    if (!existing.get_atom_count() && !added.get_atom_count())
+    if (!infname1 || !infname2)
     {
         cerr << "This utility requires two molecules." << endl;
         show_usage();
         return -1;
     }
+
+    if (!strcmp(outfname.c_str(), "1")) outfname = infname1;
+    if (!strcmp(outfname.c_str(), "2")) outfname = infname2;
 
     if (existsdf)
     {
@@ -208,6 +229,7 @@ int main(int argc, char** argv)
         float pol1 = a1->is_polar();
         if (fabs(pol1) < hydrophilicity_cutoff) pol1 = 0;
         if (fam1 == TETREL) pol1 = 0;
+        if (fam1 == TETREL && a1->is_bonded_to(CHALCOGEN, 2)) continue;
         bool pi1 = a1->is_pi();
         if (fam1 == PNICTOGEN && (a1->get_bonded_atoms_count() > 2 || a1->is_bonded_to("H"))) pol1 = 0;
         for (j=i+1; j<n; j++)
@@ -219,6 +241,7 @@ int main(int argc, char** argv)
             float pol2 = a2->is_polar();
             if (fabs(pol2) < hydrophilicity_cutoff) pol2 = 0;
             if (fam2 == TETREL) pol2 = 0;
+            if (fam2 == TETREL && a2->is_bonded_to(CHALCOGEN, 2)) continue;
             bool pi2 = a2->is_pi();
             if (fam2 == PNICTOGEN && (a2->get_bonded_atoms_count() > 2 || a2->is_bonded_to("H"))) pol2 = 0;
 
@@ -245,6 +268,7 @@ int main(int argc, char** argv)
                     pol3 = a3->is_polar();
                     if (fabs(pol3) < hydrophilicity_cutoff) pol3 = 0;
                     if (fam3 == TETREL) pol3 = 0;
+                    if (fam3 == TETREL && a3->is_bonded_to(CHALCOGEN, 2)) continue;
                     pi3 = a3->is_pi();
                     if (fam3 == PNICTOGEN && (a3->get_bonded_atoms_count() > 2 || a3->is_bonded_to("H"))) pol3 = 0;
 
@@ -298,9 +322,11 @@ int main(int argc, char** argv)
                 feature[nfeature] = featcen;
                 featurer[nfeature] = featr;
 
-                /*cout << a1->pdbchain << ":" << a1->name << " "
+                #if 0
+                cout << a1->pdbchain << ":" << a1->name << " "
                     << a2->pdbchain << ":" << a2->name << " "
-                    << (m<0 ? ' ' : a3->pdbchain) << ":" << (m<0 ? "" : a3->name) << endl;*/
+                    << (m<0 ? ' ' : a3->pdbchain) << ":" << (m<0 ? "" : a3->name) << endl;
+                #endif
                 if (fam1 == CHALCOGEN && fam2 == CHALCOGEN && (m<0 || fam3 == CHALCOGEN) && a1->Z > 10 && a2->Z > 10 && (m<0 || a3->Z > 10))
                     feattype[nfeature] = feature_type_sulph;
                 else if (pol1 < 0 && pol2 < 0 && (m<0 || pol3 < 0))
@@ -327,7 +353,6 @@ int main(int argc, char** argv)
         if (dirty[i]) continue;
     }
 
-    std::string outfname = "olfactophore.pdb";
     fp = fopen(outfname.c_str(), "wb");
     if (!fp)
     {

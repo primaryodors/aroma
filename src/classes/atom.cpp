@@ -901,7 +901,7 @@ Atom* Atom::is_bonded_to(const char* element, const int lcardinality)
         if (bonded_to[i].atom2)
             if (!strcmp(bonded_to[i].atom2->get_elem_sym(), element)
                     &&
-                    bonded_to[i].cardinality == lcardinality
+                    fabs(bonded_to[i].cardinality - lcardinality) <= 0.25
                )
                 return bonded_to[i].atom2;
     return 0;
