@@ -12,7 +12,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test test/conj_test
-APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/odorophore \
+APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit
 all: $(DIRS) \
 	 $(OBJS) \
@@ -205,8 +205,8 @@ $(BIN)/qc: src/qc.cpp $(OBJS) $(OBJ)/protein.o
 $(BIN)/scorpion: src/scorpion.cpp $(OBJS) $(OBJ)/protein.o $(OBJ)/scoring.o
 	$(CPL) src/scorpion.cpp $(OBJS) $(DOBJ) -o $(BIN)/scorpion $(CFLAGS)
 
-$(BIN)/odorophore: src/odorophore.cpp $(OBJS) $(OBJ)/protein.o
-	$(CPL) src/odorophore.cpp $(OBJS) $(DOBJ) -o $(BIN)/odorophore $(CFLAGS)
+$(BIN)/olfactophore: src/olfactophore.cpp $(OBJS) $(OBJ)/protein.o
+	$(CPL) src/olfactophore.cpp $(OBJS) $(DOBJ) -o $(BIN)/olfactophore $(CFLAGS)
 
 $(BIN)/ramachandran: src/ramachandran.cpp $(OBJS) $(OBJ)/protein.o
 	$(CPL) src/ramachandran.cpp $(OBJS) $(DOBJ) -o $(BIN)/ramachandran $(CFLAGS)

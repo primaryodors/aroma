@@ -8778,9 +8778,7 @@
             [
                 "cherry",
                 "maraschino_cherry",
-                "almond",
-                "bitter",
-                "almond",
+                "bitter_almond",
                 "cherry",
                 "tropical",
                 "custard",
@@ -26360,6 +26358,25 @@
         "full_name": "ethyl acetate",
         "smiles": "CC(=O)OCC",
         "oid": "9867cdf9a838cc8fbb484f332c37fb3d"
+    },
+    "98682ab2bca3ba8fa57e90d662d366e7":
+    {
+        "full_name": "2-tert-butyl-5-methyl anisole",
+        "name1": "leatherinol",
+        "smiles": "COc1cc(C)ccc1C(C)(C)C",
+        "cas": "88-40-4",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "leather",
+                "spicy",
+                "animalic",
+                "phenolic",
+                "ambrette"
+            ]
+        },
+        "oid": "98682ab2bca3ba8fa57e90d662d366e7"
     },
     "98b53a93656cbe9cb4888249ea47875a":
     {
