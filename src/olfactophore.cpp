@@ -7,6 +7,16 @@
 #include "classes/protein.h"
 #include "classes/progress.h"
 
+#define phore_polar_maxr 3.5
+#define phore_aliphatic_maxr 1.5
+#define phore_pi_maxr 2.5
+
+#define feature_type_hbacc 0x04b0
+#define feature_type_hbdon 0x04b1
+#define feature_type_aliph 0x0a20
+#define feature_type_pi    0x0b11
+#define feature_type_excl  0xf000
+
 using namespace std;
 
 void show_usage()
@@ -19,9 +29,13 @@ int main(int argc, char** argv)
 {
     Molecule existing("existing"), added("added");
 
-    int i, n;
+    int i, j, l, m, n;
     FILE* fp;
     bool existsdf = false, addedsdf = false;
+    Point feature[256];
+    float featurer[256];
+    int feattype[256];
+    int nfeature = 0;
 
     for (i=1; i<argc; i++)
     {
@@ -125,7 +139,7 @@ int main(int argc, char** argv)
 
     best.restore_state(&added);
 
-    Atom *a1, *a2;
+    Atom *a1, *a2, *a3;
 
     bestc = 0;
     Atom** mb1 = existing.get_most_bindable(1);
@@ -180,12 +194,120 @@ int main(int argc, char** argv)
         existing.add_existing_atom(a2);
     }
 
+    n = existing.get_atom_count();
+    bool dirty[n+4];
+    for (i=0; i<n; i++) dirty[i] = false;
+    for (i=0; i<n; i++)
+    {
+        if (dirty[i]) continue;
+        a1 = existing.get_atom(i);
+        int fam1 = a1->get_family();
+        float pol1 = a1->is_polar();
+        if (fabs(pol1) < hydrophilicity_cutoff) pol1 = 0;
+        if (fam1 == TETREL) pol1 = 0;
+        bool pi1 = a1->is_pi();
+        for (j=i+1; j<n; j++)
+        {
+            if (dirty[j]) continue;
+            a2 = existing.get_atom(j);
+            int fam2 = a2->get_family();
+            if (a1->pdbchain == a2->pdbchain && a2->is_bonded_to(a1)) continue;
+            float pol2 = a2->is_polar();
+            if (fabs(pol2) < hydrophilicity_cutoff) pol2 = 0;
+            if (fam2 == TETREL) pol2 = 0;
+            bool pi2 = a2->is_pi();
+
+            float rij = a1->distance_to(a2);
+            m = -1;
+            if ((pol1 && sgn(pol2) == sgn(pol1) && rij <= phore_polar_maxr)
+                ||
+                (!pol1 && !pol2 && pi1 && pi2 && rij <= phore_pi_maxr)
+                ||
+                (!pol1 && !pol2 && rij <= phore_aliphatic_maxr)
+                )
+            {
+                float pol3;
+                bool pi3;
+                for (l=j+1; l<n; l++)
+                {
+                    if (dirty[l]) continue;
+                    a3 = existing.get_atom(l);
+                    int fam3 = a3->get_family();
+                    if (a3->pdbchain == a1->pdbchain && a3->is_bonded_to(a1)) continue;
+                    if (a3->pdbchain == a2->pdbchain && a3->is_bonded_to(a2)) continue;
+                    pol3 = a3->is_polar();
+                    if (fabs(pol3) < hydrophilicity_cutoff) pol3 = 0;
+                    if (fam3 == TETREL) pol3 = 0;
+                    pi3 = a3->is_pi();
+
+                    float ril = a1->distance_to(a3);
+                    float rjl = a2->distance_to(a3);
+
+                    if ((pol1 && sgn(pol2) == sgn(pol1) && sgn(pol2) == sgn(pol3) && ril <= phore_polar_maxr && rjl <= phore_polar_maxr)
+                        ||
+                        (!pol1 && !pol2 && !pol3 && pi1 && pi2 && pi3 && ril <= phore_pi_maxr && rjl <= phore_pi_maxr)
+                        ||
+                        (!pol1 && !pol2 && !pol3 && ril <= phore_aliphatic_maxr && rjl <= phore_aliphatic_maxr)
+                        )
+                    {
+                        m = l;
+                        break;
+                    }
+                }
+
+                Point featcen = a1->loc.add(a2->loc);
+                if (m>=0) featcen = featcen.add(a3->loc);
+                featcen.multiply(1.0 / ((m>=0)?3:2));
+                float featr = a1->loc.get_3d_distance(featcen) + a1->vdW_radius;
+                float r = a2->loc.get_3d_distance(featcen) + a2->vdW_radius;
+                if (r > featr) featr = r;
+                if (m>=0)
+                {
+                    r = a3->loc.get_3d_distance(featcen) + a3->vdW_radius;
+                    if (r > featr) featr = r;
+                }
+
+                feature[nfeature] = featcen;
+                featurer[nfeature] = featr;
+
+                if (pol1 < 0 && pol2 < 0 && (m<0 || pol3 < 0))
+                    feattype[nfeature] = feature_type_hbacc;
+                else if (pol1 > 0 && pol2 > 0 && (m<0 || pol3 > 0))
+                    feattype[nfeature] = feature_type_hbdon;
+                else if (m>=0 && a1->Z > 1 && a2->Z > 1 && a3->Z > 1 && !pol1 && !pol2 && !pol3 && pi1 && pi2 && pi3)
+                    feattype[nfeature] = feature_type_pi;
+                else if (m>=0 && a1->Z > 1 && a2->Z > 1 && a3->Z > 1 && !pol1 && !pol2 && !pol3)
+                    feattype[nfeature] = feature_type_aliph;
+                else continue;
+
+                nfeature++;
+
+                dirty[i] = true;
+                dirty[j] = true;
+                if (m>=0) dirty[m] = true;
+            }
+            if (dirty[j]) continue;
+        }
+        if (dirty[i]) continue;
+    }
+
     std::string outfname = "olfactophore.pdb";
     fp = fopen(outfname.c_str(), "wb");
     if (!fp)
     {
         cerr << "Failed to open " << outfname << " for reading." << endl;
     }
+
+    for (i=0; i<nfeature; i++)
+    {
+        fprintf(fp, "REMARK 821 0 %.3f %.3f %.3f %.3f ...%c.%c%c \n",
+            feature[i].x, feature[i].y, feature[i].z, featurer[i],
+            feattype[i] == feature_type_hbacc ? 'A' : (feattype[i] == feature_type_hbdon ? 'D' : '.'),
+            feattype[i] == feature_type_pi ? 'P' : '.',
+            feattype[i] == feature_type_excl ? 'X' : '.'
+        );
+    }
+
     existing.save_pdb(fp, 0, true);
     fclose(fp);
 
