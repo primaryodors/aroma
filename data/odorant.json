@@ -11627,6 +11627,11 @@
     {
         "full_name": "laitone",
         "smiles": "CC(C1CCC2(CC1)CCC(=O)O2)C",
+        "isomers":
+        {
+            "(Z)": "CC([C@H]1CC[C@@]2(CC1)CCC(=O)O2)C",
+            "(E)": "CC([C@H]1CC[C@]2(CC1)CCC(=O)O2)C"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
