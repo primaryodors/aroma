@@ -26,105 +26,9 @@ void show_usage()
     cout << "bin/olfactophore sdf/[molecule #1's .sdf file] sdf/[molecule #2's .sdf file]" << endl;
 }
 
-int main(int argc, char** argv)
+Pose phore_tumble_3d(Molecule& existing, Molecule& added)
 {
-    Molecule existing("existing"), added("added");
-
-    int i, j, l, m, n;
-    FILE* fp;
-    bool existsdf = false, addedsdf = false;
-    Point feature[256];
-    float featurer[256];
-    int feattype[256];
-    int nfeature = 0;
-    char *infname1 = nullptr, *infname2 = nullptr;
-    std::string outfname = "olfactophore.pdb";
-
-    for (i=1; i<argc; i++)
-    {
-        if (!strcmp(argv[i], "-o"))
-        {
-            outfname = argv[++i];
-            continue;
-        }
-
-        char* ext = strstr(argv[i], ".sdf");
-        if (ext)
-        {
-            fp = fopen(argv[i], "r");
-            if (!fp)
-            {
-                cerr << "Failed to open " << argv[i] << " for reading." << endl;
-            }
-
-            fseek(fp, 0, SEEK_END);
-            int filesize = ftell(fp);
-            fseek(fp, 0, 0);
-
-            char buffer[filesize+16];
-            filesize = fread(buffer, 1, filesize, fp);          // piece of ju k throws a war ing if we just eat the retur  value.
-            buffer[filesize] = 0;
-            fclose(fp);
-
-            if (!existing.get_atom_count())
-            {
-                infname1 = argv[i];
-                existing.from_sdf(buffer);
-                existsdf = true;
-            }
-            else
-            {
-                infname2 = argv[i];
-                added.from_sdf(buffer);
-                addedsdf = true;
-            }
-        }
-        else if (ext = strstr(argv[i], ".pdb"))                 // ANC
-        {
-            fp = fopen(argv[i], "r");
-            if (!fp)
-            {
-                cerr << "Failed to open " << argv[i] << " for reading." << endl;
-            }
-
-            if (!existing.get_atom_count())
-            {
-                existing.from_pdb(fp, true);
-                infname1 = argv[i];
-            }
-            else
-            {
-                added.from_pdb(fp, true);
-                infname2 = argv[i];
-            }
-        }
-    }
-
-    if (!infname1 || !infname2)
-    {
-        cerr << "This utility requires two molecules." << endl;
-        show_usage();
-        return -1;
-    }
-
-    if (!strcmp(outfname.c_str(), "1")) outfname = infname1;
-    if (!strcmp(outfname.c_str(), "2")) outfname = infname2;
-
-    if (existsdf)
-    {
-        existing.movability = MOV_ALL;
-        existing.minimize_internal_clashes();
-    }
-    if (addedsdf)
-    {
-        added.movability = MOV_ALL;
-        added.minimize_internal_clashes();
-    }
-
-    existing.recenter(Point(0,0,0));
-    added.recenter(Point(0,0,0));
-
-    float x, y, z, step=3.5*fiftyseventh;
+    float x, y, z, step=3.6*fiftyseventh;
     Vector ax = Point(1,0,0), ay = Point(0,1,0), az = Point(0,0,1);
     Pose best(&added);
     float bestc = 0;
@@ -157,12 +61,16 @@ int main(int argc, char** argv)
         pgb.update(x);
     }
     pgb.erase();
-
     best.restore_state(&added);
 
-    Atom *a1, *a2, *a3;
+    return best;
+}
 
-    bestc = 0;
+Pose phore_bindable_adjustment(Molecule& existing, Molecule& added)
+{
+    Pose best(&added);
+    Atom *a1, *a2, *a3;
+    float bestc = 0;
     Atom** mb1 = existing.get_most_bindable(1);
     Atom** mb2 = added.get_most_bindable(1);
     Vector axis;
@@ -175,7 +83,7 @@ int main(int argc, char** argv)
         added.conform_atom_to_location(a2, a1);
         if (existing.similar_atom_proximity(&added) < 0.75*p) putitback.restore_state(&added);
         axis = a1->loc.subtract(a2->loc);
-        step = axis.r / 31;
+        float x, step = axis.r / 31;
         Vector v = axis;
         v.r = step;
         // cout << a2->name << " => " << a1->name << ": ";
@@ -197,26 +105,13 @@ int main(int argc, char** argv)
     if (mb2) delete[] mb2;
 
     best.restore_state(&added);
+    return best;
+}
 
-    char lastchain = 'A';
-
-    n = existing.get_atom_count();
-    for (i=0; i<n; i++)
-    {
-        a1 = existing.get_atom(i);
-        if (a1->pdbchain < 'A') a1->pdbchain = 'A';
-        if (a1->pdbchain > lastchain) lastchain = a1->pdbchain;
-    }
-
-    lastchain++;
-
-    n = added.get_atom_count();
-    for (i=0; i<n; i++)
-    {
-        a2 = added.get_atom(i);
-        a2->pdbchain = lastchain;
-        existing.add_existing_atom(a2);
-    }
+int find_features(Molecule& existing, Molecule& added, Point* feature, float* featurer, int* feattype)
+{
+    int i, j, l, m, n, nfeature=0;
+    Atom *a1, *a2, *a3;
 
     n = existing.get_atom_count();
     bool dirty[n+4];
@@ -353,26 +248,191 @@ int main(int argc, char** argv)
         if (dirty[i]) continue;
     }
 
-    fp = fopen(outfname.c_str(), "wb");
-    if (!fp)
+    return nfeature;
+}
+
+int main(int argc, char** argv)
+{
+    Protein prot;
+    Molecule existing("existing"), added("added");
+
+    int i, j, l, m, n;
+    FILE* fp;
+    bool existsdf = false, addedsdf = false;
+    Point feature[256];
+    float featurer[256];
+    int feattype[256];
+    int nfeature = 0;
+    char *infname1 = nullptr, *infname2 = nullptr;
+    std::string outfname = "olfactophore.pdb";
+
+    for (i=1; i<argc; i++)
     {
-        cerr << "Failed to open " << outfname << " for reading." << endl;
+        if (!strcmp(argv[i], "-o"))
+        {
+            outfname = argv[++i];
+            continue;
+        }
+
+        char* ext = strstr(argv[i], ".sdf");
+        if (ext)
+        {
+            fp = fopen(argv[i], "r");
+            if (!fp)
+            {
+                cerr << "Failed to open " << argv[i] << " for reading." << endl;
+            }
+
+            fseek(fp, 0, SEEK_END);
+            int filesize = ftell(fp);
+            fseek(fp, 0, 0);
+
+            char buffer[filesize+16];
+            filesize = fread(buffer, 1, filesize, fp);          // piece of ju k throws a war ing if we just eat the retur  value.
+            buffer[filesize] = 0;
+            fclose(fp);
+
+            if (!existing.get_atom_count())
+            {
+                infname1 = argv[i];
+                existing.from_sdf(buffer);
+                existsdf = true;
+            }
+            else
+            {
+                infname2 = argv[i];
+                added.from_sdf(buffer);
+                addedsdf = true;
+            }
+        }
+        else if (ext = strstr(argv[i], ".pdb"))                 // ANC
+        {
+            fp = fopen(argv[i], "r");
+            if (!fp)
+            {
+                cerr << "Failed to open " << argv[i] << " for reading." << endl;
+            }
+
+            if (!existing.get_atom_count())
+            {
+                if (!prot.get_seq_length())
+                {
+                    prot.load_pdb(fp);
+                    if (prot.get_seq_length())
+                    {
+                        fclose(fp);
+                        continue;
+                    }
+                }
+
+                fseek(fp, 0, 0);
+                existing.from_pdb(fp, true);
+                infname1 = argv[i];
+            }
+            else
+            {
+                added.from_pdb(fp, true);
+                infname2 = argv[i];
+            }
+            fclose(fp);
+        }
     }
 
-    for (i=0; i<nfeature; i++)
+    if (infname1 && infname2)
     {
-        fprintf(fp, "REMARK 821 0 %.3f %.3f %.3f %.3f ...%c%c%c%c \n",
-            feature[i].x, feature[i].y, feature[i].z, featurer[i],
-            feattype[i] == feature_type_hbacc ? 'A' : (feattype[i] == feature_type_hbdon ? 'D' : '.'),
-            feattype[i] == feature_type_sulph ? 'S' : '.',
-            feattype[i] == feature_type_pi ? 'P' : '.',
-            feattype[i] == feature_type_excl ? 'X' : '.'
-        );
+        if (!strcmp(outfname.c_str(), "1")) outfname = infname1;
+        if (!strcmp(outfname.c_str(), "2")) outfname = infname2;
+
+        if (existsdf)
+        {
+            existing.movability = MOV_ALL;
+            existing.minimize_internal_clashes();
+        }
+        if (addedsdf)
+        {
+            added.movability = MOV_ALL;
+            added.minimize_internal_clashes();
+        }
+
+        existing.recenter(Point(0,0,0));
+        added.recenter(Point(0,0,0));
+
+        Pose best;
+        best = phore_tumble_3d(existing, added);
+        best = phore_bindable_adjustment(existing, added);
+
+        char lastchain = 'A';
+
+        Atom *a1, *a2;
+        n = existing.get_atom_count();
+        for (i=0; i<n; i++)
+        {
+            a1 = existing.get_atom(i);
+            if (a1->pdbchain < 'A') a1->pdbchain = 'A';
+            if (a1->pdbchain > lastchain) lastchain = a1->pdbchain;
+        }
+
+        lastchain++;
+
+        n = added.get_atom_count();
+        for (i=0; i<n; i++)
+        {
+            a2 = added.get_atom(i);
+            a2->pdbchain = lastchain;
+            existing.add_existing_atom(a2);
+        }
+
+        nfeature = find_features(existing, added, feature, featurer, feattype);
+        // cout << "Found " << nfeature << " features." << endl;
+
+        fp = fopen(outfname.c_str(), "wb");
+        if (!fp)
+        {
+            cerr << "Failed to open " << outfname << " for reading." << endl;
+        }
+
+        for (i=0; i<nfeature; i++)
+        {
+            fprintf(fp, "REMARK 821 0 %.3f %.3f %.3f %.3f ...%c%c%c%c \n",
+                feature[i].x, feature[i].y, feature[i].z, featurer[i],
+                feattype[i] == feature_type_hbacc ? 'A' : (feattype[i] == feature_type_hbdon ? 'D' : '.'),
+                feattype[i] == feature_type_sulph ? 'S' : '.',
+                feattype[i] == feature_type_pi ? 'P' : '.',
+                feattype[i] == feature_type_excl ? 'X' : '.'
+            );
+        }
+
+        existing.save_pdb(fp, 0, true);
+        fclose(fp);
+        cout << "Wrote " << outfname << endl;
+    }
+    else if (prot.get_seq_length() && infname1)
+    {
+        Progressbar pgb;
+        pgb.set_color(224, 32, 144);
+        cout << "Performing pocket search..." << endl << flush;
+        Point sz = prot.get_region_bounds(1, 99999);
+        sz.multiply(0.666);
+        Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
+        prot.tumble_ligand_inside_pocket(&existing, cen, &pgb);
+
+        fp = fopen(outfname.c_str(), "wb");
+        if (!fp)
+        {
+            cerr << "Failed to open " << outfname << " for reading." << endl;
+        }
+
+        prot.save_pdb(fp, &existing);
+        fclose(fp);
+        cout << "Wrote " << outfname << endl;
+    }
+    else
+    {
+        cerr << "This utility requires two molecules." << endl;
+        show_usage();
+        return -1;
     }
 
-    existing.save_pdb(fp, 0, true);
-    fclose(fp);
-    cout << "Wrote " << outfname << endl;
 
     return 0;
 }

@@ -4543,6 +4543,55 @@ int Protein::replace_side_chains_from_other_protein(Protein* other)
     return num_applied;
 }
 
+float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Progressbar* pgb)
+{
+    float x, y, z, step = 6*fiftyseventh;
+    Vector ax = Point(1000,0,0), ay = Point(0,1000,0), az = Point(0,0,1000);
+
+    ligand->recenter(pocketcen);
+    AminoAcid* rs[SPHREACH_MAX+4];
+    Point sphsize(7.5,7.5,7.5);
+    int sphres = get_residues_can_clash_ligand(rs, ligand, pocketcen, sphsize);
+    int i;
+    Pose best(ligand);
+    Interaction beste = 0;
+    beste.clash = Avogadro;
+
+    for (i=0; i<sphres; i++) cout << *rs[i] << " ";
+    cout << endl;
+
+    if (pgb)
+    {
+        pgb->minimum = 0;
+        pgb->maximum = M_PI*2;
+        cout << endl;
+    }
+
+    for (x=0; x<M_PI*2; x+=step)
+    {
+        if (pgb) pgb->update(x);
+        for (y=0; y<M_PI*2; y+=step)
+        {
+            for (z=0; z<M_PI*2; z+=step)
+            {
+                Interaction e = ligand->get_intermol_binding((Molecule**)rs);
+                if (e.improved(beste))
+                {
+                    best.copy_state(ligand);
+                    beste = e;
+                }
+                ligand->rotate(&az, step);
+            }
+            ligand->rotate(&ay, step);
+        }
+        ligand->rotate(&ax, step);
+    }
+    if (pgb) pgb->erase();
+
+    best.restore_state(ligand);
+    return beste.summed();
+}
+
 Point Region::start_CA_location(Protein* p)
 {
     AminoAcid* aa = p->get_residue(start);

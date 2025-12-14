@@ -1,5 +1,6 @@
 
 #include "aminoacid.h"
+#include "progress.h"
 
 #ifndef _PROTEIN
 #define _PROTEIN
@@ -198,6 +199,7 @@ public:
     void find_residue_initial_bindings();
     void undo();
 
+    // Secondary structure
     void make_helix(int startres, int endres, float phi, float psi);
     void make_helix(int startres, int endres, int stopat, float phi, float psi);
     float orient_helix
@@ -207,9 +209,13 @@ public:
         int iterations
     );
 
+    // Homology
     void homology_conform(Protein* target_structure, Protein* reference_structure);
     void bridge(int resno1, int resno2);
     int replace_side_chains_from_other_protein(Protein* other);
+
+    // Pre-placement
+    float tumble_ligand_inside_pocket(Molecule* ligand, Point pocketcen, Progressbar* pgb = nullptr);
 
     int mcoord_resnos[32];
 
