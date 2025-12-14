@@ -5655,6 +5655,29 @@
         },
         "oid": "1ec443fb909f050d9a2255dcccc7b6b6"
     },
+    "1ede00ea6f829f493411d114c0bc6258":
+    {
+        "full_name": "veramoss",
+        "name1": "evernyl",
+        "iupac": "methyl 2,4-dihydroxy-3,6-dimethylbenzoate",
+        "cas": "4707-47-5",
+        "smiles": "COC(=O)c1c(C)cc(c(c1O)C)O",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "mossy",
+                "oakmoss",
+                "woody",
+                "phenolic",
+                "earthy",
+                "dry",
+                "spicy",
+                "powdery"
+            ]
+        },
+        "oid": "1ede00ea6f829f493411d114c0bc6258"
+    },
     "1ee180ac7892e1b4eda0c17da9df66c1":
     {
         "full_name": "menthone",
