@@ -4550,7 +4550,7 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Pr
 
     ligand->recenter(pocketcen);
     AminoAcid* rs[SPHREACH_MAX+4];
-    Point sphsize(7.5,7.5,7.5);
+    Point sphsize(6,6,6);
     int sphres = get_residues_can_clash_ligand(rs, ligand, pocketcen, sphsize);
     int i;
     Pose best(ligand);
@@ -4575,6 +4575,7 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Pr
             for (z=0; z<M_PI*2; z+=step)
             {
                 Interaction e = ligand->get_intermol_binding((Molecule**)rs);
+                e.attractive *= 1e5;
                 if (e.improved(beste))
                 {
                     best.copy_state(ligand);
@@ -4587,6 +4588,26 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Pr
         ligand->rotate(&ax, step);
     }
     if (pgb) pgb->erase();
+
+    for (i=0; i<100; i++)
+    {
+        Vector motion(frand(0,1), frand(-M_PI, M_PI), frand(-M_PI, M_PI));
+        ligand->move(motion, true);
+        Interaction e = ligand->get_intermol_binding((Molecule**)rs);
+        if (e.improved(beste))
+        {
+            best.copy_state(ligand);
+            beste = e;
+        }
+        motion.r = 1000;
+        ligand->rotate(motion, frand(-M_PI, M_PI));
+        e = ligand->get_intermol_binding((Molecule**)rs);
+        if (e.improved(beste))
+        {
+            best.copy_state(ligand);
+            beste = e;
+        }
+    }
 
     best.restore_state(ligand);
     return beste.summed();
