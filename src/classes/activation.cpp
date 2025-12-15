@@ -31,7 +31,7 @@ void Activation::load_acvm_file(AcvType acvt)
         char* hash = strchr(buffer, '#');
         if (hash) *hash = 0;
         char** fields = chop_spaced_words(buffer);
-        if (!fields[0] || !strlen(fields[0])) continue;
+        if (!fields || !fields[0] || !strlen(fields[0])) continue;
 
         if (!strcmp(fields[0], "PIVOT"))                    // https://www.youtube.com/watch?v=n67RYI_0sc0
         {

@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
-#include "classes/protein.h"
+#include "classes/activation.h"
 #include "classes/progress.h"
 
 #define phore_polar_maxr 3.5
@@ -408,6 +408,15 @@ int main(int argc, char** argv)
     }
     else if (prot.get_seq_length() && infname1)
     {
+        if (prot.get_residue_bw(7, 50))
+        {
+            Activation acv;
+            acv.load_acvm_file(acv_GPCR);
+            cout << "Loaded activation file." << endl << flush;
+            acv.apply(&prot);
+            cout << "Applied activation motions." << endl << flush;
+        }
+
         Progressbar pgb;
         pgb.set_color(224, 32, 144);
         cout << "Performing pocket search..." << endl << flush;
