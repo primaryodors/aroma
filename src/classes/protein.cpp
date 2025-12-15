@@ -39,6 +39,7 @@ void ResiduePlaceholder::set(const char* str)
 void ResiduePlaceholder::resolve_resno(Protein* prot)
 {
     if (resno && !bw.length()) return;
+    m_prot = prot;
     int hxno = atoi(bw.c_str());
     const char* dot = strchr(bw.c_str(), '.');
     if (!dot)
@@ -47,7 +48,10 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
     }
     else
     {
-        int bwpos = atoi(dot+1);
+        dot++;
+        int bwpos = atoi(dot);
+        if (!strcmp(dot, "s")) bwpos = prot->get_region_start(hxno);
+        if (!strcmp(dot, "e")) bwpos = prot->get_region_start(hxno);
         int bw50 = prot->get_bw50(hxno);
         if (!bw50)
         {
@@ -68,6 +72,35 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
         char c = aa->get_letter();
         if (!strchr(allowed_aas.c_str(), c)) resno = 0;
     }
+}
+
+void ResidueAtomPlaceholder::set(const char *str)
+{
+    char buffer[strlen(str)+4];
+    strcpy(buffer, str);
+
+    char* colon = strchr(buffer, ':');
+    if (colon)
+    {
+        aname = (std::string)(colon+1);
+        *colon = 0;
+    }
+    else aname = "CA";
+
+    ResiduePlaceholder::set(buffer);
+}
+
+Point ResidueAtomPlaceholder::loc()
+{
+    if (!m_prot) return Point();
+    AminoAcid* aa = m_prot->get_residue(resno);
+    if (!aa) return Point();
+    Atom* a;
+    if (!strcmp(aname.c_str(), "x")) a = aa->get_reach_atom();
+    else a = aa->get_atom(aname.c_str());
+    if (!a) a = aa->get_atom("CA");
+    if (!a) return (aa->get_barycenter());
+    return a->loc;
 }
 
 Protein::Protein()
@@ -2996,9 +3029,97 @@ int Protein::get_region_start(const std::string name)
     return rgn.start;
 }
 
+int Protein::get_region_start(int hxno)
+{
+    std::string rgname;
+    if (hxno>=1 && hxno<=7) rgname = (std::string)"TMR" + std::to_string(hxno);
+    else if (hxno==8) rgname = (std::string)"HXR" + std::to_string(hxno);
+    else if (!((hxno-1) % 11))
+    {
+        hxno = (hxno-1)/11;
+        if (hxno & 1)
+        {
+            // CYT
+            hxno = (hxno+1) / 2;
+            rgname = (std::string)"CYT" + std::to_string(hxno);
+            Region rgn = get_region(rgname);
+            if (!rgn.start)
+            {
+                hxno *= 2;
+                hxno -= 1;
+                rgname = (std::string)"TMR" + std::to_string(hxno);
+                rgn = get_region(rgname);
+                return rgn.end+1;
+            }
+            else return rgn.start;
+        }
+        else
+        {
+            // EXR
+            hxno /= 2;
+            rgname = (std::string)"EXR" + std::to_string(hxno);
+            Region rgn = get_region(rgname);
+            if (!rgn.start)
+            {
+                hxno *= 2;
+                rgname = (std::string)"TMR" + std::to_string(hxno);
+                rgn = get_region(rgname);
+                return rgn.end+1;
+            }
+            else return rgn.start;
+        }
+    }
+    Region rgn = get_region(rgname);
+    return rgn.start;
+}
+
 int Protein::get_region_end(const std::string name)
 {
     Region rgn = get_region(name);
+    return rgn.end;
+}
+
+int Protein::get_region_end(int hxno)
+{
+    std::string rgname;
+    if (hxno>=1 && hxno<=7) rgname = (std::string)"TMR" + std::to_string(hxno);
+    else if (hxno==8) rgname = (std::string)"HXR" + std::to_string(hxno);
+    else if (!((hxno-1) % 11))
+    {
+        hxno = (hxno-1)/11;
+        if (hxno & 1)
+        {
+            // CYT
+            hxno = (hxno+1) / 2;
+            rgname = (std::string)"CYT" + std::to_string(hxno);
+            Region rgn = get_region(rgname);
+            if (!rgn.end)
+            {
+                hxno *= 2;
+                rgname = (std::string)"TMR" + std::to_string(hxno);
+                rgn = get_region(rgname);
+                return rgn.start-1;
+            }
+            else return rgn.end;
+        }
+        else
+        {
+            // EXR
+            hxno /= 2;
+            rgname = (std::string)"EXR" + std::to_string(hxno);
+            Region rgn = get_region(rgname);
+            if (!rgn.end)
+            {
+                hxno *= 2;
+                hxno += 1;
+                rgname = (std::string)"TMR" + std::to_string(hxno);
+                rgn = get_region(rgname);
+                return rgn.start-1;
+            }
+            else return rgn.end;
+        }
+    }
+    Region rgn = get_region(rgname);
     return rgn.end;
 }
 
@@ -4632,3 +4753,4 @@ std::ostream& operator<<(std::ostream& os, const BallesterosWeinstein& bw)
     os << bw.helix_no << "." << bw.member_no;
     return os;
 }
+

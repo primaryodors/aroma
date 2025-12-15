@@ -8,6 +8,9 @@
 #include <string>
 #include <climits>
 
+#define resplc_rgnstart -1
+#define resplc_rgnend -99
+
 enum region_source
 {
     rgn_none,
@@ -39,8 +42,9 @@ class BallesterosWeinstein
     void from_string(const char* inpstr);
 };
 
-struct ResiduePlaceholder
+class ResiduePlaceholder
 {
+    public:
     int node = 0;
     int resno = 0;
     std::string bw;
@@ -48,6 +52,18 @@ struct ResiduePlaceholder
 
     void set(const char* str);
     void resolve_resno(Protein* prot);
+
+    protected:
+    Protein* m_prot = nullptr;
+};
+
+class ResidueAtomPlaceholder : public ResiduePlaceholder
+{
+    public:
+    std::string aname;
+
+    void set(const char* str);
+    Point loc();
 };
 
 struct MCoord
@@ -115,7 +131,9 @@ public:
     Region get_region(std::string name);
     const Region* get_regions() { return regions; }
     int get_region_end(std::string name);
+    int get_region_end(int hxno);
     int get_region_start(std::string name);
+    int get_region_start(int hxno);
     bool aa_ptr_in_range( AminoAcid* aaptr );
     Atom* get_atom(int resno, const char* aname);
     std::string get_name()

@@ -6,7 +6,7 @@ TMP=tmp
 
 DIRS=$(OBJ) $(BIN) $(OUT) $(SDF) $(TMP)
 OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
-	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
+	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o $(OBJ)/activation.o
 DOBJ=$(OBJ)/dynamic.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test \
@@ -81,6 +81,9 @@ $(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/mol
 
 $(OBJ)/protein.o: src/classes/protein.h src/classes/protein.cpp $(OBJ)/aminoacid.o
 	$(CPL) -c src/classes/protein.cpp -o $(OBJ)/protein.o $(CFLAGS)
+
+$(OBJ)/activation.o: src/classes/activation.h src/classes/activation.cpp $(OBJ)/protein.o
+	$(CPL) -c src/classes/activation.cpp -o $(OBJ)/activation.o $(CFLAGS)
 
 $(OBJ)/search.o: src/classes/search.h src/classes/search.cpp $(OBJ)/protein.o
 	$(CPL) -c src/classes/search.cpp -o $(OBJ)/search.o $(CFLAGS)
