@@ -408,12 +408,12 @@ int main(int argc, char** argv)
     }
     else if (prot.get_seq_length() && infname1)
     {
+        Activation acv;
         if (prot.get_residue_bw(7, 50))
         {
-            Activation acv;
-            acv.load_acvm_file(acv_GPCR);
+            acv.load_acvm_file(acv_GPCR, &existing);
             cout << "Loaded activation file." << endl << flush;
-            acv.apply(&prot);
+            acv.apply(&prot, false);
             cout << "Applied activation motions." << endl << flush;
         }
 
@@ -424,6 +424,10 @@ int main(int argc, char** argv)
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
         prot.tumble_ligand_inside_pocket(&existing, cen, &pgb);
+        if (prot.get_residue_bw(7, 50))
+        {
+            acv.apply(&prot, true);
+        }
 
         fp = fopen(outfname.c_str(), "wb");
         if (!fp)

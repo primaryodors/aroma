@@ -1,7 +1,7 @@
 
 #include "activation.h"
 
-void Activation::load_acvm_file(AcvType acvt)
+void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
 {
     char infname[256];
     switch (acvt)
@@ -39,7 +39,9 @@ void Activation::load_acvm_file(AcvType acvt)
             m_acvm[nacvm].rap_start.set(fields[1]);
             m_acvm[nacvm].rap_end.set(fields[2]);
             m_acvm[nacvm].rap_fulcrum.set(fields[3]);
-            m_acvm[nacvm].rap_index.set(fields[4]);
+            if (!strcmp(fields[4], "entire"))
+                m_acvm[nacvm].entire = true;
+            else m_acvm[nacvm].rap_index.set(fields[4]);
             m_acvm[nacvm].tgtdist = atof(fields[5]);
             if (!strcmp(fields[5], "noclash"))
             {
@@ -50,7 +52,12 @@ void Activation::load_acvm_file(AcvType acvt)
                 m_acvm[nacvm].morethan = true;
                 m_acvm[nacvm].tgtdist = atof(&(fields[5][1]));
             }
-            m_acvm[nacvm].rap_target.set(fields[6]);
+            if (!strcmp(fields[4], "ligand"))
+            {
+                m_acvm[nacvm].tgtligand = true;
+                m_acvm[nacvm].ligand = ligand;
+            }
+            else m_acvm[nacvm].rap_target.set(fields[6]);
             nacvm++;
         }
         else if (!strcmp(fields[0], "PROX"))
@@ -65,10 +72,10 @@ void Activation::load_acvm_file(AcvType acvt)
     fclose(fp);
 }
 
-void Activation::apply(Protein *p)
+void Activation::apply(Protein *p, bool ool)            // This is our ool. There is no p in it. 🌊🏊🌊
 {
     int i;
-    for (i=0; i<nacvm; i++) m_acvm[i].apply(p);
+    for (i=0; i<nacvm; i++) if (m_acvm[i].tgtligand == ool) m_acvm[i].apply(p);
 }
 
 void ActiveMotion::apply(Protein *p)
@@ -81,24 +88,43 @@ void ActiveMotion::apply(Protein *p)
         if (!rap_end.resno) return;
         rap_fulcrum.resolve_resno(p);
         if (!rap_fulcrum.resno) return;
-        rap_index.resolve_resno(p);
-        if (!rap_index.resno) return;
-        rap_target.resolve_resno(p);
-        if (!rap_target.resno) return;
-
-        if (rap_index.aname.c_str()[0] == 'n')
-            rap_index.resolve_special_atom(p, rap_target.loc());
-        if (rap_target.aname.c_str()[0] == 'n')
-            rap_target.resolve_special_atom(p, rap_index.loc());
+        if (!entire)
+        {
+            rap_index.resolve_resno(p);
+            if (!rap_index.resno) return;
+            if (rap_index.aname.c_str()[0] == 'n')
+                rap_index.resolve_special_atom(p, rap_target.loc());
+        }
+        if (!tgtligand)
+        {
+            rap_target.resolve_resno(p);
+            if (!rap_target.resno) return;
+            if (rap_target.aname.c_str()[0] == 'n')
+                rap_target.resolve_special_atom(p, rap_index.loc());
+        }
 
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
+        if (tgtligand && !ligand)
+        {
+            cerr << "Called ligand-target active motion without a ligand set." << endl;
+            throw 0xbadc0de;                // bad code monkey no banana!
+        }
+        if (tgtligand) pt_target = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc())->loc;
+        Atom* closest_to_ligand = nullptr;
+        if (entire)
+        {
+            closest_to_ligand - p->get_nearest_atom(pt_target, rap_start.resno, rap_end.resno);
+            pt_index = closest_to_ligand->loc;
+        }
         Vector tolerance = pt_index.subtract(pt_target);
         Rotation rot;
         if (fixclash)
         {
             rot = align_points_3d(pt_target, pt_index, pt_fulcrum);
             int i;
-            AminoAcid *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
+            Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
+            if (entire) aai = (Molecule*)closest_to_ligand->mol;
+            if (tgtligand) aat = ligand;
             if (!aai || !aat)
             {
                 cerr << "Something went wrong." << endl;

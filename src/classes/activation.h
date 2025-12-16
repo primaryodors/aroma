@@ -28,13 +28,16 @@ class ActiveMotion
     float tgtdist = 0;
     bool fixclash = false;
     bool morethan = false;
+    bool entire = false;
+    bool tgtligand = false;
+    Molecule* ligand = nullptr;
 };
 
 class Activation
 {
     public:
-    void load_acvm_file(AcvType acvt);
-    void apply(Protein* p);
+    void load_acvm_file(AcvType acvt, Molecule* ligand);
+    void apply(Protein* p, bool ones_with_ligands = false);
 
     protected:
     ActiveMotion* m_acvm = nullptr;
