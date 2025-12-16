@@ -48,17 +48,18 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
     }
     else
     {
-        dot++;
-        int bwpos = atoi(dot);
-        if (!strcmp(dot, "s")) bwpos = prot->get_region_start(hxno);
-        if (!strcmp(dot, "e")) bwpos = prot->get_region_start(hxno);
         int bw50 = prot->get_bw50(hxno);
         if (!bw50)
         {
             resno = 0;
             return;
         }
+        dot++;
+        int bwpos = atoi(dot);
+        if (!strcmp(dot, "s")) bwpos = prot->get_region_start(hxno) + 50 - bw50;
+        if (!strcmp(dot, "e")) bwpos = prot->get_region_end(hxno) + 50 - bw50;
         resno = bw50 + bwpos - 50;
+        // cout << dot << " " << bwpos << " " << resno << endl;
     }
 
     if (allowed_aas.length())

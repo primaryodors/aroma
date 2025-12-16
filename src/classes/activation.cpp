@@ -69,6 +69,7 @@ void ActiveMotion::apply(Protein *p)
         pt_target = pt_target.add(tolerance);
         Rotation rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
 
+        cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " << (rot.a*fiftyseven) << "deg about " << rap_fulcrum.resno << "..." << endl;
         p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
     }
 }
