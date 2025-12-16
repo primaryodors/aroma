@@ -52,7 +52,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
                 m_acvm[nacvm].morethan = true;
                 m_acvm[nacvm].tgtdist = atof(&(fields[5][1]));
             }
-            if (!strcmp(fields[4], "ligand"))
+            if (!strcmp(fields[6], "ligand"))
             {
                 m_acvm[nacvm].tgtligand = true;
                 m_acvm[nacvm].ligand = ligand;
@@ -75,32 +75,52 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
 void Activation::apply(Protein *p, bool ool)            // This is our ool. There is no p in it. 🌊🏊🌊
 {
     int i;
-    for (i=0; i<nacvm; i++) if (m_acvm[i].tgtligand == ool) m_acvm[i].apply(p);
+    bool post = false;
+    for (i=0; i<nacvm; i++)
+    {
+        if (m_acvm[i].tgtligand) post = true;
+        if (post == ool) m_acvm[i].apply(p);
+    }
 }
 
 void ActiveMotion::apply(Protein *p)
 {
     if (acvmt == acvm_pivot)
     {
+        #if _dbg_acvm_apply
+        cout << "Pivot motion." << endl;
+        #endif
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
+        #if _dbg_acvm_apply
+        cout << "Resolved start resno " << rap_start.resno << " and end " << rap_end.resno << endl;
+        #endif
         rap_fulcrum.resolve_resno(p);
         if (!rap_fulcrum.resno) return;
+        #if _dbg_acvm_apply
+        cout << "Resolved fulcrum " << rap_fulcrum.resno << endl;
+        #endif
         if (!entire)
         {
             rap_index.resolve_resno(p);
-            if (!rap_index.resno) return;
             if (rap_index.aname.c_str()[0] == 'n')
                 rap_index.resolve_special_atom(p, rap_target.loc());
+            if (!rap_index.resno) return;
+            #if _dbg_acvm_apply
+            cout << "Resolved index " << rap_index.resno << endl;
+            #endif
         }
         if (!tgtligand)
         {
             rap_target.resolve_resno(p);
-            if (!rap_target.resno) return;
             if (rap_target.aname.c_str()[0] == 'n')
                 rap_target.resolve_special_atom(p, rap_index.loc());
+            if (!rap_target.resno) return;
+            #if _dbg_acvm_apply
+            cout << "Resolved index " << rap_target.resno << endl;
+            #endif
         }
 
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
@@ -109,17 +129,31 @@ void ActiveMotion::apply(Protein *p)
             cerr << "Called ligand-target active motion without a ligand set." << endl;
             throw 0xbadc0de;                // bad code monkey no banana!
         }
-        if (tgtligand) pt_target = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc())->loc;
+        if (tgtligand)
+        {
+            Atom* liga = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc());
+            if (!liga) return;
+            pt_target = liga->loc;
+            #if _dbg_acvm_apply
+            cout << "Target is ligand." << endl;
+            #endif
+        }
         Atom* closest_to_ligand = nullptr;
         if (entire)
         {
-            closest_to_ligand - p->get_nearest_atom(pt_target, rap_start.resno, rap_end.resno);
+            closest_to_ligand = p->get_nearest_atom(pt_target, rap_start.resno, rap_end.resno);
             pt_index = closest_to_ligand->loc;
+            #if _dbg_acvm_apply
+            cout << "Index is entire." << endl;
+            #endif
         }
         Vector tolerance = pt_index.subtract(pt_target);
         Rotation rot;
         if (fixclash)
         {
+            #if _dbg_acvm_apply
+            cout << "Motion fixes clash." << endl;
+            #endif
             rot = align_points_3d(pt_target, pt_index, pt_fulcrum);
             int i;
             Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
@@ -133,11 +167,13 @@ void ActiveMotion::apply(Protein *p)
 
             cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " about " << rap_fulcrum.resno 
                 << " to avoid clash..." << flush;
+            float oldclash = aai->get_intermol_clashes(aat), step = 1.5*fiftyseventh;
             for (i=0; i<60; i++)
             {
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, 1.5*fiftyseventh);
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, step);
                 cout << ".";
                 float clash = aai->get_intermol_clashes(aat);
+                if (!i && clash > oldclash) step *= -1;
                 if (clash <= clash_limit_per_aa) break;
             }
             cout << endl;

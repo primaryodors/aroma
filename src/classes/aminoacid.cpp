@@ -979,7 +979,6 @@ void AminoAcid::predict_next_NHCA(Point* retval)
     retval[2] = neighborCA;
 }
 
-#define _dbg_attprdc 0
 void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
 {
     MovabilityType fmov = movability;

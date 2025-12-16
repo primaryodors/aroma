@@ -318,10 +318,12 @@
 #define _dbg_415 0
 #define _dbg_51e2_ionic 0
 #define _dbg_A100 0
+#define _dbg_acvm_apply 0
 #define _dbg_allow_excessive_aa_clashes 0
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
+#define _dbg_attprdc 0
 #define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
 #define _dbg_bb_pairs 0
@@ -377,6 +379,7 @@
 #define _dbg_path_search 0
 #define _dbg_pocket_DeltaG_solv 0
 #define _dbg_point_avg 0
+#define _dbg_polar_calc 0
 #define _dbg_polsat 0
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0

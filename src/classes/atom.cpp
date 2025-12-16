@@ -1055,7 +1055,6 @@ Point average_of_atom_locs(Atom** atoms)
     return result;
 }
 
-#define _dbg_polar_calc 0
 float Atom::is_polar()
 {
     if (!polar_calcd)

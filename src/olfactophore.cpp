@@ -427,6 +427,7 @@ int main(int argc, char** argv)
         if (prot.get_residue_bw(7, 50))
         {
             acv.apply(&prot, true);
+            cout << "Applied activation motions." << endl << flush;
         }
 
         fp = fopen(outfname.c_str(), "wb");
