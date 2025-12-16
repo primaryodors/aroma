@@ -26,6 +26,8 @@ class ActiveMotion
     AcvMotionType acvmt;
     ResidueAtomPlaceholder rap_start, rap_end, rap_fulcrum, rap_index, rap_target;
     float tgtdist = 0;
+    bool fixclash = false;
+    bool morethan = false;
 };
 
 class Activation

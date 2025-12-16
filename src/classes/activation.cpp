@@ -43,7 +43,12 @@ void Activation::load_acvm_file(AcvType acvt)
             m_acvm[nacvm].tgtdist = atof(fields[5]);
             if (!strcmp(fields[5], "noclash"))
             {
-                // TODO:
+                m_acvm[nacvm].fixclash = true;
+            }
+            else if (fields[5][0] == '>')
+            {
+                m_acvm[nacvm].morethan = true;
+                m_acvm[nacvm].tgtdist = atof(&(fields[5][1]));
             }
             m_acvm[nacvm].rap_target.set(fields[6]);
             nacvm++;
@@ -88,12 +93,49 @@ void ActiveMotion::apply(Protein *p)
 
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
         Vector tolerance = pt_index.subtract(pt_target);
-        tolerance.r = tgtdist;
-        pt_target = pt_target.add(tolerance);
-        Rotation rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+        Rotation rot;
+        if (fixclash)
+        {
+            rot = align_points_3d(pt_target, pt_index, pt_fulcrum);
+            int i;
+            AminoAcid *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
+            if (!aai || !aat)
+            {
+                cerr << "Something went wrong." << endl;
+                throw 0xbadc0de;
+            }
 
-        cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " << (rot.a*fiftyseven) << "deg about " << rap_fulcrum.resno << "..." << endl;
-        p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " about " << rap_fulcrum.resno 
+                << " to avoid clash..." << flush;
+            for (i=0; i<60; i++)
+            {
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, 1.5*fiftyseventh);
+                cout << ".";
+                float clash = aai->get_intermol_clashes(aat);
+                if (clash <= clash_limit_per_aa) break;
+            }
+            cout << endl;
+        }
+        else if (morethan)
+        {
+            tolerance.r = tgtdist;
+            pt_target = pt_target.add(tolerance);
+            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+
+            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
+                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
+            p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+        }
+        else
+        {
+            tolerance.r = tgtdist;
+            pt_target = pt_target.add(tolerance);
+            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+
+            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
+                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to maximum contact distance " << tolerance.r << "A..." << endl;
+            p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+        }
     }
     else if (acvmt == acvm_prox)
     {

@@ -8,3 +8,5 @@ PROX Y5.58:HH 4.14 Y7.53:OH
 PIVOT 5.s 5.e 5.36 Y5.58:HH 5 Y7.53:OH
 PIVOT 7.s 7.e 7.49 Y7.53:OH 4.14 Y5.58:HH
 PIVOT 6.s 6.e 6.55:x 6.40 noclash 5.58
+PIVOT 6.s 6.e 6.55:x 6.40 noclash 7.53
+PIVOT 6.s 6.e 6.55:x 6.40 >13 3.46

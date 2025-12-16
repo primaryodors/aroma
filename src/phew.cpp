@@ -215,6 +215,12 @@ int find_var_index(const char* varname, char** out_varname = nullptr)
         char buffer1[256];
         strcpy(buffer1, c);
 
+        if (c>buffer && *(c-1) == '[')
+        {
+            char* bracket = strchr(buffer1, ']');
+            if (bracket) *bracket = 0;
+        }
+
         while (c[1])
         {
             Star s;
@@ -224,7 +230,7 @@ int find_var_index(const char* varname, char** out_varname = nullptr)
                 s.psz = interpret_single_string(buffer1);
             }
 
-            if (s.n)
+            if (s.n || *c == '%')
             {
                 char buffer2[512];
                 if (*c == '%')
