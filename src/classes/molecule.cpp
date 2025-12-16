@@ -1080,10 +1080,10 @@ Point Molecule::get_atom_location(int i)
 
 Atom* Molecule::get_nearest_atom(Point loc) const
 {
-    if (noAtoms(atoms)) return 0;
+    if (noAtoms(atoms)) return nullptr;
 
     int i, j;
-    float best, r;
+    float best = Avogadro, r;
     for (i=0; atoms[i]; i++)
     {
         r = loc.get_3d_distance(atoms[i]->loc);
@@ -1095,6 +1095,28 @@ Atom* Molecule::get_nearest_atom(Point loc) const
     }
 
     return atoms[j];
+}
+
+Atom *Molecule::get_nearest_atom(Point loc, const char *esym, bool ib) const
+{
+    if (noAtoms(atoms)) return nullptr;
+
+    int i, j=-1, Z = Atom::Z_from_esym(esym);
+    if (!Z) return nullptr;
+    float best = Avogadro, r;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->Z != Z) continue;
+        if (ib && atoms[i]->is_backbone) continue;
+        r = loc.get_3d_distance(atoms[i]->loc);
+        if (!i || r < best)
+        {
+            j=i;
+            best=r;
+        }
+    }
+
+    return (j<0) ? nullptr : atoms[j];
 }
 
 Atom* Molecule::get_nearest_atom(Point loc, intera_type capable_of, int sp) const

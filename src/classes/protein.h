@@ -64,6 +64,7 @@ class ResidueAtomPlaceholder : public ResiduePlaceholder
 
     void set(const char* str);
     Point loc();
+    bool resolve_special_atom(Protein* p, Point rel);
 };
 
 struct MCoord

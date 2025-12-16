@@ -104,6 +104,40 @@ Point ResidueAtomPlaceholder::loc()
     return a->loc;
 }
 
+#define _dbg_rap_resolve_special_atom 1
+bool ResidueAtomPlaceholder::resolve_special_atom(Protein* p, Point rel)
+{
+    if (!resno) resolve_resno(p);
+    if (!resno) return false;
+    #if _dbg_rap_resolve_special_atom
+    cout << resno << ":" << aname << "... ";
+    #endif
+    const char *esym = &(aname.c_str()[1]);
+    #if _dbg_rap_resolve_special_atom
+    cout << esym << "... ";
+    #endif
+    AminoAcid *aa = p->get_residue(resno);
+    if (aa)
+    {
+        #if _dbg_rap_resolve_special_atom
+        cout << aa->get_name() << ":";
+        #endif
+        Atom *a = aa->get_nearest_atom(loc(), esym);
+        if (a)
+        {
+            #if _dbg_rap_resolve_special_atom
+            cout << a->name << " found." << endl;
+            #endif
+            aname = a->name;
+            return true;
+        }
+    }
+    #if _dbg_rap_resolve_special_atom
+    cout << endl;
+    #endif
+    return false;
+}
+
 Protein::Protein()
 {
     aaptrmin.n = aaptrmax.n = 0;

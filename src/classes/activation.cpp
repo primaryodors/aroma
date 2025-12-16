@@ -35,12 +35,25 @@ void Activation::load_acvm_file(AcvType acvt)
 
         if (!strcmp(fields[0], "PIVOT"))                    // https://www.youtube.com/watch?v=n67RYI_0sc0
         {
+            m_acvm[nacvm].acvmt = acvm_pivot;
             m_acvm[nacvm].rap_start.set(fields[1]);
             m_acvm[nacvm].rap_end.set(fields[2]);
             m_acvm[nacvm].rap_fulcrum.set(fields[3]);
             m_acvm[nacvm].rap_index.set(fields[4]);
             m_acvm[nacvm].tgtdist = atof(fields[5]);
+            if (!strcmp(fields[5], "noclash"))
+            {
+                // TODO:
+            }
             m_acvm[nacvm].rap_target.set(fields[6]);
+            nacvm++;
+        }
+        else if (!strcmp(fields[0], "PROX"))
+        {
+            m_acvm[nacvm].acvmt = acvm_prox;
+            m_acvm[nacvm].rap_index.set(fields[1]);
+            m_acvm[nacvm].tgtdist = atof(fields[2]);
+            m_acvm[nacvm].rap_target.set(fields[3]);
             nacvm++;
         }
     }
@@ -58,10 +71,20 @@ void ActiveMotion::apply(Protein *p)
     if (acvmt == acvm_pivot)
     {
         rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
+        if (!rap_end.resno) return;
         rap_fulcrum.resolve_resno(p);
+        if (!rap_fulcrum.resno) return;
         rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
         rap_target.resolve_resno(p);
+        if (!rap_target.resno) return;
+
+        if (rap_index.aname.c_str()[0] == 'n')
+            rap_index.resolve_special_atom(p, rap_target.loc());
+        if (rap_target.aname.c_str()[0] == 'n')
+            rap_target.resolve_special_atom(p, rap_index.loc());
 
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
         Vector tolerance = pt_index.subtract(pt_target);
@@ -71,5 +94,44 @@ void ActiveMotion::apply(Protein *p)
 
         cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " << (rot.a*fiftyseven) << "deg about " << rap_fulcrum.resno << "..." << endl;
         p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+    }
+    else if (acvmt == acvm_prox)
+    {
+        rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
+        rap_target.resolve_resno(p);
+        if (!rap_target.resno) return;
+
+        if (rap_index.aname.c_str()[0] == 'n')
+            if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
+        if (rap_target.aname.c_str()[0] == 'n')
+            if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+
+        AminoAcid *aa1, *aa2;
+        Atom *a1, *a2;
+
+        aa1 = p->get_residue(rap_index.resno);
+        aa2 = p->get_residue(rap_target.resno);
+
+        cout << "Want to point " << aa1->get_name() << ":" << rap_index.aname
+            << " and " << aa2->get_name() << ":" << rap_target.aname
+            << " toward each other." << endl;
+
+        if (aa1 && aa2)
+        {
+            a1 = aa1->get_atom(rap_index.aname.c_str());
+            a2 = aa2->get_atom(rap_target.aname.c_str());
+
+            if (a1 && a2)
+            {
+                aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
+                aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
+                aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
+                aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
+                cout << "Pointing " << aa1->get_name() << ":" << a1->name
+                    << " and " << aa2->get_name() << ":" << a2->name
+                    << " toward each other." << endl;
+            }
+        }
     }
 }

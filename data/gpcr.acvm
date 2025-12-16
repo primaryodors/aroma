@@ -1,3 +1,10 @@
 
 # If Y6.55 and D/E45.51, pivot TMR6 about the extent atom of 6.48 to bring the extent atom of 6.55 within 3A of the nearest oxygen of 45.51.
-PIVOT 6.s 6.e 6.48:x Y6.55:x 3 DE45.51:nO
+# PIVOT 6.s 6.e 6.48:x Y6.55:x 5 DE45.51:nO
+PIVOT 6.s 6.e 6.48:x Y6.55:CA 8.6 D45.51:CA
+PIVOT 6.s 6.e 6.48:x Y6.55:CA 10.6 E45.51:CA
+PROX Y6.55:HH 2 DE45.51:nO
+PROX Y5.58:HH 4.14 Y7.53:OH
+PIVOT 5.s 5.e 5.36 Y5.58:HH 5 Y7.53:OH
+PIVOT 7.s 7.e 7.49 Y7.53:OH 4.14 Y5.58:HH
+PIVOT 6.s 6.e 6.55:x 6.40 noclash 5.58

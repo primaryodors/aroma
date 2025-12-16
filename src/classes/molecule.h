@@ -125,6 +125,7 @@ public:
     int get_bond_count(bool unidirectional) const;
     float get_molecular_wt();
     Atom* get_nearest_atom(Point loc) const;
+    Atom* get_nearest_atom(Point loc, const char* esym, bool ignore_backbone = true) const;
     Atom* get_nearest_atom(Point loc, intera_type capable_of, int sgn_polarity = any_element) const;
     Atom* get_nearest_atom_to_line(Point A, Point B) const;
     Point get_bounding_box() const;				// Return the +x+y+z vertex of a bounding box, including vdW radii, if center={0,0,0}.

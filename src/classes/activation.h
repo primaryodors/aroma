@@ -11,7 +11,11 @@ enum AcvType
 
 enum AcvMotionType
 {
+    acvm_xlate,
     acvm_pivot,
+    acvm_twist,
+    acvm_wind,
+    acvm_prox,
 };
 
 class ActiveMotion
