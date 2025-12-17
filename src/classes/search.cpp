@@ -502,7 +502,7 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
 }
 
 void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **pocketres, Point loneliest, 
-    BestBindingResult* output, Cavity* container, bool allow_thiolation)
+    BestBindingResult* output, Cavity* container, bool allow_thiolation, Progressbar *pbr)
 {
     int i, j, k, l, m, n, ii;
     float best = 0;
@@ -570,6 +570,11 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
     for (ntarg=0; targets[ntarg].conjgrp || targets[ntarg].single_atom; ntarg++);       // count
     for (npr=0; pocketres[npr]; npr++);                                                 // count
+    if (pbr)
+    {
+        pbr->minimum = 0;
+        pbr->maximum = ntarg*npr;
+    }
 
     #if _dbg_bb_scoring
     cout << ntarg << " targets, " << npr << " pocket residues." << endl;
@@ -610,6 +615,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
         for (j=0; pocketres[j]; j++)
         {
+            if (pbr) pbr->update(i*npr+j);
             float jchg = pocketres[j]->get_charge();
             float jpol = pocketres[j]->hydrophilicity();
             bool jhis = pocketres[j]->is_histidine_like();

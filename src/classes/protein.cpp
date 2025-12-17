@@ -4699,7 +4699,7 @@ int Protein::replace_side_chains_from_other_protein(Protein* other)
     return num_applied;
 }
 
-float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Progressbar* pgb)
+float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, float aw, Progressbar* pgb)
 {
     float x, y, z, step = 6*fiftyseventh;
     Vector ax = Point(1000,0,0), ay = Point(0,1000,0), az = Point(0,0,1000);
@@ -4731,7 +4731,7 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Pr
             for (z=0; z<M_PI*2; z+=step)
             {
                 Interaction e = ligand->get_intermol_binding((Molecule**)rs);
-                e.attractive *= 1e5;
+                e.attractive *= aw;
                 if (e.improved(beste))
                 {
                     best.copy_state(ligand);

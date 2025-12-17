@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
+#include "classes/search.h"
 #include "classes/activation.h"
 #include "classes/progress.h"
 
@@ -423,7 +424,18 @@ int main(int argc, char** argv)
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
-        prot.tumble_ligand_inside_pocket(&existing, cen, &pgb);
+        #if 0
+        prot.tumble_ligand_inside_pocket(&existing, cen, 1e6, &pgb);
+        #else
+        existing.recenter(cen);
+        AminoAcid* bsr[SPHREACH_MAX+4];
+        int nbsr = prot.get_residues_can_clash_ligand(bsr, &existing, cen, Point(7,7,7));
+        LigandTarget lt[256];
+        int nlt = Search::identify_ligand_pairing_targets(&existing, lt, 256);
+        BestBindingResult bbr;
+        Search::pair_targets(&existing, lt, bsr, cen, &bbr, nullptr, true, &pgb);
+        Search::align_targets(&existing, cen, &bbr, 1);
+        #endif
         if (prot.get_residue_bw(7, 50))
         {
             acv.apply(&prot, true);
