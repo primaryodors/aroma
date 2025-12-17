@@ -154,7 +154,6 @@ void ActiveMotion::apply(Protein *p)
             #if _dbg_acvm_apply
             cout << "Motion fixes clash." << endl;
             #endif
-            rot = align_points_3d(pt_target, pt_index, pt_fulcrum);
             int i;
             Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
             if (entire) aai = (Molecule*)closest_to_ligand->mol;
@@ -164,6 +163,7 @@ void ActiveMotion::apply(Protein *p)
                 cerr << "Something went wrong." << endl;
                 throw 0xbadc0de;
             }
+            rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
 
             cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " about " << rap_fulcrum.resno 
                 << " to avoid clash..." << flush;
@@ -173,7 +173,7 @@ void ActiveMotion::apply(Protein *p)
                 p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, step);
                 cout << ".";
                 float clash = aai->get_intermol_clashes(aat);
-                if (!i && clash > oldclash) step *= -1;
+                // if (!i && clash > oldclash) step *= -1;
                 if (clash <= clash_limit_per_aa) break;
             }
             cout << endl;

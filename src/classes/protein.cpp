@@ -4745,9 +4745,9 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, Pr
     }
     if (pgb) pgb->erase();
 
-    for (i=0; i<100; i++)
+    for (i=0; i<50; i++)
     {
-        Vector motion(frand(0,1), frand(-M_PI, M_PI), frand(-M_PI, M_PI));
+        Vector motion(frand(0,0.1), frand(-M_PI, M_PI), frand(-M_PI, M_PI));
         ligand->move(motion, true);
         Interaction e = ligand->get_intermol_binding((Molecule**)rs);
         if (e.improved(beste))
