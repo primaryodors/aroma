@@ -4731,7 +4731,8 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
             for (z=0; z<M_PI*2; z+=step)
             {
                 Interaction e = ligand->get_intermol_binding((Molecule**)rs);
-                e.attractive *= aw;
+                e.clash *= aw;
+                e.worst_atom_clash *= aw;
                 if (e.improved(beste))
                 {
                     best.copy_state(ligand);

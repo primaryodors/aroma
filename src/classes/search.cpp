@@ -615,7 +615,6 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
         for (j=0; pocketres[j]; j++)
         {
-            if (pbr) pbr->update(i*npr+j);
             float jchg = pocketres[j]->get_charge();
             float jpol = pocketres[j]->hydrophilicity();
             bool jhis = pocketres[j]->is_histidine_like();
@@ -709,6 +708,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
                     for (m=-1; m<ntarg; m++)
                     {
+                        if (pbr) pbr->update(i*npr+j);
                         float mchg, mpol;
                         int mfam, mZ, mpi;
                         Point mcen;

@@ -208,7 +208,7 @@ $(BIN)/qc: src/qc.cpp $(OBJS) $(OBJ)/protein.o
 $(BIN)/scorpion: src/scorpion.cpp $(OBJS) $(OBJ)/protein.o $(OBJ)/scoring.o
 	$(CPL) src/scorpion.cpp $(OBJS) $(DOBJ) -o $(BIN)/scorpion $(CFLAGS)
 
-$(BIN)/olfactophore: src/olfactophore.cpp $(OBJS) $(OBJ)/protein.o
+$(BIN)/olfactophore: src/olfactophore.cpp $(OBJS) $(OBJ)/protein.o $(OBJ)/search.o
 	$(CPL) src/olfactophore.cpp $(OBJS) $(DOBJ) -o $(BIN)/olfactophore $(CFLAGS)
 
 $(BIN)/ramachandran: src/ramachandran.cpp $(OBJS) $(OBJ)/protein.o

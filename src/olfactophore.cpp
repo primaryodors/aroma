@@ -424,8 +424,8 @@ int main(int argc, char** argv)
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
-        #if 0
-        prot.tumble_ligand_inside_pocket(&existing, cen, 1e6, &pgb);
+        #if 1
+        prot.tumble_ligand_inside_pocket(&existing, cen, 1e-9, &pgb);
         #else
         existing.recenter(cen);
         AminoAcid* bsr[SPHREACH_MAX+4];
@@ -433,6 +433,8 @@ int main(int argc, char** argv)
         LigandTarget lt[256];
         int nlt = Search::identify_ligand_pairing_targets(&existing, lt, 256);
         BestBindingResult bbr;
+        pgb.set_color(128, 64, 255);
+        cout << endl;
         Search::pair_targets(&existing, lt, bsr, cen, &bbr, nullptr, true, &pgb);
         Search::align_targets(&existing, cen, &bbr, 1);
         #endif
