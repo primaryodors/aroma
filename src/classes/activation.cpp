@@ -152,7 +152,7 @@ void ActiveMotion::apply(Protein *p)
         if (fixclash)
         {
             #if _dbg_acvm_apply
-            cout << "Motion fixes clash." << endl;
+            // cout << "Motion fixes clash." << endl;
             #endif
             int i;
             Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
@@ -217,9 +217,9 @@ void ActiveMotion::apply(Protein *p)
         aa1 = p->get_residue(rap_index.resno);
         aa2 = p->get_residue(rap_target.resno);
 
-        cout << "Want to point " << aa1->get_name() << ":" << rap_index.aname
+        /* cout << "Want to point " << aa1->get_name() << ":" << rap_index.aname
             << " and " << aa2->get_name() << ":" << rap_target.aname
-            << " toward each other." << endl;
+            << " toward each other." << endl; */
 
         if (aa1 && aa2)
         {

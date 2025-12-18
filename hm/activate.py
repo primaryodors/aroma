@@ -3,6 +3,7 @@ import re
 import os
 import os.path
 import json
+import shutil
 import subprocess
 from modeller import *
 from modeller.automodel import *
@@ -13,7 +14,7 @@ if len(sys.argv) < 3:
     print("python3 hm/activate.py OR7A17 pdbs/OR7/accommodated/OR7A17.accommodated.pdb")
     print("python3 hm/activate.py OR7A17 pdbs/OR7/OR7A17.inactive.pdb sdf/vetynal.pdb")
     print("python3 hm/activate.py OR7A17 pdbs/OR7/OR7A17.inactive.pdb olfactophores/OR7/olfactophore_7A17.pdb")
-    exit
+    exit()
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
@@ -45,7 +46,7 @@ else:
 
 if not protid in data.protutils.prots.keys():
     print("Protein", protid, "not found.")
-    exit
+    exit()
 fam = data.protutils.family_from_protid(protid)
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -61,8 +62,10 @@ if ligand:
     subprocess.run(cmd)
     if not os.path.exists(outfile):
         print("Failed.")
-        exit
+        exit()
     inppdb = outfile
+
+shutil.copyfile(inppdb, "hm/"+protid+"_tpl.pdb")
 
 env = Environ()
 
@@ -166,18 +169,22 @@ with open(inppdb, "r") as f:
     c = f.read()
     lines = c.split("\n")
     for ln in lines:
-        if ln[0:5] == "ATOM  ":
-            resno = int(ln[7:10])
+        if ln[0:5].strip() == "ATOM":
+            resno = int(ln[21:28].strip())
             if resno:
+                if resno == lrno: continue
                 while lrno < resno-1:
                     seq += "-"
                     lrno += 1
-                aacode = ln[17:19]
+                aacode = ln[17:20]
                 if not aacode in aacode3:
                     seq += "."
                 else:
                     i = aacode3.index(aacode)
-                    seq += aaletts[i:i]
+                    seq += aaletts[i]
+                lrno = resno
+
+# print(seq)
 
 os.chdir("hm")
 cmd = ["php", "-f", "build_alignment_file.php"]
@@ -196,8 +203,8 @@ with open("allgpcr.ali", "r") as f:
             continue
         elif reading:
             alidat += ln+"\n"
-            if ln.find('*'):
-                reading = False
+            if ln.find('*') >= 0:
+                break
 
 # duplicate the alidat var applying any gaps in seq
 alitpl = ""
@@ -205,12 +212,14 @@ n = len(alidat)
 j = 0
 cryet = False
 for i in range(n):
-    c = alidat[i:i]
-    if c == "\x0d" or c == "\x0a":
+    c = alidat[i]
+    if not len(c): continue
+    if ord(c) < ord(" "):
         cryet = True
+        alitpl += c
     elif not cryet:
         alitpl += c
-    elif c < 'A' or c > 'Z':
+    elif ord(c) < ord('A') or ord(c) > ord('Z'):
         alitpl += c
     else:
         d = seq[j]
@@ -218,24 +227,26 @@ for i in range(n):
         if d == c or d == '-':
             alitpl += d
         else:
-            print("Something went wrong:\n\n" + alitpl + "\n" + alidat)
+            print("Something went wrong:\n\n" + alitpl + "\n" + alidat + "\n" + c + "~" + d)
+            exit()
+
+alitpl = alitpl.replace(protid, protid+"_tpl")
 
 tmpalif = protid + "_tmp.ali"
 with open(tmpalif, "w") as f:
-    f.write(">P1;"+protid)
+    f.write(">P1;"+protid+"\n")
     f.write(alidat + "\n")
-    f.write(">P1;tpl")
+    f.write(">P1;"+protid+"_tpl\n")
     f.write(alitpl + "\n")
 
-exit
-
 # directories for input atom files
-env.io.atom_files_directory = ['.']
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+env.io.atom_files_directory = ['.', '../atom_files']
 
 a = MyModel(env,
               alnfile  = tmpalif,
-              knowns   = ('8uy0b'),
-              sequence = 'OR7A17')
+              knowns   = protid+"_tpl",
+              sequence = protid)
 a.starting_model = 0
 a.ending_model   = 9
 a.library_schedule = autosched.slow

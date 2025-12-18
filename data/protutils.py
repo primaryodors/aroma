@@ -61,7 +61,7 @@ def resno_from_bw(protid, bw):
 def aalet_at_resno(protid, resno):
     global prots
     if not prots.get(protid): raise Exception("Protein not found: "+protid)
-    return prots[protid]["sequence"][resno-1:resno-1]
+    return prots[protid]["sequence"][resno-1]
 
 
 def family_from_protid(protid):
