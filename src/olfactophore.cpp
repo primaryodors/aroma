@@ -416,6 +416,30 @@ int main(int argc, char** argv)
             cout << "Loaded activation file." << endl << flush;
             acv.apply(&prot, false);
             cout << "Applied activation motions." << endl << flush;
+
+            int rs = 1, re = prot.get_bw50(1) - 23;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(1) + 11;
+            re = prot.get_bw50(2) - 13;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(2) + 17;
+            re = prot.get_bw50(3) - 31;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(3) + 6;
+            re = prot.get_bw50(4) - 11;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(4) + 15;
+            re = prot.get_bw50(45) - 1;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(45) + 2;
+            re = prot.get_bw50(5) - 18;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(5) + 18;
+            re = prot.get_bw50(6) - 21;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(6) + 20;
+            re = prot.get_bw50(7) - 19;
+            if (rs>0 && re>rs) prot.delete_residues(rs, re);
         }
 
         Progressbar pgb;
