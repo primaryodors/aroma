@@ -16,6 +16,7 @@ if len(sys.argv) < 3:
     exit
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
 sys.path.append(os.getcwd())
 os.chdir("data")
 
@@ -29,6 +30,12 @@ data.odorutils.load_odors()
 
 os.chdir("..")
 
+aaletts = "ARNDCEQGHILKMFPSTWYV"
+aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS",
+           "GLU", "GLN", "GLY", "HIS", "ILE",
+           "LEU", "LYS", "MET", "PHE", "PRO",
+           "SER", "THR", "TRP", "TYR", "VAL"]
+
 protid = sys.argv[1]
 inppdb = sys.argv[2]
 if len(sys.argv) > 3:
@@ -41,10 +48,12 @@ if not protid in data.protutils.prots.keys():
     exit
 fam = data.protutils.family_from_protid(protid)
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
 if ligand:
     cmd = ["make", "bin/olfactophore"]
     subprocess.run(cmd)
-    outdir = "pdbs/"+fam+"accommodated"
+    outdir = "pdbs/"+fam+"/accommodated"
     outfile = outdir+"/"+protid+".accommodated.pdb"
     cmd = ["bin/olfactophore", inppdb, ligand, "-o", outfile]
     if not os.path.exists(outdir): os.mkdir(outdir)
@@ -138,8 +147,8 @@ class MyModel(DOPEHRLoopModel):
                     if atom45_52:
                         rsr.add(forms.Gaussian(group=physical.xy_distance,
                             feature=features.Distance(at[atom6_55 +":"+str( bw6_55)+":A"],
-                                                    at[atom45_52+":"+str(bw45_52)+":A"]),
-                                                    mean=2.5, stdev=0.5))
+                                                      at[atom45_52+":"+str(bw45_52)+":A"]),
+                                                      mean=2.5, stdev=0.5))
 
     def special_patches(self, aln):
         # disulfide bond:
@@ -150,6 +159,89 @@ class MyModel(DOPEHRLoopModel):
                 self.patch(residue_type='DISU', residues=(self.residues[str(bw3_25)+':A'],
                                                           self.residues[str(bw45_50)+':A']))
 
+# scan input pdb for sequence
+seq = ""
+lrno = 0
+with open(inppdb, "r") as f:
+    c = f.read()
+    lines = c.split("\n")
+    for ln in lines:
+        if ln[0:5] == "ATOM  ":
+            resno = int(ln[7:10])
+            if resno:
+                while lrno < resno-1:
+                    seq += "-"
+                    lrno += 1
+                aacode = ln[17:19]
+                if not aacode in aacode3:
+                    seq += "."
+                else:
+                    i = aacode3.index(aacode)
+                    seq += aaletts[i:i]
+
+os.chdir("hm")
+cmd = ["php", "-f", "build_alignment_file.php"]
+subprocess.run(cmd)
+
+# scan ali file for protid
+alidat = ""
+with open("allgpcr.ali", "r") as f:
+    c = f.read()
+    lines = c.split("\n")
+    reading = False
+    lookfor = ">P1;"+protid
+    for ln in lines:
+        if ln.strip() == lookfor:
+            reading = True
+            continue
+        elif reading:
+            alidat += ln+"\n"
+            if ln.find('*'):
+                reading = False
+
+# duplicate the alidat var applying any gaps in seq
+alitpl = ""
+n = len(alidat)
+j = 0
+cryet = False
+for i in range(n):
+    c = alidat[i:i]
+    if c == "\x0d" or c == "\x0a":
+        cryet = True
+    elif not cryet:
+        alitpl += c
+    elif c < 'A' or c > 'Z':
+        alitpl += c
+    else:
+        d = seq[j]
+        j += 1
+        if d == c or d == '-':
+            alitpl += d
+        else:
+            print("Something went wrong:\n\n" + alitpl + "\n" + alidat)
+
+tmpalif = protid + "_tmp.ali"
+with open(tmpalif, "w") as f:
+    f.write(">P1;"+protid)
+    f.write(alidat + "\n")
+    f.write(">P1;tpl")
+    f.write(alitpl + "\n")
+
+exit
+
+# directories for input atom files
+env.io.atom_files_directory = ['.']
+
+a = MyModel(env,
+              alnfile  = tmpalif,
+              knowns   = ('8uy0b'),
+              sequence = 'OR7A17')
+a.starting_model = 0
+a.ending_model   = 9
+a.library_schedule = autosched.slow
+a.max_var_iterations = 300
+
+a.make()
 
 
 
