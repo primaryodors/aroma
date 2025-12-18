@@ -4706,7 +4706,7 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
 
     ligand->recenter(pocketcen);
     AminoAcid* rs[SPHREACH_MAX+4];
-    Point sphsize(6,6,6);
+    Point sphsize(7,7,7);
     int sphres = get_residues_can_clash_ligand(rs, ligand, pocketcen, sphsize);
     int i;
     Pose best(ligand);
@@ -4747,12 +4747,14 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
     best.restore_state(ligand);
     if (pgb) pgb->erase();
 
-    #if 1
+    #if 0
     for (i=0; i<50; i++)
     {
         Vector motion(frand(0,0.3), frand(-M_PI, M_PI), frand(-M_PI, M_PI));
         ligand->move(motion, true);
         Interaction e = ligand->get_intermol_binding((Molecule**)rs);
+        e.clash *= aw;
+        e.worst_atom_clash *= aw;
         if (e.improved(beste))
         {
             best.copy_state(ligand);
@@ -4761,6 +4763,8 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
         motion.r = 1000;
         ligand->rotate(motion, frand(-M_PI, M_PI));
         e = ligand->get_intermol_binding((Molecule**)rs);
+        e.clash *= aw;
+        e.worst_atom_clash *= aw;
         if (e.improved(beste))
         {
             best.copy_state(ligand);
