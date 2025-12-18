@@ -450,6 +450,7 @@ int main(int argc, char** argv)
             cerr << "Failed to open " << outfname << " for reading." << endl;
         }
 
+        prot.set_pdb_chain('A');
         prot.save_pdb(fp, &existing);
         fclose(fp);
         cout << "Wrote " << outfname << endl;

@@ -531,14 +531,13 @@ void Protein::save_pdb(FILE* os, Molecule* lig)
         }
     }
 
-
     if (lig)
     {
         int ac = lig->get_atom_count();
         for (i=0; i<ac; i++)
         {
             Atom* a = lig->get_atom(i);
-            if (a) a->save_pdb_line(os, ++offset);
+            if (a) a->save_pdb_line(os, ++offset, true);
         }
     }
 

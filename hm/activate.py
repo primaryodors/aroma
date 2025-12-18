@@ -170,7 +170,7 @@ with open(inppdb, "r") as f:
     lines = c.split("\n")
     for ln in lines:
         if ln[0:5].strip() == "ATOM":
-            resno = int(ln[21:28].strip())
+            resno = int(ln[22:28].strip())
             if resno:
                 if resno == lrno: continue
                 while lrno < resno-1:
@@ -231,6 +231,7 @@ for i in range(n):
             exit()
 
 alitpl = alitpl.replace(protid, protid+"_tpl")
+alitpl = alitpl.replace("sequence", "structure")
 
 tmpalif = protid + "_tmp.ali"
 with open(tmpalif, "w") as f:

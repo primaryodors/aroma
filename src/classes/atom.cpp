@@ -2385,7 +2385,7 @@ float Atom::get_sum_pi_bonds()
     return retval;
 }
 
-void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
+void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
 {
     if (vanished) return;
     char numbuf[16];
@@ -2399,7 +2399,7 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
     /*
     ATOM   2039  CA  ALA   128      -6.065 -24.834  -5.744  1.00001.00           C
     */
-    fprintf(pf, residue ? "ATOM   " : "HETATM ");
+    fprintf(pf, (residue && !fh) ? "ATOM   " : "HETATM ");
     sprintf(numbuf, "%d", atomno);
     fprintf(pf, "%4s ", numbuf);
 
