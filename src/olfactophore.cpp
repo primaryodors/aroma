@@ -425,7 +425,7 @@ int main(int argc, char** argv)
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
         #if 1
-        prot.tumble_ligand_inside_pocket(&existing, cen, 1e-9, &pgb);
+        prot.tumble_ligand_inside_pocket(&existing, cen, 1, &pgb);
         #else
         existing.recenter(cen);
         AminoAcid* bsr[SPHREACH_MAX+4];

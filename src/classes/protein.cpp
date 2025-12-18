@@ -4744,6 +4744,7 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
         }
         ligand->rotate(&ax, step);
     }
+    best.restore_state(ligand);
     if (pgb) pgb->erase();
 
     #if 1
