@@ -58,6 +58,12 @@ def resno_from_bw(protid, bw):
 
     return result
 
+def aalet_at_resno(protid, resno):
+    global prots
+    if not prots.get(protid): raise Exception("Protein not found: "+protid)
+    return prots[protid]["sequence"][resno-1:resno-1]
+
+
 def family_from_protid(protid):
     if protid[0:2] == "OR":
         return "OR" + str(int(re.sub("[^0-9]", "", protid[2:4])))
