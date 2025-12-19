@@ -68,6 +68,17 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
             m_acvm[nacvm].rap_target.set(fields[3]);
             nacvm++;
         }
+        else if (!strcmp(fields[0], "DEL"))
+        {
+            m_acvm[nacvm].acvmt = acvm_prox;
+            m_acvm[nacvm].rap_start.set(fields[1]);
+            m_acvm[nacvm].rap_end.set(fields[3]);
+            nacvm++;
+        }
+        else if (!strcmp(fields[0], "EXIT"))
+        {
+            break;
+        }
     }
     fclose(fp);
 }
@@ -163,13 +174,13 @@ void ActiveMotion::apply(Protein *p)
                 cerr << "Something went wrong." << endl;
                 throw 0xbadc0de;
             }
-            rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
 
             cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " about " << rap_fulcrum.resno 
                 << " to avoid clash..." << flush;
             float oldclash = aai->get_intermol_clashes(aat), step = 1.5*fiftyseventh;
             for (i=0; i<60; i++)
             {
+                rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
                 p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, step);
                 cout << ".";
                 float clash = aai->get_intermol_clashes(aat);
@@ -237,5 +248,14 @@ void ActiveMotion::apply(Protein *p)
                     << " toward each other." << endl;
             }
         }
+    }
+    else if (acvmt == acvm_delete)
+    {
+        rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
+        rap_end.resolve_resno(p);
+        if (!rap_end.resno) return;
+
+        p->delete_residues(rap_start.resno, rap_end.resno);
     }
 }

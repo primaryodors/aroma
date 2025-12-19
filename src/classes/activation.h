@@ -16,6 +16,7 @@ enum AcvMotionType
     acvm_twist,
     acvm_wind,
     acvm_prox,
+    acvm_delete,
 };
 
 class ActiveMotion
