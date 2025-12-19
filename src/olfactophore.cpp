@@ -416,30 +416,6 @@ int main(int argc, char** argv)
             cout << "Loaded activation file." << endl << flush;
             acv.apply(&prot, false);
             cout << "Applied activation motions." << endl << flush;
-
-            int rs = 1, re = prot.get_bw50(1) - 23;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(1) + 11;
-            re = prot.get_bw50(2) - 13;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(2) + 17;
-            re = prot.get_bw50(3) - 31;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(3) + 6;
-            re = prot.get_bw50(4) - 11;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(4) + 15;
-            re = prot.get_bw50(45) - 1;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(45) + 2;
-            re = prot.get_bw50(5) - 18;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(5) + 18;
-            re = prot.get_bw50(6) - 21;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
-            rs = prot.get_bw50(6) + 20;
-            re = prot.get_bw50(7) - 19;
-            if (rs>0 && re>rs) prot.delete_residues(rs, re);
         }
 
         Progressbar pgb;
@@ -448,6 +424,63 @@ int main(int argc, char** argv)
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);
+
+        if (prot.get_residue_bw(7, 50))
+        {
+            int rs = 1, re = prot.get_bw50(1) - 23;
+            // if (rs>0 && re>rs) prot.delete_residues(rs, re);
+            rs = prot.get_bw50(1) + 11;
+            re = prot.get_bw50(2) - 13;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(2) + 17;
+            re = prot.get_bw50(3) - 31;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(3) + 6;
+            re = prot.get_bw50(4) - 11;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(4) + 15;
+            re = prot.get_bw50(45) - 1;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(45) + 9;
+            re = prot.get_bw50(5) - 18;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(5) + 18;
+            re = prot.get_bw50(6) - 21;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+            rs = prot.get_bw50(6) + 20;
+            re = prot.get_bw50(7) - 19;
+            if (rs>0 && re>rs)
+            {
+                cout << "Deleting " << rs << " - " << re << endl;
+                prot.delete_residues(rs, re);
+            }
+        }
+
+
         #if 1
         prot.tumble_ligand_inside_pocket(&existing, cen, 1, &pgb);
         #else
