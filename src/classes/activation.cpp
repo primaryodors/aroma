@@ -23,7 +23,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
     }
 
     char buffer[1024];
-    m_acvm = new ActiveMotion[256];
+    m_acvm = new ActiveMotion[1024];
     while (!feof(fp))
     {
         char* ln = fgets(buffer, 1020, fp);
@@ -72,7 +72,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
         {
             m_acvm[nacvm].acvmt = acvm_prox;
             m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[3]);
+            m_acvm[nacvm].rap_end.set(fields[2]);
             nacvm++;
         }
         else if (!strcmp(fields[0], "EXIT"))

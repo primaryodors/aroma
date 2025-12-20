@@ -2013,7 +2013,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
         }
         buffer[0] = 0;
 
-        delete words;
+        delete[] words;
     }
 
     if (!has_conects)
