@@ -70,7 +70,7 @@ shutil.copyfile(inppdb, "hm/"+protid+"_tpl.pdb")
 env = Environ()
 
 
-class MyModel(DOPEHRLoopModel):
+class AromaReceptorModel(DOPEHRLoopModel):
     def special_restraints(self, aln):
         rsr = self.restraints
         at = self.atoms
@@ -244,10 +244,12 @@ with open(tmpalif, "w") as f:
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 env.io.atom_files_directory = ['.', '../atom_files']
 
-a = MyModel(env,
-              alnfile  = tmpalif,
-              knowns   = protid+"_tpl",
-              sequence = protid)
+a = AromaReceptorModel( env,
+                        alnfile           = tmpalif,
+                        knowns            = protid+"_tpl",
+                        sequence          = protid,
+                        assess_methods    = (assess.DOPE)
+                        )
 a.starting_model = 0
 a.ending_model   = 9
 a.library_schedule = autosched.slow
@@ -255,6 +257,97 @@ a.max_var_iterations = 300
 
 a.make()
 
+# TODO: Find the best output file from MODELLER, don't just assume #6. If no output to use, exit the script.
+results = [x for x in a.outputs if x['failure'] is None]
+if not len(results):
+    print("FAIL.")
+    exit()
+key = 'DOPE score'
+results.sort(key=lambda a: a[key])
+model = results[0]
 
+phewcode = f"""
+LET $rcpid = "{protid}"
+LET $inpf = "pdbs/{fam}/{protid}.inactive.pdb"
+LET $mdld = "hm/{model.name}"
+
+LOAD $inpf A I
+LET %rcpseqln = %SEQLENI
+LOAD $mdld A A
+
+BWCOPY I A
+STRAND I
+UPRIGHT I
+BWCENTER
+STRAND A
+
+REMARK   1
+REMARK   1 REFERENCE 1
+REMARK   1  AUTH 1 B. Webb, A. Sali.
+REMARK   1  TITL 1 Comparative Protein Structure Modeling Using Modeller.
+REMARK   1  REF  1 Current Protocols in Bioinformatics 54, John Wiley & Sons, Inc., 5.6.1-5.6.37, 2016.
+REMARK   1  DOI  1 10.1002/0471250953.bi0506s15
+REMARK   1  
+REMARK   1  AUTH 2 M.A. Marti-Renom, A. Stuart, A. Fiser, R. Sánchez, F. Melo, A. Sali.
+REMARK   1  TITL 2 Comparative protein structure modeling of genes and genomes.
+REMARK   1  REF  2 Annu. Rev. Biophys. Biomol. Struct. 29, 291-325, 2000.
+REMARK   1  DOI  2 10.1146/annurev.biophys.29.1.291
+REMARK   1
+REMARK   1  AUTH 3 A. Sali & T.L. Blundell.
+REMARK   1  TITL 3 Comparative protein modelling by satisfaction of spatial restraints.
+REMARK   1  REF  3 J. Mol. Biol. 234, 779-815, 1993.
+REMARK   1  DOI  3 10.1006/jmbi.1993.1626
+REMARK   1  
+REMARK   1  AUTH 4 A. Fiser, R.K. Do, & A. Sali.
+REMARK   1  TITL 4 Modeling of loops in protein structures.
+REMARK   1  REF  4 Protein Science 9. 1753-1773, 2000.
+REMARK   1  DOI  4 10.1110/ps.9.9.1753
+REMARK   1  
+REMARK 265 HM_TEMPLATES: custom
+
+# HYDRO
+
+UNCHAIN I
+UNCHAIN O
+STRAND A
+UPRIGHT
+BWCENTER
+# IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48
+
+IF $3.25 != "C" OR $45.50 != "C" GOTO _not_disulfide
+# DELATOM %3.25 HG
+# DELATOM %45.50 HG
+CONECT %3.25 SG %45.50 SG
+_not_disulfide:
+HYDRO
+
+IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
+IF $5.39 != "M" GOTO _not_Cu_539
+MEASURE %5.39 "SD" %5.42 "SG" &sdist
+ECHO "5.39:SD - 5.42:SG distance: " &sdist
+MEASURE %5.39 "SD" %5.43 "SG" &sdist
+ECHO "5.39:SD - 5.43:SG distance: " &sdist
+_not_Cu_539:
+IF $5.46 != "M" GOTO _not_Cu_539
+MEASURE %5.46 "SD" %5.42 "SG" &sdist
+ECHO "5.46:SD - 5.42:SG distance: " &sdist
+MEASURE %5.46 "SD" %5.43 "SG" &sdist
+ECHO "5.46:SD - 5.43:SG distance: " &sdist
+_not_Cu_546:
+MEASURE %5.42 "SG" %5.43 "SG" &sdist
+ECHO "5.42:SD - 5.43:SG distance: " &sdist
+_not_Cu_binding_site:
+
+LET $outf = "pdbs/{fam}/{protid}.active.pdb"
+SAVE $outf
+"""
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
+phewfn = f"hm/{protid}.hm.phew"
+with open(phewfn, "w") as f:
+    f.write(phewcode)
+cmd = ["bin/phew", phewfn]
+subprocess.run(cmd)
 
 
