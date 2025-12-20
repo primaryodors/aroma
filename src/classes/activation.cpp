@@ -70,7 +70,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
         }
         else if (!strcmp(fields[0], "DEL"))
         {
-            m_acvm[nacvm].acvmt = acvm_prox;
+            m_acvm[nacvm].acvmt = acvm_delete;
             m_acvm[nacvm].rap_start.set(fields[1]);
             m_acvm[nacvm].rap_end.set(fields[2]);
             nacvm++;
