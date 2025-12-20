@@ -8,7 +8,8 @@ import subprocess
 from modeller import *
 from modeller.automodel import *
 
-if len(sys.argv) < 3:
+argc = len(sys.argv)
+if argc < -3:
     print("Both a protein ID and a PDB file are required.")
     print("Example usages:")
     print("python3 hm/activate.py OR7A17 pdbs/OR7/accommodated/OR7A17.accommodated.pdb")
@@ -37,17 +38,33 @@ aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS",
            "LEU", "LYS", "MET", "PHE", "PRO",
            "SER", "THR", "TRP", "TYR", "VAL"]
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
 protid = sys.argv[1]
-inppdb = sys.argv[2]
-if len(sys.argv) > 3:
-    ligand = sys.argv[3]
-else:
-    ligand = False
-
 if not protid in data.protutils.prots.keys():
     print("Protein", protid, "not found.")
     exit()
 fam = data.protutils.family_from_protid(protid)
+
+ligand = False
+if argc > 2:
+    inppdb = sys.argv[2]
+else:
+    inppdb = f"pdbs/{fam}/{protid}.inactive.pdb"                  # ALWAYS use the inactive model aas the input.
+    member = protid[4:]
+    if protid[0:2] == "OR": member = protid[2:]
+    lookfor = f"olfactophores/{fam}/olfactophore_{member}.pdb"
+    if os.path.exists(lookfor):
+        ligand = lookfor
+
+if not ligand and len(sys.argv) > 3:
+    ligand = sys.argv[3]
+
+print(f"Protein: {protid}\nInput PDB: {inppdb}")
+if ligand:
+    print(f"Ligand: {ligand}")
+else:
+    print("No ligand")
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
