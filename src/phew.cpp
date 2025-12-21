@@ -2966,8 +2966,8 @@ int main(int argc, char** argv)
                 std::string atom2 = atom_names ? interpret_single_string(words[4]) : "CA";
 
                 AminoAcid *aa1 = working->get_residue(res1), *aa2 = working->get_residue(res2);
-                if (!res1 || !aa1) raise_error("Residue A not found in protein.");
-                if (!res2 || !aa2) raise_error("Residue B not found in protein.");
+                if (!res1 || !aa1) raise_error((std::string)"Residue "+(std::string)words[1]+(std::string)" not found in protein.");
+                if (!res2 || !aa2) raise_error((std::string)"Residue "+(std::string)words[atom_names ? 3 : 2]+(std::string)" not found in protein.");
 
                 Atom *a1, *a2;
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));

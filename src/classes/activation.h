@@ -17,6 +17,7 @@ enum AcvMotionType
     acvm_wind,
     acvm_prox,
     acvm_delete,
+    acvm_flex,
 };
 
 class ActiveMotion
@@ -26,6 +27,7 @@ class ActiveMotion
 
     AcvMotionType acvmt;
     ResidueAtomPlaceholder rap_start, rap_end, rap_fulcrum, rap_index, rap_target;
+    char ba1[16] = {0}, ba2[16] = {0};
     float tgtdist = 0;
     bool fixclash = false;
     bool morethan = false;

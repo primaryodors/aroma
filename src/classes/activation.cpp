@@ -1,5 +1,6 @@
 
 #include "activation.h"
+#include "dynamic.h"
 
 void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
 {
@@ -74,6 +75,28 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
             m_acvm[nacvm].rap_start.set(fields[1]);
             m_acvm[nacvm].rap_end.set(fields[2]);
             nacvm++;
+        }
+        else if (!strcmp(fields[0], "WIND"))
+        {
+            m_acvm[nacvm].acvmt = acvm_wind;
+            m_acvm[nacvm].rap_start.set(fields[1]);
+            m_acvm[nacvm].rap_end.set(fields[2]);
+            m_acvm[nacvm].rap_index.set(fields[3]);
+            m_acvm[nacvm].tgtdist = atof(fields[4]);
+            m_acvm[nacvm].rap_target.set(fields[5]);
+            nacvm++;
+        }
+        else if (!strcmp(fields[0], "FLEX"))
+        {
+            m_acvm[nacvm].acvmt = acvm_flex;
+            m_acvm[nacvm].rap_start.set(fields[1]);
+            if (strlen(fields[2]) > 13) fields[2][13] = 0;
+            strcpy(m_acvm[nacvm].ba1, fields[2]);
+            if (strlen(fields[3]) > 13) fields[3][13] = 0;
+            strcpy(m_acvm[nacvm].ba2, fields[3]);
+            m_acvm[nacvm].rap_index.set(fields[4]);
+            m_acvm[nacvm].tgtdist = atof(fields[5]);
+            m_acvm[nacvm].rap_target.set(fields[6]);
         }
         else if (!strcmp(fields[0], "EXIT"))
         {
@@ -257,5 +280,136 @@ void ActiveMotion::apply(Protein *p)
         if (!rap_end.resno) return;
 
         p->delete_residues(rap_start.resno, rap_end.resno);
+        cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
+    }
+    else if (acvmt == acvm_wind)
+    {
+        rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
+        rap_end.resolve_resno(p);
+        if (!rap_end.resno) return;
+        rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
+        rap_target.resolve_resno(p);
+        if (!rap_target.resno) return;
+
+        if (rap_index.aname.c_str()[0] == 'n')
+            if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
+        if (rap_target.aname.c_str()[0] == 'n')
+            if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+
+        AminoAcid *aa1, *aa2;
+        Atom *a1, *a2;
+
+        aa1 = p->get_residue(rap_index.resno);
+        aa2 = p->get_residue(rap_target.resno);
+        cout << "Wind ";
+
+        if (aa1 && aa2)
+        {
+            cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
+            a1 = aa1->get_atom(rap_index.aname.c_str());
+            a2 = aa2->get_atom(rap_target.aname.c_str());
+
+            if (a1 && a2)
+            {
+                cout << a1->name << " and " << a2->name << " ";
+                DynamicMotion d(p);
+                d.start_resno.from_string(rap_start.bw.c_str());
+                d.end_resno.from_string(rap_end.bw.c_str());
+                d.type = dyn_wind;
+                d.bias = 15;
+
+                float rold, rnew;
+                int i;
+                for (i=0; i<100; i++)
+                {
+                    rold = a1->distance_to(a2);
+                    d.apply_incremental(0.1);
+                    rnew = a1->distance_to(a2);
+                    float anomaly = fabs(rnew-tgtdist);
+                    if (anomaly > fabs(rold-tgtdist)) d.bias *= -0.666;
+                    else if (anomaly < 0.1) break;
+                    cout << "." << flush;                }
+                cout << "Wound " << rap_start.resno << " - " << rap_end.resno 
+                    << " by " << (d.get_total_applied()*15) << " helical units to bring "
+                    << aa1->get_name() << ":" << a1->name
+                    << " " << a1->distance_to(a2) << "A from "
+                    << aa2->get_name() << ":" << a2->name
+                    << endl;
+            }
+        }
+    }
+    else if (acvmt == acvm_flex)
+    {
+        rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
+        rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
+        rap_target.resolve_resno(p);
+        if (!rap_target.resno) return;
+
+        if (rap_index.aname.c_str()[0] == 'n')
+            if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
+        if (rap_target.aname.c_str()[0] == 'n')
+            if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+
+        AminoAcid *aa1, *aa2, *aa3;
+        aa1 = p->get_residue(rap_start.resno);
+        aa2 = p->get_residue(rap_index.resno);
+        aa3 = p->get_residue(rap_target.resno);
+
+        if (aa1 && aa2 && aa3)
+        {
+            Atom *a1, *a2;
+            a1 = aa1->get_atom(ba1);
+            a2 = aa1->get_atom(ba2);
+            if (a1 && a2)
+            {
+                Bond* b = a1->get_bond_between(a2);
+                if (b && b->atom2)
+                {
+                    a1 = aa2->get_atom(rap_index.aname.c_str());
+                    a2 = aa3->get_atom(rap_target.aname.c_str());
+                    if (a1 && a2)
+                    {
+                        float rold, rnew, total_rot = 0;
+                        if (b->can_rotate)
+                        {
+                            float theta = fiftyseventh*5;
+                            int i;
+                            for (i=0; i<1000; i++)
+                            {
+                                rold = a1->distance_to(a2);
+                                b->rotate(theta);
+                                rnew = a1->distance_to(a2);
+                                if (rnew > rold) theta *= -666;
+                                else if (rnew < tgtdist+0.1) break;
+                                total_rot += theta;
+                            }
+                        }
+                        else if (b->can_flip)
+                        {
+                            rold = a1->distance_to(a2);
+                            b->rotate(b->flip_angle);
+                            total_rot = b->flip_angle;
+                            rnew = a1->distance_to(a2);
+                            if (rnew > rold)
+                            {
+                                b->rotate(b->flip_angle);
+                                total_rot = 0;
+                            }
+                        }
+
+                        cout << "Rotated " << aa1->get_name() << ":" << a1->name << "-" << a2->name
+                            << " by " << (total_rot*fiftyseven) << " deg to bring "
+                            << aa2->get_name() << ":" << a1->name
+                            << " " << a1->distance_to(a2) << "A from "
+                            << aa3->get_name() << ":" << a2->name
+                            << endl;
+                    }
+                }
+            }
+        }
     }
 }
