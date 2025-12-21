@@ -5122,8 +5122,6 @@ void Molecule::conform_atom_to_location(Atom *a, Atom *target, int iters, float 
     best.restore_state(this);
 }
 
-#define _dbg_atom_pointing 0
-
 void Molecule::conform_atom_to_location(int i, Point t, int iters, float od)
 {
     if (!(movability & MOV_CAN_FLEX)) return;

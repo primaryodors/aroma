@@ -6,8 +6,8 @@ TMP=tmp
 
 DIRS=$(OBJ) $(BIN) $(OUT) $(SDF) $(TMP)
 OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
-	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o $(OBJ)/activation.o
-DOBJ=$(OBJ)/dynamic.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
+	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
+DOBJ=$(OBJ)/dynamic.o $(OBJ)/activation.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
@@ -30,15 +30,15 @@ CPL=g++
 CFLAGS=-O3 -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS=-g -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
+# CFLAGS+=-g
 
 # For gprof
 # example command line:
 # gprof bin/aromadock gmon.out > aromadock.output
-# CFLAGS=-g -ffast-math -pg -Wwrite-strings -fextended-identifiers -std=c++14
+# CFLAGS+=-g -pg
 
 # For code coverage instrumentation, switch to these CFLAGS (slower performance):
-# CFLAGS=-g -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14 -fprofile-arcs -ftest-coverage
+# CFLAGS+=-g -fprofile-arcs -ftest-coverage
 
 clean:
 	rm -f $(OBJ)/*.o $(BIN)/*
@@ -57,6 +57,9 @@ $(SDF):
 
 $(TMP):
 	if [ ! -f $(TMP) ]; then mkdir -p $(TMP); fi
+
+
+# Classes
 
 $(OBJ)/misc.o: src/classes/misc.h src/classes/misc.cpp src/classes/constants.h makefile
 	$(CPL) -c src/classes/misc.cpp -o $(OBJ)/misc.o $(CFLAGS)
@@ -108,6 +111,9 @@ $(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp $(OBJ)/search.o
 
 $(OBJ)/progress.o: src/classes/progress.h src/classes/progress.cpp $(OBJ)/misc.o
 	$(CPL) -c src/classes/progress.cpp -o $(OBJ)/progress.o $(CFLAGS)
+
+
+# Tests
 
 test/point_test: src/test/point_test.cpp $(OBJ)/point.o
 	$(CPL) src/test/point_test.cpp $(OBJ)/point.o $(OBJ)/misc.o -o test/point_test $(CFLAGS)
@@ -184,13 +190,16 @@ test/vdw_vertex_test: src/test/vdw_vertex_test.cpp $(OBJS)
 test/eclipse: src/test/eclipse.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/test/eclipse.cpp $(OBJS) -o test/eclipse $(CFLAGS)
 
+
+# Apps
+
 $(BIN)/aromadock: src/aromadock.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/aromadock.cpp $(OBJS) $(DOBJ) -o $(BIN)/aromadock $(CFLAGS)
 
-$(BIN)/phew: src/phew.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/protein.o 
+$(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/phew.cpp $(OBJS) $(DOBJ) -o $(BIN)/phew $(CFLAGS)
 
-$(BIN)/cavity_search: src/cavity_search.cpp $(OBJS) $(OBJ)/cavity.o
+$(BIN)/cavity_search: src/cavity_search.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/cavity_search.cpp $(OBJS) $(DOBJ) -o $(BIN)/cavity_search $(CFLAGS)
 
 $(BIN)/cavity_fit: src/cavity_fit.cpp $(OBJS) $(DOBJ)
@@ -199,23 +208,23 @@ $(BIN)/cavity_fit: src/cavity_fit.cpp $(OBJS) $(DOBJ)
 $(BIN)/protseq: src/protseq.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/protseq.cpp $(OBJS) $(DOBJ) -o $(BIN)/protseq $(CFLAGS)
 
-$(BIN)/ic: src/ic.cpp $(OBJS) $(OBJ)/protein.o
+$(BIN)/ic: src/ic.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/ic.cpp $(OBJS) $(DOBJ) -o $(BIN)/ic $(CFLAGS)
 
-$(BIN)/qc: src/qc.cpp $(OBJS) $(OBJ)/protein.o
+$(BIN)/qc: src/qc.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/qc.cpp $(OBJS) $(DOBJ) -o $(BIN)/qc $(CFLAGS)
 
-$(BIN)/scorpion: src/scorpion.cpp $(OBJS) $(OBJ)/protein.o $(OBJ)/scoring.o
+$(BIN)/scorpion: src/scorpion.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/scorpion.cpp $(OBJS) $(DOBJ) -o $(BIN)/scorpion $(CFLAGS)
 
-$(BIN)/olfactophore: src/olfactophore.cpp $(OBJS) $(OBJ)/protein.o $(OBJ)/search.o
+$(BIN)/olfactophore: src/olfactophore.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/olfactophore.cpp $(OBJS) $(DOBJ) -o $(BIN)/olfactophore $(CFLAGS)
 
-$(BIN)/ramachandran: src/ramachandran.cpp $(OBJS) $(OBJ)/protein.o
+$(BIN)/ramachandran: src/ramachandran.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/ramachandran.cpp $(OBJS) $(DOBJ) -o $(BIN)/ramachandran $(CFLAGS)
 
-$(BIN)/ringflip: src/ringflip.cpp $(OBJS) $(OBJ)/molecule.o
+$(BIN)/ringflip: src/ringflip.cpp $(OBJS)
 	$(CPL) src/ringflip.cpp $(OBJS) -o $(BIN)/ringflip $(CFLAGS)
 
-$(BIN)/molsurf: src/molsurf.cpp $(OBJS) $(OBJ)/molecule.o
+$(BIN)/molsurf: src/molsurf.cpp $(OBJS)
 	$(CPL) src/molsurf.cpp $(OBJS) -o $(BIN)/molsurf $(CFLAGS)

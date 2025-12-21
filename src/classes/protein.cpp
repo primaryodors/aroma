@@ -104,7 +104,6 @@ Point ResidueAtomPlaceholder::loc()
     return a->loc;
 }
 
-#define _dbg_rap_resolve_special_atom 1
 bool ResidueAtomPlaceholder::resolve_special_atom(Protein* p, Point rel)
 {
     if (!resno) resolve_resno(p);

@@ -323,6 +323,7 @@
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
+#define _dbg_atom_pointing 0
 #define _dbg_attprdc 0
 #define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
@@ -357,6 +358,7 @@
 #define _dbg_imidazole_check 0
 #define _dbg_improvements_only_residue 158
 #define _dbg_improvements_only_rule 0
+#define _dbg_intera_applicable 0
 #define _dbg_interatomic_forces 0
 #define _dbg_internal_energy 0
 #define _dbg_linear_motion 0
@@ -381,6 +383,7 @@
 #define _dbg_point_avg 0
 #define _dbg_polar_calc 0
 #define _dbg_polsat 0
+#define _dbg_rap_resolve_special_atom 0
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0
 #define _dbg_residue_poses 0

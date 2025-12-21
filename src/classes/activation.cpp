@@ -97,6 +97,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
             m_acvm[nacvm].rap_index.set(fields[4]);
             m_acvm[nacvm].tgtdist = atof(fields[5]);
             m_acvm[nacvm].rap_target.set(fields[6]);
+            nacvm++;
         }
         else if (!strcmp(fields[0], "EXIT"))
         {
@@ -383,13 +384,14 @@ void ActiveMotion::apply(Protein *p)
                                 rold = a1->distance_to(a2);
                                 b->rotate(theta);
                                 rnew = a1->distance_to(a2);
-                                if (rnew > rold) theta *= -666;
+                                if (rnew > rold) theta *= -0.666;
                                 else if (rnew < tgtdist+0.1) break;
                                 total_rot += theta;
                             }
                         }
                         else if (b->can_flip)
                         {
+                            cout << "and can flip." << endl;
                             rold = a1->distance_to(a2);
                             b->rotate(b->flip_angle);
                             total_rot = b->flip_angle;
@@ -400,15 +402,35 @@ void ActiveMotion::apply(Protein *p)
                                 total_rot = 0;
                             }
                         }
+                        else
+                        {
+                            cerr << "Bond " << aa1->get_name() << ":" << b->atom1->name << "-" << b->atom2->name
+                                << " cannot rotate or flip." << endl;
+                            return;
+                        }
 
-                        cout << "Rotated " << aa1->get_name() << ":" << a1->name << "-" << a2->name
+                        cout << "Rotated " << aa1->get_name() << ":" << b->atom1->name << "-" << b->atom2->name
                             << " by " << (total_rot*fiftyseven) << " deg to bring "
                             << aa2->get_name() << ":" << a1->name
                             << " " << a1->distance_to(a2) << "A from "
                             << aa3->get_name() << ":" << a2->name
                             << endl;
                     }
+                    else
+                    {
+                        if (!a1) cerr << aa2->get_name() << ":" << rap_index.aname << " not found." << endl;
+                        if (!a2) cerr << aa3->get_name() << ":" << rap_target.aname << " not found." << endl;
+                    }
                 }
+                else
+                {
+                    cerr << aa1->get_name() << ":" << ba1 << " and " << ba2 << " are not bonded." << endl;
+                }
+            }
+            else
+            {
+                if (!a1) cerr << aa1->get_name() << ":" << ba1 << " not found." << endl;
+                if (!a2) cerr << aa1->get_name() << ":" << ba2 << " not found." << endl;
             }
         }
     }
