@@ -280,7 +280,7 @@ if not len(results):
     print("FAIL.")
     exit()
 key = 'DOPE score'
-results.sort(key=lambda a: a[key])
+results.sort(key=lambda a: a[key], reverse=True)
 model = results[0]
 
 phewcode = f"""
