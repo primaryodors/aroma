@@ -286,7 +286,7 @@ model = results[0]
 phewcode = f"""
 LET $rcpid = "{protid}"
 LET $inpf = "pdbs/{fam}/{protid}.inactive.pdb"
-LET $mdld = "hm/{model.name}"
+LET $mdld = "hm/{model['name']}"
 
 LOAD $inpf A I
 LET %rcpseqln = %SEQLENI
