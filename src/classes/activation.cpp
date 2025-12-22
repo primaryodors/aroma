@@ -69,6 +69,16 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
             m_acvm[nacvm].rap_target.set(fields[3]);
             nacvm++;
         }
+        else if (!strcmp(fields[0], "TRNL"))
+        {
+            m_acvm[nacvm].acvmt = acvm_xlate;
+            m_acvm[nacvm].rap_start.set(fields[1]);
+            m_acvm[nacvm].rap_end.set(fields[2]);
+            m_acvm[nacvm].rap_index.set(fields[3]);
+            m_acvm[nacvm].tgtdist = atof(fields[4]);
+            m_acvm[nacvm].rap_target.set(fields[5]);
+            nacvm++;
+        }
         else if (!strcmp(fields[0], "DEL"))
         {
             m_acvm[nacvm].acvmt = acvm_delete;
@@ -230,7 +240,9 @@ void ActiveMotion::apply(Protein *p)
             rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
 
             cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
-                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to maximum contact distance " << tolerance.r << "A..." << endl;
+                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno 
+                << " to maximum " << rap_index.resno << " ~ " << rap_target.resno
+                << " distance " << tolerance.r << "A..." << endl;
             p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
         }
     }
@@ -282,6 +294,50 @@ void ActiveMotion::apply(Protein *p)
 
         p->delete_residues(rap_start.resno, rap_end.resno);
         cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
+    }
+    else if (acvmt == acvm_xlate)
+    {
+        rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
+        rap_end.resolve_resno(p);
+        if (!rap_end.resno) return;
+        rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
+        rap_target.resolve_resno(p);
+        if (!rap_target.resno) return;
+
+        if (rap_index.aname.c_str()[0] == 'n')
+            if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
+        if (rap_target.aname.c_str()[0] == 'n')
+            if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+
+        AminoAcid *aa1, *aa2;
+        Atom *a1, *a2;
+
+        aa1 = p->get_residue(rap_index.resno);
+        aa2 = p->get_residue(rap_target.resno);
+        // cout << "Translate ";
+
+        if (aa1 && aa2)
+        {
+            // cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
+            a1 = aa1->get_atom(rap_index.aname.c_str());
+            a2 = aa2->get_atom(rap_target.aname.c_str());
+
+            if (a1 && a2)
+            {
+                // cout << a1->name << " and " << a2->name << " ";
+                Vector v = a2->loc.subtract(a1->loc);
+                v.r = fmax(0, v.r - tgtdist);
+                if (v.r) p->move_piece(rap_start.resno, rap_end.resno, v);
+                cout << "Translated " << rap_start.resno << " - " << rap_end.resno 
+                    << " by " << v.r << " A to bring "
+                    << aa1->get_name() << ":" << a1->name
+                    << " " << a1->distance_to(a2) << "A from "
+                    << aa2->get_name() << ":" << a2->name
+                    << endl;
+            }
+        }
     }
     else if (acvmt == acvm_wind)
     {
