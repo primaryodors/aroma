@@ -264,9 +264,8 @@ env.io.atom_files_directory = ['.', '../atom_files']
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
                         knowns            = protid+"_tpl",
-                        sequence          = protid,
-                        assess_methods    = (assess.DOPE)
-                        )
+                        sequence          = protid
+                      )
 a.starting_model = 0
 a.ending_model   = 9
 a.library_schedule = autosched.slow
@@ -275,7 +274,7 @@ a.max_var_iterations = 300
 a.make()
 
 # TODO: Find the best output file from MODELLER, don't just assume #6. If no output to use, exit the script.
-results = [x for x in a.outputs if x['failure'] is None]
+results = [x for x in a.loop.outputs if x['failure'] is None]
 if not len(results):
     print("FAIL.")
     exit()
@@ -283,7 +282,8 @@ key = 'molpdf'
 i = 0
 j = 0
 best = 0.0
-for vilesnake in results:
+for i in range(len(results)):
+    vilesnake = results[i]
     if key in vilesnake:
         if not i or float(vilesnake[key]) < best:
             j = i
