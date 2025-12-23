@@ -27,10 +27,6 @@ bool allow_ligand_360_flex = true;
 
 bool cfmols_have_metals = false;
 
-int nconects = 0;
-Atom *conecta1[65536], *conecta2[65536];
-float conectcard[65536];
-
 Molecule *worst_clash_1 = nullptr, *worst_clash_2 = nullptr;
 float worst_mol_clash = 0;
 FILE* audit = nullptr;

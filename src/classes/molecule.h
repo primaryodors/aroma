@@ -321,6 +321,9 @@ public:
     Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr, *stay_close2_mol = nullptr;
     float stay_close_tolerance = 0, stay_close_optimal = 2, stay_close2_optimal = 2;
     bool is_ic_res = false;
+    int nconects = 0;
+    Atom *conecta1[256], *conecta2[256];
+    float conectcard[256];
 
 protected:
 
@@ -398,9 +401,6 @@ extern float worst_mol_clash;
 extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
-extern int nconects;
-extern Atom *conecta1[65536], *conecta2[65536];
-extern float conectcard[65536];
 
 #if _dbg_improvements_only_rule
 extern Molecule** check_mols;

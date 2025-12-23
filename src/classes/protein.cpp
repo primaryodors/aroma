@@ -464,7 +464,7 @@ char Protein::set_pdb_chain(char c)
 
 void Protein::save_pdb(FILE* os, Molecule* lig)
 {
-    int i, offset=0;
+    int i, j, offset=0;
 
     if (regions_from == rgn_manual && regions)
     {
@@ -519,6 +519,14 @@ void Protein::save_pdb(FILE* os, Molecule* lig)
         residues[i]->set_pdb_chain(pdbchain);
         residues[i]->save_pdb(os, offset);
         offset += residues[i]->get_atom_count();
+        if (residues[i]->nconects)
+        {
+            for (j=0; j<residues[i]->nconects; j++)
+            {
+                Bond* b = residues[i]->conecta1[j]->get_bond_between(residues[i]->conecta2[j]);
+                if (b) connections.push_back(b);
+            }
+        }
     }
     if (nm_mcoords)
     {
