@@ -279,9 +279,18 @@ results = [x for x in a.outputs if x['failure'] is None]
 if not len(results):
     print("FAIL.")
     exit()
-key = 'DOPE score'
-results.sort(key=lambda a: a[key], reverse=True)
-model = results[0]
+key = 'molpdf'
+i = 0
+j = 0
+best = 0.0
+for vilesnake in results:
+    if key in vilesnake:
+        if not i or float(vilesnake[key]) < best:
+            j = i
+            best = float(vilesnake[key])
+    i += 1
+# exit()
+model = results[j]
 
 phewcode = f"""
 LET $rcpid = "{protid}"
