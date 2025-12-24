@@ -439,6 +439,9 @@ int main(int argc, char** argv)
                 Atom* a = bsr[i]->get_reach_atom();
                 if (a)
                 {
+                    Atom* la = existing.get_nearest_atom(a->loc);
+                    if (!la) continue;
+                    if (la->distance_to(a) > _INTERA_R_CUTOFF) continue;
                     hbary = hbary.add(a->loc);
                     j++;
                 }
@@ -457,7 +460,7 @@ int main(int argc, char** argv)
                     if (a)
                     {
                         float r = a->loc.get_3d_distance(hbary);
-                        if (r > _DEFAULT_INTERA_R_CUTOFF+1) continue;
+                        if (r > _INTERA_R_CUTOFF+1) continue;
                         hnew = hnew.add(a->loc);
                         j++;
                         cout << bsr[i]->get_name() << ":" << a->name << " is " << r << "A from wet barycenter." << endl;
@@ -468,6 +471,9 @@ int main(int argc, char** argv)
             {
                 hnew.multiply(1.0 / j);
                 cen = hnew;
+                Atom* a = prot.get_nearest_atom(hnew);
+                if (a) cout << "Wet spot is " << a->loc.get_3d_distance(hnew) << " A from "
+                    << a->residue << ":" << a->name << endl;
             }
         }
 
