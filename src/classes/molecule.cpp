@@ -1347,6 +1347,28 @@ float Molecule::octant_occlusion(Molecule *ligand, bool ip)
     return octant_occlusion(tmp, ip);
 }
 
+Point Molecule::polar_barycenter()
+{
+    if (!atoms) return Point(0,0,0);
+    int i;
+    float sum = 0;
+    Point result = get_barycenter();
+    for (i=0; atoms[i]; i++)
+    {
+        float apol = fabs(atoms[i]->is_polar());
+        if (apol > hydrophilicity_cutoff)
+        {
+            Vector toadd = atoms[i]->loc;
+            toadd.r = apol;
+            if (!sum) result = toadd;
+            else result = result.add(toadd);
+            sum += apol;
+        }
+    }
+    if (sum) result.multiply(1.0 / sum);
+    return result;
+}
+
 float Molecule::octant_occlusion(Molecule **ligands, bool ip)
 {
     if (!atoms) return 0;

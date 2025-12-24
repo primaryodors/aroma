@@ -234,7 +234,8 @@ public:
     int replace_side_chains_from_other_protein(Protein* other);
 
     // Pre-placement
-    float tumble_ligand_inside_pocket(Molecule* ligand, Point pocketcen, float clashmult = 1, Progressbar* pgb = nullptr);
+    float tumble_ligand_inside_pocket(Molecule* ligand, Point pocketcen,
+        float clashmult = 1, Progressbar* pgb = nullptr, Point* ligcen = nullptr);
 
     int mcoord_resnos[32];
 

@@ -168,6 +168,7 @@ public:
     float surface_occlusion(Molecule* ligand);
     float octant_occlusion(Molecule** ligands, bool ignore_polar = false);
     float octant_occlusion(Molecule* ligand, bool ignore_polar = false);
+    Point polar_barycenter();
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);

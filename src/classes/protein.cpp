@@ -4705,12 +4705,12 @@ int Protein::replace_side_chains_from_other_protein(Protein* other)
     return num_applied;
 }
 
-float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, float aw, Progressbar* pgb)
+float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, float aw, Progressbar* pgb, Point* ligcen)
 {
     float x, y, z, step = 6*fiftyseventh;
     Vector ax = Point(1000,0,0), ay = Point(0,1000,0), az = Point(0,0,1000);
+    LocatedVector lax, lay, laz;
 
-    ligand->recenter(pocketcen);
     AminoAcid* rs[SPHREACH_MAX+4];
     Point sphsize(7,7,7);
     int sphres = get_residues_can_clash_ligand(rs, ligand, pocketcen, sphsize);
@@ -4718,6 +4718,15 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
     Pose best(ligand);
     Interaction beste = 0;
     beste.clash = Avogadro;
+
+    if (ligcen)
+    {
+        lax = ax;
+        lay = ay;
+        laz = az;
+        lax.origin = lay.origin = laz.origin = *ligcen;
+    }
+    else ligand->recenter(pocketcen);
 
     for (i=0; i<sphres; i++) cout << *rs[i] << " ";
     cout << endl;
@@ -4744,11 +4753,14 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
                     best.copy_state(ligand);
                     beste = e;
                 }
-                ligand->rotate(&az, step);
+                if (ligcen) ligand->rotate(laz, step);
+                else ligand->rotate(&az, step);
             }
-            ligand->rotate(&ay, step);
+            if (ligcen) ligand->rotate(lay, step);
+            else ligand->rotate(&ay, step);
         }
-        ligand->rotate(&ax, step);
+        if (ligcen) ligand->rotate(lax, step);
+        else ligand->rotate(&ax, step);
     }
     best.restore_state(ligand);
     if (pgb) pgb->erase();

@@ -415,6 +415,7 @@ int main(int argc, char** argv)
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
         Point cen = prot.find_loneliest_point(Point(0,5,0), sz);                // Do this BEFORE processing acvms and deleting residues!
+        existing.recenter(cen);
 
         Activation acv;
         if (prot.get_residue_bw(7, 50))
@@ -425,12 +426,61 @@ int main(int argc, char** argv)
             cout << "Applied activation motions." << endl << flush;
         }
 
-        #if 1
-        prot.tumble_ligand_inside_pocket(&existing, cen, 1, &pgb);
-        #else
-        existing.recenter(cen);
         AminoAcid* bsr[SPHREACH_MAX+4];
         int nbsr = prot.get_residues_can_clash_ligand(bsr, &existing, cen, Point(7,7,7));
+        #if 1
+        // get barycenter of hydrophilicity
+        Point hbary(0,0,0);
+        j=0;
+        for (i=0; i<nbsr; i++)
+        {
+            if (fabs(bsr[i]->hydrophilicity()) >= hydrophilicity_cutoff)
+            {
+                Atom* a = bsr[i]->get_reach_atom();
+                if (a)
+                {
+                    hbary = hbary.add(a->loc);
+                    j++;
+                }
+            }
+        }
+        if (j)
+        {
+            hbary.multiply(1.0/j);
+            Point hnew(0,0,0);
+            j=0;
+            for (i=0; i<nbsr; i++)
+            {
+                if (fabs(bsr[i]->hydrophilicity()) >= hydrophilicity_cutoff)
+                {
+                    Atom* a = bsr[i]->get_reach_atom();
+                    if (a)
+                    {
+                        float r = a->loc.get_3d_distance(hbary);
+                        if (r > _DEFAULT_INTERA_R_CUTOFF+1) continue;
+                        hnew = hnew.add(a->loc);
+                        j++;
+                        cout << bsr[i]->get_name() << ":" << a->name << " is " << r << "A from wet barycenter." << endl;
+                    }
+                }
+            }
+            if (j)
+            {
+                hnew.multiply(1.0 / j);
+                cen = hnew;
+            }
+        }
+
+        Point lhc = existing.polar_barycenter();
+        if (j)
+        {
+            Rotation rot = align_points_3d(lhc, cen, existing.get_barycenter());
+            existing.rotate(rot);
+            lhc = existing.polar_barycenter();
+        }
+        else prot.tumble_ligand_inside_pocket(&existing, cen, 1, &pgb, &lhc);
+        #else
+        existing.recenter(cen);
         LigandTarget lt[256];
         int nlt = Search::identify_ligand_pairing_targets(&existing, lt, 256);
         BestBindingResult bbr;
