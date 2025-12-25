@@ -246,23 +246,31 @@ void ActiveMotion::apply(Protein *p)
         {
             tolerance.r = tgtdist;
             pt_target = pt_target.add(tolerance);
-            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+            float r = pt_index.get_3d_distance(pt_target);
 
-            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
-                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
-            p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+            if (r < tgtdist)
+            {
+                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+                cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
+                    << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+            }
         }
         else
         {
             tolerance.r = tgtdist;
             pt_target = pt_target.add(tolerance);
-            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+            float r = pt_index.get_3d_distance(pt_target);
 
-            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
-                << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno 
-                << " to maximum " << rap_index.resno << " ~ " << rap_target.resno
-                << " distance " << tolerance.r << "A..." << endl;
-            p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+            if (r > tgtdist)
+            {
+                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+                cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " "
+                    << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno
+                    << " to maximum " << rap_index.resno << " ~ " << rap_target.resno
+                    << " distance " << tolerance.r << "A..." << endl;
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+            }
         }
     }
     else if (acvmt == acvm_bend)
@@ -276,7 +284,6 @@ void ActiveMotion::apply(Protein *p)
         n = abs(rap_end.resno - rap_start.resno);
         sign = sgn(rap_end.resno - rap_start.resno);
         if (n < 2) return;
-        float factor = 1.0 / (n-1);
 
         for (i = rap_start.resno; i != rap_end.resno; i += sign)
         {
@@ -285,21 +292,26 @@ void ActiveMotion::apply(Protein *p)
             Point pt_fulcrum = aa_fulcrum->get_CA_location(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
             Vector tolerance = pt_index.subtract(pt_target);
             Rotation rot;
+            tolerance.r = tgtdist;
+            pt_target = pt_target.add(tolerance);
+            float r = pt_index.get_3d_distance(pt_target);
             if (morethan)
             {
-                tolerance.r = tgtdist;
-                pt_target = pt_target.add(tolerance);
-                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a*factor);
+                if (r >= tgtdist) break;
             }
             else
             {
-                tolerance.r = tgtdist;
-                pt_target = pt_target.add(tolerance);
-                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a*factor);
+                if (r <= tgtdist) break;
             }
+            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+            float factor = 1.0 / (n-1);
+            p->rotate_piece(min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, rot.v, rot.a*factor);
+            n--;
         }
+        cout << "Bent " << rap_start.resno << "->" << rap_end.resno
+            << " to bring " << rap_index.resno
+            << (morethan ? " at least " : " within ") << tgtdist
+            << " A from " << rap_target.resno << endl;
     }
     else if (acvmt == acvm_prox)
     {

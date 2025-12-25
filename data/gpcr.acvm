@@ -34,8 +34,10 @@ DEL 8.46 8.48
 # Accommodate ligand
 PIVOT 5.s 5.e 5.58:x entire noclash ligand
 PIVOT 6.s 6.e 6.55:x entire noclash ligand
-# PIVOT 6.s 6.e 6.55:x 6.30 21 7.53
-# PIVOT 6.s 6.e 6.55:x 6.30 9.5 5.68
-BEND 6.48 6.e 6.30 21 7.53
-BEND 6.48 6.e 6.30 9.5 5.68
+PIVOT 6.s 6.e 6.55:x 6.30 31 7.53
+PIVOT 6.s 6.e 6.55:x 6.30 19.5 5.68
+PIVOT 7.s 7.49 7.49 7.34 >6 6.57
+PIVOT 7.s 7.49 7.49 7.34 >9 RK6.57
+BEND 6.48 6.s 6.30 21 7.53
+BEND 6.48 6.s 6.30 9.5 5.68
 EXIT
