@@ -61,6 +61,25 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
             else m_acvm[nacvm].rap_target.set(fields[6]);
             nacvm++;
         }
+        else if (!strcmp(fields[0], "BEND"))
+        {
+            m_acvm[nacvm].acvmt = acvm_bend;
+            m_acvm[nacvm].rap_start.set(fields[1]);
+            m_acvm[nacvm].rap_end.set(fields[2]);
+            m_acvm[nacvm].rap_index.set(fields[3]);
+            m_acvm[nacvm].tgtdist = atof(fields[4]);
+            /*if (!strcmp(fields[4], "noclash"))
+            {
+                m_acvm[nacvm].fixclash = true;
+            }
+            else*/ if (fields[4][0] == '>')
+            {
+                m_acvm[nacvm].morethan = true;
+                m_acvm[nacvm].tgtdist = atof(&(fields[4][1]));
+            }
+            m_acvm[nacvm].rap_target.set(fields[5]);
+            nacvm++;
+        }
         else if (!strcmp(fields[0], "PROX"))
         {
             m_acvm[nacvm].acvmt = acvm_prox;
@@ -244,6 +263,42 @@ void ActiveMotion::apply(Protein *p)
                 << " to maximum " << rap_index.resno << " ~ " << rap_target.resno
                 << " distance " << tolerance.r << "A..." << endl;
             p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
+        }
+    }
+    else if (acvmt == acvm_bend)
+    {
+        rap_start.resolve_resno(p);
+        if (!rap_start.resno) return;
+        rap_end.resolve_resno(p);
+        if (!rap_end.resno) return;
+
+        int i, j, sign, n;
+        n = abs(rap_end.resno - rap_start.resno);
+        sign = sgn(rap_end.resno - rap_start.resno);
+        if (n < 2) return;
+        float factor = 1.0 / (n-1);
+
+        for (i = rap_start.resno; i != rap_end.resno; i += sign)
+        {
+            AminoAcid* aa_fulcrum = p->get_residue(i);
+            if (!aa_fulcrum) continue;
+            Point pt_fulcrum = aa_fulcrum->get_CA_location(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
+            Vector tolerance = pt_index.subtract(pt_target);
+            Rotation rot;
+            if (morethan)
+            {
+                tolerance.r = tgtdist;
+                pt_target = pt_target.add(tolerance);
+                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a*factor);
+            }
+            else
+            {
+                tolerance.r = tgtdist;
+                pt_target = pt_target.add(tolerance);
+                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a*factor);
+            }
         }
     }
     else if (acvmt == acvm_prox)
