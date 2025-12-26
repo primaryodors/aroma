@@ -2005,6 +2005,11 @@ void apply_protein_specific_settings(Protein* p)
             soft_contact_a[i].resolve_resno(p);
             soft_contact_b[i].resolve_resno(p);
 
+            AminoAcid* aa = p->get_residue(soft_contact_a[i].resno);
+            if (aa) aa->movability = MOV_PINNED;
+            aa = p->get_residue(soft_contact_b[i].resno);
+            if (aa) aa->movability = MOV_PINNED;
+
             bool matched = false;
 
             for (j=0; j<nsoftrgn; j++)
@@ -3034,7 +3039,7 @@ _try_again:
                 for (i=protein->get_start_resno(); i<=j; i++)
                 {
                     AminoAcid* mvaa = protein->get_residue(i);
-                    if (mvaa) mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
+                    if (mvaa && !(mvaa->movability & MOV_PINNED)) mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
                 }
 
                 #if _dbg_null_flexions
@@ -3738,7 +3743,7 @@ _try_again:
                 if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*2)
                 {
                     dr[drcount][nodeno].disqualified = true;
-                    dr[drcount][nodeno].disqualify_reason += (std::string)"AromaDock is a fuckin piece of shit. ";
+                    dr[drcount][nodeno].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
                 }
             }
 
