@@ -1,32 +1,32 @@
 
-#ifndef _ACTIVATION
-#define _ACTIVATION
+#ifndef _RESHAPE
+#define _RESHAPE
 
 #include "protein.h"
 
-enum AcvType
+enum ReshapeType
 {
-    acv_GPCR,
+    rshp_GPCR,
 };
 
-enum AcvMotionType
+enum ReshapeMotionType
 {
-    acvm_xlate,
-    acvm_pivot,
-    acvm_twist,
-    acvm_wind,
-    acvm_prox,
-    acvm_delete,
-    acvm_flex,
-    acvm_bend,
+    rshpm_xlate,
+    rshpm_pivot,
+    rshpm_twist,
+    rshpm_wind,
+    rshpm_prox,
+    rshpm_delete,
+    rshpm_flex,
+    rshpm_bend,
 };
 
-class ActiveMotion
+class ReshapeMotion
 {
     public:
     void apply(Protein* p);
 
-    AcvMotionType acvmt;
+    ReshapeMotionType rshpmt;
     ResidueAtomPlaceholder rap_start, rap_end, rap_fulcrum, rap_index, rap_target;
     char ba1[16] = {0}, ba2[16] = {0};
     float tgtdist = 0;
@@ -37,15 +37,15 @@ class ActiveMotion
     Molecule* ligand = nullptr;
 };
 
-class Activation
+class Reshape
 {
     public:
-    void load_acvm_file(AcvType acvt, Molecule* ligand);
+    void load_rshpm_file(ReshapeType rshpt, Molecule* ligand);
     void apply(Protein* p, bool ones_with_ligands = false);
 
     protected:
-    ActiveMotion* m_acvm = nullptr;
-    int nacvm = 0;
+    ReshapeMotion* m_rshpm = nullptr;
+    int nrshpm = 0;
 };
 
 #endif

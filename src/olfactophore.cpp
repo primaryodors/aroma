@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <fstream>
 #include "classes/search.h"
-#include "classes/activation.h"
+#include "classes/reshape.h"
 #include "classes/progress.h"
 
 #define phore_polar_maxr 3.5
@@ -414,16 +414,16 @@ int main(int argc, char** argv)
         cout << "Performing pocket search..." << endl << flush;
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
-        Point cen = prot.find_loneliest_point(Point(0,5,0), sz);                // Do this BEFORE processing acvms and deleting residues!
+        Point cen = prot.find_loneliest_point(Point(0,5,0), sz);                // Do this BEFORE processing rshpms and deleting residues!
         existing.recenter(cen);
 
-        Activation acv;
+        Reshape rshp;
         if (prot.get_residue_bw(7, 50))
         {
-            acv.load_acvm_file(acv_GPCR, &existing);
-            cout << "Loaded activation file." << endl << flush;
-            acv.apply(&prot, false);
-            cout << "Applied activation motions." << endl << flush;
+            rshp.load_rshpm_file(rshp_GPCR, &existing);
+            cout << "Loaded reshape file." << endl << flush;
+            rshp.apply(&prot, false);
+            cout << "Applied reshape motions." << endl << flush;
         }
 
         AminoAcid* bsr[SPHREACH_MAX+4];
@@ -497,7 +497,7 @@ int main(int argc, char** argv)
         #endif
         if (prot.get_residue_bw(7, 50))
         {
-            acv.apply(&prot, true);
+            rshp.apply(&prot, true);
             cout << "Applied activation motions." << endl << flush;
         }
 

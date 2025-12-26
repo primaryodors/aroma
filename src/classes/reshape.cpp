@@ -1,18 +1,18 @@
 
-#include "activation.h"
+#include "reshape.h"
 #include "dynamic.h"
 
-void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
+void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
 {
     char infname[256];
-    switch (acvt)
+    switch (rshpt)
     {
-        case acv_GPCR:
-        strcpy(infname, "data/gpcr.acvm");
+        case rshp_GPCR:
+        strcpy(infname, "data/gpcr.rshpm");
         break;
 
         default:
-        cerr << "Unknown activation type." << endl;
+        cerr << "Unknown reshape type." << endl;
         throw 0xbadc0de;
     }
 
@@ -24,7 +24,7 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
     }
 
     char buffer[1024];
-    m_acvm = new ActiveMotion[1024];
+    m_rshpm = new ReshapeMotion[1024];
     while (!feof(fp))
     {
         char* ln = fgets(buffer, 1020, fp);
@@ -36,97 +36,97 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
 
         if (!strcmp(fields[0], "PIVOT"))                    // https://www.youtube.com/watch?v=n67RYI_0sc0
         {
-            m_acvm[nacvm].acvmt = acvm_pivot;
-            m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[2]);
-            m_acvm[nacvm].rap_fulcrum.set(fields[3]);
+            m_rshpm[nrshpm].rshpmt = rshpm_pivot;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rap_end.set(fields[2]);
+            m_rshpm[nrshpm].rap_fulcrum.set(fields[3]);
             if (!strcmp(fields[4], "entire"))
-                m_acvm[nacvm].entire = true;
-            else m_acvm[nacvm].rap_index.set(fields[4]);
-            m_acvm[nacvm].tgtdist = atof(fields[5]);
+                m_rshpm[nrshpm].entire = true;
+            else m_rshpm[nrshpm].rap_index.set(fields[4]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[5]);
             if (!strcmp(fields[5], "noclash"))
             {
-                m_acvm[nacvm].fixclash = true;
+                m_rshpm[nrshpm].fixclash = true;
             }
             else if (fields[5][0] == '>')
             {
-                m_acvm[nacvm].morethan = true;
-                m_acvm[nacvm].tgtdist = atof(&(fields[5][1]));
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[5][1]));
             }
             if (!strcmp(fields[6], "ligand"))
             {
-                m_acvm[nacvm].tgtligand = true;
-                m_acvm[nacvm].ligand = ligand;
+                m_rshpm[nrshpm].tgtligand = true;
+                m_rshpm[nrshpm].ligand = ligand;
             }
-            else m_acvm[nacvm].rap_target.set(fields[6]);
-            nacvm++;
+            else m_rshpm[nrshpm].rap_target.set(fields[6]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "BEND"))
         {
-            m_acvm[nacvm].acvmt = acvm_bend;
-            m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[2]);
-            m_acvm[nacvm].rap_index.set(fields[3]);
-            m_acvm[nacvm].tgtdist = atof(fields[4]);
+            m_rshpm[nrshpm].rshpmt = rshpm_bend;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rap_end.set(fields[2]);
+            m_rshpm[nrshpm].rap_index.set(fields[3]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[4]);
             /*if (!strcmp(fields[4], "noclash"))
             {
-                m_acvm[nacvm].fixclash = true;
+                m_rshpm[nrshpm].fixclash = true;
             }
             else*/ if (fields[4][0] == '>')
             {
-                m_acvm[nacvm].morethan = true;
-                m_acvm[nacvm].tgtdist = atof(&(fields[4][1]));
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[4][1]));
             }
-            m_acvm[nacvm].rap_target.set(fields[5]);
-            nacvm++;
+            m_rshpm[nrshpm].rap_target.set(fields[5]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "PROX"))
         {
-            m_acvm[nacvm].acvmt = acvm_prox;
-            m_acvm[nacvm].rap_index.set(fields[1]);
-            m_acvm[nacvm].tgtdist = atof(fields[2]);
-            m_acvm[nacvm].rap_target.set(fields[3]);
-            nacvm++;
+            m_rshpm[nrshpm].rshpmt = rshpm_prox;
+            m_rshpm[nrshpm].rap_index.set(fields[1]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[2]);
+            m_rshpm[nrshpm].rap_target.set(fields[3]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "TRNL"))
         {
-            m_acvm[nacvm].acvmt = acvm_xlate;
-            m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[2]);
-            m_acvm[nacvm].rap_index.set(fields[3]);
-            m_acvm[nacvm].tgtdist = atof(fields[4]);
-            m_acvm[nacvm].rap_target.set(fields[5]);
-            nacvm++;
+            m_rshpm[nrshpm].rshpmt = rshpm_xlate;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rap_end.set(fields[2]);
+            m_rshpm[nrshpm].rap_index.set(fields[3]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[4]);
+            m_rshpm[nrshpm].rap_target.set(fields[5]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "DEL"))
         {
-            m_acvm[nacvm].acvmt = acvm_delete;
-            m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[2]);
-            nacvm++;
+            m_rshpm[nrshpm].rshpmt = rshpm_delete;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rap_end.set(fields[2]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "WIND"))
         {
-            m_acvm[nacvm].acvmt = acvm_wind;
-            m_acvm[nacvm].rap_start.set(fields[1]);
-            m_acvm[nacvm].rap_end.set(fields[2]);
-            m_acvm[nacvm].rap_index.set(fields[3]);
-            m_acvm[nacvm].tgtdist = atof(fields[4]);
-            m_acvm[nacvm].rap_target.set(fields[5]);
-            nacvm++;
+            m_rshpm[nrshpm].rshpmt = rshpm_wind;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rap_end.set(fields[2]);
+            m_rshpm[nrshpm].rap_index.set(fields[3]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[4]);
+            m_rshpm[nrshpm].rap_target.set(fields[5]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "FLEX"))
         {
-            m_acvm[nacvm].acvmt = acvm_flex;
-            m_acvm[nacvm].rap_start.set(fields[1]);
+            m_rshpm[nrshpm].rshpmt = rshpm_flex;
+            m_rshpm[nrshpm].rap_start.set(fields[1]);
             if (strlen(fields[2]) > 13) fields[2][13] = 0;
-            strcpy(m_acvm[nacvm].ba1, fields[2]);
+            strcpy(m_rshpm[nrshpm].ba1, fields[2]);
             if (strlen(fields[3]) > 13) fields[3][13] = 0;
-            strcpy(m_acvm[nacvm].ba2, fields[3]);
-            m_acvm[nacvm].rap_index.set(fields[4]);
-            m_acvm[nacvm].tgtdist = atof(fields[5]);
-            m_acvm[nacvm].rap_target.set(fields[6]);
-            nacvm++;
+            strcpy(m_rshpm[nrshpm].ba2, fields[3]);
+            m_rshpm[nrshpm].rap_index.set(fields[4]);
+            m_rshpm[nrshpm].tgtdist = atof(fields[5]);
+            m_rshpm[nrshpm].rap_target.set(fields[6]);
+            nrshpm++;
         }
         else if (!strcmp(fields[0], "EXIT"))
         {
@@ -136,34 +136,34 @@ void Activation::load_acvm_file(AcvType acvt, Molecule* ligand)
     fclose(fp);
 }
 
-void Activation::apply(Protein *p, bool ool)            // This is our ool. There is no p in it. 🌊🏊🌊
+void Reshape::apply(Protein *p, bool ool)            // This is our ool. There is no p in it. 🌊🏊🌊
 {
     int i;
     bool post = false;
-    for (i=0; i<nacvm; i++)
+    for (i=0; i<nrshpm; i++)
     {
-        if (m_acvm[i].tgtligand) post = true;
-        if (post == ool) m_acvm[i].apply(p);
+        if (m_rshpm[i].tgtligand) post = true;
+        if (post == ool) m_rshpm[i].apply(p);
     }
 }
 
-void ActiveMotion::apply(Protein *p)
+void ReshapeMotion::apply(Protein *p)
 {
-    if (acvmt == acvm_pivot)
+    if (rshpmt == rshpm_pivot)
     {
-        #if _dbg_acvm_apply
+        #if _dbg_rshpm_apply
         cout << "Pivot motion." << endl;
         #endif
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
-        #if _dbg_acvm_apply
+        #if _dbg_rshpm_apply
         cout << "Resolved start resno " << rap_start.resno << " and end " << rap_end.resno << endl;
         #endif
         rap_fulcrum.resolve_resno(p);
         if (!rap_fulcrum.resno) return;
-        #if _dbg_acvm_apply
+        #if _dbg_rshpm_apply
         cout << "Resolved fulcrum " << rap_fulcrum.resno << endl;
         #endif
         if (!entire)
@@ -172,7 +172,7 @@ void ActiveMotion::apply(Protein *p)
             if (rap_index.aname.c_str()[0] == 'n')
                 rap_index.resolve_special_atom(p, rap_target.loc());
             if (!rap_index.resno) return;
-            #if _dbg_acvm_apply
+            #if _dbg_rshpm_apply
             cout << "Resolved index " << rap_index.resno << endl;
             #endif
         }
@@ -182,7 +182,7 @@ void ActiveMotion::apply(Protein *p)
             if (rap_target.aname.c_str()[0] == 'n')
                 rap_target.resolve_special_atom(p, rap_index.loc());
             if (!rap_target.resno) return;
-            #if _dbg_acvm_apply
+            #if _dbg_rshpm_apply
             cout << "Resolved index " << rap_target.resno << endl;
             #endif
         }
@@ -190,7 +190,7 @@ void ActiveMotion::apply(Protein *p)
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
         if (tgtligand && !ligand)
         {
-            cerr << "Called ligand-target active motion without a ligand set." << endl;
+            cerr << "Called ligand-target reshape motion without a ligand set." << endl;
             throw 0xbadc0de;                // bad code monkey no banana!
         }
         if (tgtligand)
@@ -198,7 +198,7 @@ void ActiveMotion::apply(Protein *p)
             Atom* liga = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc());
             if (!liga) return;
             pt_target = liga->loc;
-            #if _dbg_acvm_apply
+            #if _dbg_rshpm_apply
             cout << "Target is ligand." << endl;
             #endif
         }
@@ -207,7 +207,7 @@ void ActiveMotion::apply(Protein *p)
         {
             closest_to_ligand = p->get_nearest_atom(pt_target, rap_start.resno, rap_end.resno);
             pt_index = closest_to_ligand->loc;
-            #if _dbg_acvm_apply
+            #if _dbg_rshpm_apply
             cout << "Index is entire." << endl;
             #endif
         }
@@ -215,7 +215,7 @@ void ActiveMotion::apply(Protein *p)
         Rotation rot;
         if (fixclash)
         {
-            #if _dbg_acvm_apply
+            #if _dbg_rshpm_apply
             // cout << "Motion fixes clash." << endl;
             #endif
             int i;
@@ -273,7 +273,7 @@ void ActiveMotion::apply(Protein *p)
             }
         }
     }
-    else if (acvmt == acvm_bend)
+    else if (rshpmt == rshpm_bend)
     {
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
@@ -313,7 +313,7 @@ void ActiveMotion::apply(Protein *p)
             << (morethan ? " at least " : " within ") << tgtdist
             << " A from " << rap_target.resno << endl;
     }
-    else if (acvmt == acvm_prox)
+    else if (rshpmt == rshpm_prox)
     {
         rap_index.resolve_resno(p);
         if (!rap_index.resno) return;
@@ -352,7 +352,7 @@ void ActiveMotion::apply(Protein *p)
             }
         }
     }
-    else if (acvmt == acvm_delete)
+    else if (rshpmt == rshpm_delete)
     {
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
@@ -362,7 +362,7 @@ void ActiveMotion::apply(Protein *p)
         p->delete_residues(rap_start.resno, rap_end.resno);
         cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
     }
-    else if (acvmt == acvm_xlate)
+    else if (rshpmt == rshpm_xlate)
     {
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
@@ -406,7 +406,7 @@ void ActiveMotion::apply(Protein *p)
             }
         }
     }
-    else if (acvmt == acvm_wind)
+    else if (rshpmt == rshpm_wind)
     {
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
@@ -464,7 +464,7 @@ void ActiveMotion::apply(Protein *p)
             }
         }
     }
-    else if (acvmt == acvm_flex)
+    else if (rshpmt == rshpm_flex)
     {
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
