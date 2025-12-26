@@ -97,8 +97,7 @@ Point ResidueAtomPlaceholder::loc()
     AminoAcid* aa = m_prot->get_residue(resno);
     if (!aa) return Point();
     Atom* a;
-    if (!strcmp(aname.c_str(), "x")) a = aa->get_reach_atom();
-    else a = aa->get_atom(aname.c_str());
+    a = aa->get_atom(get_aname().c_str());
     if (!a) a = aa->get_atom("CA");
     if (!a) return (aa->get_barycenter());
     return a->loc;
@@ -135,6 +134,41 @@ bool ResidueAtomPlaceholder::resolve_special_atom(Protein* p, Point rel)
     cout << endl;
     #endif
     return false;
+}
+
+std::string ResidueAtomPlaceholder::get_aname()
+{
+    if (!m_prot) return aname;
+    const char* cstr = aname.c_str();
+    if (!cstr) return (std::string)"";
+    if (!strlen(cstr)) return (std::string)"";
+    if (!strcmp(cstr, "x"))
+    {
+        AminoAcid* aa = m_prot->get_residue(resno);
+        if (!aa) return (std::string)"";
+        Atom* a = aa->get_reach_atom();
+        if (!a) return (std::string)"";
+        return (std::string)a->name;
+    }
+    if (!strcmp(cstr, "xh"))
+    {
+        AminoAcid* aa = m_prot->get_residue(resno);
+        if (!aa) return (std::string)"";
+        Atom* a = aa->get_reach_atom(hbond);
+        if (!a) return (std::string)"";
+        return (std::string)a->name;
+    }
+    if (!strcmp(cstr, "xv"))
+    {
+        AminoAcid* aa = m_prot->get_residue(resno);
+        if (!aa) return (std::string)"";
+        Atom* a = aa->get_reach_atom();
+        if (!a) return (std::string)"";
+        a = a->get_heavy_atom();
+        if (!a) return (std::string)"";
+        return (std::string)a->name;
+    }
+    return std::string();
 }
 
 Protein::Protein()

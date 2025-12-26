@@ -59,12 +59,15 @@ class ResiduePlaceholder
 
 class ResidueAtomPlaceholder : public ResiduePlaceholder
 {
-    public:
+    protected:
     std::string aname;
 
+    public:
     void set(const char* str);
     Point loc();
     bool resolve_special_atom(Protein* p, Point rel);
+    std::string get_aname();
+    std::string get_orig_aname() { return aname; }
 };
 
 struct MCoord

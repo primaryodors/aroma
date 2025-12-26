@@ -95,7 +95,21 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
             m_rshpm[nrshpm].rap_end.set(fields[2]);
             m_rshpm[nrshpm].rap_index.set(fields[3]);
             m_rshpm[nrshpm].tgtdist = atof(fields[4]);
-            m_rshpm[nrshpm].rap_target.set(fields[5]);
+            if (!strcmp(fields[4], "noclash"))
+            {
+                m_rshpm[nrshpm].fixclash = true;
+            }
+            else if (fields[4][0] == '>')
+            {
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[4][1]));
+            }
+            if (!strcmp(fields[5], "ligand"))
+            {
+                m_rshpm[nrshpm].tgtligand = true;
+                m_rshpm[nrshpm].ligand = ligand;
+            }
+            else m_rshpm[nrshpm].rap_target.set(fields[5]);
             nrshpm++;
         }
         else if (!strcmp(fields[0], "DEL"))
@@ -169,7 +183,7 @@ void ReshapeMotion::apply(Protein *p)
         if (!entire)
         {
             rap_index.resolve_resno(p);
-            if (rap_index.aname.c_str()[0] == 'n')
+            if (rap_index.get_aname().c_str()[0] == 'n')
                 rap_index.resolve_special_atom(p, rap_target.loc());
             if (!rap_index.resno) return;
             #if _dbg_rshpm_apply
@@ -179,7 +193,7 @@ void ReshapeMotion::apply(Protein *p)
         if (!tgtligand)
         {
             rap_target.resolve_resno(p);
-            if (rap_target.aname.c_str()[0] == 'n')
+            if (rap_target.get_aname().c_str()[0] == 'n')
                 rap_target.resolve_special_atom(p, rap_index.loc());
             if (!rap_target.resno) return;
             #if _dbg_rshpm_apply
@@ -320,9 +334,9 @@ void ReshapeMotion::apply(Protein *p)
         rap_target.resolve_resno(p);
         if (!rap_target.resno) return;
 
-        if (rap_index.aname.c_str()[0] == 'n')
+        if (rap_index.get_aname().c_str()[0] == 'n')
             if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
-        if (rap_target.aname.c_str()[0] == 'n')
+        if (rap_target.get_aname().c_str()[0] == 'n')
             if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
 
         AminoAcid *aa1, *aa2;
@@ -337,8 +351,8 @@ void ReshapeMotion::apply(Protein *p)
 
         if (aa1 && aa2)
         {
-            a1 = aa1->get_atom(rap_index.aname.c_str());
-            a2 = aa2->get_atom(rap_target.aname.c_str());
+            a1 = aa1->get_atom(rap_index.get_aname().c_str());
+            a2 = aa2->get_atom(rap_target.get_aname().c_str());
 
             if (a1 && a2)
             {
@@ -368,19 +382,30 @@ void ReshapeMotion::apply(Protein *p)
         if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
-        rap_index.resolve_resno(p);
-        if (!rap_index.resno) return;
-        rap_target.resolve_resno(p);
-        if (!rap_target.resno) return;
 
-        if (rap_index.aname.c_str()[0] == 'n')
-            if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
-        if (rap_target.aname.c_str()[0] == 'n')
-            if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+        if (!entire)
+        {
+            rap_index.resolve_resno(p);
+            if (rap_index.get_aname().c_str()[0] == 'n')
+                rap_index.resolve_special_atom(p, rap_target.loc());
+            if (!rap_index.resno) return;
+            if (rap_index.get_aname().c_str()[0] == 'n')
+                if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
+        }
+        if (!tgtligand)
+        {
+            rap_target.resolve_resno(p);
+            if (rap_target.get_aname().c_str()[0] == 'n')
+                rap_target.resolve_special_atom(p, rap_index.loc());
+            if (!rap_target.resno) return;
+            if (rap_target.get_aname().c_str()[0] == 'n')
+                if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
+        }
 
         AminoAcid *aa1, *aa2;
         Atom *a1, *a2;
 
+        // TODO: fixclash and tgtligand behavior.
         aa1 = p->get_residue(rap_index.resno);
         aa2 = p->get_residue(rap_target.resno);
         // cout << "Translate ";
@@ -388,12 +413,12 @@ void ReshapeMotion::apply(Protein *p)
         if (aa1 && aa2)
         {
             // cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
-            a1 = aa1->get_atom(rap_index.aname.c_str());
-            a2 = aa2->get_atom(rap_target.aname.c_str());
+            a1 = aa1->get_atom(rap_index.get_aname().c_str());
+            a2 = aa2->get_atom(rap_target.get_aname().c_str());
 
             if (a1 && a2)
             {
-                // cout << a1->name << " and " << a2->name << " ";
+                // TODO: morethan behavior.
                 Vector v = a2->loc.subtract(a1->loc);
                 v.r = fmax(0, v.r - tgtdist);
                 if (v.r) p->move_piece(rap_start.resno, rap_end.resno, v);
@@ -417,9 +442,9 @@ void ReshapeMotion::apply(Protein *p)
         rap_target.resolve_resno(p);
         if (!rap_target.resno) return;
 
-        if (rap_index.aname.c_str()[0] == 'n')
+        if (rap_index.get_aname().c_str()[0] == 'n')
             if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
-        if (rap_target.aname.c_str()[0] == 'n')
+        if (rap_target.get_aname().c_str()[0] == 'n')
             if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
 
         AminoAcid *aa1, *aa2;
@@ -432,8 +457,8 @@ void ReshapeMotion::apply(Protein *p)
         if (aa1 && aa2)
         {
             cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
-            a1 = aa1->get_atom(rap_index.aname.c_str());
-            a2 = aa2->get_atom(rap_target.aname.c_str());
+            a1 = aa1->get_atom(rap_index.get_aname().c_str());
+            a2 = aa2->get_atom(rap_target.get_aname().c_str());
 
             if (a1 && a2)
             {
@@ -473,9 +498,9 @@ void ReshapeMotion::apply(Protein *p)
         rap_target.resolve_resno(p);
         if (!rap_target.resno) return;
 
-        if (rap_index.aname.c_str()[0] == 'n')
+        if (rap_index.get_aname().c_str()[0] == 'n')
             if (!rap_index.resolve_special_atom(p, rap_target.loc())) return;
-        if (rap_target.aname.c_str()[0] == 'n')
+        if (rap_target.get_aname().c_str()[0] == 'n')
             if (!rap_target.resolve_special_atom(p, rap_index.loc())) return;
 
         AminoAcid *aa1, *aa2, *aa3;
@@ -493,8 +518,8 @@ void ReshapeMotion::apply(Protein *p)
                 Bond* b = a1->get_bond_between(a2);
                 if (b && b->atom2)
                 {
-                    a1 = aa2->get_atom(rap_index.aname.c_str());
-                    a2 = aa3->get_atom(rap_target.aname.c_str());
+                    a1 = aa2->get_atom(rap_index.get_aname().c_str());
+                    a2 = aa3->get_atom(rap_target.get_aname().c_str());
                     if (a1 && a2)
                     {
                         float rold, rnew, total_rot = 0;
@@ -541,8 +566,8 @@ void ReshapeMotion::apply(Protein *p)
                     }
                     else
                     {
-                        if (!a1) cerr << aa2->get_name() << ":" << rap_index.aname << " not found." << endl;
-                        if (!a2) cerr << aa3->get_name() << ":" << rap_target.aname << " not found." << endl;
+                        if (!a1) cerr << aa2->get_name() << ":" << rap_index.get_orig_aname() << " not found." << endl;
+                        if (!a2) cerr << aa3->get_name() << ":" << rap_target.get_orig_aname() << " not found." << endl;
                     }
                 }
                 else
