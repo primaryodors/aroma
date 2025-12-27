@@ -40,6 +40,7 @@ class BallesterosWeinstein
     BallesterosWeinstein(const char* fromstr) { this->from_string(fromstr); }
 
     void from_string(const char* inpstr);
+    std::string to_string();
 };
 
 class ResiduePlaceholder

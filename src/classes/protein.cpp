@@ -317,6 +317,11 @@ void BallesterosWeinstein::from_string(const char* inpstr)
     if (dot) member_no = atoi(dot+1);
 }
 
+std::string BallesterosWeinstein::to_string()
+{
+    return std::to_string(helix_no) + std::string(".") + std::to_string(member_no);
+}
+
 AminoAcid* Protein::get_residue(int resno)
 {
     if (!resno) return 0;

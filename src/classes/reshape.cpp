@@ -150,6 +150,114 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
     fclose(fp);
 }
 
+bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target)
+{
+    if (!entire)
+    {
+        rap_index.resolve_resno(p);
+        if (rap_index.get_aname().c_str()[0] == 'n')
+            rap_index.resolve_special_atom(p, rap_target.loc());
+        if (!rap_index.resno) return false;
+        #if _dbg_rshpm_apply
+        cout << "Resolved index " << rap_index.resno << endl;
+        #endif
+        *index = rap_index.loc();
+    }
+
+    if (!tgtligand)
+    {
+        rap_target.resolve_resno(p);
+        if (rap_target.get_aname().c_str()[0] == 'n')
+            rap_target.resolve_special_atom(p, rap_index.loc());
+        if (!rap_target.resno) return false;
+        #if _dbg_rshpm_apply
+        cout << "Resolved index " << rap_target.resno << endl;
+        #endif
+        *target = rap_target.loc();
+    }
+    if (tgtligand && !ligand)
+    {
+        cerr << "Called ligand-target reshape motion without a ligand set." << endl;
+        throw 0xbadc0de;                // bad code monkey no banana!
+    }
+    if (tgtligand)
+    {
+        Atom* liga = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc());
+        if (!liga) return false;
+        *target = liga->loc;
+        #if _dbg_rshpm_apply
+        cout << "Target is ligand." << endl;
+        #endif
+    }
+
+    if (entire)
+    {
+        closest_to_ligand = p->get_nearest_atom(*target, rap_start.resno, rap_end.resno);
+        if (!closest_to_ligand) return false;
+        *index = closest_to_ligand->loc;
+        #if _dbg_rshpm_apply
+        cout << "Index is entire." << endl;
+        #endif
+    }
+
+    return true;
+}
+
+bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int iters)
+{
+    #if _dbg_rshpm_apply
+    // cout << "Motion fixes clash." << endl;
+    #endif
+    int i;
+    Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
+    if (entire) aai = (Molecule*)closest_to_ligand->mol;
+    if (tgtligand) aat = ligand;
+    if (!aai || !aat)
+    {
+        cerr << "Something went wrong in ReshapeMotion::fix_clash()." << endl;
+        return false;
+    }
+
+    cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
+        << " to avoid clash..." << flush;
+    float oldclash = aai->get_intermol_clashes(aat), step = 1.5*fiftyseventh;
+    for (i=0; i<iters; i++)
+    {
+        Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
+        p->rotate_piece(sr, er, pt_fulcrum, rot.v, step);
+        cout << ".";
+        float clash = aai->get_intermol_clashes(aat);
+        // if (!i && clash > oldclash) step *= -1;
+        if (clash <= clash_limit_per_aa) break;
+    }
+    cout << endl;
+    return true;
+}
+
+bool ReshapeMotion::set_distance(Protein* p, int sr, int er, Point pt_fulcrum, Point pt_index, Point pt_target, int moreorless, float amount)
+{
+    Vector tolerance = pt_index.subtract(pt_target);
+    Rotation rot;
+
+    tolerance.r = tgtdist;
+    pt_target = pt_target.add(tolerance);
+    float r = pt_index.get_3d_distance(pt_target);
+
+    if ((moreorless > 0 && r < tgtdist)
+        || (moreorless < 0 && r > tgtdist)
+        || !moreorless
+        )
+    {
+        rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+        rot.a *= amount;
+        cout << "Rotating " << sr << "->" << er << " " 
+            << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
+        p->rotate_piece(sr, er, pt_fulcrum, rot.v, rot.a);
+    }
+
+    return true;
+}
+
 void Reshape::apply(Protein *p, bool ool)            // This is our ool. There is no p in it. 🌊🏊🌊
 {
     int i;
@@ -180,112 +288,12 @@ void ReshapeMotion::apply(Protein *p)
         #if _dbg_rshpm_apply
         cout << "Resolved fulcrum " << rap_fulcrum.resno << endl;
         #endif
-        if (!entire)
-        {
-            rap_index.resolve_resno(p);
-            if (rap_index.get_aname().c_str()[0] == 'n')
-                rap_index.resolve_special_atom(p, rap_target.loc());
-            if (!rap_index.resno) return;
-            #if _dbg_rshpm_apply
-            cout << "Resolved index " << rap_index.resno << endl;
-            #endif
-        }
-        if (!tgtligand)
-        {
-            rap_target.resolve_resno(p);
-            if (rap_target.get_aname().c_str()[0] == 'n')
-                rap_target.resolve_special_atom(p, rap_index.loc());
-            if (!rap_target.resno) return;
-            #if _dbg_rshpm_apply
-            cout << "Resolved index " << rap_target.resno << endl;
-            #endif
-        }
 
-        Point pt_fulcrum = rap_fulcrum.loc(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
-        if (tgtligand && !ligand)
-        {
-            cerr << "Called ligand-target reshape motion without a ligand set." << endl;
-            throw 0xbadc0de;                // bad code monkey no banana!
-        }
-        if (tgtligand)
-        {
-            Atom* liga = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc());
-            if (!liga) return;
-            pt_target = liga->loc;
-            #if _dbg_rshpm_apply
-            cout << "Target is ligand." << endl;
-            #endif
-        }
-        Atom* closest_to_ligand = nullptr;
-        if (entire)
-        {
-            closest_to_ligand = p->get_nearest_atom(pt_target, rap_start.resno, rap_end.resno);
-            pt_index = closest_to_ligand->loc;
-            #if _dbg_rshpm_apply
-            cout << "Index is entire." << endl;
-            #endif
-        }
-        Vector tolerance = pt_index.subtract(pt_target);
-        Rotation rot;
-        if (fixclash)
-        {
-            #if _dbg_rshpm_apply
-            // cout << "Motion fixes clash." << endl;
-            #endif
-            int i;
-            Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
-            if (entire) aai = (Molecule*)closest_to_ligand->mol;
-            if (tgtligand) aat = ligand;
-            if (!aai || !aat)
-            {
-                cerr << "Something went wrong." << endl;
-                throw 0xbadc0de;
-            }
+        Point pt_fulcrum = rap_fulcrum.loc(), pt_index, pt_target;
+        if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
 
-            cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " about " << rap_fulcrum.resno 
-                << " to avoid clash..." << flush;
-            float oldclash = aai->get_intermol_clashes(aat), step = 1.5*fiftyseventh;
-            for (i=0; i<60; i++)
-            {
-                rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, step);
-                cout << ".";
-                float clash = aai->get_intermol_clashes(aat);
-                // if (!i && clash > oldclash) step *= -1;
-                if (clash <= clash_limit_per_aa) break;
-            }
-            cout << endl;
-        }
-        else if (morethan)
-        {
-            tolerance.r = tgtdist;
-            pt_target = pt_target.add(tolerance);
-            float r = pt_index.get_3d_distance(pt_target);
-
-            if (r < tgtdist)
-            {
-                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
-                cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " " 
-                    << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
-            }
-        }
-        else
-        {
-            tolerance.r = tgtdist;
-            pt_target = pt_target.add(tolerance);
-            float r = pt_index.get_3d_distance(pt_target);
-
-            if (r > tgtdist)
-            {
-                rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
-                cout << "Rotating " << rap_start.resno << "->" << rap_end.resno << " "
-                    << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno
-                    << " to maximum " << rap_index.resno << " ~ " << rap_target.resno
-                    << " distance " << tolerance.r << "A..." << endl;
-                p->rotate_piece(rap_start.resno, rap_end.resno, pt_fulcrum, rot.v, rot.a);
-            }
-        }
+        if (fixclash) fix_clash(p, rap_start.resno, rap_end.resno, pt_fulcrum);
+        else set_distance(p, rap_start.resno, rap_end.resno, pt_fulcrum, pt_index, pt_target, morethan?1:-1, 1);
     }
     else if (rshpmt == rshpm_bend)
     {
@@ -293,6 +301,10 @@ void ReshapeMotion::apply(Protein *p)
         if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
+        rap_index.resolve_resno(p);
+        if (!rap_index.resno) return;
+
+        Point pt_fulcrum, pt_index, pt_target;
 
         int i, j, sign, n;
         n = abs(rap_end.resno - rap_start.resno);
@@ -301,31 +313,37 @@ void ReshapeMotion::apply(Protein *p)
 
         for (i = rap_start.resno; i != rap_end.resno; i += sign)
         {
+            if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
             AminoAcid* aa_fulcrum = p->get_residue(i);
             if (!aa_fulcrum) continue;
-            Point pt_fulcrum = aa_fulcrum->get_CA_location(), pt_index = rap_index.loc(), pt_target = rap_target.loc();
-            Vector tolerance = pt_index.subtract(pt_target);
-            Rotation rot;
-            tolerance.r = tgtdist;
-            pt_target = pt_target.add(tolerance);
-            float r = pt_index.get_3d_distance(pt_target);
-            if (morethan)
-            {
-                if (r >= tgtdist) break;
-            }
-            else
-            {
-                if (r <= tgtdist) break;
-            }
-            rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
+            rap_fulcrum.resno = i;
+            pt_fulcrum = aa_fulcrum->get_CA_location();
+
             float factor = 1.0 / (n-1);
-            p->rotate_piece(min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, rot.v, rot.a*factor);
+            if (fixclash) fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, (int)fmax(1, 25.0/max(n,1)));
+            else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);
             n--;
         }
-        cout << "Bent " << rap_start.resno << "->" << rap_end.resno
-            << " to bring " << rap_index.resno
-            << (morethan ? " at least " : " within ") << tgtdist
-            << " A from " << rap_target.resno << endl;
+        cout << "Bent " << rap_start.resno << "->" << rap_end.resno;
+        if (fixclash)
+        {
+            cout << " to fix clash between ";
+            if (entire) cout << "nearest side chain";
+            else cout << rap_index.resno;
+            cout << " and ";
+            if (tgtligand) cout << "ligand";
+            else cout << rap_target.resno;
+        }
+        else
+        {
+            cout << " to bring ";
+            if (entire) cout << "nearest side chain";
+            else cout << rap_index.resno;
+            cout << (morethan ? " at least " : " within ") << tgtdist << " A from ";
+            if (tgtligand) cout << "ligand";
+            else cout << rap_target.resno;
+        }
+        cout << endl;
     }
     else if (rshpmt == rshpm_prox)
     {

@@ -555,6 +555,8 @@ bool Atom::move(Point* pt)
         return false;
     }
 
+    // if (residue==180 || residue==259) throw 0xbadc0de;
+
     location = *pt;
     location.weight = at_wt;
     if (geov) delete[] geov;
