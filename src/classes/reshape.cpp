@@ -203,7 +203,7 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
     return true;
 }
 
-bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int iters)
+bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int iters, float step)
 {
     #if _dbg_rshpm_apply
     // cout << "Motion fixes clash." << endl;
@@ -215,23 +215,23 @@ bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int 
     if (!aai || !aat)
     {
         cerr << "Something went wrong in ReshapeMotion::fix_clash()." << endl;
-        return false;
+        throw 0xbadc0de;
     }
 
+    float oldclash = aai->get_intermol_clashes(aat), clash = oldclash;
     cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
-        << " to avoid clash..." << flush;
-    float oldclash = aai->get_intermol_clashes(aat), step = 1.5*fiftyseventh;
+        << " to avoid clash of " << oldclash << "kJ/mol..." << flush;
     for (i=0; i<iters; i++)
     {
         Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, step);
         cout << ".";
-        float clash = aai->get_intermol_clashes(aat);
+        clash = aai->get_intermol_clashes(aat);
         // if (!i && clash > oldclash) step *= -1;
         if (clash <= clash_limit_per_aa) break;
     }
     cout << endl;
-    return true;
+    return (clash < oldclash);
 }
 
 bool ReshapeMotion::set_distance(Protein* p, int sr, int er, Point pt_fulcrum, Point pt_index, Point pt_target, int moreorless, float amount)
@@ -306,8 +306,8 @@ void ReshapeMotion::apply(Protein *p)
 
         Point pt_fulcrum, pt_index, pt_target;
 
-        int i, j, sign, n;
-        n = abs(rap_end.resno - rap_start.resno);
+        int i, j, sign, m, n;
+        m = n = abs(rap_end.resno - rap_start.resno);
         sign = sgn(rap_end.resno - rap_start.resno);
         if (n < 2) return;
 
@@ -320,7 +320,11 @@ void ReshapeMotion::apply(Protein *p)
             pt_fulcrum = aa_fulcrum->get_CA_location();
 
             float factor = 1.0 / (n-1);
-            if (fixclash) fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, (int)fmax(1, 25.0/max(n,1)));
+            if (fixclash)
+            {
+                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (1.0/m)*fiftyseventh);
+                if (!result && abs(i-rap_start.resno) > 2) break;
+            }
             else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);
             n--;
         }

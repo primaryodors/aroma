@@ -3549,94 +3549,107 @@ _try_again:
             }
 
             // Adjustments to accommodate ligand
-            for (i=0; cfmols[i]; i++)
+
+            for (j=0; j<3; j++)
             {
-                if (!cfmols[i]->is_residue()) continue;
-                float clash = cfmols[i]->get_intermol_clashes(ligand);
-                if (clash < clash_limit_per_aa) continue;
-                BallesterosWeinstein bw = protein->get_bw_from_resno(cfmols[i]->is_residue());
-                Point lc = ligand->get_barycenter();
-                if (bw.helix_no == 5 || bw.helix_no == 6)
+                for (i=0; cfmols[i]; i++)
                 {
-                    // Find the terminus closest to the ligand
-                    ResiduePlaceholder rpstart, rpend;
-                    rpstart.bw = std::to_string(bw.helix_no) + (std::string)".s";
-                    rpend.bw = std::to_string(bw.helix_no) + (std::string)".e";
-                    rpstart.resolve_resno(protein);
-                    rpend.resolve_resno(protein);
-                    if (!rpstart.resno || !rpend.resno) continue;
-                    AminoAcid *aastart = protein->get_residue(rpstart.resno), *aaend = protein->get_residue(rpend.resno);
-                    if (!aastart || !aaend) continue;
-                    AminoAcid *aaterminus =
-                        (aastart->get_CA_location().get_3d_distance(lc) < aaend->get_CA_location().get_3d_distance(lc))
-                        ? aastart : aaend;
-
-                    // Find the side chain closest to the ligand
-                    Atom* rna = protein->get_nearest_atom(lc, rpstart.resno, rpend.resno);
-                    if (!rna) continue;
-                    AminoAcid* aaneddamon = protein->get_residue(rna->residue);
-                    if (!aaneddamon) continue;
-
-                    // Find the internal contact closest to the ligand
-                    int ici, rnsc = 0;
-                    float rnscr;
-                    for (ici=0; ici<n_soft_contact; ici++)
+                    if (!cfmols[i]->is_residue()) continue;
+                    float clash = cfmols[i]->get_intermol_clashes(ligand);
+                    if (clash < clash_limit_per_aa) continue;
+                    BallesterosWeinstein bw = protein->get_bw_from_resno(cfmols[i]->is_residue());
+                    Point lc = ligand->get_barycenter();
+                    if (bw.helix_no == 5 || bw.helix_no == 6)
                     {
-                        soft_contact_a[ici].resolve_resno(protein);
-                        if (soft_contact_a[ici].resno >= rpstart.resno && soft_contact_a[ici].resno <= rpend.resno)
+                        // Find the terminus closest to the ligand
+                        ResiduePlaceholder rpstart, rpend;
+                        rpstart.bw = std::to_string(bw.helix_no) + (std::string)".s";
+                        rpend.bw = std::to_string(bw.helix_no) + (std::string)".e";
+                        rpstart.resolve_resno(protein);
+                        rpend.resolve_resno(protein);
+                        if (!rpstart.resno || !rpend.resno) continue;
+                        AminoAcid *aastart = protein->get_residue(rpstart.resno), *aaend = protein->get_residue(rpend.resno);
+                        if (!aastart || !aaend) continue;
+                        AminoAcid *aaterminus =
+                            (aastart->get_CA_location().get_3d_distance(lc) < aaend->get_CA_location().get_3d_distance(lc))
+                            ? aastart : aaend;
+
+                        // Find the side chain closest to the ligand
+                        Atom* rna = protein->get_nearest_atom(lc, rpstart.resno, rpend.resno);
+                        if (!rna) continue;
+                        AminoAcid* aaneddamon = protein->get_residue(rna->residue);
+                        if (!aaneddamon) continue;
+
+                        // Find the internal contact closest to the ligand
+                        int ici, rnsc = 0;
+                        float rnscr;
+                        for (ici=0; ici<n_soft_contact; ici++)
                         {
-                            AminoAcid* aasc = protein->get_residue(soft_contact_a[ici].resno);
-                            float r = aasc->get_CA_location().get_3d_distance(lc);
-                            if (!rnsc || r<rnscr)
+                            soft_contact_a[ici].resolve_resno(protein);
+                            if (soft_contact_a[ici].resno >= rpstart.resno && soft_contact_a[ici].resno <= rpend.resno)
                             {
-                                rnsc = soft_contact_a[ici].resno;
-                                rnscr = r;
+                                AminoAcid* aasc = protein->get_residue(soft_contact_a[ici].resno);
+                                float r = aasc->get_CA_location().get_3d_distance(lc);
+                                if (!rnsc || r<rnscr)
+                                {
+                                    rnsc = soft_contact_a[ici].resno;
+                                    rnscr = r;
+                                }
+                            }
+                            soft_contact_b[ici].resolve_resno(protein);
+                            if (soft_contact_b[ici].resno >= rpstart.resno && soft_contact_b[ici].resno <= rpend.resno)
+                            {
+                                AminoAcid* aasc = protein->get_residue(soft_contact_b[ici].resno);
+                                float r = aasc->get_CA_location().get_3d_distance(lc);
+                                if (!rnsc || r<rnscr)
+                                {
+                                    rnsc = soft_contact_b[ici].resno;
+                                    rnscr = r;
+                                }
                             }
                         }
-                        soft_contact_b[ici].resolve_resno(protein);
-                        if (soft_contact_b[ici].resno >= rpstart.resno && soft_contact_b[ici].resno <= rpend.resno)
+                        if (!rnsc)      // If there is no ic in this region, do a translation instead.
                         {
-                            AminoAcid* aasc = protein->get_residue(soft_contact_b[ici].resno);
-                            float r = aasc->get_CA_location().get_3d_distance(lc);
-                            if (!rnsc || r<rnscr)
-                            {
-                                rnsc = soft_contact_b[ici].resno;
-                                rnscr = r;
-                            }
+                            // TODO:
+                            continue;
                         }
-                    }
-                    if (!rnsc)      // If there is no ic in this region, do a translation instead.
-                    {
-                        // TODO:
-                        continue;
-                    }
 
-                    // If the sc is between the ic and the terminus, bend the region from ic to terminus to avoid clash
-                    int AC = abs(rnsc - aaterminus->is_residue()),
-                        AB = abs(rna->residue - aaterminus->is_residue()),
-                        BC = abs(rna->residue - rnsc);
-                    if (AC > AB && AC > BC)
-                    {
-                        ReshapeMotion rshpm;
-                        rshpm.rap_start.bw = protein->get_bw_from_resno(rnsc).to_string();
-                        rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
-                        rshpm.rshpmt = rshpm_bend;
-                        rshpm.fixclash = true;
-                        rshpm.tgtligand = true;
-                        rshpm.ligand = ligand;
-                        rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
-                        rshpm.apply(protein);
-                    }
+                        // If the sc is between the ic and the terminus, bend the region from ic to terminus to avoid clash
+                        int AC = abs(rnsc - aaterminus->is_residue()),
+                            AB = abs(rna->residue - aaterminus->is_residue()),
+                            BC = abs(rna->residue - rnsc);
+                        if (AC > AB && AC > BC)
+                        {
+                            ReshapeMotion rshpm;
+                            rshpm.rap_start.bw = protein->get_bw_from_resno(rnsc).to_string();
+                            rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                            rshpm.rshpmt = rshpm_bend;
+                            rshpm.fixclash = true;
+                            rshpm.tgtligand = true;
+                            rshpm.ligand = ligand;
+                            rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
+                            rshpm.apply(protein);
+                        }
 
-                    // Otherwise, the clash will require manual adjustment.
+                        // Otherwise, the clash will require manual adjustment.
+                    }
+                    else
+                    {
+                        Atom* ra = cfmols[i]->get_nearest_atom(lc);
+                        if (!ra) continue;
+                        Vector mv = lc.subtract(ra->loc);
+                        mv.r = 0.25;
+                        ligand->move(mv);
+                    }
                 }
-                else
+
+                if (pdpst == pst_best_binding && g_bbr[0].pri_res && g_bbr[0].pri_tgt)
                 {
-                    Atom* ra = cfmols[i]->get_nearest_atom(lc);
-                    if (!ra) continue;
-                    Vector mv = lc.subtract(ra->loc);
-                    mv.r = 0.25;
-                    ligand->move(mv);
+                    Atom* ra = g_bbr[0].pri_res->get_reach_atom(hbond);
+                    if (ra)
+                    {
+                        g_bbr[0].pri_res->conform_atom_to_location(ra->name, g_bbr[0].pri_tgt->barycenter(), 15, 2.5);
+                    }
                 }
             }
 
