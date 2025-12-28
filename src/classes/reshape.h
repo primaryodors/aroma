@@ -54,4 +54,6 @@ class Reshape
     int nrshpm = 0;
 };
 
+extern bool rshp_verbose;
+
 #endif

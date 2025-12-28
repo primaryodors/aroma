@@ -267,6 +267,8 @@ int main(int argc, char** argv)
     char *infname1 = nullptr, *infname2 = nullptr;
     std::string outfname = "olfactophore.pdb";
 
+    rshp_verbose = true;
+
     for (i=1; i<argc; i++)
     {
         if (!strcmp(argv[i], "-o"))

@@ -3574,9 +3574,8 @@ _try_again:
                         if (!rpstart.resno || !rpend.resno) continue;
                         AminoAcid *aastart = protein->get_residue(rpstart.resno), *aaend = protein->get_residue(rpend.resno);
                         if (!aastart || !aaend) continue;
-                        AminoAcid *aaterminus =
-                            (aastart->get_CA_location().get_3d_distance(lc) < aaend->get_CA_location().get_3d_distance(lc))
-                            ? aastart : aaend;
+                        bool start_is_closer = (aastart->get_CA_location().get_3d_distance(lc) < aaend->get_CA_location().get_3d_distance(lc));
+                        AminoAcid *aaterminus = start_is_closer ? aastart : aaend;
 
                         // Find the side chain closest to the ligand
                         Atom* rna = protein->get_nearest_atom(lc, rpstart.resno, rpend.resno);
@@ -3634,8 +3633,53 @@ _try_again:
                             rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
                             rshpm.apply(protein);
                         }
+                        // Otherwise, use the opposite terminus, but bend it back to its neighbor.
+                        else
+                        {
+                            aaterminus = start_is_closer ? aaend : aastart;
+                            if (aastart->get_residue_no() > aaend->get_residue_no()) throw 0xbadc0de;       // assertion
+                            int sagitis, ardis = start_is_closer ? 1 : -1, nres = protein->get_end_resno();
+                            AminoAcid* neighbor = nullptr;
+                            if (!ardis) throw 0xbadc0de;
+                            for (sagitis = aaterminus->get_residue_no()+ardis; sagitis > 0 && sagitis <= nres; sagitis += ardis)
+                            {
+                                neighbor = protein->get_residue(sagitis);
+                                if (neighbor) break;
+                            }
+                            float rneighbs = neighbor->get_CA_location().get_3d_distance(aaterminus->get_CA_location());
 
-                        // Otherwise, the clash will require manual adjustment.
+                            ReshapeMotion rshpm;
+                            rshpm.rap_start.bw = protein->get_bw_from_resno(rnsc).to_string();
+                            rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                            rshpm.rshpmt = rshpm_bend;
+                            rshpm.fixclash = true;
+                            rshpm.tgtligand = true;
+                            rshpm.ligand = ligand;
+                            rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
+                            rshpm.apply(protein);
+
+                            int ciallon = 0;
+                            for (sagitis = aaneddamon->get_residue_no()+ardis; sagitis > 0 && sagitis <= nres; sagitis += ardis)
+                            {
+                                AminoAcid* tmpaa = protein->get_residue(sagitis);
+                                if (tmpaa)
+                                {
+                                    ciallon = sagitis;
+                                    break;
+                                }
+                            }
+
+                            if (ciallon)
+                            {
+                                rshpm.rap_start.bw = protein->get_bw_from_resno(ciallon).to_string();
+                                rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                                rshpm.rshpmt = rshpm_bend;
+                                rshpm.rap_index.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                                rshpm.tgtdist = rneighbs;
+                                rshpm.rap_target.bw = protein->get_bw_from_resno(neighbor->get_residue_no()).to_string();
+                                rshpm.apply(protein);
+                            }
+                        }
                     }
                     else
                     {
@@ -4113,6 +4157,7 @@ _try_again:
                 {
                     if (dr[j][0].proximity > search_size.magnitude()) continue;
                     if (dr[j][0].worst_nrg_aa > clash_limit_per_aa) continue;
+                    protein = &pose_proteins[j];
 
                     auths += (std::string)" " + std::to_string(dr[j][0].auth);
 
@@ -4201,6 +4246,7 @@ _exitposes:
             }
         }
         pose = 1;
+        protein = &pose_proteins[lbi];
         do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
     }
     else 

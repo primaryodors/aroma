@@ -2,6 +2,8 @@
 #include "reshape.h"
 #include "dynamic.h"
 
+bool rshp_verbose = false;
+
 void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
 {
     char infname[256];
@@ -219,18 +221,19 @@ bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int 
     }
 
     float oldclash = aai->get_intermol_clashes(aat), clash = oldclash;
-    cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
+    if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
         << " to avoid clash of " << oldclash << "kJ/mol..." << flush;
     for (i=0; i<iters; i++)
     {
         Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, step);
-        cout << ".";
+        if (rshp_verbose) cout << ".";
         clash = aai->get_intermol_clashes(aat);
         // if (!i && clash > oldclash) step *= -1;
+        /* else */ step *= 0.97;
         if (clash <= clash_limit_per_aa) break;
     }
-    cout << endl;
+    if (rshp_verbose) cout << endl;
     return (clash < oldclash);
 }
 
@@ -250,7 +253,7 @@ bool ReshapeMotion::set_distance(Protein* p, int sr, int er, Point pt_fulcrum, P
     {
         rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
         rot.a *= amount;
-        cout << "Rotating " << sr << "->" << er << " " 
+        if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " " 
             << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, rot.a);
     }
@@ -322,14 +325,14 @@ void ReshapeMotion::apply(Protein *p)
             float factor = 1.0 / (n-1);
             if (fixclash)
             {
-                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (1.3/m)*fiftyseventh);
+                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (2.5/m)*fiftyseventh);
                 if (!result && abs(i-rap_start.resno) > 2) break;
             }
             else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);
             n--;
         }
-        cout << "Bent " << rap_start.resno << "->" << rap_end.resno;
-        if (fixclash)
+        if (rshp_verbose) cout << "Bent " << rap_start.resno << "->" << rap_end.resno;
+        if (rshp_verbose && fixclash)
         {
             cout << " to fix clash between ";
             if (entire) cout << "nearest side chain";
@@ -338,7 +341,7 @@ void ReshapeMotion::apply(Protein *p)
             if (tgtligand) cout << "ligand";
             else cout << rap_target.resno;
         }
-        else
+        else if (rshp_verbose)
         {
             cout << " to bring ";
             if (entire) cout << "nearest side chain";
@@ -347,7 +350,7 @@ void ReshapeMotion::apply(Protein *p)
             if (tgtligand) cout << "ligand";
             else cout << rap_target.resno;
         }
-        cout << endl;
+        if (rshp_verbose) cout << endl;
     }
     else if (rshpmt == rshpm_prox)
     {
@@ -382,7 +385,7 @@ void ReshapeMotion::apply(Protein *p)
                 aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
                 aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
                 aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
-                cout << "Pointing " << aa1->get_name() << ":" << a1->name
+                if (rshp_verbose) cout << "Pointing " << aa1->get_name() << ":" << a1->name
                     << " and " << aa2->get_name() << ":" << a2->name
                     << " toward each other." << endl;
             }
@@ -396,7 +399,7 @@ void ReshapeMotion::apply(Protein *p)
         if (!rap_end.resno) return;
 
         p->delete_residues(rap_start.resno, rap_end.resno);
-        cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
+        if (rshp_verbose) cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
     }
     else if (rshpmt == rshpm_xlate)
     {
@@ -444,7 +447,7 @@ void ReshapeMotion::apply(Protein *p)
                 Vector v = a2->loc.subtract(a1->loc);
                 v.r = fmax(0, v.r - tgtdist);
                 if (v.r) p->move_piece(rap_start.resno, rap_end.resno, v);
-                cout << "Translated " << rap_start.resno << " - " << rap_end.resno 
+                if (rshp_verbose) cout << "Translated " << rap_start.resno << " - " << rap_end.resno 
                     << " by " << v.r << " A to bring "
                     << aa1->get_name() << ":" << a1->name
                     << " " << a1->distance_to(a2) << "A from "
@@ -474,17 +477,17 @@ void ReshapeMotion::apply(Protein *p)
 
         aa1 = p->get_residue(rap_index.resno);
         aa2 = p->get_residue(rap_target.resno);
-        cout << "Wind ";
+        if (rshp_verbose) cout << "Wind ";
 
         if (aa1 && aa2)
         {
-            cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
+            if (rshp_verbose) cout << rap_start.resno << " - " << rap_end.resno << " to bring " << aa1->get_name() << " and " << aa2->get_name() << " " << flush;
             a1 = aa1->get_atom(rap_index.get_aname().c_str());
             a2 = aa2->get_atom(rap_target.get_aname().c_str());
 
             if (a1 && a2)
             {
-                cout << a1->name << " and " << a2->name << " ";
+                if (rshp_verbose) cout << a1->name << " and " << a2->name << " ";
                 DynamicMotion d(p);
                 d.start_resno.from_string(rap_start.bw.c_str());
                 d.end_resno.from_string(rap_end.bw.c_str());
@@ -501,8 +504,9 @@ void ReshapeMotion::apply(Protein *p)
                     float anomaly = fabs(rnew-tgtdist);
                     if (anomaly > fabs(rold-tgtdist)) d.bias *= -0.666;
                     else if (anomaly < 0.1) break;
-                    cout << "." << flush;                }
-                cout << "Wound " << rap_start.resno << " - " << rap_end.resno 
+                    if (rshp_verbose) cout << "." << flush;
+                }
+                if (rshp_verbose) cout << "Wound " << rap_start.resno << " - " << rap_end.resno 
                     << " by " << (d.get_total_applied()*15) << " helical units to bring "
                     << aa1->get_name() << ":" << a1->name
                     << " " << a1->distance_to(a2) << "A from "
@@ -561,7 +565,6 @@ void ReshapeMotion::apply(Protein *p)
                         }
                         else if (b->can_flip)
                         {
-                            cout << "and can flip." << endl;
                             rold = a1->distance_to(a2);
                             b->rotate(b->flip_angle);
                             total_rot = b->flip_angle;
@@ -579,7 +582,7 @@ void ReshapeMotion::apply(Protein *p)
                             return;
                         }
 
-                        cout << "Rotated " << aa1->get_name() << ":" << b->atom1->name << "-" << b->atom2->name
+                        if (rshp_verbose) cout << "Rotated " << aa1->get_name() << ":" << b->atom1->name << "-" << b->atom2->name
                             << " by " << (total_rot*fiftyseven) << " deg to bring "
                             << aa2->get_name() << ":" << a1->name
                             << " " << a1->distance_to(a2) << "A from "
