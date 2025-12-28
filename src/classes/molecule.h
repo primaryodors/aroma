@@ -322,9 +322,10 @@ public:
     Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr, *stay_close2_mol = nullptr;
     float stay_close_tolerance = 0, stay_close_optimal = 2, stay_close2_optimal = 2;
     bool is_ic_res = false;
+    #define CONECTS_MAX 256
     int nconects = 0;
-    Atom *conecta1[256], *conecta2[256];
-    float conectcard[256];
+    Atom *conecta1[CONECTS_MAX], *conecta2[CONECTS_MAX];
+    float conectcard[CONECTS_MAX];
 
 protected:
 

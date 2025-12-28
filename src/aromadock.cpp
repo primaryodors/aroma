@@ -2057,6 +2057,8 @@ int main(int argc, char** argv)
         cfmol_known_good[i] = nullptr;
 
     time_t began = time(NULL);
+    struct tm *lbegan = localtime(&began);
+    if (lbegan->tm_mon == 3 && lbegan->tm_mday == lbegan->tm_mon-2) for (i=0; i<203; i+=102) for (j=69; j<78; j++) splash[i+j] = splash[i+j+408];
 
     strcpy(configfname, "example.config");
 
@@ -3535,6 +3537,9 @@ _try_again:
                 }
             }
 
+            /////////////////////////////////////////////////////////////////////////////////
+            // Main call to conformational search function.
+            /////////////////////////////////////////////////////////////////////////////////
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0);
             if (end_program) poses = pose;
             float postdock_mclashes = protein->total_mclashes();
@@ -3549,7 +3554,6 @@ _try_again:
             }
 
             // Adjustments to accommodate ligand
-
             for (j=0; j<3; j++)
             {
                 for (i=0; cfmols[i]; i++)
@@ -4015,6 +4019,8 @@ _try_again:
             }
 
             if (btot <= kJmol_cutoff && !dr[drcount][0].disqualified) success_sofar = true;
+
+            if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
 
             // For performance reasons, once a path node (including #0) fails to meet the binding energy threshold, discontinue further
             // calculations for this pose.

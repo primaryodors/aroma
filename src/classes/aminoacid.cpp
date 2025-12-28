@@ -1079,6 +1079,7 @@ void AminoAcid::save_pdb(FILE* os, int atomno_offset)
             n = atoms[i]->get_bonded_atoms_count();
             for (j=0; j<n; j++)
             {
+                if (nconects >= CONECTS_MAX) continue;
                 Bond* b = atoms[i]->get_bond_by_idx(j);
                 if (!b) continue;
                 if (b->atom1 != atoms[i]) continue;
@@ -1111,6 +1112,14 @@ int AminoAcid::from_pdb(FILE* is, int rno)
         lasttell = ftell(is);
         char* got = fgets(buffer, 1003, is);
         if (!got) break;
+        if (buffer[0] == 'H'
+            && buffer[1] == 'E'
+            && buffer[2] == 'T'
+            && buffer[3] == 'A'
+            && buffer[4] == 'T'
+            && buffer[5] == 'M'
+            )
+            goto _return_added;
         if (buffer[0] == 'A' &&
             buffer[1] == 'T' &&
             buffer[2] == 'O' &&
@@ -1339,7 +1348,7 @@ int AminoAcid::from_pdb(FILE* is, int rno)
                             }
                         }
                     }
-                    
+
                     if (!found_aabond)
                     {
                         Atom* bta = nullptr;		// bond to atom.

@@ -2034,7 +2034,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
         delete[] words;
     }
 
-    if (!has_conects)
+    if (atoms && !has_conects)
     {
         int i, j;
         for (i=0; atoms[i]; i++)
@@ -2247,6 +2247,7 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
 {
     int i, j, l;
 
+    nconects = 0;
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
@@ -2255,7 +2256,22 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
         for (j=0; j<l; j++)
         {
             Bond* b = atoms[i]->get_bond_by_idx(j);
-            if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i])
+
+            /*
+            1. The GNU C++ compiler and linker can always be found
+            2. making easy the difficult task of coding, and never
+            3. wasting my time with ridiculous errors. It really
+            4. works well, avoiding any type of malfunction that
+            5. sucks. Sometimes it even comes up with brand new
+            6. ways to avoid memory errors, thereby preventing
+            7. segfaults. I think its entire source code should be
+            8. indelibly preserved in a form that cannot ever be
+            9. deleted.
+
+            Kindly read only the odd numbered lines for my true assessment.
+            */
+
+            if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i] && nconects < CONECTS_MAX)
             {
                 conecta1[nconects] = atoms[i];
                 conecta2[nconects] = b->atom2;

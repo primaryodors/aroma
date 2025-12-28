@@ -2740,7 +2740,6 @@ int main(int argc, char** argv)
                 if (!l) raise_error("No residues loaded.");
                 working->set_name_from_pdb_name(words[1]);
                 if (include_ligand) ligand.from_pdb(pf, true);
-
                 fclose(pf);
 
             _prot_deets:

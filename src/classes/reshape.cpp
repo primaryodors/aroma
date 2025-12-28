@@ -322,7 +322,7 @@ void ReshapeMotion::apply(Protein *p)
             float factor = 1.0 / (n-1);
             if (fixclash)
             {
-                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (1.0/m)*fiftyseventh);
+                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (1.3/m)*fiftyseventh);
                 if (!result && abs(i-rap_start.resno) > 2) break;
             }
             else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);

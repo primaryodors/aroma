@@ -26,11 +26,14 @@ ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
 
 CPL=g++
 
+# Common flags for all modes
+CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
+
 # Default CFLAGS - release mode
-CFLAGS=-O3 -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
+# CFLAGS+=-O3
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # For gprof
 # example command line:
