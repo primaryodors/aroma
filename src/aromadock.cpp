@@ -1452,6 +1452,11 @@ int interpret_config_line(char** words)
         out_pdbdat_res = atoi(words[1]);
         return 1;
     }
+    else if (!strcmp(words[0], "OUTRSHP"))
+    {
+        rshp_verbose = true;
+        return 1;
+    }
     else if (!strcmp(words[0], "POSE"))
     {
         poses = atoi(words[1]);
@@ -3654,8 +3659,10 @@ _try_again:
                             rshpm.rshpmt = rshpm_bend;
                             rshpm.fixclash = true;
                             rshpm.tgtligand = true;
+                            rshpm.entire = true;
+                            rshpm.morethan = false;
                             rshpm.ligand = ligand;
-                            rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
+                            // rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
                             rshpm.apply(protein);
 
                             int ciallon = 0;
@@ -3674,8 +3681,12 @@ _try_again:
                                 rshpm.rap_start.bw = protein->get_bw_from_resno(ciallon).to_string();
                                 rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
                                 rshpm.rshpmt = rshpm_bend;
+                                rshpm.fixclash = false;
+                                rshpm.tgtligand = false;
+                                rshpm.morethan = false;
+                                rshpm.entire = false;
                                 rshpm.rap_index.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
-                                rshpm.tgtdist = rneighbs;
+                                rshpm.tgtdist = rneighbs + 2;
                                 rshpm.rap_target.bw = protein->get_bw_from_resno(neighbor->get_residue_no()).to_string();
                                 rshpm.apply(protein);
                             }
