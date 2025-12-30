@@ -194,8 +194,12 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
 
     if (entire)
     {
-        closest_to_ligand = p->get_nearest_atom(*target, rap_start.resno, rap_end.resno);
-        if (!closest_to_ligand) return false;
+        closest_to_ligand = p->get_nearest_atom(*target, min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
+        if (!closest_to_ligand)
+        {
+            cout << "No atom near " << *target << " between " << rap_start.resno << " and " << rap_end.resno << endl;
+            return false;
+        }
         *index = closest_to_ligand->loc;
         #if _dbg_rshpm_apply
         cout << "Index is entire." << endl;
@@ -294,18 +298,43 @@ void ReshapeMotion::apply(Protein *p)
 
         Point pt_fulcrum = rap_fulcrum.loc(), pt_index, pt_target;
         if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
+        #if _dbg_rshpm_apply
+        cout << "Resolved target and index." << endl;
+        #endif
 
-        if (fixclash) fix_clash(p, rap_start.resno, rap_end.resno, pt_fulcrum);
-        else set_distance(p, rap_start.resno, rap_end.resno, pt_fulcrum, pt_index, pt_target, morethan?1:-1, 1);
+        if (fixclash)
+        {
+            #if _dbg_rshpm_apply
+            cout << "Fixing clash." << endl;
+            #endif
+            fix_clash(p, rap_start.resno, rap_end.resno, pt_fulcrum);
+        }
+        else
+        {
+            #if _dbg_rshpm_apply
+            cout << "Aiming for distance." << endl;
+            #endif
+            set_distance(p, rap_start.resno, rap_end.resno, pt_fulcrum, pt_index, pt_target, morethan?1:-1, 1);
+        }
     }
     else if (rshpmt == rshpm_bend)
     {
+        #if _dbg_rshpm_apply
+        cout << "Bend motion." << endl;
+        #endif
         rap_start.resolve_resno(p);
         if (!rap_start.resno) return;
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
+        #if _dbg_rshpm_apply
+        cout << "Resolved start resno " << rap_start.resno << " and end " << rap_end.resno << endl;
+        #endif
         rap_index.resolve_resno(p);
-        if (!rap_index.resno) return;
+        if (!rap_index.resno && !entire) return;
+        #if _dbg_rshpm_apply
+        if (entire) cout << "Entire." << endl;
+        else cout << "Resolved index." << endl;
+        #endif
 
         Point pt_fulcrum, pt_index, pt_target;
 
@@ -313,12 +342,21 @@ void ReshapeMotion::apply(Protein *p)
         m = n = abs(rap_end.resno - rap_start.resno);
         sign = sgn(rap_end.resno - rap_start.resno);
         if (n < 2) return;
+        #if _dbg_rshpm_apply
+        cout << "Sufficient residues for getting bent." << endl;
+        #endif
 
         for (i = rap_start.resno; i != rap_end.resno; i += sign)
         {
             if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
+            #if _dbg_rshpm_apply
+            cout << "Have index and target points." << endl;
+            #endif
             AminoAcid* aa_fulcrum = p->get_residue(i);
             if (!aa_fulcrum) continue;
+            #if _dbg_rshpm_apply
+            cout << "Fulcrum is " << aa_fulcrum->get_name() << endl;
+            #endif
             rap_fulcrum.resno = i;
             pt_fulcrum = aa_fulcrum->get_CA_location();
 

@@ -3676,7 +3676,7 @@ _try_again:
                                 }
                             }
 
-                            if (ciallon)
+                            if (false && ciallon)
                             {
                                 rshpm.rap_start.bw = protein->get_bw_from_resno(ciallon).to_string();
                                 rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
