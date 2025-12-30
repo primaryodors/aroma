@@ -776,6 +776,19 @@ float Protein::get_intermol_clashes(Molecule* ligand)
     return result;
 }
 
+float Protein::get_intermol_clashes(Molecule *ligand, int startres, int endres)
+{
+    int i;
+    float result = 0;
+    for (i=startres; i<=endres; i++)
+    {
+        AminoAcid* aa = get_residue(i);
+        if (!i) continue;
+        result += aa->Molecule::get_intermol_clashes(ligand);
+    }
+    return result;
+}
+
 Interaction Protein::get_intermol_binding(Molecule* ligand)
 {
     AminoAcid** laminos = new AminoAcid*[SPHREACH_MAX+4];

@@ -209,32 +209,55 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
     return true;
 }
 
+float ReshapeMotion::measure_index_tgt_clashes(Protein *p)
+{
+    Molecule* ltarget;
+    if (tgtligand) ltarget = ligand;
+    else
+    {
+        if (!rap_target.resno) rap_target.resolve_resno(p);
+        ltarget = (Molecule*)(p->get_residue(rap_target.resno));
+    }
+    if (!ltarget) return 0.0f;
+
+    if (entire)
+        return p->get_intermol_clashes(ligand, min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
+
+    if (!rap_index.resno) rap_index.resolve_resno(p);
+    AminoAcid* lindex = p->get_residue(rap_index.resno);
+
+    return ltarget->get_intermol_clashes(lindex);
+}
+
 bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int iters, float step)
 {
     #if _dbg_rshpm_apply
     // cout << "Motion fixes clash." << endl;
     #endif
     int i;
-    Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
+    /* Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
     if (entire) aai = (Molecule*)closest_to_ligand->mol;
     if (tgtligand) aat = ligand;
     if (!aai || !aat)
     {
         cerr << "Something went wrong in ReshapeMotion::fix_clash()." << endl;
         throw 0xbadc0de;
-    }
+    } */
 
-    float oldclash = aai->get_intermol_clashes(aat), clash = oldclash;
+    float oldclash = measure_index_tgt_clashes(p) /* aai->get_intermol_clashes(aat) */, clash = oldclash;
     if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
         << " to avoid clash of " << oldclash << "kJ/mol..." << flush;
     for (i=0; i<iters; i++)
     {
-        Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
+        Point ptidx, pttgt;
+        if (!get_pt_index_and_tgt(p, &ptidx, &pttgt)) return false;
+        // Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
+        Rotation rot = align_points_3d(pttgt, ptidx, pt_fulcrum);
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, step);
         if (rshp_verbose) cout << ".";
-        clash = aai->get_intermol_clashes(aat);
-        // if (!i && clash > oldclash) step *= -1;
-        /* else */ step *= 0.97;
+        // clash = aai->get_intermol_clashes(aat);
+        clash = measure_index_tgt_clashes(p);
+        step *= 0.97;
         if (clash <= clash_limit_per_aa) break;
     }
     if (rshp_verbose) cout << endl;
@@ -436,7 +459,7 @@ void ReshapeMotion::apply(Protein *p)
         rap_end.resolve_resno(p);
         if (!rap_end.resno) return;
 
-        p->delete_residues(rap_start.resno, rap_end.resno);
+        p->delete_residues(min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
         if (rshp_verbose) cout << "Deleting residues " << rap_start.resno << " - " << rap_end.resno << endl;
     }
     else if (rshpmt == rshpm_xlate)
@@ -484,7 +507,7 @@ void ReshapeMotion::apply(Protein *p)
                 // TODO: morethan behavior.
                 Vector v = a2->loc.subtract(a1->loc);
                 v.r = fmax(0, v.r - tgtdist);
-                if (v.r) p->move_piece(rap_start.resno, rap_end.resno, v);
+                if (v.r) p->move_piece(min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno), v);
                 if (rshp_verbose) cout << "Translated " << rap_start.resno << " - " << rap_end.resno 
                     << " by " << v.r << " A to bring "
                     << aa1->get_name() << ":" << a1->name

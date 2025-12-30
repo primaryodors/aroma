@@ -161,6 +161,7 @@ public:
     float get_rel_int_clashes();
     Interaction get_internal_binding();
     float get_intermol_clashes(Molecule* ligand);
+    float get_intermol_clashes(Molecule* ligand, int startres, int endres);
     Interaction get_intermol_binding(Molecule* ligand);
     AminoAcid** get_residues_can_clash(int resno);
     std::vector<AminoAcid*> get_residues_can_clash(int start_resno, int end_resno);
