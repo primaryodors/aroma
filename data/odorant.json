@@ -11531,6 +11531,28 @@
         },
         "oid": "4152229d1ebe991be4fa3a219facc6f7"
     },
+    "4163eec916813682340ff8331e75f7f7":
+    {
+        "full_name": "rose acetate",
+        "smiles": "CC(=O)OC(C(Cl)(Cl)Cl)c1ccccc1",
+        "isomers":
+        {
+            "(S)": "CC(=O)O[C@@H](C(Cl)(Cl)Cl)c1ccccc1",
+            "(R)": "CC(=O)O[C@H](C(Cl)(Cl)Cl)c1ccccc1"
+        },
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "rose",
+                "floral",
+                "powdery",
+                "balsamic",
+                "soapy"
+            ]
+        },
+        "oid": "4163eec916813682340ff8331e75f7f7"
+    },
     "4175188c5571c53fcbe575de06a338b9":
     {
         "full_name": "gamma-heptalactone",

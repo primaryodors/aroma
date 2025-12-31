@@ -235,27 +235,18 @@ bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int 
     // cout << "Motion fixes clash." << endl;
     #endif
     int i;
-    /* Molecule *aai = p->get_residue(rap_index.resno), *aat = p->get_residue(rap_target.resno);
-    if (entire) aai = (Molecule*)closest_to_ligand->mol;
-    if (tgtligand) aat = ligand;
-    if (!aai || !aat)
-    {
-        cerr << "Something went wrong in ReshapeMotion::fix_clash()." << endl;
-        throw 0xbadc0de;
-    } */
 
-    float oldclash = measure_index_tgt_clashes(p) /* aai->get_intermol_clashes(aat) */, clash = oldclash;
-    if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno 
+    float oldclash = measure_index_tgt_clashes(p), clash = oldclash;
+    if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " about " << rap_fulcrum.resno
+        << " by " << (step*fiftyseven) << " deg "
         << " to avoid clash of " << oldclash << "kJ/mol..." << flush;
     for (i=0; i<iters; i++)
     {
         Point ptidx, pttgt;
         if (!get_pt_index_and_tgt(p, &ptidx, &pttgt)) return false;
-        // Rotation rot = align_points_3d(aat->get_barycenter(), aai->get_barycenter(), pt_fulcrum);
         Rotation rot = align_points_3d(pttgt, ptidx, pt_fulcrum);
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, step);
         if (rshp_verbose) cout << ".";
-        // clash = aai->get_intermol_clashes(aat);
         clash = measure_index_tgt_clashes(p);
         step *= 0.97;
         if (clash <= clash_limit_per_aa) break;
@@ -369,28 +360,35 @@ void ReshapeMotion::apply(Protein *p)
         cout << "Sufficient residues for getting bent." << endl;
         #endif
 
-        for (i = rap_start.resno; i != rap_end.resno; i += sign)
+        Atom* pa = p->get_nearest_atom(ligand->get_barycenter(), min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
+        for (j=0; j<(fixclash?6:1); j++)
         {
-            if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
-            #if _dbg_rshpm_apply
-            cout << "Have index and target points." << endl;
-            #endif
-            AminoAcid* aa_fulcrum = p->get_residue(i);
-            if (!aa_fulcrum) continue;
-            #if _dbg_rshpm_apply
-            cout << "Fulcrum is " << aa_fulcrum->get_name() << endl;
-            #endif
-            rap_fulcrum.resno = i;
-            pt_fulcrum = aa_fulcrum->get_CA_location();
-
-            float factor = 1.0 / (n-1);
-            if (fixclash)
+            for (i = rap_start.resno; i != rap_end.resno; i += sign)
             {
-                bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 5, (2.5/m)*fiftyseventh);
-                if (!result && abs(i-rap_start.resno) > 2) break;
+                cout << "Bending at " << i << endl;
+                // if (pa && i == pa->residue) break;
+                if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
+                #if _dbg_rshpm_apply
+                cout << "Have index and target points." << endl;
+                #endif
+                AminoAcid* aa_fulcrum = p->get_residue(i);
+                if (!aa_fulcrum) continue;
+                #if _dbg_rshpm_apply
+                cout << "Fulcrum is " << aa_fulcrum->get_name() << endl;
+                #endif
+                rap_fulcrum.resno = i;
+                pt_fulcrum = aa_fulcrum->get_CA_location();
+
+                float factor = 1.0 / (n-1);
+                if (fixclash)
+                {
+                    bool result = fix_clash(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, 10, (2.5/m)*fiftyseventh);
+                    if (!result && abs(i-rap_start.resno) > 5) break;
+                }
+                else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);
+                n--;
             }
-            else set_distance(p, min(i, rap_end.resno), max(i, rap_end.resno), pt_fulcrum, pt_index, pt_target, morethan?1:-1, factor);
-            n--;
+            if (measure_index_tgt_clashes(p) < clash_limit_per_aa) break;
         }
         if (rshp_verbose) cout << "Bent " << rap_start.resno << "->" << rap_end.resno;
         if (rshp_verbose && fixclash)

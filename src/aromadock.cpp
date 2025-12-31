@@ -1455,7 +1455,7 @@ int interpret_config_line(char** words)
     else if (!strcmp(words[0], "OUTRSHP"))
     {
         rshp_verbose = true;
-        return 1;
+        return 0;
     }
     else if (!strcmp(words[0], "POSE"))
     {
@@ -2081,10 +2081,18 @@ int main(int argc, char** argv)
             argv[i] -= 2;
             i += j;
         }
-        else
+        else if (!configset && file_exists(argv[i]))
         {
-            strcpy(configfname, argv[i]);
-            configset = true;
+            char* dot = strrchr(argv[i], '.');
+            if (dot)
+            {
+                char* ext = &dot[1];
+                if (!strcmp(ext, "config"))
+                {
+                    strcpy(configfname, argv[i]);
+                    configset = true;
+                }
+            }
         }
     }
 
@@ -3559,7 +3567,7 @@ _try_again:
             }
 
             // Adjustments to accommodate ligand
-            for (j=0; j<3; j++)
+            for (j=0; j<1; j++)
             {
                 for (i=0; cfmols[i]; i++)
                 {
@@ -3666,7 +3674,7 @@ _try_again:
                             rshpm.apply(protein);
 
                             int ciallon = 0;
-                            for (sagitis = aaneddamon->get_residue_no()+ardis; sagitis > 0 && sagitis <= nres; sagitis += ardis)
+                            for (sagitis = aaneddamon->get_residue_no()+ardis*3; sagitis > 0 && sagitis <= nres; sagitis += ardis)
                             {
                                 AminoAcid* tmpaa = protein->get_residue(sagitis);
                                 if (tmpaa)
@@ -3676,7 +3684,9 @@ _try_again:
                                 }
                             }
 
-                            if (false && ciallon)
+                            if (// false && 
+                                ciallon >= min(rshpm.rap_start.resno, rshpm.rap_end.resno) 
+                                && ciallon <= max(rshpm.rap_start.resno, rshpm.rap_end.resno))
                             {
                                 rshpm.rap_start.bw = protein->get_bw_from_resno(ciallon).to_string();
                                 rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
@@ -3686,8 +3696,12 @@ _try_again:
                                 rshpm.morethan = false;
                                 rshpm.entire = false;
                                 rshpm.rap_index.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
-                                rshpm.tgtdist = rneighbs + 2;
                                 rshpm.rap_target.bw = protein->get_bw_from_resno(neighbor->get_residue_no()).to_string();
+                                rshpm.morethan = true;
+                                rshpm.tgtdist = rneighbs;
+                                rshpm.apply(protein);
+                                rshpm.morethan = false;
+                                rshpm.tgtdist = rneighbs + 2;
                                 rshpm.apply(protein);
                             }
                         }
