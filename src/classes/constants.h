@@ -297,8 +297,7 @@
 #define compute_vdw_repulsion 0
 #define compute_clashdirs 0
 #define redo_tumble_spheres_every_node 0
-#define write_activation_matrix 0
-#define write_active_rotation 1
+#define accommodate_ligand_in_post 0
 
 
 // Debugging stuff.
@@ -318,7 +317,6 @@
 #define _dbg_415 0
 #define _dbg_51e2_ionic 0
 #define _dbg_A100 0
-#define _dbg_rshpm_apply 0
 #define _dbg_allow_excessive_aa_clashes 0
 #define _dbg_anemia 0
 #define _dbg_appears 0
@@ -388,6 +386,7 @@
 #define _DBG_RESBMULT 0
 #define _dbg_residue_poses 0
 #define _dbg_rock_pic 0
+#define _dbg_rshpm_apply 0
 #define _dbg_soft 0
 #define _dbg_softpivot 0
 #define _dbg_stays_assignment 0

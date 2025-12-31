@@ -3566,6 +3566,7 @@ _try_again:
                 cfmol_known_good[i] = 0;
             }
 
+            #if accommodate_ligand_in_post
             // Adjustments to accommodate ligand
             for (j=0; j<1; j++)
             {
@@ -3684,7 +3685,7 @@ _try_again:
                                 }
                             }
 
-                            if (// false && 
+                            if (false && 
                                 ciallon >= min(rshpm.rap_start.resno, rshpm.rap_end.resno) 
                                 && ciallon <= max(rshpm.rap_start.resno, rshpm.rap_end.resno))
                             {
@@ -3725,6 +3726,7 @@ _try_again:
                     }
                 }
             }
+            #endif
 
             #if optimize_internal_contacts_post_iterations
             if (nsoftrgn)
