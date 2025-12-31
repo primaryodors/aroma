@@ -54,15 +54,33 @@ print(f"Protein: {protid}\nInput PDB: {inppdb}")
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
 
-# shutil.copyfile(inppdb, "hm/"+protid+"_tpl.pdb")
+prot = data.protutils.prots[protid]
+seqlen = len(prot["sequence"])
+is_helix = '-' * seqlen
+for rgid in prot["region"]:
+    if rgid[0:3] != "TMR" and rgid[0:3] != "HXR": continue
+    rgnse = prot["region"][rgid]
+    for resno in range(rgnse["start"], rgnse["end"]+1):
+        is_helix = is_helix[0:resno-1] + '*' + is_helix[resno:]
+bw45_50 = data.protutils.resno_from_bw(protid, "45.50")
+if bw45_50:
+    for resno in range(bw45_50+2, bw45_50+9):
+        is_helix = is_helix[0:resno-1] + '*' + is_helix[resno:]
+
+startres = 0
+tplpdb = "hm/"+protid+"_tpl.pdb"
 with open(inppdb, 'r') as fin:
     cin = fin.read()
     cout = ""
     for ln in cin.split("\n"):
+        if ln[0:6] == "ATOM  ":
+            resno = int(ln[22:28].strip())
+            if is_helix[resno-1] == '-': continue
+            if not startres or (resno and resno<startres): startres = resno
         if ln[0:6] == "HETATM":
             ln = ln[0:23] + "999" + ln[26:]
         cout += ln + "\n"
-    with open("hm/"+protid+"_tpl.pdb", "w") as fout:
+    with open(tplpdb, "w") as fout:
         fout.write(cout)
 
 env = Environ()
@@ -163,9 +181,7 @@ class AromaReceptorModel(DOPEHRLoopModel):
 # scan input pdb for sequence
 seq = ""
 lrno = 0
-startres = 0
-endres = 0
-with open(inppdb, "r") as f:
+with open(tplpdb, "r") as f:
     c = f.read()
     lines = c.split("\n")
     for ln in lines:
@@ -183,9 +199,6 @@ with open(inppdb, "r") as f:
                     i = aacode3.index(aacode)
                     seq += aaletts[i]
                 lrno = resno
-
-                if not startres or (resno and resno<startres): startres = resno
-                if not endres or resno>endres: endres = resno
 
 # print(seq)
 
@@ -238,7 +251,6 @@ for i in range(n):
 alitpl = alitpl.replace(protid, protid+"_tpl")
 alitpl = alitpl.replace("sequence", "structure")
 startres_pad5 = f"{startres:<{5}}"
-endres_pad5 = f"{endres:<{5}}"
 alitpl = re.sub(":([0-9]+\\s+):([A-Z]):([0-9]+\\s+):([A-Z])", f":{startres_pad5}:\\2:999  :\\4", alitpl)
 
 tmpalif = protid + "_tmp.ali"
