@@ -222,6 +222,8 @@ with open("allgpcr.ali", "r") as f:
             if ln.find('*') >= 0:
                 break
 
+alidat = alidat.replace("*", ".*")
+
 # duplicate the alidat var applying any gaps in seq
 alitpl = ""
 n = len(alidat)
@@ -233,8 +235,6 @@ for i in range(n):
     if ord(c) < ord(" "):
         cryet = True
         alitpl += c
-    elif c == '*':
-        alitpl += '.'+c
     elif not cryet:
         alitpl += c
     elif ord(c) < ord('A') or ord(c) > ord('Z'):
@@ -294,6 +294,7 @@ for i in range(len(results)):
     i += 1
 # exit()
 model = results[j]
+print("Chose " + model['name'])
 
 phewcode = f"""
 LET $rcpid = "{protid}"
