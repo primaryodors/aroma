@@ -11,13 +11,17 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
     {
         case rshp_GPCR:
         strcpy(infname, "data/gpcr.rshpm");
+        load_rshpm_file(infname, ligand);
         break;
 
         default:
         cerr << "Unknown reshape type." << endl;
         throw 0xbadc0de;
     }
+}
 
+void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
+{
     FILE* fp = fopen(infname, "rb");
     if (!fp)
     {
@@ -61,6 +65,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
                 m_rshpm[nrshpm].ligand = ligand;
             }
             else m_rshpm[nrshpm].rap_target.set(fields[6]);
+            if (fields[7])
+            {
+                if (!strcmp(fields[7], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "BEND"))
@@ -80,6 +88,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
                 m_rshpm[nrshpm].tgtdist = atof(&(fields[4][1]));
             }
             m_rshpm[nrshpm].rap_target.set(fields[5]);
+            if (fields[6])
+            {
+                if (!strcmp(fields[6], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "PROX"))
@@ -88,6 +100,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
             m_rshpm[nrshpm].rap_index.set(fields[1]);
             m_rshpm[nrshpm].tgtdist = atof(fields[2]);
             m_rshpm[nrshpm].rap_target.set(fields[3]);
+            if (fields[4])
+            {
+                if (!strcmp(fields[4], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "TRNL"))
@@ -112,6 +128,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
                 m_rshpm[nrshpm].ligand = ligand;
             }
             else m_rshpm[nrshpm].rap_target.set(fields[5]);
+            if (fields[6])
+            {
+                if (!strcmp(fields[6], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "DEL"))
@@ -119,6 +139,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
             m_rshpm[nrshpm].rshpmt = rshpm_delete;
             m_rshpm[nrshpm].rap_start.set(fields[1]);
             m_rshpm[nrshpm].rap_end.set(fields[2]);
+            if (fields[3])
+            {
+                if (!strcmp(fields[3], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "WIND"))
@@ -129,6 +153,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
             m_rshpm[nrshpm].rap_index.set(fields[3]);
             m_rshpm[nrshpm].tgtdist = atof(fields[4]);
             m_rshpm[nrshpm].rap_target.set(fields[5]);
+            if (fields[6])
+            {
+                if (!strcmp(fields[6], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "FLEX"))
@@ -142,6 +170,10 @@ void Reshape::load_rshpm_file(ReshapeType rshpt, Molecule* ligand)
             m_rshpm[nrshpm].rap_index.set(fields[4]);
             m_rshpm[nrshpm].tgtdist = atof(fields[5]);
             m_rshpm[nrshpm].rap_target.set(fields[6]);
+            if (fields[7])
+            {
+                if (!strcmp(fields[7], "MEAS")) m_rshpm[nrshpm].measure = true;
+            }
             nrshpm++;
         }
         else if (!strcmp(fields[0], "EXIT"))
@@ -221,7 +253,7 @@ float ReshapeMotion::measure_index_tgt_clashes(Protein *p)
     if (!ltarget) return 0.0f;
 
     if (entire)
-        return p->get_intermol_clashes(ligand, min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
+        return p->get_intermol_clashes(ltarget, min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
 
     if (!rap_index.resno) rap_index.resolve_resno(p);
     AminoAcid* lindex = p->get_residue(rap_index.resno);
@@ -286,7 +318,12 @@ void Reshape::apply(Protein *p, bool ool)            // This is our ool. There i
     for (i=0; i<nrshpm; i++)
     {
         if (m_rshpm[i].tgtligand) post = true;
-        if (post == ool) m_rshpm[i].apply(p);
+        if (post == ool)
+        {
+            m_rshpm[i].apply(p);
+            if (m_rshpm[i].measure)
+                m_rshpm[i].do_measurement(p);
+        }
     }
 }
 
@@ -360,12 +397,12 @@ void ReshapeMotion::apply(Protein *p)
         cout << "Sufficient residues for getting bent." << endl;
         #endif
 
-        Atom* pa = p->get_nearest_atom(ligand->get_barycenter(), min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
+        // Atom* pa = p->get_nearest_atom(ligand->get_barycenter(), min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
         for (j=0; j<(fixclash?6:1); j++)
         {
             for (i = rap_start.resno; i != rap_end.resno; i += sign)
             {
-                cout << "Bending at " << i << endl;
+                if (rshp_verbose) cout << "Bending at " << i << endl;
                 // if (pa && i == pa->residue) break;
                 if (!get_pt_index_and_tgt(p, &pt_index, &pt_target)) return;
                 #if _dbg_rshpm_apply
@@ -666,4 +703,19 @@ void ReshapeMotion::apply(Protein *p)
             }
         }
     }
+}
+
+void ReshapeMotion::do_measurement(Protein *p)
+{
+    Point pt_index, pt_target;
+    if (get_pt_index_and_tgt(p, &pt_index, &pt_target))
+    {
+        if (entire) cout << "Region " << rap_start.resno << "->" << rap_end.resno;
+        else cout << rap_index.resno;
+        cout << " is " << pt_index.get_3d_distance(pt_target) << "A from ";
+        if (tgtligand) cout << "ligand";
+        else cout << rap_target.resno;
+        cout << "." << endl;
+    }
+    else cout << "Dismal failure can't measure a simple point distance." << endl;
 }

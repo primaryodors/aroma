@@ -64,22 +64,37 @@ for rgid in prot["region"]:
         is_helix = is_helix[0:resno-1] + '*' + is_helix[resno:]
 bw45_50 = data.protutils.resno_from_bw(protid, "45.50")
 if bw45_50:
-    for resno in range(bw45_50+2, bw45_50+9):
+    for resno in range(bw45_50, bw45_50+9):                         # include D/E45.51 in "helix".
         is_helix = is_helix[0:resno-1] + '*' + is_helix[resno:]
 
 startres = 0
 tplpdb = "hm/"+protid+"_tpl.pdb"
-with open(inppdb, 'r') as fin:
-    cin = fin.read()
+
+shutil.copyfile(inppdb, tplpdb)
+
+with open(tplpdb, 'r') as ftpl:
     cout = ""
-    for ln in cin.split("\n"):
+    c = ftpl.read()
+    for ln in c.split("\n"):
         if ln[0:6] == "ATOM  ":
             resno = int(ln[22:28].strip())
             if is_helix[resno-1] == '-': continue
             if not startres or (resno and resno<startres): startres = resno
+            cout += ln + "\n"
+
+with open(inppdb, 'r') as fin:
+    cin = fin.read()
+    # cout = ""
+    for ln in cin.split("\n"):
+        if ln[0:6] == "REMARK":
+            cout = ln + "\n" + cout
+        if ln[0:6] == "ATOM  ":
+            resno = int(ln[22:28].strip())
+            if is_helix[resno-1] == '-': continue
+            # if not startres or (resno and resno<startres): startres = resno
         if ln[0:6] == "HETATM":
             ln = ln[0:23] + "999" + ln[26:]
-        cout += ln + "\n"
+            cout += ln + "\n"
     with open(tplpdb, "w") as fout:
         fout.write(cout)
 

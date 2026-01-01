@@ -25,6 +25,7 @@ class ReshapeMotion
 {
     public:
     void apply(Protein* p);
+    void do_measurement(Protein* p);
 
     ReshapeMotionType rshpmt;
     ResidueAtomPlaceholder rap_start, rap_end, rap_fulcrum, rap_index, rap_target;
@@ -34,6 +35,7 @@ class ReshapeMotion
     bool morethan = false;
     bool entire = false;
     bool tgtligand = false;
+    bool measure = false;
     Molecule* ligand = nullptr;
 
     protected:
@@ -48,6 +50,7 @@ class Reshape
 {
     public:
     void load_rshpm_file(ReshapeType rshpt, Molecule* ligand);
+    void load_rshpm_file(const char* infname, Molecule* ligand);
     void apply(Protein* p, bool ones_with_ligands = false);
 
     protected:
