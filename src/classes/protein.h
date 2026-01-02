@@ -66,6 +66,7 @@ class ResidueAtomPlaceholder : public ResiduePlaceholder
     public:
     void set(const char* str);
     Point loc();
+    Atom* atom();
     bool resolve_special_atom(Protein* p, Point rel);
     std::string get_aname();
     std::string get_orig_aname() { return aname; }

@@ -50,6 +50,10 @@ int main(int argc, char** argv)
         {
             polaronly = true;
         }
+        else if (!strcmp(argv[i], "verbose"))
+        {
+            rshp_verbose = true;
+        }
         else if (!strcmp(argv[i], "tall"))
         {
             totalall = true;
@@ -219,6 +223,7 @@ int main(int argc, char** argv)
         fp = fopen(fname, "wb");
         if (fp)
         {
+            p.set_pdb_chain('A');           // Important for fixfail.py.
             p.save_pdb(fp);
             p.end_pdb(fp);
             fclose(fp);

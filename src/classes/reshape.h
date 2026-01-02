@@ -39,7 +39,7 @@ class ReshapeMotion
     Molecule* ligand = nullptr;
 
     protected:
-    bool get_pt_index_and_tgt(Protein* p, Point* index, Point* target);
+    bool get_pt_index_and_tgt(Protein* p, Point* index, Point* target, Atom** a_index = nullptr, Atom** a_target = nullptr);
     float measure_index_tgt_clashes(Protein* p);
     bool fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int iters=60, float step = 1.5*fiftyseventh);
     bool set_distance(Protein* p, int sr, int er, Point pt_fulcrum, Point pt_index, Point pt_target, int moreorless = -1, float amount=1.0);

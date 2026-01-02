@@ -184,7 +184,7 @@ void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
     fclose(fp);
 }
 
-bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target)
+bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target, Atom** a_index, Atom** a_target)
 {
     if (!entire)
     {
@@ -196,8 +196,8 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
         cout << "Resolved index " << rap_index.resno << endl;
         #endif
         *index = rap_index.loc();
+        if (a_index) *a_index = rap_index.atom();
     }
-
     if (!tgtligand)
     {
         rap_target.resolve_resno(p);
@@ -208,6 +208,7 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
         cout << "Resolved index " << rap_target.resno << endl;
         #endif
         *target = rap_target.loc();
+        if (a_target) *a_target = rap_target.atom();
     }
     if (tgtligand && !ligand)
     {
@@ -219,11 +220,11 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
         Atom* liga = ligand->get_nearest_atom_to_line(rap_start.loc(), rap_end.loc());
         if (!liga) return false;
         *target = liga->loc;
+        if (a_target) *a_target = liga;
         #if _dbg_rshpm_apply
         cout << "Target is ligand." << endl;
         #endif
     }
-
     if (entire)
     {
         closest_to_ligand = p->get_nearest_atom(*target, min(rap_start.resno, rap_end.resno), max(rap_start.resno, rap_end.resno));
@@ -233,6 +234,7 @@ bool ReshapeMotion::get_pt_index_and_tgt(Protein* p, Point* index, Point* target
             return false;
         }
         *index = closest_to_ligand->loc;
+        if (a_index) *a_index = closest_to_ligand;
         #if _dbg_rshpm_apply
         cout << "Index is entire." << endl;
         #endif
@@ -289,11 +291,6 @@ bool ReshapeMotion::fix_clash(Protein* p, int sr, int er, Point pt_fulcrum, int 
 
 bool ReshapeMotion::set_distance(Protein* p, int sr, int er, Point pt_fulcrum, Point pt_index, Point pt_target, int moreorless, float amount)
 {
-    Vector tolerance = pt_index.subtract(pt_target);
-    Rotation rot;
-
-    tolerance.r = tgtdist;
-    pt_target = pt_target.add(tolerance);
     float r = pt_index.get_3d_distance(pt_target);
 
     if ((moreorless > 0 && r < tgtdist)
@@ -301,10 +298,17 @@ bool ReshapeMotion::set_distance(Protein* p, int sr, int er, Point pt_fulcrum, P
         || !moreorless
         )
     {
+        Vector tolerance = pt_index.subtract(pt_target);
+        Rotation rot;
+        tolerance.r = tgtdist;
+        pt_target = pt_target.add(tolerance);
         rot = align_points_3d(pt_index, pt_target, pt_fulcrum);
         rot.a *= amount;
         if (rshp_verbose) cout << "Rotating " << sr << "->" << er << " " 
-            << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno << " to minimum residue distance " << tolerance.r << "A..." << endl;
+            << (rot.a*fiftyseven) << " deg about " << rap_fulcrum.resno
+            << " to minimum residue distance " << tolerance.r << "A"
+            << " from previous " << r
+            << endl;
         p->rotate_piece(sr, er, pt_fulcrum, rot.v, rot.a);
     }
 
@@ -708,14 +712,15 @@ void ReshapeMotion::apply(Protein *p)
 void ReshapeMotion::do_measurement(Protein *p)
 {
     Point pt_index, pt_target;
-    if (get_pt_index_and_tgt(p, &pt_index, &pt_target))
+    Atom *aidx, *atgt;
+    if (get_pt_index_and_tgt(p, &pt_index, &pt_target, &aidx, &atgt))
     {
         if (entire) cout << "Region " << rap_start.resno << "->" << rap_end.resno;
-        else cout << rap_index.resno;
+        else cout << rap_index.resno << ":" << (aidx ? aidx->name : "cen");
         cout << " is " << pt_index.get_3d_distance(pt_target) << "A from ";
-        if (tgtligand) cout << "ligand";
-        else cout << rap_target.resno;
+        if (tgtligand) cout << "ligand" << ":" << (atgt ? atgt->name : "cen");
+        else cout << rap_target.resno << ":" << (atgt ? atgt->name : "cen");
         cout << "." << endl;
     }
-    else cout << "Dismal failure can't measure a simple point distance." << endl;
+    // else cout << "Dismal failure can't measure a simple point distance." << endl;
 }

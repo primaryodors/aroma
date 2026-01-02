@@ -20,6 +20,7 @@ all: $(DIRS) \
 	 $(TSTS) \
 	 $(APPS)
 code: $(DIRS) $(OBJS) $(DOBJ) $(TSTS) $(APPS)
+apps: $(APPS)
 aromadock: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/aromadock
 phew: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/phew
 ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic

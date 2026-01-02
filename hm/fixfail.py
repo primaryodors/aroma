@@ -49,6 +49,12 @@ if argc > 2:
 else:
     inppdb = f"pdbs/{fam}/{protid}.active.pdb"
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
+
+cmd = ["make", "apps"]
+subprocess.run(cmd)
+
 print(f"Protein: {protid}\nInput PDB: {inppdb}")
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -70,7 +76,26 @@ if bw45_50:
 startres = 0
 tplpdb = "hm/"+protid+"_tpl.pdb"
 
+rshpmft = "GPCR.rshpm"          # fake filename that doesn't exist so we can error out later
+
+if protid[0:2] == "OR":
+    if int(re.sub(r"[^0-9]", "", protid[2:4])) >= 50:
+        rshpmft = "OR_ClassI.rshpm"
+    else:
+        rshpmft = "OR_ClassII.rshpm"
+elif protid[0:2] == "TAAR":
+    rshpmft = "TAAR.rshpm"
+elif protid[0:2] == "VN1R":
+    rshpmft = "VN1R.rshpm"      # future expansion
+
+rshpmfn = "data/" + rshpmft
+if not os.path.exists(rshpmfn):
+    print("No reshape file exists for this receptor.")
+    exit()
+
 shutil.copyfile(inppdb, tplpdb)
+cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
+subprocess.run(cmd)
 
 with open(tplpdb, 'r') as ftpl:
     cout = ""

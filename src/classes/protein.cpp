@@ -100,7 +100,25 @@ Point ResidueAtomPlaceholder::loc()
     a = aa->get_atom(get_aname().c_str());
     if (!a) a = aa->get_atom("CA");
     if (!a) return (aa->get_barycenter());
+    #if _dbg_rshpm_apply
+    cout << "Atom name is " << get_aname() << ". Using location of " << resno << ":" << a->name << "..." << endl;
+    #endif
     return a->loc;
+}
+
+Atom *ResidueAtomPlaceholder::atom()
+{
+    if (!m_prot) return nullptr;
+    AminoAcid* aa = m_prot->get_residue(resno);
+    if (!aa) return nullptr;
+    Atom* a;
+    a = aa->get_atom(get_aname().c_str());
+    if (!a) a = aa->get_atom("CA");
+    if (!a) return nullptr;
+    #if _dbg_rshpm_apply
+    cout << "Atom name is " << get_aname() << ". Using atom " << resno << ":" << a->name << "..." << endl;
+    #endif
+    return a;
 }
 
 bool ResidueAtomPlaceholder::resolve_special_atom(Protein* p, Point rel)
@@ -168,7 +186,7 @@ std::string ResidueAtomPlaceholder::get_aname()
         if (!a) return (std::string)"";
         return (std::string)a->name;
     }
-    return std::string();
+    return aname;
 }
 
 Protein::Protein()
