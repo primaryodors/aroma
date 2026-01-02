@@ -113,6 +113,11 @@ void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
             m_rshpm[nrshpm].rap_end.set(fields[2]);
             m_rshpm[nrshpm].rap_index.set(fields[3]);
             m_rshpm[nrshpm].tgtdist = atof(fields[4]);
+            if (fields[4][0] == '>')
+            {
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[4][1]));
+            }
             if (!strcmp(fields[4], "noclash"))
             {
                 m_rshpm[nrshpm].fixclash = true;
@@ -152,6 +157,11 @@ void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
             m_rshpm[nrshpm].rap_end.set(fields[2]);
             m_rshpm[nrshpm].rap_index.set(fields[3]);
             m_rshpm[nrshpm].tgtdist = atof(fields[4]);
+            if (fields[4][0] == '>')
+            {
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[4][1]));
+            }
             m_rshpm[nrshpm].rap_target.set(fields[5]);
             if (fields[6])
             {
@@ -169,6 +179,11 @@ void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
             strcpy(m_rshpm[nrshpm].ba2, fields[3]);
             m_rshpm[nrshpm].rap_index.set(fields[4]);
             m_rshpm[nrshpm].tgtdist = atof(fields[5]);
+            if (fields[5][0] == '>')
+            {
+                m_rshpm[nrshpm].morethan = true;
+                m_rshpm[nrshpm].tgtdist = atof(&(fields[5][1]));
+            }
             m_rshpm[nrshpm].rap_target.set(fields[6]);
             if (fields[7])
             {
@@ -658,8 +673,8 @@ void ReshapeMotion::apply(Protein *p)
                                 rold = a1->distance_to(a2);
                                 b->rotate(theta);
                                 rnew = a1->distance_to(a2);
-                                if (rnew > rold) theta *= -0.666;
-                                else if (rnew < tgtdist+0.1) break;
+                                if (morethan ? (rold > rnew) : (rnew > rold)) theta *= -0.666;
+                                else if (morethan ? (rnew > tgtdist) : (rnew < tgtdist+0.1)) break;
                                 total_rot += theta;
                             }
                         }
@@ -669,7 +684,7 @@ void ReshapeMotion::apply(Protein *p)
                             b->rotate(b->flip_angle);
                             total_rot = b->flip_angle;
                             rnew = a1->distance_to(a2);
-                            if (rnew > rold)
+                            if (morethan ? (rold > rnew && rnew < tgtdist) : (rnew > rold))
                             {
                                 b->rotate(b->flip_angle);
                                 total_rot = 0;
