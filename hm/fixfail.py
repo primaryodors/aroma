@@ -46,6 +46,11 @@ fam = data.protutils.family_from_protid(protid)
 
 if argc > 2:
     inppdb = sys.argv[2]
+    if not os.path.exists(inppdb):
+        inppdb = f"output/{fam}/{protid}/{protid}~{sys.argv[2]}.active.model1.pdb"
+    if not os.path.exists(inppdb):
+        print(f"Input file not found: {sys.argv[2]}")
+        exit()
 else:
     inppdb = f"pdbs/{fam}/{protid}.active.pdb"
 
