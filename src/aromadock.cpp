@@ -1672,6 +1672,7 @@ void read_config_file(FILE* pf)
         {
             char** words = chop_spaced_words(buffer);
             if (!words) continue;
+            if (!words[0]) continue;
 
             interpret_config_line(words);
 
@@ -2020,7 +2021,6 @@ void apply_protein_specific_settings(Protein* p)
 
             for (j=0; j<nsoftrgn; j++)
             {
-                if (!i && softrgns[j].num_contacts()) goto no_dup_contacts;
                 if (soft_contact_a[i].resno >= softrgns[j].rgn.start && soft_contact_a[i].resno <= softrgns[j].rgn.end)
                 {
                     softrgns[j].add_contact(soft_contact_a[i].resno, soft_contact_b[i].resno, p, matched);
@@ -2037,8 +2037,6 @@ void apply_protein_specific_settings(Protein* p)
 
             softrgns[i].check_chain_constraints(p);                 // Refreshes AA pointers to current protein.
         }
-        no_dup_contacts:
-        ;
     }
 
     protein->optimize_hydrogens();
@@ -3516,7 +3514,7 @@ _try_again:
             ligand->movability = MOV_ALL;
             if (!flex) for (j=0; j<sphres; j++)
             {
-                if (reaches_spheroid[nodeno][j]->movability != MOV_PINNED) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
+                if (!(reaches_spheroid[nodeno][j]->movability & MOV_PINNED)) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
             }
             freeze_bridged_residues();
             if (output_each_iter) output_iter(0, cfmols, "initial placement");

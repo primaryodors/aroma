@@ -2679,6 +2679,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
         AminoAcid* aa = get_residue(i);
         if (!aa) continue;
         MovabilityType mt = aa->movability;
+        if (mt & MOV_PINNED) continue;
         aa->movability = MOV_FLEXONLY;
         AminoAcid* sphres[1024];
         get_residues_can_clash_ligand(sphres, aa, aa->get_barycenter(), Point(8,8,8), nullptr);

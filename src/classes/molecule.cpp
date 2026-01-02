@@ -396,7 +396,8 @@ void Pose::restore_state(Molecule* m)
 
     for (i=0; i<sz && m->atoms[i]; i++)
     {
-        m->atoms[i]->move(saved_atom_locs[i]);
+        if (!(m->movability & MOV_PINNED))
+            m->atoms[i]->move(saved_atom_locs[i]);
     }
 }
 
@@ -5822,6 +5823,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (abc=0; abc<nmm; abc++)
     {
+        if (mm[abc]->movability & MOV_PINNED) continue;
         if (mm[abc]->is_residue()) absolute_best[abc].restore_state_relative(mm[abc], "CA");
         else absolute_best[abc].restore_state(mm[abc]);
     }
