@@ -140,7 +140,7 @@ class AromaReceptorModel(DOPEHRLoopModel):
 
         # TM helices and helix 8
         for rgid in prot["region"]:
-            if rgid[0:3] != "TMR" and rgid[0:3] != "HXR": continue
+            if rgid[0:3] != "TMR": continue # and rgid[0:3] != "HXR": continue
             rgnse = prot["region"][rgid]
             rsr.add(secondary_structure.Alpha(self.residue_range(str(rgnse["start"])+":A", str(rgnse["end"])+":A")))
             print("Helix "+str(rgnse["start"])+" - "+str(rgnse["end"]))
@@ -380,8 +380,6 @@ REMARK   1  DOI  4 10.1110/ps.9.9.1753
 REMARK   1  
 REMARK 265 HM_TEMPLATES: custom
 
-# HYDRO
-
 UNCHAIN I
 UNCHAIN O
 STRAND A
@@ -395,6 +393,19 @@ IF $3.25 != "C" OR $45.50 != "C" GOTO _not_disulfide
 CONECT %3.25 SG %45.50 SG
 _not_disulfide:
 HYDRO
+
+LET %y6 = 0
+LET $atom6 = "OH"
+IF $6.55 = "Y" THEN LET %y6 = %6.55
+IF $6.55 = "H" THEN LET %y6 = %6.55
+IF $6.55 = "H" THEN LET $atom6 = "NE2"
+LET %de45 = 0
+IF %45.51 = "D" OR %45.51 = "E" THEN LET %de45 = %45.51
+ELSE IF %45.52 = "D" OR %45.52 = "E" THEN LET %de45 = %45.52
+IF NOT %y6 THEN GOTO _no_456_contact
+IF NOT %de45 THEN GOTO _no_456_contact
+BRIDGE %y6 %de45
+_no_456_contact:
 
 IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
 IF $5.39 != "M" GOTO _not_Cu_539
