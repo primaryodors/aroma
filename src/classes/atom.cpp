@@ -1595,6 +1595,8 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
         return false;
     }
 
+    if (atom1->residue==198 || atom1->residue==277) throw 0xbadc0de;
+
     int i;
     Point cen = atom2->loc;
     Point bas = atom1->loc;
