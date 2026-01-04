@@ -1489,6 +1489,15 @@ float Interaction::probability(Interaction rel)
     return exp((Eyours-Emine)/(kB_kJ*temperature));
 }
 
+bool Interaction::accept_change(Interaction rel)
+{
+    #if metropolis_criterion
+    return probability(rel) > frand(0,1);
+    #else
+    return improved(rel);
+    #endif
+}
+
 float InteratomicForce::distance_anomaly(Atom* a, Atom* b)
 {
     InteratomicForce* forces[32];

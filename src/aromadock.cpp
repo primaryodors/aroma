@@ -566,7 +566,7 @@ void abhor_vacuum(int iter, Molecule** mols)
         rot.a *= frand(0,1);
         ligand->rotate(lv, rot.a);
         Interaction after = ligand->get_intermol_binding(mols);
-        if (!after.improved(before)) putitback.restore_state(ligand);
+        if (!after.accept_change(before)) putitback.restore_state(ligand);
         else if (audit) fprintf(audit, "Iter %d accepted vacuum abhorrence rotation of %f deg from %g (%g/%g) to %g (%g/%g).\n",
             iter, rot.a*fiftyseven,
             before.summed(), before.attractive, before.clash,
@@ -581,7 +581,7 @@ void abhor_vacuum(int iter, Molecule** mols)
     Interaction before = ligand->get_intermol_binding(mols);
     ligand->move(motion);
     Interaction after = ligand->get_intermol_binding(mols);
-    if (!after.improved(before)) putitback.restore_state(ligand);
+    if (!after.accept_change(before)) putitback.restore_state(ligand);
     else if (audit) fprintf(audit, "Iter %d accepted vacuum abhorrence translation of %f A from %g (%g/%g) to %g (%g/%g).\n",
         iter, motion.r,
         before.summed(), before.attractive, before.clash,
@@ -837,7 +837,7 @@ void iteration_callback(int iter, Molecule** mols)
             Interaction before = ligand->get_intermol_binding(mols);
             ligand->recenter(bary);
             Interaction after = ligand->get_intermol_binding(mols);
-            if (!after.improved(before)) ligand->recenter(was);
+            if (!after.accept_change(before)) ligand->recenter(was);
             else if (audit) fprintf(audit, "Iter %d applied ligand drift of %f from %f to %f.\n", iter, drift, before.summed(), after.summed());
         }
 

@@ -128,6 +128,7 @@
 #define lmpull 0.1
 #define lmpush 0.3
 #define lmsteps 5
+#define metropolis_criterion 1
 #define speed_limit 1.5
 
 // Docking features.
