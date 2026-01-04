@@ -1481,6 +1481,14 @@ bool Interaction::improved(Interaction rel)
     return (abetter + rbetter) > 0;
 }
 
+float Interaction::probability(Interaction rel)
+{
+    // Metropolis Criterion
+    float Emine = summed(), Eyours = rel.summed();
+    if (Emine < Eyours) return 1;
+    return exp((Eyours-Emine)/(kB_kJ*temperature));
+}
+
 float InteratomicForce::distance_anomaly(Atom* a, Atom* b)
 {
     InteratomicForce* forces[32];

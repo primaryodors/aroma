@@ -25,6 +25,7 @@ class Interaction
     Interaction operator-=(float const& f);
     Interaction operator*(double const& f);
     bool improved(Interaction relative_to);
+    float probability(Interaction relative_to);
 };
 
 class InteratomicForce
