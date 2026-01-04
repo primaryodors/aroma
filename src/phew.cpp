@@ -2970,11 +2970,23 @@ int main(int argc, char** argv)
 
                 Atom *a1, *a2;
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));
+                if (!strcmp(atom1.c_str(), "NEARESV"))
+                {
+                    a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));
+                    if (a1) a1 = a1->get_heavy_atom();
+                }
                 else if (!strcmp(atom1.c_str(), "EXTENT")) a1 = aa1->get_reach_atom();
+                else if (!strcmp(atom1.c_str(), "EXTH"))
+                {
+                    a1 = aa1->get_reach_atom(hbond);
+                    if (a1) a1 = a1->get_heavy_atom();
+                    // if (a1) cout << a1->name << endl;
+                }
                 else if (!strcmp(atom1.c_str(), "EXTHVY"))
                 {
                     a1 = aa1->get_reach_atom();
                     if (a1) a1 = a1->get_heavy_atom();
+                    // if (a1) cout << a1->name << endl;
                 }
                 else a1 = working->get_atom(res1, atom1.c_str());
                 if (!a1)
@@ -2986,11 +2998,23 @@ int main(int argc, char** argv)
                         );
                 }
                 if (!strcmp(atom2.c_str(), "NEAREST")) a2 = aa2->get_nearest_atom(working->get_atom_location(res1, "CA"));
+                if (!strcmp(atom2.c_str(), "NEARESV"))
+                {
+                    a2 = aa2->get_nearest_atom(working->get_atom_location(res1, "CA"));
+                    if (a2) a2 = a2->get_heavy_atom();
+                }
                 else if (!strcmp(atom2.c_str(), "EXTENT")) a2 = aa2->get_reach_atom();
+                else if (!strcmp(atom2.c_str(), "EXTH"))
+                {
+                    a2 = aa2->get_reach_atom(hbond);
+                    if (a2) a2 = a2->get_heavy_atom();
+                    // if (a2) cout << a2->name << endl;
+                }
                 else if (!strcmp(atom2.c_str(), "EXTHVY"))
                 {
                     a2 = aa2->get_reach_atom();
                     if (a2) a2 = a2->get_heavy_atom();
+                    // if (a2) cout << a2->name << endl;
                 }
                 else a2 = working->get_atom(res2, atom2.c_str());
                 if (!a2)

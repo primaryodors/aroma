@@ -1738,6 +1738,7 @@ Atom* AminoAcid::get_reach_atom()
 
     int i;
     float maxr = 0;
+    int anotaton = 0;
     Atom* CA = get_atom("CA");
     Atom* retval = nullptr;
     if (!CA) return nullptr;
@@ -1747,11 +1748,13 @@ Atom* AminoAcid::get_reach_atom()
         if (atoms[i]->is_backbone) continue;
         float r = atoms[i]->distance_to(CA);
 
-        if (r > maxr)
+        int Greek = atoms[i]->get_Greek();
+        if (r > maxr && Greek >= anotaton)
         {
             maxr = r;
             retval = atoms[i];
         }
+        if (Greek > anotaton) anotaton = Greek;
     }
 
     return retval;
@@ -1763,6 +1766,7 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
 
     int i;
     float maxr = 0;
+    int anotaton = 0;
     Atom* CA = get_atom("CA");
     Atom* retval = nullptr;
     if (!CA) return nullptr;
@@ -1801,9 +1805,11 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
         if (!type_ok) continue;
 
         float r = atoms[i]->distance_to(CA);
-        if (r > maxr)
+        int Greek = atoms[i]->get_Greek();
+        if (r > maxr && Greek >= anotaton)
         {
             maxr = r;
+            anotaton = Greek;
             retval = atoms[i];
         }
     }
