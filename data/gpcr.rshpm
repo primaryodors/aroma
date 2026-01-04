@@ -1,0 +1,41 @@
+
+# Set up some common internal contacts
+PROX N7.49:ND2 3.5 DE2.50:nO
+PROX N7.49:ND2 3.5 DE3.39:nO
+FLEX Y6.55 CA CB Y6.55:OH 2 2.50:CA
+# WIND 6.48 6.e Y6.55:CB 8.9 D45.51:CB
+# WIND 6.48 6.e Y6.55:CB 10.0 E45.51:CB
+FLEX Y6.55 CB CG Y6.55:HH 2 DE45.51:nO
+PROX Y6.55:HH 2.5 DE45.51:nO
+PROX Y5.58:HH 4.14 Y7.53:OH
+PROX RK4.52:xv 3.5 DE5.50:nO
+
+# Ensure Y5-7 contact and CYT3 loop
+BEND 5.50 5.e Y5.58:HH 4.4 Y7.53:OH
+BEND 7.49 7.e Y7.53:OH 4.14 Y5.58:HH
+BEND 6.48 6.s 6.40 >13 3.46
+BEND 6.40 6.s 6.30 21 7.53
+BEND 6.40 6.s 6.30 9.5 5.68
+
+# Make room for loops
+DEL 1.61 2.37
+DEL 2.68 3.18
+DEL 3.57 4.48
+DEL 4.66 45.48
+DEL 45.59 5.31
+DEL 5.69 6.28
+DEL 6.61 7.30
+DEL 8.46 8.48
+
+# Accommodate ligand
+TRNL 4.s 4.e entire noclash ligand
+TRNL 4.s 4.e RK4.52:xv 3.5 DE5.50:nO
+PIVOT 5.s 5.e 5.58:x entire noclash ligand
+PIVOT 6.s 6.e 6.55:x entire noclash ligand
+PIVOT 6.s 6.e 6.55:x 6.30 31 7.53
+PIVOT 6.s 6.e 6.55:x 6.30 19.5 5.68
+PIVOT 7.s 7.49 7.49 7.34 >6 6.57
+PIVOT 7.s 7.49 7.49 7.34 >9 RK6.57
+BEND 6.48 6.s 6.30 21 7.53
+BEND 6.48 6.s 6.30 9.5 5.68
+

@@ -125,6 +125,7 @@ public:
     int get_bond_count(bool unidirectional) const;
     float get_molecular_wt();
     Atom* get_nearest_atom(Point loc) const;
+    Atom* get_nearest_atom(Point loc, const char* esym, bool ignore_backbone = true) const;
     Atom* get_nearest_atom(Point loc, intera_type capable_of, int sgn_polarity = any_element) const;
     Atom* get_nearest_atom_to_line(Point A, Point B) const;
     Point get_bounding_box() const;				// Return the +x+y+z vertex of a bounding box, including vdW radii, if center={0,0,0}.
@@ -167,6 +168,7 @@ public:
     float surface_occlusion(Molecule* ligand);
     float octant_occlusion(Molecule** ligands, bool ignore_polar = false);
     float octant_occlusion(Molecule* ligand, bool ignore_polar = false);
+    Point polar_barycenter();
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
@@ -178,6 +180,7 @@ public:
     {
         return atoms[a_idx];
     }
+    Atom* get_atom_by_pdbidx(const int pdbidx) const;
     int count_atoms_by_element(const char* esym);
     Point get_atom_location(const char* aname);
     Point get_atom_location(int idx);
@@ -277,6 +280,8 @@ public:
     Atom** get_most_bindable(int max_num = 3);						// Return the atoms with the greatest potential intermol binding.
     Atom** get_most_bindable(int max_num, Atom* for_atom);
 
+    float similar_atom_proximity(Molecule* other);
+
     void allocate_mandatory_connections(int mcmax);
     void add_mandatory_connection(Molecule* addmol);
     void remove_mandatory_connection(Molecule* rmvmol);
@@ -317,11 +322,16 @@ public:
     Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr, *stay_close2_mol = nullptr;
     float stay_close_tolerance = 0, stay_close_optimal = 2, stay_close2_optimal = 2;
     bool is_ic_res = false;
+    #define CONECTS_MAX 256
+    int nconects = 0;
+    Atom *conecta1[CONECTS_MAX], *conecta2[CONECTS_MAX];
+    float conectcard[CONECTS_MAX];
 
 protected:
 
     Atom** atoms = 0;
     int atcount = 0;
+    int atcallocd = 0;
     char* name = 0;
     char* smiles = 0;
     Molecule** monomers = nullptr;

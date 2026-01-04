@@ -555,6 +555,8 @@ bool Atom::move(Point* pt)
         return false;
     }
 
+    // if (residue==198 || residue==277) throw 0xbadc0de;
+
     location = *pt;
     location.weight = at_wt;
     if (geov) delete[] geov;
@@ -901,7 +903,7 @@ Atom* Atom::is_bonded_to(const char* element, const int lcardinality)
         if (bonded_to[i].atom2)
             if (!strcmp(bonded_to[i].atom2->get_elem_sym(), element)
                     &&
-                    bonded_to[i].cardinality == lcardinality
+                    fabs(bonded_to[i].cardinality - lcardinality) <= 0.25
                )
                 return bonded_to[i].atom2;
     return 0;
@@ -1055,7 +1057,6 @@ Point average_of_atom_locs(Atom** atoms)
     return result;
 }
 
-#define _dbg_polar_calc 0
 float Atom::is_polar()
 {
     if (!polar_calcd)
@@ -1593,6 +1594,8 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
         last_fail = bf_sidechain_hierarchy;
         return false;
     }
+
+    if (atom1->residue==198 || atom1->residue==277) throw 0xbadc0de;
 
     int i;
     Point cen = atom2->loc;
@@ -2386,7 +2389,7 @@ float Atom::get_sum_pi_bonds()
     return retval;
 }
 
-void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
+void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
 {
     if (vanished) return;
     char numbuf[16];
@@ -2400,7 +2403,7 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
     /*
     ATOM   2039  CA  ALA   128      -6.065 -24.834  -5.744  1.00001.00           C
     */
-    fprintf(pf, residue ? "ATOM   " : "HETATM ");
+    fprintf(pf, (residue && !fh) ? "ATOM   " : "HETATM ");
     sprintf(numbuf, "%d", atomno);
     fprintf(pf, "%4s ", numbuf);
 

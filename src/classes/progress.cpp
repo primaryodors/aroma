@@ -50,5 +50,5 @@ void Progressbar::update(float value)
 
 void Progressbar::erase()
 {
-    cout << "\033[A\033[K" << endl;
+    cout << "\033[A\033[K";
 }

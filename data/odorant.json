@@ -5655,6 +5655,29 @@
         },
         "oid": "1ec443fb909f050d9a2255dcccc7b6b6"
     },
+    "1ede00ea6f829f493411d114c0bc6258":
+    {
+        "full_name": "veramoss",
+        "name1": "evernyl",
+        "iupac": "methyl 2,4-dihydroxy-3,6-dimethylbenzoate",
+        "cas": "4707-47-5",
+        "smiles": "COC(=O)c1c(C)cc(c(c1O)C)O",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "mossy",
+                "oakmoss",
+                "woody",
+                "phenolic",
+                "earthy",
+                "dry",
+                "spicy",
+                "powdery"
+            ]
+        },
+        "oid": "1ede00ea6f829f493411d114c0bc6258"
+    },
     "1ee180ac7892e1b4eda0c17da9df66c1":
     {
         "full_name": "menthone",
@@ -8613,6 +8636,8 @@
     "2de2ed1ab796f4f14292cb6198994497":
     {
         "full_name": "(-)-ambroxide",
+        "name1": "ambroxan",
+        "name2": "ambrofix",
         "smiles": "C[C@]12CCCC([C@@H]1CC[C@@]3([C@@H]2CCO3)C)(C)C",
         "aroma":
         {
@@ -8697,6 +8722,18 @@
                 {
                     "ec50": "-6.85"
                 }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR7A17":
+                {
+                    "ec50": "-5.89"
+                },
+                "OR7E24":
+                {
+                    "type": "a",
+                    "ec50": "-5.11"
+                }
             }
         },
         "oid": "2de2ed1ab796f4f14292cb6198994497"
@@ -8764,9 +8801,7 @@
             [
                 "cherry",
                 "maraschino_cherry",
-                "almond",
-                "bitter",
-                "almond",
+                "bitter_almond",
                 "cherry",
                 "tropical",
                 "custard",
@@ -9341,46 +9376,6 @@
             }
         },
         "oid": "2ffb69f14540bfcbfc679c4afb0f9d44"
-    },
-    "30365d704dc367894c1d4a062f07992a":
-    {
-        "full_name": "ambroxan",
-        "name1": "ambrofix",
-        "smiles": "CC1(C)CCC[C@]2([C@H]1CC[C@@]1([C@@H]2CCO1)C)C",
-        "aroma":
-        {
-            "http://www.thegoodscentscompany.com":
-            [
-                "ambergris",
-                "sweet",
-                "labdanum",
-                "dry",
-                "woody",
-                "pine",
-                "cedar",
-                "green",
-                "seedy",
-                "tea",
-                "fresh",
-                "nutty"
-            ]
-        },
-        "activity":
-        {
-            "https://patents.google.com/patent/WO2024126820A1/en":
-            {
-                "OR7A17":
-                {
-                    "ec50": "-5.89"
-                },
-                "OR7E24":
-                {
-                    "type": "a",
-                    "ec50": "-5.11"
-                }
-            }
-        },
-        "oid": "30365d704dc367894c1d4a062f07992a"
     },
     "3085d446d6702f5497196af67e16f143":
     {
@@ -11536,6 +11531,28 @@
         },
         "oid": "4152229d1ebe991be4fa3a219facc6f7"
     },
+    "4163eec916813682340ff8331e75f7f7":
+    {
+        "full_name": "rose acetate",
+        "smiles": "CC(=O)OC(C(Cl)(Cl)Cl)c1ccccc1",
+        "isomers":
+        {
+            "(S)": "CC(=O)O[C@@H](C(Cl)(Cl)Cl)c1ccccc1",
+            "(R)": "CC(=O)O[C@H](C(Cl)(Cl)Cl)c1ccccc1"
+        },
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "rose",
+                "floral",
+                "powdery",
+                "balsamic",
+                "soapy"
+            ]
+        },
+        "oid": "4163eec916813682340ff8331e75f7f7"
+    },
     "4175188c5571c53fcbe575de06a338b9":
     {
         "full_name": "gamma-heptalactone",
@@ -11632,6 +11649,11 @@
     {
         "full_name": "laitone",
         "smiles": "CC(C1CCC2(CC1)CCC(=O)O2)C",
+        "isomers":
+        {
+            "(Z)": "CC([C@H]1CC[C@@]2(CC1)CCC(=O)O2)C",
+            "(E)": "CC([C@H]1CC[C@]2(CC1)CCC(=O)O2)C"
+        },
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -14939,7 +14961,7 @@
     "59dfe62ed331a252bfd9c75814530149":
     {
         "full_name": "1-octyl-2-pyrrolidone",
-        "smiles": "CCCCCCCC[NH2+]1CCCC1=O",
+        "smiles": "CCCCCCCCN1CCCC1=O",
         "activity":
         {
             "http://chemcom.be/wp-content/uploads/2014/12/2014-OR1D2-is-a-broadly-tuned-human-olfactory-receptor.pdf":
@@ -26387,6 +26409,25 @@
         "smiles": "CC(=O)OCC",
         "oid": "9867cdf9a838cc8fbb484f332c37fb3d"
     },
+    "98682ab2bca3ba8fa57e90d662d366e7":
+    {
+        "full_name": "2-tert-butyl-5-methyl anisole",
+        "name1": "leatherinol",
+        "smiles": "COc1cc(C)ccc1C(C)(C)C",
+        "cas": "88-40-4",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "leather",
+                "spicy",
+                "animalic",
+                "phenolic",
+                "ambrette"
+            ]
+        },
+        "oid": "98682ab2bca3ba8fa57e90d662d366e7"
+    },
     "98b53a93656cbe9cb4888249ea47875a":
     {
         "full_name": "(Z)-6-undecenal",
@@ -29321,7 +29362,8 @@
                 "OR1A1":
                 {
                     "type": "ma",
-                    "ec50": "-6.55"
+                    "ec50": "-6.55",
+                    "best": "Y"
                 },
                 "OR2W1":
                 {

@@ -128,9 +128,10 @@ foreach ($prots as $protid => $p)
 
         $fpn = "../output/$fam/$protid/$fname";
 
-        if (isset($cached[$fname]) && filemtime($fpn) < $cachemt)
+        if (isset($cached[$fname]) && intval($cached[$fname]['nump']) && filemtime($fpn) < $cachemt)
         {
             extract($cached[$fname]);
+            // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
         }
         else
         {
@@ -211,7 +212,7 @@ foreach ($prots as $protid => $p)
         }
 
         $rows[$rowid]["benerg_raw_$mode"] = $benerg;
-        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) - $tds;
+        $rows[$rowid]["benerg_$mode"] = $benerg /*+ ($lsbe - $lsfe) + ($phbe - $phfe)*/ - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 

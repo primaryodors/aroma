@@ -1,11 +1,15 @@
 
 #include "aminoacid.h"
+#include "progress.h"
 
 #ifndef _PROTEIN
 #define _PROTEIN
 
 #include <string>
 #include <climits>
+
+#define resplc_rgnstart -1
+#define resplc_rgnend -99
 
 enum region_source
 {
@@ -36,10 +40,12 @@ class BallesterosWeinstein
     BallesterosWeinstein(const char* fromstr) { this->from_string(fromstr); }
 
     void from_string(const char* inpstr);
+    std::string to_string();
 };
 
-struct ResiduePlaceholder
+class ResiduePlaceholder
 {
+    public:
     int node = 0;
     int resno = 0;
     std::string bw;
@@ -47,6 +53,23 @@ struct ResiduePlaceholder
 
     void set(const char* str);
     void resolve_resno(Protein* prot);
+
+    protected:
+    Protein* m_prot = nullptr;
+};
+
+class ResidueAtomPlaceholder : public ResiduePlaceholder
+{
+    protected:
+    std::string aname;
+
+    public:
+    void set(const char* str);
+    Point loc();
+    Atom* atom();
+    bool resolve_special_atom(Protein* p, Point rel);
+    std::string get_aname();
+    std::string get_orig_aname() { return aname; }
 };
 
 struct MCoord
@@ -114,7 +137,9 @@ public:
     Region get_region(std::string name);
     const Region* get_regions() { return regions; }
     int get_region_end(std::string name);
+    int get_region_end(int hxno);
     int get_region_start(std::string name);
+    int get_region_start(int hxno);
     bool aa_ptr_in_range( AminoAcid* aaptr );
     Atom* get_atom(int resno, const char* aname);
     std::string get_name()
@@ -137,6 +162,7 @@ public:
     float get_rel_int_clashes();
     Interaction get_internal_binding();
     float get_intermol_clashes(Molecule* ligand);
+    float get_intermol_clashes(Molecule* ligand, int startres, int endres);
     Interaction get_intermol_binding(Molecule* ligand);
     AminoAcid** get_residues_can_clash(int resno);
     std::vector<AminoAcid*> get_residues_can_clash(int start_resno, int end_resno);
@@ -198,6 +224,7 @@ public:
     void find_residue_initial_bindings();
     void undo();
 
+    // Secondary structure
     void make_helix(int startres, int endres, float phi, float psi);
     void make_helix(int startres, int endres, int stopat, float phi, float psi);
     float orient_helix
@@ -207,9 +234,14 @@ public:
         int iterations
     );
 
+    // Homology
     void homology_conform(Protein* target_structure, Protein* reference_structure);
     void bridge(int resno1, int resno2);
     int replace_side_chains_from_other_protein(Protein* other);
+
+    // Pre-placement
+    float tumble_ligand_inside_pocket(Molecule* ligand, Point pocketcen,
+        float clashmult = 1, Progressbar* pgb = nullptr, Point* ligcen = nullptr);
 
     int mcoord_resnos[32];
 

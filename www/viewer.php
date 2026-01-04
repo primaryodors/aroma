@@ -128,6 +128,7 @@ if (@$_REQUEST['view'] == "dock")
     // $c = str_replace("	var lligbs = get_ligbs_from_orid();\n", $ligbs, $c);
     $c = str_replace("var literal_pdb = false;\n", "var literal_pdb = `$txt`;\n", $c);
     $c = str_replace("var literal_fname = \"\";\n", "var literal_fname = \"$protid~$odor.$mode.dock\";\n", $c);
+    $c = preg_replace("/<title>[A-Za-z0-9 -]+</", "<title>$protid~$odor<", $c);
 
     $c .= <<<dockdata
 

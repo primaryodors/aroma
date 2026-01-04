@@ -297,8 +297,7 @@
 #define compute_vdw_repulsion 0
 #define compute_clashdirs 0
 #define redo_tumble_spheres_every_node 0
-#define write_activation_matrix 0
-#define write_active_rotation 1
+#define accommodate_ligand_in_post 0
 
 
 // Debugging stuff.
@@ -322,6 +321,8 @@
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
+#define _dbg_atom_pointing 0
+#define _dbg_attprdc 0
 #define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
 #define _dbg_bb_pairs 0
@@ -355,6 +356,7 @@
 #define _dbg_imidazole_check 0
 #define _dbg_improvements_only_residue 158
 #define _dbg_improvements_only_rule 0
+#define _dbg_intera_applicable 0
 #define _dbg_interatomic_forces 0
 #define _dbg_internal_energy 0
 #define _dbg_linear_motion 0
@@ -377,11 +379,14 @@
 #define _dbg_path_search 0
 #define _dbg_pocket_DeltaG_solv 0
 #define _dbg_point_avg 0
+#define _dbg_polar_calc 0
 #define _dbg_polsat 0
+#define _dbg_rap_resolve_special_atom 0
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0
 #define _dbg_residue_poses 0
 #define _dbg_rock_pic 0
+#define _dbg_rshpm_apply 0
 #define _dbg_soft 0
 #define _dbg_softpivot 0
 #define _dbg_stays_assignment 0

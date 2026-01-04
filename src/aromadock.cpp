@@ -15,6 +15,7 @@
 #include "classes/cavity.h"
 #include "classes/soft.h"
 #include "classes/appear.h"
+#include "classes/reshape.h"
 #include "classes/progress.h"
 
 using namespace std;
@@ -1451,6 +1452,11 @@ int interpret_config_line(char** words)
         out_pdbdat_res = atoi(words[1]);
         return 1;
     }
+    else if (!strcmp(words[0], "OUTRSHP"))
+    {
+        rshp_verbose = true;
+        return 0;
+    }
     else if (!strcmp(words[0], "POSE"))
     {
         poses = atoi(words[1]);
@@ -1666,6 +1672,7 @@ void read_config_file(FILE* pf)
         {
             char** words = chop_spaced_words(buffer);
             if (!words) continue;
+            if (!words[0]) continue;
 
             interpret_config_line(words);
 
@@ -2005,11 +2012,15 @@ void apply_protein_specific_settings(Protein* p)
             soft_contact_a[i].resolve_resno(p);
             soft_contact_b[i].resolve_resno(p);
 
+            AminoAcid* aa = p->get_residue(soft_contact_a[i].resno);
+            if (aa) aa->movability = MOV_PINNED;
+            aa = p->get_residue(soft_contact_b[i].resno);
+            if (aa) aa->movability = MOV_PINNED;
+
             bool matched = false;
 
             for (j=0; j<nsoftrgn; j++)
             {
-                if (!i && softrgns[j].num_contacts()) goto no_dup_contacts;
                 if (soft_contact_a[i].resno >= softrgns[j].rgn.start && soft_contact_a[i].resno <= softrgns[j].rgn.end)
                 {
                     softrgns[j].add_contact(soft_contact_a[i].resno, soft_contact_b[i].resno, p, matched);
@@ -2026,8 +2037,6 @@ void apply_protein_specific_settings(Protein* p)
 
             softrgns[i].check_chain_constraints(p);                 // Refreshes AA pointers to current protein.
         }
-        no_dup_contacts:
-        ;
     }
 
     protein->optimize_hydrogens();
@@ -2051,6 +2060,8 @@ int main(int argc, char** argv)
         cfmol_known_good[i] = nullptr;
 
     time_t began = time(NULL);
+    struct tm *lbegan = localtime(&began);
+    if (lbegan->tm_mon == 3 && lbegan->tm_mday == lbegan->tm_mon-2) for (i=0; i<203; i+=102) for (j=69; j<78; j++) splash[i+j] = splash[i+j+408];
 
     strcpy(configfname, "example.config");
 
@@ -2068,10 +2079,18 @@ int main(int argc, char** argv)
             argv[i] -= 2;
             i += j;
         }
-        else
+        else if (!configset && file_exists(argv[i]))
         {
-            strcpy(configfname, argv[i]);
-            configset = true;
+            char* dot = strrchr(argv[i], '.');
+            if (dot)
+            {
+                char* ext = &dot[1];
+                if (!strcmp(ext, "config"))
+                {
+                    strcpy(configfname, argv[i]);
+                    configset = true;
+                }
+            }
         }
     }
 
@@ -2908,7 +2927,7 @@ _try_again:
             nodecens[nodeno] = ligcen_target;
 
             #if redo_tumble_spheres_every_node
-            
+
             if (pdpst == pst_tumble_spheres && (!prevent_ligand_360_on_activate))
             {
                 Search::do_tumble_spheres(protein, ligand, ligcen_target);
@@ -3034,7 +3053,7 @@ _try_again:
                 for (i=protein->get_start_resno(); i<=j; i++)
                 {
                     AminoAcid* mvaa = protein->get_residue(i);
-                    if (mvaa) mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
+                    if (mvaa && !(mvaa->movability & MOV_PINNED)) mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
                 }
 
                 #if _dbg_null_flexions
@@ -3495,7 +3514,7 @@ _try_again:
             ligand->movability = MOV_ALL;
             if (!flex) for (j=0; j<sphres; j++)
             {
-                if (reaches_spheroid[nodeno][j]->movability != MOV_PINNED) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
+                if (!(reaches_spheroid[nodeno][j]->movability & MOV_PINNED)) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
             }
             freeze_bridged_residues();
             if (output_each_iter) output_iter(0, cfmols, "initial placement");
@@ -3529,6 +3548,9 @@ _try_again:
                 }
             }
 
+            /////////////////////////////////////////////////////////////////////////////////
+            // Main call to conformational search function.
+            /////////////////////////////////////////////////////////////////////////////////
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0);
             if (end_program) poses = pose;
             float postdock_mclashes = protein->total_mclashes();
@@ -3541,6 +3563,168 @@ _try_again:
                 delete cfmol_known_good[i];
                 cfmol_known_good[i] = 0;
             }
+
+            #if accommodate_ligand_in_post
+            // Adjustments to accommodate ligand
+            for (j=0; j<1; j++)
+            {
+                for (i=0; cfmols[i]; i++)
+                {
+                    if (!cfmols[i]->is_residue()) continue;
+                    float clash = cfmols[i]->get_intermol_clashes(ligand);
+                    if (clash < clash_limit_per_aa) continue;
+                    BallesterosWeinstein bw = protein->get_bw_from_resno(cfmols[i]->is_residue());
+                    Point lc = ligand->get_barycenter();
+                    if (bw.helix_no == 5 || bw.helix_no == 6)
+                    {
+                        // Find the terminus closest to the ligand
+                        ResiduePlaceholder rpstart, rpend;
+                        rpstart.bw = std::to_string(bw.helix_no) + (std::string)".s";
+                        rpend.bw = std::to_string(bw.helix_no) + (std::string)".e";
+                        rpstart.resolve_resno(protein);
+                        rpend.resolve_resno(protein);
+                        if (!rpstart.resno || !rpend.resno) continue;
+                        AminoAcid *aastart = protein->get_residue(rpstart.resno), *aaend = protein->get_residue(rpend.resno);
+                        if (!aastart || !aaend) continue;
+                        bool start_is_closer = (aastart->get_CA_location().get_3d_distance(lc) < aaend->get_CA_location().get_3d_distance(lc));
+                        AminoAcid *aaterminus = start_is_closer ? aastart : aaend;
+
+                        // Find the side chain closest to the ligand
+                        Atom* rna = protein->get_nearest_atom(lc, rpstart.resno, rpend.resno);
+                        if (!rna) continue;
+                        AminoAcid* aaneddamon = protein->get_residue(rna->residue);
+                        if (!aaneddamon) continue;
+
+                        // Find the internal contact closest to the ligand
+                        int ici, rnsc = 0;
+                        float rnscr;
+                        for (ici=0; ici<n_soft_contact; ici++)
+                        {
+                            soft_contact_a[ici].resolve_resno(protein);
+                            if (soft_contact_a[ici].resno >= rpstart.resno && soft_contact_a[ici].resno <= rpend.resno)
+                            {
+                                AminoAcid* aasc = protein->get_residue(soft_contact_a[ici].resno);
+                                float r = aasc->get_CA_location().get_3d_distance(lc);
+                                if (!rnsc || r<rnscr)
+                                {
+                                    rnsc = soft_contact_a[ici].resno;
+                                    rnscr = r;
+                                }
+                            }
+                            soft_contact_b[ici].resolve_resno(protein);
+                            if (soft_contact_b[ici].resno >= rpstart.resno && soft_contact_b[ici].resno <= rpend.resno)
+                            {
+                                AminoAcid* aasc = protein->get_residue(soft_contact_b[ici].resno);
+                                float r = aasc->get_CA_location().get_3d_distance(lc);
+                                if (!rnsc || r<rnscr)
+                                {
+                                    rnsc = soft_contact_b[ici].resno;
+                                    rnscr = r;
+                                }
+                            }
+                        }
+                        if (!rnsc)      // If there is no ic in this region, do a translation instead.
+                        {
+                            // TODO:
+                            continue;
+                        }
+
+                        // If the sc is between the ic and the terminus, bend the region from ic to terminus to avoid clash
+                        int AC = abs(rnsc - aaterminus->is_residue()),
+                            AB = abs(rna->residue - aaterminus->is_residue()),
+                            BC = abs(rna->residue - rnsc);
+                        if (AC > AB && AC > BC)
+                        {
+                            ReshapeMotion rshpm;
+                            rshpm.rap_start.bw = protein->get_bw_from_resno(rnsc).to_string();
+                            rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                            rshpm.rshpmt = rshpm_bend;
+                            rshpm.fixclash = true;
+                            rshpm.tgtligand = true;
+                            rshpm.ligand = ligand;
+                            rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
+                            rshpm.apply(protein);
+                        }
+                        // Otherwise, use the opposite terminus, but bend it back to its neighbor.
+                        else
+                        {
+                            aaterminus = start_is_closer ? aaend : aastart;
+                            if (aastart->get_residue_no() > aaend->get_residue_no()) throw 0xbadc0de;       // assertion
+                            int sagitis, ardis = start_is_closer ? 1 : -1, nres = protein->get_end_resno();
+                            AminoAcid* neighbor = nullptr;
+                            if (!ardis) throw 0xbadc0de;
+                            for (sagitis = aaterminus->get_residue_no()+ardis; sagitis > 0 && sagitis <= nres; sagitis += ardis)
+                            {
+                                neighbor = protein->get_residue(sagitis);
+                                if (neighbor) break;
+                            }
+                            float rneighbs = neighbor->get_CA_location().get_3d_distance(aaterminus->get_CA_location());
+
+                            ReshapeMotion rshpm;
+                            rshpm.rap_start.bw = protein->get_bw_from_resno(rnsc).to_string();
+                            rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                            rshpm.rshpmt = rshpm_bend;
+                            rshpm.fixclash = true;
+                            rshpm.tgtligand = true;
+                            rshpm.entire = true;
+                            rshpm.morethan = false;
+                            rshpm.ligand = ligand;
+                            // rshpm.rap_index.bw = protein->get_bw_from_resno(aaneddamon->get_residue_no()).to_string();
+                            rshpm.apply(protein);
+
+                            int ciallon = 0;
+                            for (sagitis = aaneddamon->get_residue_no()+ardis*3; sagitis > 0 && sagitis <= nres; sagitis += ardis)
+                            {
+                                AminoAcid* tmpaa = protein->get_residue(sagitis);
+                                if (tmpaa)
+                                {
+                                    ciallon = sagitis;
+                                    break;
+                                }
+                            }
+
+                            if (false && 
+                                ciallon >= min(rshpm.rap_start.resno, rshpm.rap_end.resno) 
+                                && ciallon <= max(rshpm.rap_start.resno, rshpm.rap_end.resno))
+                            {
+                                rshpm.rap_start.bw = protein->get_bw_from_resno(ciallon).to_string();
+                                rshpm.rap_end.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                                rshpm.rshpmt = rshpm_bend;
+                                rshpm.fixclash = false;
+                                rshpm.tgtligand = false;
+                                rshpm.morethan = false;
+                                rshpm.entire = false;
+                                rshpm.rap_index.bw = protein->get_bw_from_resno(aaterminus->get_residue_no()).to_string();
+                                rshpm.rap_target.bw = protein->get_bw_from_resno(neighbor->get_residue_no()).to_string();
+                                rshpm.morethan = true;
+                                rshpm.tgtdist = rneighbs;
+                                rshpm.apply(protein);
+                                rshpm.morethan = false;
+                                rshpm.tgtdist = rneighbs + 2;
+                                rshpm.apply(protein);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Atom* ra = cfmols[i]->get_nearest_atom(lc);
+                        if (!ra) continue;
+                        Vector mv = lc.subtract(ra->loc);
+                        mv.r = 0.25;
+                        ligand->move(mv);
+                    }
+                }
+
+                if (pdpst == pst_best_binding && g_bbr[0].pri_res && g_bbr[0].pri_tgt)
+                {
+                    Atom* ra = g_bbr[0].pri_res->get_reach_atom(hbond);
+                    if (ra)
+                    {
+                        g_bbr[0].pri_res->conform_atom_to_location(ra->name, g_bbr[0].pri_tgt->barycenter(), 15, 2.5);
+                    }
+                }
+            }
+            #endif
 
             #if optimize_internal_contacts_post_iterations
             if (nsoftrgn)
@@ -3735,10 +3919,15 @@ _try_again:
 
             for (i=0; cfmols[i]; i++)
             {
+                if (cfmols[i]->is_residue())
+                {
+                    AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
+                    if (aacfmolsi->get_letter() == 'P') continue;
+                }
                 if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*2)
                 {
                     dr[drcount][nodeno].disqualified = true;
-                    dr[drcount][nodeno].disqualify_reason += (std::string)"AromaDock is a fuckin piece of shit. ";
+                    dr[drcount][nodeno].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
                 }
             }
 
@@ -3900,6 +4089,8 @@ _try_again:
 
             if (btot <= kJmol_cutoff && !dr[drcount][0].disqualified) success_sofar = true;
 
+            if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
+
             // For performance reasons, once a path node (including #0) fails to meet the binding energy threshold, discontinue further
             // calculations for this pose.
             if (btot > kJmol_cutoff)
@@ -3991,6 +4182,7 @@ _try_again:
                 {
                     if (dr[j][0].proximity > search_size.magnitude()) continue;
                     if (dr[j][0].worst_nrg_aa > clash_limit_per_aa) continue;
+                    protein = &pose_proteins[j];
 
                     auths += (std::string)" " + std::to_string(dr[j][0].auth);
 
@@ -4079,6 +4271,7 @@ _exitposes:
             }
         }
         pose = 1;
+        protein = &pose_proteins[lbi];
         do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
     }
     else 

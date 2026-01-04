@@ -979,7 +979,6 @@ void AminoAcid::predict_next_NHCA(Point* retval)
     retval[2] = neighborCA;
 }
 
-#define _dbg_attprdc 0
 void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
 {
     MovabilityType fmov = movability;
@@ -1067,12 +1066,31 @@ std::string AminoAcid::printable()
 
 void AminoAcid::save_pdb(FILE* os, int atomno_offset)
 {
-    int i;
+    int i, j, n;
+    nconects = 0;
 
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->pdbchain = pdbchain;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
+
+        if (!atoms[i]->is_backbone)
+        {
+            n = atoms[i]->get_bonded_atoms_count();
+            for (j=0; j<n; j++)
+            {
+                if (nconects >= CONECTS_MAX) continue;
+                Bond* b = atoms[i]->get_bond_by_idx(j);
+                if (!b) continue;
+                if (b->atom1 != atoms[i]) continue;
+                if (!b->atom2) continue;
+                if (b->atom2->residue <= atoms[i]->residue) continue;
+                if (b->atom2->is_backbone) continue;
+                conecta1[nconects] = atoms[i];
+                conecta2[nconects] = b->atom2;
+                conectcard[nconects++] = b->cardinality;
+            }
+        }
     }
 }
 
@@ -1094,6 +1112,14 @@ int AminoAcid::from_pdb(FILE* is, int rno)
         lasttell = ftell(is);
         char* got = fgets(buffer, 1003, is);
         if (!got) break;
+        if (buffer[0] == 'H'
+            && buffer[1] == 'E'
+            && buffer[2] == 'T'
+            && buffer[3] == 'A'
+            && buffer[4] == 'T'
+            && buffer[5] == 'M'
+            )
+            goto _return_added;
         if (buffer[0] == 'A' &&
             buffer[1] == 'T' &&
             buffer[2] == 'O' &&
@@ -1322,7 +1348,7 @@ int AminoAcid::from_pdb(FILE* is, int rno)
                             }
                         }
                     }
-                    
+
                     if (!found_aabond)
                     {
                         Atom* bta = nullptr;		// bond to atom.
