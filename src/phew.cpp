@@ -2970,6 +2970,12 @@ int main(int argc, char** argv)
 
                 Atom *a1, *a2;
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));
+                else if (!strcmp(atom1.c_str(), "EXTENT")) a1 = aa1->get_reach_atom();
+                else if (!strcmp(atom1.c_str(), "EXTHVY"))
+                {
+                    a1 = aa1->get_reach_atom();
+                    if (a1) a1 = a1->get_heavy_atom();
+                }
                 else a1 = working->get_atom(res1, atom1.c_str());
                 if (!a1)
                 {
@@ -2980,6 +2986,12 @@ int main(int argc, char** argv)
                         );
                 }
                 if (!strcmp(atom2.c_str(), "NEAREST")) a2 = aa2->get_nearest_atom(working->get_atom_location(res1, "CA"));
+                else if (!strcmp(atom2.c_str(), "EXTENT")) a2 = aa2->get_reach_atom();
+                else if (!strcmp(atom2.c_str(), "EXTHVY"))
+                {
+                    a2 = aa2->get_reach_atom();
+                    if (a2) a2 = a2->get_heavy_atom();
+                }
                 else a2 = working->get_atom(res2, atom2.c_str());
                 if (!a2)
                 {
@@ -2997,7 +3009,7 @@ int main(int argc, char** argv)
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(a2->loc);
                 if (!strcmp(atom2.c_str(), "NEAREST")) a2 = aa2->get_nearest_atom(a1->loc);
 
-                float r = working->get_atom_location(res1, atom1.c_str()).get_3d_distance(working->get_atom_location(res2, atom2.c_str()));
+                float r = a1->distance_to(a2);
 
                 Star s;
                 s.f = r;

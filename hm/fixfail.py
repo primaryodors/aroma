@@ -9,9 +9,10 @@ from modeller import *
 from modeller.automodel import *
 
 argc = len(sys.argv)
-if argc < 3:
-    print("Both a protein ID and a PDB file are required.")
-    print("Example usages:")
+if argc < 2:
+    # print("Both a protein ID and a PDB file are required.")
+    print("A protein ID is required. Optionally, a PDB file may also be specified.")
+    print("Example usage:")
     print("python3 hm/fixfail.py OR7D4 output/OR7/OR7D4/OR7D4~androstenone.active.model1.pdb")
     exit()
 
@@ -38,7 +39,14 @@ aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS",
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
+mode="active"
 protid = sys.argv[1]
+if protid[-1] == 'a':
+    mode="active"
+    protid = protid[0:-1]
+elif protid[-1] == 'i':
+    mode="inactive"
+    protid = protid[0:-1]
 if not protid in data.protutils.prots.keys():
     print("Protein", protid, "not found.")
     exit()
@@ -47,12 +55,15 @@ fam = data.protutils.family_from_protid(protid)
 if argc > 2:
     inppdb = sys.argv[2]
     if not os.path.exists(inppdb):
-        inppdb = f"output/{fam}/{protid}/{protid}~{sys.argv[2]}.active.model1.pdb"
+        inppdb = f"output/{fam}/{protid}/{protid}~{sys.argv[2]}.{mode}.model1.pdb"
     if not os.path.exists(inppdb):
         print(f"Input file not found: {sys.argv[2]}")
         exit()
 else:
-    inppdb = f"pdbs/{fam}/{protid}.active.pdb"
+    inppdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
+
+print(f"{protid} {mode} {inppdb}")
+exit()
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
@@ -85,13 +96,17 @@ rshpmft = "GPCR.rshpm"          # fake filename that doesn't exist so we can err
 
 if protid[0:2] == "OR":
     if int(re.sub(r"[^0-9]", "", protid[2:4])) >= 50:
-        rshpmft = "OR_ClassI.rshpm"
+        if (mode=="inactive"):      rshpmft = "OR_ClassIi.rshpm"    # mota areberetus iagiion
+        else:                       rshpmft = "OR_ClassI.rshpm"
     else:
-        rshpmft = "OR_ClassII.rshpm"
+        if (mode=="inactive"):      rshpmft = "OR_ClassIIi.rshpm"
+        else:                       rshpmft = "OR_ClassII.rshpm"
 elif protid[0:2] == "TAAR":
-    rshpmft = "TAAR.rshpm"
+    if (mode=="inactive"):          rshpmft = "TAARi.rshpm"
+    else:                           rshpmft = "TAAR.rshpm"
 elif protid[0:2] == "VN1R":
-    rshpmft = "VN1R.rshpm"      # future expansion
+    if (mode=="inactive"):          rshpmft = "VN1Ri.rshpm"
+    else:                           rshpmft = "VN1R.rshpm"          # future expansion
 
 rshpmfn = "data/" + rshpmft
 if not os.path.exists(rshpmfn):
@@ -424,7 +439,7 @@ MEASURE %5.42 "SG" %5.43 "SG" &sdist
 ECHO "5.42:SD - 5.43:SG distance: " &sdist
 _not_Cu_binding_site:
 
-LET $outf = "pdbs/{fam}/{protid}.active.pdb"
+LET $outf = "pdbs/{fam}/{protid}.{mode}.pdb"
 SAVE $outf
 """
 
