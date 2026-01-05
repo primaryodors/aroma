@@ -22,12 +22,13 @@ int main(int argc, char** argv)
     }
     char* fname;
     Protein p("testing");
-    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false, dorshps = false;
+    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false, dorshps = false, dohg = false;
     ResiduePlaceholder rotres;
     char* rota1 = nullptr;
     char* rota2 = nullptr;
     float rota = 0;
     Reshape rshp;
+    ICHelixGroup hg;
 
     int i;
     FILE* fp;
@@ -86,6 +87,11 @@ int main(int argc, char** argv)
         {
             rshp.load_rshpm_file(argv[i], nullptr);
             dorshps = true;
+        }
+        else if (strstr(argv[i], ".ic"))
+        {
+            hg.load_ic_file(argv[i]);
+            dohg = true;
         }
     }
 

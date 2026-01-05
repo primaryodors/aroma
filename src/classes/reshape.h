@@ -4,6 +4,9 @@
 
 #include "protein.h"
 
+#define MAX_ICHX 10
+#define MAX_HXIC 10
+
 enum ReshapeType
 {
     rshp_GPCR,
@@ -65,15 +68,19 @@ class InternalContact
     ResiduePlaceholder res2;
     float r_optimal = 2.5;
     float tolerance = 0.5;
+
+    Vector atom_distance(Protein* prot);
 };
 
 class ICHelix
 {
     public:
+    int hxno = 0;
     ResiduePlaceholder start;
     ResiduePlaceholder end;
-    InternalContact ic[10];
+    InternalContact ic[MAX_HXIC];
     int n_ic = 0;
+    bool hxstatic = false;
 
     bool contains(InternalContact* ic);
 };
@@ -81,10 +88,14 @@ class ICHelix
 class ICHelixGroup
 {
     public:
-    ICHelix helices[10];
+    ICHelix helices[MAX_ICHX];
     int n_helix = 0;
+    ResiduePlaceholder deletion_start[MAX_ICHX], deletion_end[MAX_ICHX];
+    int n_deletion = 0;
 
     LocRotation get_motion(InternalContact* ic, ICHelix* ich = nullptr, Protein* prot = nullptr);
+    void load_ic_file(const char* filename);
+    float optimize_helices(Protein* prot, int iterations = 20);
 
     protected:
     Protein* m_prot = nullptr;

@@ -48,6 +48,8 @@ class ResiduePlaceholder
     public:
     int node = 0;
     int resno = 0;
+    int hxno = 0;
+    int bwpos = 0;
     std::string bw;
     std::string allowed_aas;
 
@@ -206,6 +208,7 @@ public:
     LocRotation rotate_piece(int start_res, int end_res, int align_res, Point align_target, int pivot_res = 0);		// If no pivot res, rotate about the center.
     LocRotation rotate_piece(int start_res, int end_res, Rotation rot, int pivot_res);
     LocRotation rotate_piece(int start_res, int end_res, Point origin, Vector axis, float theta);
+    LocRotation rotate_piece(int start_res, int end_res, LocRotation lr);
 
     void rotate_backbone(int residue_no, bb_rot_dir direction, float angle);
     void conform_backbone(int startres, int endres, Atom* a, Point target, int iters = 50);

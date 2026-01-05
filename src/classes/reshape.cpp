@@ -769,16 +769,15 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
         }
     }
 
-    ic->res1.resolve_resno(prot);
-    ic->res2.resolve_resno(prot);
-    ich->start.resolve_resno(prot);
-    ich->end.resolve_resno(prot);
+    if (ich->hxstatic) return result;
 
-    AminoAcid* aa1 = m_prot->get_residue(ic->res1.resno);
-    AminoAcid* aa2 = m_prot->get_residue(ic->res2.resno);
-    Atom* a1 = aa1->get_reach_atom(hbond);
-    Atom* a2 = aa2->get_reach_atom(hbond);
-    if (!a1 || !a2) return result;
+    ic->res1.resolve_resno(m_prot);
+    ic->res2.resolve_resno(m_prot);
+    ich->start.resolve_resno(m_prot);
+    ich->end.resolve_resno(m_prot);
+
+    Vector av = ic->atom_distance(m_prot);
+    if (!av.r) return result;
 
     if (ich->n_ic == 1)
     {
@@ -786,11 +785,10 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
         // then the origin represents linear translation coordinates.
         result.a = 0;
         result.v.r = 0;
-        Vector v = a2->loc.subtract(a1->loc);
-        if (v.r > ic->r_optimal + ic->tolerance) v.r = v.r - (ic->r_optimal + ic->tolerance);
-        else if (v.r < ic->r_optimal - ic->tolerance) v.r = (ic->r_optimal - ic->tolerance) - v.r;
-        else v.r = 0;           // already in range? no translation necessary.
-        result.origin = v;
+        if (av.r > ic->r_optimal + ic->tolerance) av.r = av.r - (ic->r_optimal + ic->tolerance);
+        else if (av.r < ic->r_optimal - ic->tolerance) av.r = (ic->r_optimal - ic->tolerance) - av.r;
+        else av.r = 0;           // already in range? no translation necessary.
+        result.origin = av;
         return result;
     }
 
@@ -810,20 +808,187 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
         }
     }
 
-    // Determine how for to rotate the helix about the farthest contact in order to bring ic within tolerance.
-    Vector v = a2->loc.subtract(a1->loc);
-    if (v.r > ic->r_optimal + ic->tolerance) v.r = v.r - (ic->r_optimal + ic->tolerance);
-    else if (v.r < ic->r_optimal - ic->tolerance) v.r = (ic->r_optimal - ic->tolerance) - v.r;
+    // Determine how far to rotate the helix about the farthest contact in order to bring ic within tolerance.
+    if (av.r > ic->r_optimal + ic->tolerance) av.r = av.r - (ic->r_optimal + ic->tolerance);
+    else if (av.r < ic->r_optimal - ic->tolerance) av.r = (ic->r_optimal - ic->tolerance) - av.r;
     else return result;           // already in range? no rotation necessary.
 
     AminoAcid* sueruon_rocenon = m_prot->get_residue(ich->ic[i].res1.resno);
     if (!sueruon_rocenon) return result;
     result.origin = sueruon_rocenon->get_CA_location();
 
-    Point target = a1->loc.add(v);
+    AminoAcid* aa1 = prot->get_residue(ic->res1.resno);
+    if (!aa1) return result;
+    Atom* a1 = aa1->get_reach_atom(hbond);
+    if (!a1) return result;
+    Point target = a1->loc.add(av);
     Rotation rot = align_points_3d(a1->loc, target, result.origin);
     result.v = rot.v;
     result.a = rot.a;
+
+    return result;
+}
+
+void ICHelixGroup::load_ic_file(const char *filename)
+{
+    FILE* fp = fopen(filename, "rb");
+    if (!fp) return;
+
+    int i, j;
+    char buffer[1024];
+    char icbw[10];
+    while (fgets(buffer, 1022, fp))
+    {
+        char** words = chop_spaced_words(buffer);
+
+        if (!strcmp(words[0], "DEL"))
+        {
+            deletion_start[n_deletion].set(words[1]);
+            deletion_end[n_deletion].set(words[2]);
+            n_deletion++;
+        }
+        if (!strcmp(words[0], "STATIC"))
+        {
+            j = atoi(words[1]);
+            for (i=0; i<n_helix; i++)
+            {
+                if (helices[i].hxno == j)
+                {
+                    helices[i].hxstatic = true;
+                    break;
+                }
+            }
+        }
+        if (!strcmp(words[0], "CNTCT"))
+        {
+            InternalContact ictmp;
+            ictmp.res1.set(words[1]);
+            ictmp.res2.set(words[2]);
+            if (words[3])
+            {
+                ictmp.r_optimal = atof(words[3]);
+                if (words[4]) ictmp.tolerance = atof(words[4]);
+            }
+
+            j = n_helix;
+            for (i=0; i<n_helix; i++)
+            {
+                if (helices[i].hxno == ictmp.res1.hxno)
+                {
+                    j = i;
+                    break;
+                }
+            }
+            if (j < MAX_ICHX)
+            {
+                if (helices[j].n_ic < MAX_HXIC)
+                {
+                    helices[j].ic[helices[j].n_ic++] = ictmp;
+                }
+                if (j == n_helix)
+                {
+                    helices[j].hxno = ictmp.res1.hxno;
+                    sprintf(icbw, "%d.s", ictmp.res1.hxno);
+                    helices[j].start.set(icbw);
+                    sprintf(icbw, "%d.e", ictmp.res1.hxno);
+                    helices[j].end.set(icbw);
+                    n_helix++;
+                }
+            }
+            ResiduePlaceholder swap = ictmp.res1;
+            ictmp.res1 = ictmp.res2;
+            ictmp.res2 = swap;
+            j = n_helix;
+            for (i=0; i<n_helix; i++)
+            {
+                if (helices[i].hxno == ictmp.res1.hxno)
+                {
+                    j = i;
+                    break;
+                }
+            }
+            if (j < MAX_ICHX)
+            {
+                if (helices[j].n_ic < MAX_HXIC)
+                {
+                    helices[j].ic[helices[j].n_ic++] = ictmp;
+                }
+                if (j == n_helix)
+                {
+                    helices[j].hxno = ictmp.res1.hxno;
+                    sprintf(icbw, "%d.s", ictmp.res1.hxno);
+                    helices[j].start.set(icbw);
+                    sprintf(icbw, "%d.e", ictmp.res1.hxno);
+                    helices[j].end.set(icbw);
+                    n_helix++;
+                }
+            }
+        }
+    }
+
+    fclose(fp);
+}
+
+float ICHelixGroup::optimize_helices(Protein *prot, int iters)
+{
+    if (!prot)
+    {
+        cerr << "Null protein specified for helix optimization." << endl;
+        throw 0xbadca22;
+    }
+    int iter, i, j;
+    m_prot = prot;
+    float amount = 1.0 / iters;
+
+    for (i=0; i<n_deletion; i++)
+    {
+        deletion_start[i].resolve_resno(prot);
+        deletion_end[i].resolve_resno(prot);
+
+        if (!deletion_start[i].resno || !deletion_end[i].resno) continue;
+
+        prot->delete_residues(deletion_start[i].resno, deletion_end[i].resno);
+    }
+
+    for (iter=0; iter<iters; iter++)
+    {
+        for (i=0; i<n_helix; i++)
+        {
+            helices[i].start.resolve_resno(prot);
+            helices[i].end.resolve_resno(prot);
+            for (j=0; j<helices[i].n_ic; j++)
+            {
+                LocRotation lr = get_motion(&(helices[i].ic[j]), &(helices[i]), prot);
+
+                if (!lr.a && !lr.v.r && lr.origin.magnitude())
+                {
+                    Vector mov = lr.origin;
+                    mov.r *= amount;
+                    prot->move_piece(helices[i].start.resno, helices[i].end.resno, mov);
+                }
+                else
+                {
+                    lr.a *= amount;
+                    prot->rotate_piece(helices[i].start.resno, helices[i].end.resno, lr);
+                }
+            }
+        }
+    }
+
+    float result = 0;
+    for (i=0; i<n_helix; i++)
+    {
+        for (j=0; j<helices[i].n_ic; j++)
+        {
+            InternalContact* lic = &(helices[i].ic[j]);
+            if (lic->res1.resno < lic->res2.resno)
+            {
+                Vector av = lic->atom_distance(prot);
+                if (av.r < lic->r_optimal - lic->tolerance) result += (lic->r_optimal - lic->tolerance - av.r);
+                else if (av.r > lic->r_optimal + lic->tolerance) result += (av.r - lic->r_optimal - lic->tolerance);
+            }
+        }
+    }
 
     return result;
 }
@@ -835,7 +1000,21 @@ bool ICHelix::contains(InternalContact *lic)
     {
         if (&(ic[i]) == lic) return true;
 
-        // TODO: if an equivalent ic exists, return true? unless there's a reason not to?
+        if (ic[i].res1.hxno && ic[i].res2.hxno
+            && ic[i].res1.hxno == lic->res1.hxno
+            && ic[i].res1.bwpos == lic->res1.bwpos
+            && ic[i].res2.hxno == lic->res2.hxno
+            && ic[i].res2.bwpos == lic->res2.bwpos
+            ) return true;
     }
     return false;
+}
+
+Vector InternalContact::atom_distance(Protein *prot)
+{
+    AminoAcid* aa1 = prot->get_residue(res1.resno);
+    AminoAcid* aa2 = prot->get_residue(res2.resno);
+    Atom* a1 = aa1->get_reach_atom(hbond);
+    Atom* a2 = aa2->get_reach_atom(hbond);
+    return a2->loc.subtract(a1->loc);
 }

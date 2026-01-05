@@ -40,7 +40,7 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
 {
     if (resno && !bw.length()) return;
     m_prot = prot;
-    int hxno = atoi(bw.c_str());
+    hxno = atoi(bw.c_str());
     const char* dot = strchr(bw.c_str(), '.');
     if (!dot)
     {
@@ -55,7 +55,7 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
             return;
         }
         dot++;
-        int bwpos = atoi(dot);
+        bwpos = atoi(dot);
         if (!strcmp(dot, "s")) bwpos = prot->get_region_start(hxno) + 50 - bw50;
         if (!strcmp(dot, "e")) bwpos = prot->get_region_end(hxno) + 50 - bw50;
         resno = bw50 + bwpos - 50;
@@ -3316,6 +3316,27 @@ LocRotation Protein::rotate_piece(int start_res, int end_res, Point pivot, Vecto
     LocRotation retval(lv);
     retval.a = theta;
     return retval;
+}
+
+LocRotation Protein::rotate_piece(int start_res, int end_res, LocRotation lr)
+{
+    save_undo_state();
+
+    LocatedVector lv(lr.v);
+    lv.origin = lr.origin;
+    int i;
+    for (i=start_res; i<=end_res; i++)
+    {
+        AminoAcid* aa = get_residue(i);
+        if (!aa) continue;
+        MovabilityType mov = aa->movability;
+        aa->movability = MOV_ALL;
+        aa->rotate(lv, lr.a);
+        aa->movability = mov;
+        set_clashables(i);
+    }
+
+    return lr;
 }
 
 float Protein::A100()
