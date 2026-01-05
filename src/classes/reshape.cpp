@@ -827,3 +827,15 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
 
     return result;
 }
+
+bool ICHelix::contains(InternalContact *lic)
+{
+    int i;
+    for (i=0; i<n_ic; i++)
+    {
+        if (&(ic[i]) == lic) return true;
+
+        // TODO: if an equivalent ic exists, return true? unless there's a reason not to?
+    }
+    return false;
+}
