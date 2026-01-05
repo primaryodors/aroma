@@ -115,6 +115,7 @@ shutil.copyfile(inppdb, tplpdb)
 cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
 subprocess.run(cmd)
 
+haslig = False
 with open(tplpdb, 'r') as ftpl:
     cout = ""
     c = ftpl.read()
@@ -124,6 +125,8 @@ with open(tplpdb, 'r') as ftpl:
             if is_helix[resno-1] == '-': continue
             if not startres or (resno and resno<startres): startres = resno
             cout += ln + "\n"
+        if ln[0:6] == "HETATM":
+            haslig = true
 
 with open(inppdb, 'r') as fin:
     cin = fin.read()
@@ -280,7 +283,8 @@ with open("allgpcr.ali", "r") as f:
             if ln.find('*') >= 0:
                 break
 
-alidat = alidat.replace("*", ".*")
+if haslig:
+    alidat = alidat.replace("*", ".*")
 
 # duplicate the alidat var applying any gaps in seq
 alitpl = ""
