@@ -739,3 +739,91 @@ void ReshapeMotion::do_measurement(Protein *p)
     }
     // else cout << "Dismal failure can't measure a simple point distance." << endl;
 }
+
+LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein *prot)
+{
+    LocRotation result;
+
+    if (prot) m_prot = prot;
+    else if (!m_prot)
+    {
+        cerr << "No protein." << endl;
+        throw 0xbadca22;
+    }
+
+    int i, j, l;
+    if (!ich)
+    {
+        for (i=0; i<n_helix; i++)
+        {
+            if (helices[i].contains(ic))
+            {
+                ich = &helices[i];
+                break;
+            }
+        }
+        if (!ich)
+        {
+            cerr << "Internal contact not found in helix group." << endl;
+            throw 0xbadca22;
+        }
+    }
+
+    ic->res1.resolve_resno(prot);
+    ic->res2.resolve_resno(prot);
+    ich->start.resolve_resno(prot);
+    ich->end.resolve_resno(prot);
+
+    AminoAcid* aa1 = m_prot->get_residue(ic->res1.resno);
+    AminoAcid* aa2 = m_prot->get_residue(ic->res2.resno);
+    Atom* a1 = aa1->get_reach_atom(hbond);
+    Atom* a2 = aa2->get_reach_atom(hbond);
+    if (!a1 || !a2) return result;
+
+    if (ich->n_ic == 1)
+    {
+        // A little trick: if the return value has no vector r and no rotation angle,
+        // then the origin represents linear translation coordinates.
+        result.a = 0;
+        result.v.r = 0;
+        Vector v = a2->loc.subtract(a1->loc);
+        if (v.r > ic->r_optimal + ic->tolerance) v.r = v.r - (ic->r_optimal + ic->tolerance);
+        else if (v.r < ic->r_optimal - ic->tolerance) v.r = (ic->r_optimal - ic->tolerance) - v.r;
+        else v.r = 0;           // already in range? no translation necessary.
+        result.origin = v;
+        return result;
+    }
+
+    int farthest, fdist = 0;
+    j = ic->res1.resno;
+    for (i=0; i<ich->n_ic; i++)
+    {
+        ich->ic[i].res1.resolve_resno(prot);
+        ich->ic[i].res2.resolve_resno(prot);
+
+        l = ich->ic[i].res1.resno;
+        int r = abs(j-l);
+        if (r > fdist)
+        {
+            farthest = i;
+            fdist = r;
+        }
+    }
+
+    // Determine how for to rotate the helix about the farthest contact in order to bring ic within tolerance.
+    Vector v = a2->loc.subtract(a1->loc);
+    if (v.r > ic->r_optimal + ic->tolerance) v.r = v.r - (ic->r_optimal + ic->tolerance);
+    else if (v.r < ic->r_optimal - ic->tolerance) v.r = (ic->r_optimal - ic->tolerance) - v.r;
+    else return result;           // already in range? no rotation necessary.
+
+    AminoAcid* sueruon_rocenon = m_prot->get_residue(ich->ic[i].res1.resno);
+    if (!sueruon_rocenon) return result;
+    result.origin = sueruon_rocenon->get_CA_location();
+
+    Point target = a1->loc.add(v);
+    Rotation rot = align_points_3d(a1->loc, target, result.origin);
+    result.v = rot.v;
+    result.a = rot.a;
+
+    return result;
+}

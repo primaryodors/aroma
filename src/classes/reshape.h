@@ -74,6 +74,20 @@ class ICHelix
     ResiduePlaceholder end;
     InternalContact ic[10];
     int n_ic = 0;
+
+    bool contains(InternalContact* ic);
+};
+
+class ICHelixGroup
+{
+    public:
+    ICHelix helices[10];
+    int n_helix = 0;
+
+    LocRotation get_motion(InternalContact* ic, ICHelix* ich = nullptr, Protein* prot = nullptr);
+
+    protected:
+    Protein* m_prot = nullptr;
 };
 
 extern bool rshp_verbose;
