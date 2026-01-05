@@ -62,9 +62,6 @@ if argc > 2:
 else:
     inppdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 
-print(f"{protid} {mode} {inppdb}")
-exit()
-
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
 
@@ -90,23 +87,24 @@ if bw45_50:
         is_helix = is_helix[0:resno-1] + '*' + is_helix[resno:]
 
 startres = 0
-tplpdb = "hm/"+protid+"_tpl.pdb"
+if (mode=="inactive"):  tplpdb = "hm/"+protid+"i_tpl.pdb"
+else:                   tplpdb = "hm/"+protid+"_tpl.pdb"
 
-rshpmft = "GPCR.rshpm"          # fake filename that doesn't exist so we can error out later
+rshpmft = "GPCR.ic"          # fake filename that doesn't exist so we can error out later
 
 if protid[0:2] == "OR":
     if int(re.sub(r"[^0-9]", "", protid[2:4])) >= 50:
-        if (mode=="inactive"):      rshpmft = "OR_ClassIi.rshpm"    # mota areberetus iagiion
-        else:                       rshpmft = "OR_ClassI.rshpm"
+        if (mode=="inactive"):      rshpmft = "OR_ClassI_i.ic"    # mota areberetus iagiion
+        else:                       rshpmft = "OR_ClassI_a.ic"
     else:
-        if (mode=="inactive"):      rshpmft = "OR_ClassIIi.rshpm"
-        else:                       rshpmft = "OR_ClassII.rshpm"
+        if (mode=="inactive"):      rshpmft = "OR_ClassII_i.ic"
+        else:                       rshpmft = "OR_ClassII_a.ic"
 elif protid[0:2] == "TAAR":
-    if (mode=="inactive"):          rshpmft = "TAARi.rshpm"
-    else:                           rshpmft = "TAAR.rshpm"
+    if (mode=="inactive"):          rshpmft = "TAAR_i.ic"
+    else:                           rshpmft = "TAAR_a.ic"
 elif protid[0:2] == "VN1R":
-    if (mode=="inactive"):          rshpmft = "VN1Ri.rshpm"
-    else:                           rshpmft = "VN1R.rshpm"          # future expansion
+    if (mode=="inactive"):          rshpmft = "VN1R_i.ic"
+    else:                           rshpmft = "VN1R_a.ic"          # future expansion
 
 rshpmfn = "data/" + rshpmft
 if not os.path.exists(rshpmfn):
