@@ -113,6 +113,13 @@ int main(int argc, char** argv)
 
     if (dorshps) rshp.apply(&p, false);
 
+    if (dohg)
+    {
+        cout << "Pre-optimization anomaly: " << hg.contact_anomaly(&p) << endl;
+        float anomaly = hg.optimize_helices(&p);
+        cout << "Post-optimization anomaly: " << anomaly << endl;
+    }
+
     if (rota1 && rota2 && rota)
     {
         rotres.resolve_resno(&p);

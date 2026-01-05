@@ -975,7 +975,13 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
         }
     }
 
+    return contact_anomaly(prot);
+}
+
+float ICHelixGroup::contact_anomaly(Protein *prot)
+{
     float result = 0;
+    int i, j;
     for (i=0; i<n_helix; i++)
     {
         for (j=0; j<helices[i].n_ic; j++)
@@ -1014,7 +1020,13 @@ Vector InternalContact::atom_distance(Protein *prot)
 {
     AminoAcid* aa1 = prot->get_residue(res1.resno);
     AminoAcid* aa2 = prot->get_residue(res2.resno);
+    if (!aa1 || !aa2) return Vector(0,0,0);
     Atom* a1 = aa1->get_reach_atom(hbond);
     Atom* a2 = aa2->get_reach_atom(hbond);
+    if (!a1 || !a2) return Vector(0,0,0);
+    aa1->conform_atom_to_location(a1, a2, 5, r_optimal);
+    aa2->conform_atom_to_location(a2, a1, 5, r_optimal);
+    aa1->conform_atom_to_location(a1, a2, 5, r_optimal);
+    aa2->conform_atom_to_location(a2, a1, 5, r_optimal);
     return a2->loc.subtract(a1->loc);
 }
