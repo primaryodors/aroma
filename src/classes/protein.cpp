@@ -2134,7 +2134,7 @@ void Protein::conform_backbone(int startres, int endres,
 
                 // If no, put it back.
                 // if (res == startres) cout << bind << " v. " << bind1 << endl;
-                if (!bind1.improved(bind) || (a1 && iters_since_improvement > 10 && frand(0,1)<0.25))
+                if (!bind1.accept_change(bind) || (a1 && iters_since_improvement > 10 && frand(0,1)<0.25))
                 {
                     rotate_backbone_partial(res, endres, dir1, -angle);
                     if (eando_res[residx]) rotate_backbone_partial(eando_res[residx], endres, dir2, angle*eando_mult[residx]);
@@ -2143,7 +2143,7 @@ void Protein::conform_backbone(int startres, int endres,
                 }
                 else
                 {
-                    if (!bind1.improved(bind)) bind = bind1;
+                    if (!bind1.accept_change(bind)) bind = bind1;
                     if (iter & 1) momenta1o[residx] *= enhance;
                     else momenta1e[residx] *= enhance;
                 }
@@ -2182,7 +2182,7 @@ void Protein::conform_backbone(int startres, int endres,
 
             // If no, put it back.
             // if (res == startres) cout << bind << " vs. " << bind1 << endl;
-            if (!bind1.improved(bind) || (a1 && iters_since_improvement > 10 && frand(0,1)<0.25))
+            if (!bind1.accept_change(bind) || (a1 && iters_since_improvement > 10 && frand(0,1)<0.25))
             {
                 rotate_backbone_partial(res, endres, dir2, -angle);
                 if ((iter & 1) && eando_res[residx]) rotate_backbone_partial(eando_res[residx], endres, dir1, angle*eando_mult[residx]);

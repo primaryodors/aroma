@@ -567,7 +567,7 @@ void abhor_vacuum(int iter, Molecule** mols)
         rot.a *= frand(0,1);
         ligand->rotate(lv, rot.a);
         Interaction after = ligand->get_intermol_binding(mols);
-        if (!after.improved(before)) putitback.restore_state(ligand);
+        if (!after.accept_change(before)) putitback.restore_state(ligand);
         else if (audit) fprintf(audit, "Iter %d accepted vacuum abhorrence rotation of %f deg from %g (%g/%g) to %g (%g/%g).\n",
             iter, rot.a*fiftyseven,
             before.summed(), before.attractive, before.clash,
@@ -582,7 +582,7 @@ void abhor_vacuum(int iter, Molecule** mols)
     Interaction before = ligand->get_intermol_binding(mols);
     ligand->move(motion);
     Interaction after = ligand->get_intermol_binding(mols);
-    if (!after.improved(before)) putitback.restore_state(ligand);
+    if (!after.accept_change(before)) putitback.restore_state(ligand);
     else if (audit) fprintf(audit, "Iter %d accepted vacuum abhorrence translation of %f A from %g (%g/%g) to %g (%g/%g).\n",
         iter, motion.r,
         before.summed(), before.attractive, before.clash,
@@ -838,7 +838,7 @@ void iteration_callback(int iter, Molecule** mols)
             Interaction before = ligand->get_intermol_binding(mols);
             ligand->recenter(bary);
             Interaction after = ligand->get_intermol_binding(mols);
-            if (!after.improved(before)) ligand->recenter(was);
+            if (!after.accept_change(before)) ligand->recenter(was);
             else if (audit) fprintf(audit, "Iter %d applied ligand drift of %f from %f to %f.\n", iter, drift, before.summed(), after.summed());
         }
 
@@ -3847,6 +3847,28 @@ _try_again:
                 dr[drcount][nodeno].disqualified = true;
                 std::string reason = "Insufficient occlusion";
                 dr[drcount][nodeno].disqualify_reason += reason;
+            }
+
+            n = protein->get_end_resno();
+            for (i=1; i<n; i++)
+            {
+                AminoAcid* aa1 = protein->get_residue(i);
+                if (!aa1) continue;
+                for (j=i+2; j<=n; j++)
+                {
+                    AminoAcid* aa2 = protein->get_residue(j);
+                    if (!aa2) continue;
+
+                    Interaction f = aa1->get_intermol_clashes(aa2);
+                    if (f.clash > clash_limit_per_aa)
+                    {
+                        dr[drcount][nodeno].disqualified = true;
+                        std::string reason = "Side chain clash";
+                        dr[drcount][nodeno].disqualify_reason += reason;
+                        i=j=n+2;
+                        break;
+                    }
+                }
             }
 
             if (nsoftrgn)

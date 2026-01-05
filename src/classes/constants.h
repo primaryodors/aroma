@@ -17,6 +17,8 @@
 // #define coplanar_threshold 0.5
 #define coplanar_threshold 2.5
 #define Avogadro 6.02214076e+23
+#define kB 1.380649e-23
+#define kB_kJ (kB/1000)
 #define temperature 310.2
 #define R 0.00831446261815324
 #define pH 6.0
@@ -126,6 +128,7 @@
 #define lmpull 0.1
 #define lmpush 0.3
 #define lmsteps 5
+#define metropolis_criterion 1
 #define speed_limit 1.5
 
 // Docking features.

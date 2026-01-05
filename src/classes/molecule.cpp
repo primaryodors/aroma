@@ -5273,7 +5273,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     for (abc=0; mm[abc]; abc++) absolute_best[abc].copy_state(mm[abc]); \
                     abe = abtest; \
                 }
-    
+
     for (i=0; mm[i]; i++) if (mm[i]->coordmtl) { cfmols_have_metals = true; break;}
 
     for (iter=0; iter<iters; iter++)
@@ -5371,7 +5371,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         a->move(motion);
                         tryenerg = cfmol_multibind(a, nearby);
 
-                        if (tryenerg.improved(benerg))
+                        if (tryenerg.accept_change(benerg))
                         {
                             benerg = tryenerg;
                             pib.copy_state(a);
@@ -5381,7 +5381,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         a->enforce_stays(1.0/lmsteps);
                         tryenerg = cfmol_multibind(a, nearby);
 
-                        if (tryenerg.improved(benerg))
+                        if (tryenerg.accept_change(benerg))
                         {
                             benerg = tryenerg;
                             pib.copy_state(a);
@@ -5421,13 +5421,12 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     if (audit) sprintf(triedchange, "stochastic linear motion [%f,%f,%f]", motion.x, motion.y, motion.z);
 
                     tryenerg = cfmol_multibind(a, nearby);
-                    
 
                     #if _dbg_fitness_plummet
                     if (!i) cout << "(linear motion try " << -tryenerg << ") ";
                     #endif
 
-                    if (tryenerg.improved(benerg))
+                    if (tryenerg.accept_change(benerg))
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
@@ -5456,9 +5455,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         if (audit) sprintf(triedchange, "reversed linear motion [%f,%f,%f]", motion.x, motion.y, motion.z);
 
                         tryenerg = cfmol_multibind(a, nearby);
-                        
 
-                        if (tryenerg.improved(benerg))
+                        if (tryenerg.accept_change(benerg))
                         {
                             benerg = tryenerg;
                             pib.copy_state(a);
@@ -5510,7 +5508,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                     tryenerg = cfmol_multibind(a, nearby);
 
-                    if ((!wfal || fal) && (tryenerg.improved(benerg) || tryenerg.attractive > benerg.attractive))
+                    if ((!wfal || fal) && (tryenerg.accept_change(benerg) || tryenerg.attractive > benerg.attractive))
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
@@ -5556,7 +5554,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     tryenerg = cfmol_multibind(a, nearby);
                     fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
-                    if ((fal || !wfal) && tryenerg.improved(benerg))
+                    if ((fal || !wfal) && tryenerg.accept_change(benerg))
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
@@ -5706,7 +5704,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if ((fal || !wfal) && tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
+                            if ((fal || !wfal) && tryenerg.accept_change(benerg) && a->get_internal_clashes() <= self_clash)
                             {
                                 // Leaving this in case the "nearbys" feature misses any more clashable residues.
                                 // If it does, adjust the constants on the cosine in AminoAcid::can_reach().
@@ -5892,7 +5890,7 @@ Vector Molecule::motion_to_optimal_contact(Molecule* l)
         this->move(incremental_motion, true);
         Interaction new_energy = this->get_intermol_binding(l, true, true);
 
-        if (new_energy.improved(energy))
+        if (new_energy.accept_change(energy))
         {
             energy = new_energy;
             total_motion = total_motion.add(incremental_motion);

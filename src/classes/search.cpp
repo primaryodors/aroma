@@ -1254,7 +1254,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
 
                                             // if (ligand->clash2->residue == 115) cout << "                     " << f.clash << endl;
 
-                                            if (f.improved(e)) e = f;
+                                            if (f.accept_change(e)) e = f;
                                             else
                                             {
                                                 nudge.r *= -1;
