@@ -992,6 +992,13 @@ float ICHelixGroup::contact_anomaly(Protein *prot)
                 Vector av = lic->atom_distance(prot);
                 if (av.r < lic->r_optimal - lic->tolerance) result += (lic->r_optimal - lic->tolerance - av.r);
                 else if (av.r > lic->r_optimal + lic->tolerance) result += (av.r - lic->r_optimal - lic->tolerance);
+                #if _dbg_contact_anomaly
+                if (lic->aa1 && lic->aa2 && lic->a1 && lic->a2) 
+                    cout << lic->aa1->get_name() << ":" << lic->a1->name
+                        << " " << av.r << " "
+                        << lic->aa2->get_name() << ":" << lic->a2->name
+                        << endl;
+                #endif
             }
         }
     }
@@ -1018,11 +1025,11 @@ bool ICHelix::contains(InternalContact *lic)
 
 Vector InternalContact::atom_distance(Protein *prot)
 {
-    AminoAcid* aa1 = prot->get_residue(res1.resno);
-    AminoAcid* aa2 = prot->get_residue(res2.resno);
+    aa1 = prot->get_residue(res1.resno);
+    aa2 = prot->get_residue(res2.resno);
     if (!aa1 || !aa2) return Vector(0,0,0);
-    Atom* a1 = aa1->get_reach_atom(hbond);
-    Atom* a2 = aa2->get_reach_atom(hbond);
+    a1 = aa1->get_reach_atom(hbond);
+    a2 = aa2->get_reach_atom(hbond);
     if (!a1 || !a2) return Vector(0,0,0);
     aa1->conform_atom_to_location(a1, a2, 5, r_optimal);
     aa2->conform_atom_to_location(a2, a1, 5, r_optimal);

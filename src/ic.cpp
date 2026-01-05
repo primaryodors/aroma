@@ -115,7 +115,6 @@ int main(int argc, char** argv)
 
     if (dohg)
     {
-        cout << "Pre-optimization anomaly: " << hg.contact_anomaly(&p) << endl;
         float anomaly = hg.optimize_helices(&p);
         cout << "Post-optimization anomaly: " << anomaly << endl;
     }

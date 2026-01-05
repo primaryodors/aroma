@@ -61,8 +61,11 @@ class Reshape
     int nrshpm = 0;
 };
 
+class ICHelixGroup;
 class InternalContact
 {
+    friend class ICHelixGroup;
+
     public:
     ResiduePlaceholder res1;
     ResiduePlaceholder res2;
@@ -70,6 +73,10 @@ class InternalContact
     float tolerance = 0.5;
 
     Vector atom_distance(Protein* prot);
+
+    protected:
+    AminoAcid *aa1 = nullptr, *aa2 = nullptr;
+    Atom *a1 = nullptr, *a2 = nullptr;
 };
 
 class ICHelix

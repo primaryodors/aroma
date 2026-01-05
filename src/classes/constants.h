@@ -341,6 +341,7 @@
 #define _dbg_cond_basic_acd_lig 0
 #define _dbg_conj_chg 0
 #define _dbg_conjugation 0
+#define _dbg_contact_anomaly 0
 #define _dbg_cs_pairing 0
 #define _dbg_cvty_pose_filter 0
 #define _dbg_eclipsing_contacts 0
