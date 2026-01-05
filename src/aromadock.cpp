@@ -3665,6 +3665,28 @@ _try_again:
                 dr[drcount][nodeno].disqualify_reason += reason;
             }
 
+            n = protein->get_end_resno();
+            for (i=1; i<n; i++)
+            {
+                AminoAcid* aa1 = protein->get_residue(i);
+                if (!aa1) continue;
+                for (j=i+2; j<=n; j++)
+                {
+                    AminoAcid* aa2 = protein->get_residue(j);
+                    if (!aa2) continue;
+
+                    Interaction f = aa1->get_intermol_clashes(aa2);
+                    if (f.clash > clash_limit_per_aa)
+                    {
+                        dr[drcount][nodeno].disqualified = true;
+                        std::string reason = "Side chain clash";
+                        dr[drcount][nodeno].disqualify_reason += reason;
+                        i=j=n+2;
+                        break;
+                    }
+                }
+            }
+
             if (nsoftrgn)
             {
                 float anomaly = 0, sanomaly = 0;
