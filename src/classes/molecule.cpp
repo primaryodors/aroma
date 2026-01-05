@@ -4792,27 +4792,6 @@ Interaction Molecule::intermol_bind_for_multimol_dock(Molecule* om, bool is_ac)
 
 Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby)
 {
-    #if metropolis_criterion
-    // Proper application of the Metropolis Criterion requires all interaction energies be accounted for.
-    // Disregard the argument a for purposes of this calculation.
-    Interaction result;
-    int i, j;
-    for (i=0; nearby[i]; i++)
-    {
-        result += nearby[i]->get_internal_clashes();
-        if (nearby[i]->mclashables)
-        {
-            for (j=0; nearby[i]->mclashables[j]; j++)
-            {
-                result += nearby[i]->intermol_bind_for_multimol_dock(nearby[i]->mclashables[j], false);
-            }
-        }
-        for (j=i+1; nearby[j]; j++)
-        {
-            result += nearby[i]->intermol_bind_for_multimol_dock(nearby[j], false);
-        }
-    }
-    #else
     if (a->is_residue() && ((AminoAcid*)a)->conditionally_basic()) ((AminoAcid*)a)->set_conditional_basicity(nearby);
 
     Interaction result = -a->total_eclipses();
@@ -4849,7 +4828,6 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby)
             }
         }
     }
-    #endif
 
     return result;
 }
