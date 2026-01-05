@@ -58,6 +58,24 @@ class Reshape
     int nrshpm = 0;
 };
 
+class InternalContact
+{
+    public:
+    ResiduePlaceholder res1;
+    ResiduePlaceholder res2;
+    float r_optimal = 2.5;
+    float tolerance = 0.5;
+};
+
+class ICHelix
+{
+    public:
+    ResiduePlaceholder start;
+    ResiduePlaceholder end;
+    InternalContact ic[10];
+    int n_ic = 0;
+};
+
 extern bool rshp_verbose;
 
 #endif
