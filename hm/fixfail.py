@@ -326,9 +326,12 @@ with open(tmpalif, "w") as f:
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 env.io.atom_files_directory = ['.', '../atom_files']
 
+if mode == "inactive":  tplfttl = protid+"i_tpl"
+else:                   tplfttl = protid+"_tpl"
+
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
-                        knowns            = protid+"_tpl",
+                        knowns            = tplfttl,
                         sequence          = protid
                       )
 a.starting_model = 0
