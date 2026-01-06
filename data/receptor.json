@@ -160,20 +160,20 @@
         "id": "OR1B1",
         "uniprot_id": "Q8NGR6",
         "ordb": "14898",
-        "sequence": "MMSFAPNASHSPVFLLLGFSRANISYTLLFFLFLAIYLTTILGNVTLVLLISWDSRLHSPMYYLLRGLSVIDMGLSTVTLPQLLAHLVSHYPTIPAARCLAQFFFFYAFGVTDTLVIAVMALDRYVAICDPLHYALVMNHQRCACLLALSWVVSILHTMLRVGLVLPLCWTGDAGGNVNLPHFFCDHRPLLRASCSDIHSNELAIFFEGGFLMLGPCALIVLSYVRIGAAILRLPSAAGRRRAVSTCGSHLTMVGFLYGTIICVYFQPPFQNSQYQDMVASVMYTAITPLANPFVYSLHNKDVKGALCRLLEWVKVDP",
+        "sequence": "MSFAPNASHSPVFLLLGFSRANISYTLLFFLFLAIYLTTILGNVTLVLLISWDSRLHSPMYYLLRGLSVIDMGLSTVTLPQLLAHLVSHYPTIPAARCLAQFFFFYAFGVTDTLVIAVMALDRYVAICDPLHYALVMNHQRCACLLALSWVVSILHTMLRVGLVLPLCWTGDAGGNVNLPHFFCDHRPLLRASCSDIHSNELAIFFEGGFLMLGPCALIVLSYVRIGAAILRLPSAAGRRRAVSTCGSHLTMVGFLYGTIICVYFQPPFQNSQYQDMVASVMYTAITPLANPFVYSLHNKDVKGALCRLLEWVKVDP",
         "bw":
         {
-            "1.50": "44",
-            "2.50": "72",
-            "3.50": "124",
-            "4.50": "151",
-            "5.50": "216",
-            "6.50": "260",
-            "7.50": "293",
-            "45.50": "185",
+            "1.50": "43",
+            "2.50": "71",
+            "3.50": "123",
+            "4.50": "150",
+            "5.50": "215",
+            "6.50": "259",
+            "7.50": "292",
+            "45.50": "184",
             "56.50": "236",
-            "34.50": "131",
-            "8.50": "303"
+            "34.50": "130",
+            "8.50": "302"
         },
         "insertion":
         [
@@ -183,47 +183,47 @@
         {
             "TMR1":
             {
-                "start": 22,
-                "end": 54
+                "start": 21,
+                "end": 53
             },
             "TMR2":
             {
-                "start": 60,
-                "end": 89
+                "start": 59,
+                "end": 88
             },
             "TMR3":
             {
-                "start": 92,
-                "end": 130
+                "start": 91,
+                "end": 129
             },
             "TMR4":
             {
-                "start": 140,
-                "end": 166
+                "start": 139,
+                "end": 165
             },
             "TMR5":
             {
-                "start": 198,
-                "end": 235
+                "start": 197,
+                "end": 234
             },
             "TMR6":
             {
-                "start": 240,
-                "end": 272
+                "start": 239,
+                "end": 271
             },
             "TMR7":
             {
-                "start": 276,
-                "end": 298
+                "start": 275,
+                "end": 297
             },
             "HXR8":
             {
-                "start": 299,
-                "end": 318
+                "start": 298,
+                "end": 317
             }
         },
         "btree": "00000001011",
-        "aligned": "--------------------------------------------------------MMSFAPNASHSPVFLLLGFSRANISYTLLFFLFLAIYLTTILGNVTLVLLISW------------------------------------------------------------------------------------------------------DSRLHSPMYYLLRGLSVIDMGLSTVTLPQLLAHLV------------------------------------------------------------------------------SHYPTIPAARCLAQFFFFYAFGVTDTLVIAVMALDRYVAICD-------------------------------------------------------------------------------------------------------PLHYALVMNHQRCACLLALSWVVSILHTMLRVGLVL-----------------------------------------------------------------PLCWTGDAGGNVNLPHFFCDHRPLLRASCSDIHSNELAIFFEGGFLMLGPCALIVLSYVRIGAAILRL--------------------------------------------------------------------------------------PSAAGRRRAVSTCGSHLTMVGFLYGTIICVYFQPPF-------------------------------------------------------------------------------------------------QNSQYQDMVASVMYTAITPLANPFVYSLH------------------------------------------------------------------------------------------------------------------------NKDVKGALCRLLEWVKVDP-------------------",
+        "aligned": "---------------------------------------------------------MSFAPNASHSPVFLLLGFSRANISYTLLFFLFLAIYLTTILGNVTLVLLISW------------------------------------------------------------------------------------------------------DSRLHSPMYYLLRGLSVIDMGLSTVTLPQLLAHLV------------------------------------------------------------------------------SHYPTIPAARCLAQFFFFYAFGVTDTLVIAVMALDRYVAICD-------------------------------------------------------------------------------------------------------PLHYALVMNHQRCACLLALSWVVSILHTMLRVGLVL-----------------------------------------------------------------PLCWTGDAGGNVNLPHFFCDHRPLLRASCSDIHSNELAIFFEGGFLMLGPCALIVLSYVRIGAAILRL--------------------------------------------------------------------------------------PSAAGRRRAVSTCGSHLTMVGFLYGTIICVYFQPPF-------------------------------------------------------------------------------------------------QNSQYQDMVASVMYTAITPLANPFVYSLH------------------------------------------------------------------------------------------------------------------------NKDVKGALCRLLEWVKVDP-------------------",
         "active.ic": -73.1163,
         "inactive.ic": -233.596,
         "active.total": -122.532,
