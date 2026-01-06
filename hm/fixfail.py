@@ -310,25 +310,24 @@ for i in range(n):
             print("Something went wrong:\n\n" + alitpl + "\n" + alidat + "\n" + c + "~" + d)
             exit()
 
-alitpl = alitpl.replace(protid, protid+"_tpl")
+if mode == "inactive":  tplfttl = protid+"i_tpl"
+else:                   tplfttl = protid+"_tpl"
+
+alitpl = alitpl.replace(protid, tplfttl)
 alitpl = alitpl.replace("sequence", "structure")
 startres_pad5 = f"{startres:<{5}}"
 alitpl = re.sub(":([0-9]+\\s+):([A-Z]):([0-9]+\\s+):([A-Z])", f":{startres_pad5}:\\2:999  :\\4", alitpl)
 
 tmpalif = protid + "_tmp.ali"
 with open(tmpalif, "w") as f:
-    f.write(">P1;"+protid+"\n")
+    f.write(f">P1;{protid}\n")
     f.write(alidat + "\n")
-    f.write(">P1;"+protid+"_tpl\n")
+    f.write(f">P1;{tplfttl}\n")
     f.write(alitpl + "\n")
 
 # directories for input atom files
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 env.io.atom_files_directory = ['.', '../atom_files']
-
-if mode == "inactive":  tplfttl = protid+"i_tpl"
-else:                   tplfttl = protid+"_tpl"
-
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
                         knowns            = tplfttl,
@@ -450,7 +449,7 @@ SAVE $outf
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
-phewfn = f"hm/{protid}.hm.phew"
+phewfn = f"hm/{protid}.{mode}.hm.phew"
 with open(phewfn, "w") as f:
     f.write(phewcode)
 cmd = ["bin/phew", phewfn]
