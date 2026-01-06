@@ -302,7 +302,10 @@ for i in range(n):
     elif ord(c) < ord('A') or ord(c) > ord('Z'):
         alitpl += c
     else:
-        d = seq[j]
+        if j >= len(seq):
+            d = '-'
+        else:
+            d = seq[j]
         j += 1
         if d == c or d == '-':
             alitpl += d
