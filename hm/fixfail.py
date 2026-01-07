@@ -126,7 +126,7 @@ with open(tplpdb, 'r') as ftpl:
             if not startres or (resno and resno<startres): startres = resno
             cout += ln + "\n"
         if ln[0:6] == "HETATM":
-            haslig = true
+            haslig = True
 
 with open(inppdb, 'r') as fin:
     cin = fin.read()
@@ -141,11 +141,13 @@ with open(inppdb, 'r') as fin:
         if ln[0:6] == "HETATM":
             ln = ln[0:23] + "999" + ln[26:]
             cout += ln + "\n"
+            haslig = True
     with open(tplpdb, "w") as fout:
         fout.write(cout)
 
 env = Environ()
-env.io.hetatm = True
+if haslig:
+    env.io.hetatm = True
 
 class AromaReceptorModel(DOPEHRLoopModel):
     def special_restraints(self, aln):
