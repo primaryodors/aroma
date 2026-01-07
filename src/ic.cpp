@@ -90,6 +90,7 @@ int main(int argc, char** argv)
         }
         else if (strstr(argv[i], ".ic"))
         {
+            cout << "Loading internal contacts file " << argv[i] << "..." << endl;
             hg.load_ic_file(argv[i]);
             dohg = true;
         }

@@ -32,7 +32,16 @@ void ResiduePlaceholder::set(const char* str)
         lstr = &buffer[i];
     }
 
-    if (strchr(lstr, '.')) bw = lstr;
+    if (strchr(lstr, '.'))
+    {
+        bw = lstr;
+        char buffer[10];
+        strcpy(buffer, lstr);
+        char* dot = strchr(buffer, '.');
+        *dot = 0;
+        hxno = atoi(buffer);
+        bwpos = atoi(&dot[1]);
+    }
     else resno = atoi(lstr);
 }
 

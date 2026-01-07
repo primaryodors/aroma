@@ -781,6 +781,10 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
 
     if (ich->n_ic == 1)
     {
+        /*#if _dbg_icreshape
+        cout << "Region " << ich->start.resno << "-" << ich->end.resno << " has only one contact "
+            << ic->res1.resno << "~" << ic->res2.resno << endl;
+        #endif*/
         // A little trick: if the return value has no vector r and no rotation angle,
         // then the origin represents linear translation coordinates.
         result.a = 0;
@@ -813,18 +817,28 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
     else if (av.r < ic->r_optimal - ic->tolerance) av.r = (ic->r_optimal - ic->tolerance) - av.r;
     else return result;           // already in range? no rotation necessary.
 
-    AminoAcid* sueruon_rocenon = m_prot->get_residue(ich->ic[i].res1.resno);
+    AminoAcid* sueruon_rocenon = m_prot->get_residue(ich->ic[farthest].res1.resno);
     if (!sueruon_rocenon) return result;
     result.origin = sueruon_rocenon->get_CA_location();
 
     AminoAcid* aa1 = prot->get_residue(ic->res1.resno);
     if (!aa1) return result;
+    #if _dbg_icreshape
+    cout << "About contact res " << aa1->get_name();
+    #endif
     Atom* a1 = aa1->get_reach_atom(hbond);
     if (!a1) return result;
+    #if _dbg_icreshape
+    cout << ":" << a1->name;
+    #endif
     Point target = a1->loc.add(av);
     Rotation rot = align_points_3d(a1->loc, target, result.origin);
     result.v = rot.v;
     result.a = rot.a;
+    #if _dbg_icreshape
+    cout << " rotate region " << ich->start.resno << "-" << ich->end.resno
+        << (rot.a*fiftyseven) << "deg." << endl;
+    #endif
 
     return result;
 }
@@ -832,7 +846,11 @@ LocRotation ICHelixGroup::get_motion(InternalContact *ic, ICHelix *ich, Protein 
 void ICHelixGroup::load_ic_file(const char *filename)
 {
     FILE* fp = fopen(filename, "rb");
-    if (!fp) return;
+    if (!fp)
+    {
+        cerr << "Failed to open " << filename << " for reading." << endl;
+        return;
+    }
 
     int i, j;
     char buffer[1024];
@@ -840,11 +858,15 @@ void ICHelixGroup::load_ic_file(const char *filename)
     while (fgets(buffer, 1022, fp))
     {
         char** words = chop_spaced_words(buffer);
+        if (!words[0]) continue;
 
         if (!strcmp(words[0], "DEL"))
         {
             deletion_start[n_deletion].set(words[1]);
             deletion_end[n_deletion].set(words[2]);
+            #if _dbg_icreshape
+            cout << "Delete " << words[1] << "-" << words[2] << endl;
+            #endif
             n_deletion++;
         }
         if (!strcmp(words[0], "STATIC"))
@@ -855,6 +877,9 @@ void ICHelixGroup::load_ic_file(const char *filename)
                 if (helices[i].hxno == j)
                 {
                     helices[i].hxstatic = true;
+                    #if _dbg_icreshape
+                    cout << "helices[" << i << "] static=true" << endl;
+                    #endif
                     break;
                 }
             }
@@ -884,14 +909,32 @@ void ICHelixGroup::load_ic_file(const char *filename)
                 if (helices[j].n_ic < MAX_HXIC)
                 {
                     helices[j].ic[helices[j].n_ic++] = ictmp;
+                    #if _dbg_icreshape
+                    cout << "helices[" << j << "] new contact "
+                        << words[1] << "~" << words[2]
+                        << endl;
+                    #endif
                 }
                 if (j == n_helix)
                 {
+                    #if _dbg_icreshape
+                    cout << "helices[" << j << "] (";
+                    #endif
                     helices[j].hxno = ictmp.res1.hxno;
                     sprintf(icbw, "%d.s", ictmp.res1.hxno);
                     helices[j].start.set(icbw);
+                    #if _dbg_icreshape
+                    cout << icbw;
+                    #endif
                     sprintf(icbw, "%d.e", ictmp.res1.hxno);
                     helices[j].end.set(icbw);
+                    #if _dbg_icreshape
+                    cout << "-" << icbw;
+                    #endif
+                    #if _dbg_icreshape
+                    cout << ") is new."
+                        << endl;
+                    #endif
                     n_helix++;
                 }
             }
@@ -956,6 +999,11 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
         {
             helices[i].start.resolve_resno(prot);
             helices[i].end.resolve_resno(prot);
+            /*#if _dbg_icreshape
+            cout << "Helix [" << i << "] spans "
+                << helices[i].start.resno << "-" << helices[i].end.resno
+                << endl;
+            #endif*/
             for (j=0; j<helices[i].n_ic; j++)
             {
                 LocRotation lr = get_motion(&(helices[i].ic[j]), &(helices[i]), prot);
@@ -965,11 +1013,23 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
                     Vector mov = lr.origin;
                     mov.r *= amount;
                     prot->move_piece(helices[i].start.resno, helices[i].end.resno, mov);
+                    #if _dbg_icreshape
+                    cout << "Moved region "
+                        << helices[i].start.resno << "-" << helices[i].end.resno
+                        << " by " << mov.r << "A."
+                        << endl;
+                    #endif
                 }
-                else
+                else if (lr.a)
                 {
                     lr.a *= amount;
                     prot->rotate_piece(helices[i].start.resno, helices[i].end.resno, lr);
+                    #if _dbg_icreshape
+                    cout << "Rotated region "
+                        << helices[i].start.resno << "-" << helices[i].end.resno
+                        << " by " << (lr.a * fiftyseven) << "deg."
+                        << endl;
+                    #endif
                 }
             }
         }
