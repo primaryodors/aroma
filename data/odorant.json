@@ -37091,7 +37091,10 @@
     {
         "full_name": "arborone",
         "smiles": "CC(=O)[C@@]1(C)CC=C2[C@H]([C@@H]1C)C(C)(C)CCC2",
-        "notes": "This is the active impurity in the otherwise odorless Iso-E-Super.",
+        "notes":
+        {
+            "text": "This is the active impurity in the otherwise odorless Iso-E-Super."
+        },
         "aroma":
         {
             "https://doi.org/10.1016/j.cub.2025.09.041":

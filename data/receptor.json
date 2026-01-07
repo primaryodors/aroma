@@ -19423,10 +19423,7 @@
         },
         "btree": "000000010000000000011",
         "aligned": "----------------------------------------------------------METGNQTHAQEFLLLGFSATSEIQFILFGLFLSMYLVTFTGNLLIILAIC------------------------------------------------------------------------------------------------------SDSHLHTPMYFFLSNLSFADLCFTSTTVPKMLLNIL------------------------------------------------------------------------------TQNKFITYAGCLSQIFFFTSFGCLDNLLLTVMAYDRFVAVCH-------------------------------------------------------------------------------------------------------PLHYTVIMNPQLCGLLVLGSWCISVMGSLLETLTVL---------------------------------------------------------------------RLSFCTEMEIPHFFCDLLEVLKLACSDTFINNVVIYFATGVLGVISFTGIFFSYYKIVFSILRI--------------------------------------------------------------------------------------SSAGRKHKAFSTCGSHLSVVTLFYGTGFGVYLS-------------------------------------------------------------------------------------------------SAATPSSRTSLVASVMYTMVTPMLNPFIYSLR------------------------------------------------------------------------------------------------------------------------NTDMKRALGRLLSRATFFNGDITAGLS-----------",
-        "active.total": 14207700000,
-        "active.ic": -114.203,
-        "inactive.total": 57197.9,
-        "inactive.ic": -145.7,
+        "best_agonist": "d9733b57870ff7215c4185e75bd421de",
         "expression": 100
     },
     "OR7C2":
@@ -19682,10 +19679,7 @@
         },
         "btree": "00000001000000000010",
         "aligned": "----------------------------------------------------------MEAENLTELSKFLLLGLSDDPELQPVLFGLFLSMYLVTVLGNLLIILAVS------------------------------------------------------------------------------------------------------SDSHLHTPMYFFLSNLSFVDICFISTTVPKMLVSI------------------------------------------------------------------------------QARSKDISYMGCLTQVYFLMMFAGMDTFLLAVMAYDRFVAICH-------------------------------------------------------------------------------------------------------PLHYTVIMNPCLCGLLVLASWFIIFWFSLVHILLM---------------------------------------------------------------------KRLTFSTGTEIPHFFCEPAQVLKVACSNTLLNNIVLYVATALLGVFPVAGILFSYSQIVSSLMGM--------------------------------------------------------------------------------------SSTKGKYKAFSTCGSHLCVVSLFYGTGLGVYLS-------------------------------------------------------------------------------------------------SAVTHSSQSSSTASVMYAMVTPMLNPFIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKGALERLLSRADSCP-------------------",
-        "active.total": -194.266,
-        "active.ic": -104.456,
-        "inactive.total": 1628.96,
-        "inactive.ic": -117.572,
+        "best_agonist": "e7aee224c84de19b2df7f4ce711cd057",
         "expression": 96
     },
     "OR7E24":
@@ -19767,10 +19761,7 @@
         },
         "btree": "000000010000000001",
         "aligned": "----------------------------------------MSYFPILFFFFLKRCPSYTEPQNLTGVSEFLLLGLSEDPELQPVLAGLFLSMYLVTVLGNLLIILAVS------------------------------------------------------------------------------------------------------SDSHLHTPMYFFLSNLSLADIGFTSTTVPKMIVDM------------------------------------------------------------------------------QTHSRVISYEGCLTQMSFFVLFACMDDMLLSVMAYDRFVAICH-------------------------------------------------------------------------------------------------------PLHYRIIMNPRLCGFLILLSFFISLLDSQLHNLIML---------------------------------------------------------------------QLTCFKDVDISNFFCDPSQLLHLRCSDTFINEMVIYFMGAIFGCLPISGILFSYYKIVSPILRV--------------------------------------------------------------------------------------PTSDGKYKAFSTCGSHLAVVCLFYGTGLVGYLS-------------------------------------------------------------------------------------------------SAVLPSPRKSMVASVMYTVVTPMLNPFIYSLR------------------------------------------------------------------------------------------------------------------------NKDIQSALCRLHGRIIKSHHLHPFCYMG----------",
-        "active.total": -338.549,
-        "active.ic": -82.1917,
-        "inactive.total": -313.442,
-        "inactive.ic": -93.599,
+        "best_agonist": "2de2ed1ab796f4f14292cb6198994497",
         "expression": 96
     },
     "OR7G1":
@@ -20200,10 +20191,7 @@
         },
         "btree": "00000010000000010011",
         "aligned": "----------------------------------------------------------MLARNNSLVTEFILAGLTDHPEFRQPLFFLFLVIYIVTMVGNLGLITLFG------------------------------------------------------------------------------------------------------LNSHLHTPMYYFLFNLSFIDLCYSSVFTPKMLMNFV------------------------------------------------------------------------------SKKNIISNVGCMTRLFFFLFFVISECYMLTSMAYDRYVAICN-------------------------------------------------------------------------------------------------------PLLYKVTMSHQVCSMLTFAAYIMGLAGATAHTGCML---------------------------------------------------------------------RLTFCSANIINHYLCDILPLLQLSCTSTYVNEVVVLIVVGTNITVPSCTILISYVFIVTSILHI--------------------------------------------------------------------------------------KSTQGRSKAFSTCSSHVIALSLFFGSAAFMYIK--------------------------------------------------------------------------------------------------YSSGSMEQGKVSSVFYTNVVPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKVALRKALIKIQRRNIF-----------------",
-        "active.total": 20.9863,
-        "active.ic": -76.3258,
-        "inactive.total": -487.044,
-        "inactive.ic": -146.861,
+        "best_agonist": "d78f4b5c087c25037c933b6a8fe3f86f",
         "expression": 88
     },
     "OR8B3":
@@ -20287,10 +20275,7 @@
         },
         "btree": "000000100000000100100",
         "aligned": "----------------------------------------------------------MLARNNSLVTEFILAGLTDHPEFQQPLFFLFLVVYIVTMVGNLGLIILFG------------------------------------------------------------------------------------------------------LNSHLHTPMYYFLFNLSFIDLCYSSVFTPKMLMNFV------------------------------------------------------------------------------SKKNIISYVGCMTQLFFFLFFVISECYMLTSMAYDRYVAICN-------------------------------------------------------------------------------------------------------PLLYKVTMSHQVCSMLTFAAYIMGLAGATAHTGCML---------------------------------------------------------------------RLTFCSANIINHYLCDILPLLQLSCTSTYVNEVVVLIVVGINIMVPSCTILISYVFIVTSILHI--------------------------------------------------------------------------------------KSTQGRSKAFSTCSSHVIALSLFFGSAAFMYIK--------------------------------------------------------------------------------------------------YSSGSMEQGKVSSVFYTNVVPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKVALRKALIKIQRRNIF-----------------",
-        "active.total": -160.183,
-        "active.ic": -91.9483,
-        "inactive.total": -506.485,
-        "inactive.ic": -168.902,
+        "best_agonist": "39156613d880f2e50d7c2af1b81ae8fb",
         "expression": 88
     },
     "OR8B4":
@@ -20461,10 +20446,7 @@
         },
         "btree": "00000010000000010000",
         "aligned": "----------------------------------------------------------MAAENSSFVTQFILAGLTDQPGVQIPLFFLFLGFYVVTVVGNLGLITLIR------------------------------------------------------------------------------------------------------LNSHLHTPMYFFLYNLSFIDFCYSSVITPKMLMSFVL------------------------------------------------------------------------------KKNSISYAGCMTQLFFFLFFVVSESFILSAMAYDRYVAICN-------------------------------------------------------------------------------------------------------PLLYMVTMSPQVCFLLLLGVYGMGFAGAMAHTACMM---------------------------------------------------------------------GVTFCANNLVNHYMCDILPLLECACTSTYVNELVVFVVVGIDIGVPTVTIFISYALILSSIFHI--------------------------------------------------------------------------------------DSTEGRSKAFSTCSSHIIAVSLFFGSGAFMYLKP-------------------------------------------------------------------------------------------------FSLLAMNQGKVSSLFYTTVVPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKVALKKILNKNAFS--------------------",
-        "active.total": -216.257,
-        "active.ic": -63.3399,
-        "inactive.total": -445.062,
-        "inactive.ic": -289.372,
+        "best_agonist": "628f0b25c6ed66360638c6491f25e145",
         "expression": 100
     },
     "OR8B12":
@@ -20547,10 +20529,7 @@
         },
         "btree": "00000010000000010001",
         "aligned": "-----------------------------------------------------------MAAKNSSVTEFILEGLTHQPGLRIPLFFLFLGFYTVTVVGNLGLITLIG------------------------------------------------------------------------------------------------------LNSHLHTPMYFFLFNLSLIDFCFSTTITPKMLMSFV------------------------------------------------------------------------------SRKNIISFTGCMTQLFFFCFFVVSESFILSAMAYDRYVAICN-------------------------------------------------------------------------------------------------------PLLYTVTMSCQVCLLLLLGAYGMGFAGAMAHTGSIM---------------------------------------------------------------------NLTFCADNLVNHFMCDILPLLELSCNSSYMNELVVFIVVAVDVGMPIVTVFISYALILSSILHN--------------------------------------------------------------------------------------SSTEGRSKAFSTCSSHIIVVSLFFGSGAFMYLKP-------------------------------------------------------------------------------------------------LSILPLEQGKVSSLFYTIIVPVLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKVALRRTLGRKIFS--------------------",
-        "active.total": -239.903,
-        "active.ic": -69.8824,
-        "inactive.total": -418.848,
-        "inactive.ic": -163.879,
+        "best_agonist": "628f0b25c6ed66360638c6491f25e145",
         "expression": 92
     },
     "OR8D1":
@@ -20634,10 +20613,7 @@
         },
         "btree": "00000010000000011010",
         "aligned": "----------------------------------------------------------MTMENYSMAAQFVLDGLTQQAELQLPLFLLFLGIYVVTVVGNLGMILLIA------------------------------------------------------------------------------------------------------VSPLLHTPMYYFLSSLSFVDFCYSSVITPKMLVNFLG------------------------------------------------------------------------------KKNTILYSECMVQLFFFVVFVVAEGYLLTAMAYDRYVAICS-------------------------------------------------------------------------------------------------------PLLYNAIMSSWVCSLLVLAAFFLGFLSALTHTSAMM---------------------------------------------------------------------KLSFCKSHIINHYFCDVLPLLNLSCSNTHLNELLLFIIAGFNTLVPTLAVAVSYAFILYSILHI--------------------------------------------------------------------------------------RSSEGRSKAFGTCSSHLMAVVIFFGSITFMYFKP-------------------------------------------------------------------------------------------------PSSNSLDQEKVSSVFYTTVIPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKKALRKVLVGK-----------------------",
-        "active.total": -53.6015,
-        "active.ic": -69.7241,
-        "inactive.total": -561.427,
-        "inactive.ic": -196.717,
+        "best_agonist": "2cb1e8f9df11e35e3246d7a9b343ee78",
         "expression": 96
     },
     "OR8D2":
@@ -20721,10 +20697,7 @@
         },
         "btree": "00000010000000011011",
         "aligned": "----------------------------------------------------------MATSNHSSGAEFILAGLTQRPELQLPLFLLFLGIYVVTVVGNLGMIFLIA------------------------------------------------------------------------------------------------------LSSQLYPPVYYFLSHLSFIDLCYSSVITPKMLVNFVP------------------------------------------------------------------------------EENIISFLECITQLYFFLIFVIAEGYLLTAMEYDRYVAICR-------------------------------------------------------------------------------------------------------PLLYNIVMSHRVCSIMMAVVYSLGFLWATVHTTRMS---------------------------------------------------------------------VLSFCRSHTVSHYFCDILPLLTLSCSSTHINEILLFIIGGVNTLATTLAVLISYAFIFSSILGI--------------------------------------------------------------------------------------HSTEGQSKAFGTCSSHLLAVGIFFGSITFMYFKP-------------------------------------------------------------------------------------------------PSSTTMEKEKVSSVFYITIIPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKNALKKMTRGRQSS--------------------",
-        "active.total": 856.328,
-        "active.ic": -75.556,
-        "inactive.total": -434.902,
-        "inactive.ic": -166.489,
+        "best_agonist": "06885ed09931acc7222f9215a658a77b",
         "expression": 46
     },
     "OR8D4":
@@ -21143,10 +21116,7 @@
         },
         "btree": "00000010000001001",
         "aligned": "----------------------------------------------------------MGRRNNTNVPDFILTGLSDSEEVQMALFILFLLIYLITMLGNVGMILIIR------------------------------------------------------------------------------------------------------LDLQLHTPMYFFLTHLSFIDLSYSTVITPKTLANLL-------------------------------------------------------------------------------TSNYISFMGCFAQMFFFVFLGAAECFLLSSMAYDRYVAICS-------------------------------------------------------------------------------------------------------PLRYPVIMSKRLCCALVTGPYVISFINSFVNVVWMS---------------------------------------------------------------------RLHFCDSNVVRHFFCDTSPILALSCMDTYDIEIMIHILAGSTLMVSLITISASYVSILSTILKI--------------------------------------------------------------------------------------NSTSGKQKALSTCASHLLGVTIFYGTMIFTYLKP-------------------------------------------------------------------------------------------------RKSYSLGRDQVASVFYTIVIPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKEVKNALIRVMQRRQDSR-------------------",
-        "active.total": -368.47,
-        "active.ic": -164.007,
-        "inactive.total": -388.076,
-        "inactive.ic": -179.104,
+        "best_agonist": "c8647c7bda93716d0408a2509fdfa27a",
         "expression": 88
     },
     "OR8H2":
@@ -21749,10 +21719,7 @@
         },
         "btree": "000000100000000010001",
         "aligned": "----------------------------------------------------------MEQHNLTTVNEFILTGITDIAELQAPLFALFLMIYVISVMGNLGMIVLTK------------------------------------------------------------------------------------------------------LDSRLQTPMYFFLRHLAFMDLGYSTTVGPKMLVNFVV------------------------------------------------------------------------------DKNIISYYFCATQLAFFLVFIGSELFILSAMSYDLYVAICN-------------------------------------------------------------------------------------------------------PLLYTVIMSRRVCQVLVAIPYLYCTFISLLVTIKI---------------------------------------------------------------------FTLSFCGYNVISHFYCDSLPLLPLLCSNTHEIELIILIFAAIDLISSLLIVLLSYLLILVAILRM---------------------------------------------------------------------------------------NSAGRQKAFSTCGAHLTVVIVFYGTLLFMYVQP-------------------------------------------------------------------------------------------------KSSHSFDTDKVASIFYTLVIPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDVKYALRRTWNNLCNIFV------------------",
-        "active.total": -182.026,
-        "active.ic": -106.742,
-        "inactive.total": -431.238,
-        "inactive.ic": -194.648,
+        "best_agonist": "a9b77ed2a0ebb57857e97c07cc06d8e2",
         "expression": 92
     },
     "OR8K5":
@@ -21838,10 +21805,7 @@
         },
         "btree": "000000100000000010000",
         "aligned": "----------------------------------------------------------MGQHNLTVLTEFILMELTRRPELQIPLFGVFLVIYLITVVGNLTMIILTK------------------------------------------------------------------------------------------------------LDSHLHTPMYFSIRHLAFVDLGNSTVICPKVLANFVV------------------------------------------------------------------------------DRNTISYYACAAQLAFFLMFIISEFFILSAMAYDRYVAICN-------------------------------------------------------------------------------------------------------PLLYYVIMSQRLCHVLVGIQYLYSTFQALMFTIKI---------------------------------------------------------------------FTLTFCGSNVISHFYCDDVPLLPMLCSNAQEIELLSILFSVFNLISSFLIVLVSYMLILLAICQM--------------------------------------------------------------------------------------HSAEGRKKAFSTCGSHLTVVVVFYGSLLFMYMQP-------------------------------------------------------------------------------------------------NSTHFFDTDKMASVFYTLVIPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NEEVKNAFYKLFEN------------------------",
-        "active.total": -126.121,
-        "active.ic": -103.313,
-        "inactive.total": -482.841,
-        "inactive.ic": -141.121,
+        "best_agonist": "d644ce426eb9b78f103cd652bae6a5b7",
         "expression": 61
     },
     "OR8S1":
@@ -22948,10 +22912,7 @@
         },
         "btree": "0000001000101",
         "aligned": "----------------------------------------------------------MAERNYTVVTEFFLTAFTEHLQWRVPLFLIFLSFYLATMLGNTGMILLIR------------------------------------------------------------------------------------------------------GDRRLHTPMYFFLSHLSLVDICYSSAIIPQMLAVLW------------------------------------------------------------------------------EHGTTISQARCAAQFFLFTFFASIDCYLLAIMAYDRYTAVCQ-------------------------------------------------------------------------------------------------------PLLYVTIITEKARWGLVTGAYVAGFFSAFVRTVTA---------------------------------------------------------------------FTLSFCGNNEINFIFCDLPPLLKLSCGDSYTQEVVIIVFALFVMPACILVILVSYLFIIVAILQI--------------------------------------------------------------------------------------HSAGGRAKTFSTCASHLTAVALFFGTLIFMYLRDNT-------------------------------------------------------------------------------------------------GQSSEGDRVVSVLYTVVTPMLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKEVKEATRKALSKSKPARRP-----------------",
-        "active.total": -178.468,
-        "active.ic": -98.3577,
-        "inactive.total": -271.715,
-        "inactive.ic": 27.0997,
+        "best_agonist": "5fe2b02edc6920b20eb3a6f6de510a3b",
         "expression": 100
     },
     "OR10A2":
@@ -23124,10 +23085,7 @@
         },
         "btree": "0000000011001000",
         "aligned": "----------------------------------------------------------MKRQNQSCVVEFILLGFSNFPELQVQLFGVFLVIYVVTLMGNAIITVIIS------------------------------------------------------------------------------------------------------LNQSLHVPMYLFLLNLSVVEVSFSAVITPEMLVVL------------------------------------------------------------------------------STEKTMISFVGCFAQMYFILLFGGTECFLLGAMAYDRFAAICH-------------------------------------------------------------------------------------------------------PLNYPVIMNRGVFMKLVIFSWISGIMVATVQTTWV---------------------------------------------------------------------FSFPFCGPNEINHLFCETPPVLELVCADTFLFEIYAFTGTILIVMVPFLLILLSYIRVLFAILKM--------------------------------------------------------------------------------------PSTTGRQKAFSTCASHLTSVTLFYGTANMTYLQP-------------------------------------------------------------------------------------------------KSGYSPETKKLISLAYTLLTPLLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NSEMKRTLIKLWRRKVILHTF-----------------",
-        "active.total": -216.097,
-        "active.ic": -94.9579,
-        "inactive.total": -405.801,
-        "inactive.ic": -58.298,
+        "best_agonist": "b049a11327d2e92f1936b0d245c700d8",
         "expression": 100
     },
     "OR10A4":
@@ -23304,10 +23262,7 @@
         },
         "btree": "0000000011001010010",
         "aligned": "---------------------------------------------------------MAIGNWTEISEFILMSFSSLPTEIQSLLFLTFLTIYLVTLKGNSLIILVTL------------------------------------------------------------------------------------------------------ADPMLHSPMYFFLRNLSFLEIGFNLVIVPKMLGTLLA------------------------------------------------------------------------------QDTTISFLGCATQMYFFFFFGVAECFLLATMAYDRYVAICS-------------------------------------------------------------------------------------------------------PLHYPVIMNQRTRAKLAAASWFPGFPVATVQTTWL---------------------------------------------------------------------FSFPFCGTNKVNHFFCDSPPVLKLVCADTALFEIYAIVGTILVVMIPCLLILCSYTRIAAAILKI--------------------------------------------------------------------------------------PSAKGKHKAFSTCSSHLLVVSLFYISSSLTYFWP-------------------------------------------------------------------------------------------------KSNNSPESKKLLSLSYTVVTPMLNPIIYSLR------------------------------------------------------------------------------------------------------------------------NSEVKNALSRTFHKVLALRNCIP---------------",
-        "active.total": -131.211,
-        "active.ic": -101.561,
-        "inactive.total": -520.758,
-        "inactive.ic": -191.045,
+        "best_agonist": "69fceb91b4585f75c2eb932cb963d0e8",
         "expression": 100
     },
     "OR10A6":
@@ -23391,10 +23346,7 @@
         },
         "btree": "00000000110010010",
         "aligned": "----------------------------------------------------------MERQNQSCVVEFILLGFSNYPELQGQLFVAFLVIYLVTLIGNAIIIVIVS------------------------------------------------------------------------------------------------------LDQSLHVPMYLFLLNLSVVDLSFSAVIMPEMLVVL------------------------------------------------------------------------------STEKTTISFGGCFAQMYFILLFGGAECFLLGAMAYDRFAAICH-------------------------------------------------------------------------------------------------------PLNYQMIMNKGVFMKLIIFSWALGFMLGTVQTSWVS---------------------------------------------------------------------SFPFCGLNEINHISCETPAVLELACADTFLFEIYAFTGTFLIILVPFLLILLSYIRVLFAILKM--------------------------------------------------------------------------------------PSTTGRQKAFSTCAAHLTSVTLFYGTASMTYLQP-------------------------------------------------------------------------------------------------KSGYSPETKKVMSLSYSLLTPLLNLLIYSLR------------------------------------------------------------------------------------------------------------------------NSEMKRALMKLWRRRVVLHTI-----------------",
-        "active.total": 311.399,
-        "active.ic": -89.5994,
-        "inactive.total": -393.625,
-        "inactive.ic": -110.923,
+        "best_agonist": "d63851ed7dafc124c41a5567754bfe6f",
         "expression": 100
     },
     "OR10A7":
@@ -23661,10 +23613,7 @@
         },
         "btree": "000000001101111",
         "aligned": "----------------------------------------------------------MEVKNCCMVTEFILLGIPHTEGLEMTLFVLFLPFYACTLLGNVSILVAVM------------------------------------------------------------------------------------------------------SSARLHTPMYFFLGNLSVFDMGFSSVTCPKMLLYLMG------------------------------------------------------------------------------LSRLISYKDCVCQLFFFHFLGSIECFLFTVMAYDRFTAICY-------------------------------------------------------------------------------------------------------PLRYTVIMNPRICVALAVGTWLLGCIHSSILTSLT---------------------------------------------------------------------FTLPYCGPNEVDHFFCDIPALLPLACADTSLAQRVSFTNVGLISLVCFLLILLSYTRITISILSI--------------------------------------------------------------------------------------RTTEGRRRAFSTCSAHLIAILCAYGPIITVYLQP---------------------------------------------------------------------------------------------------TPNPMLGTVVQILMNLVGPMLNPLIYTLR------------------------------------------------------------------------------------------------------------------------NKEVKTALKTILHRTGHVPES-----------------",
-        "active.total": -250.53,
-        "active.ic": -71.1787,
-        "inactive.total": -399.935,
-        "inactive.ic": -70.2359
+        "best_agonist": "a19c4a492c0c09dac10f0a734b369762"
     },
     "OR10D4":
     {
@@ -23927,10 +23876,7 @@
         },
         "btree": "000000001101001110",
         "aligned": "----------------------------------------------------------MERINSTLLTAFILTGIPYPLRLRTLFFVFFFLIYILTQLGNLLILITVW-----------------------------------------------------------------------------------------------------ADPRLHARPMYIFLGVLSVIDMSISSIIVPRLMMNF------------------------------------------------------------------------------TLGVKPIPFGGCVAQLYFYHFLGSTQCFLYTLMAYDRYLAICQ-------------------------------------------------------------------------------------------------------PLRYPVLMTAKLSALLVAGAWMAGSIHGALQAILT---------------------------------------------------------------------FRLPYCGPNQVDYFFCDIPAVLRLACADTTVNELVTFVDIGVVVASCFSLILLSYIQIIQAILRI--------------------------------------------------------------------------------------HTADGRRRAFSTCGAHVTVVTVYYVPCAFIYLRP---------------------------------------------------------------------------------------------------ETNSPLDGAAALVPTAITPFLNPLIYTLR------------------------------------------------------------------------------------------------------------------------NQEVKLALKRMLRSPRTPSEV-----------------",
-        "active.total": -252.52,
-        "active.ic": -122.58,
-        "inactive.total": -492.587,
-        "inactive.ic": -218.532,
+        "best_agonist": "3c7a0f9f0c92dabc3da997f4ff1c3611",
         "expression": 96
     },
     "OR10G4":
@@ -24017,10 +23963,7 @@
         },
         "btree": "000000001101000000",
         "aligned": "------------------------------------------------------------MSNASLVTAFILTGLPHAPGLDALLFGIFLVVYVLTVLGNLLILLVIR------------------------------------------------------------------------------------------------------VDSHLHTPMYYFLTNLSFIDMWFSTVTVPKMLMTLV-----------------------------------------------------------------------------SPSGRAISFHSCVAQLYFFHFLGSTECFLYTVMSYDRYLAISY-------------------------------------------------------------------------------------------------------PLRYTSMMSGSRCALLATGTWLSGSLHSAVQTILT---------------------------------------------------------------------FHLPYCGPNQIQHYFCDAPPILKLACADTSANVMVIFVDIGIVASGCFVLIVLSYVSIVCSILRI--------------------------------------------------------------------------------------RTSDGRRRAFQTCASHCIVVLCFFVPCVVIYLRP---------------------------------------------------------------------------------------------------GSMDAMDGVVAIFYTVLTPLLNPVVYTLR------------------------------------------------------------------------------------------------------------------------NKEVKKAVLKLRDKVAHPQRK-----------------",
-        "active.total": 17646400000,
-        "active.ic": -99.3863,
-        "inactive.total": -423.32,
-        "inactive.ic": -126.696,
+        "best_agonist": "4bbf4ab9cd90fef6ca37eef548c89f14",
         "expression": 88
     },
     "OR10G6":
@@ -24196,10 +24139,7 @@
         },
         "btree": "00000000110100001",
         "aligned": "------------------------------------------------------------MSNATLLTAFILTGLPHAPGLDAPLFGIFLVVYVLTVLGNLLILLVIR------------------------------------------------------------------------------------------------------VDSHLHTPMYYFLTNLSFIDMWFSTVTVPKMLMTLV-----------------------------------------------------------------------------SPSGRTISFHSCVAQLYFFHFLGSTECFLYTVMSYDRYLAISY-------------------------------------------------------------------------------------------------------PLRYTNMMTGRSCALLATGTWLSGSLHSAVQTILT---------------------------------------------------------------------FHLPYCGPNQIQHYFCDAPPILKLACADTSANEMVIFVNIGLVASGCFVLIVLSYVSIVCSILRI--------------------------------------------------------------------------------------RTSEGRHRAFQTCASHCIVVLCFFGPGLFIYLRP---------------------------------------------------------------------------------------------------GSRDALHGVVAVFYTTLTPLFNPVVYTLR------------------------------------------------------------------------------------------------------------------------NKEVKKALLKLKNGSVFAQGE-----------------",
-        "active.total": -310.972,
-        "active.ic": -101.074,
-        "inactive.total": -452.092,
-        "inactive.ic": -101.854,
+        "best_agonist": "8f3e47e62a984e01e89b92baad5586f6",
         "expression": 80
     },
     "OR10G8":
@@ -24287,10 +24227,7 @@
         },
         "btree": "0000000011010001",
         "aligned": "------------------------------------------------------------MSNASLLTAFILMGLPHAPALDAPLFGVFLVVYVLTVLGNLLILLVIR------------------------------------------------------------------------------------------------------VDSHLHTTMYYFLTNLSFIDMWFSTVTVPKLLMTLVF-----------------------------------------------------------------------------PSGRAISFHSCMAQLYFFHFLGGTECFLYRVMSCDRYLAISY-------------------------------------------------------------------------------------------------------PLRYTSMMTGRSCTLLATSTWLSGSLHSAVQAILT---------------------------------------------------------------------FHLPYCGPNWIQHYLCDAPPILKLACADTSAIETVIFVTVGIVASGCFVLIVLSYVSIVCSILRI--------------------------------------------------------------------------------------RTSEGKHRAFQTCASHCIVVLCFFGPGLFIYLRP---------------------------------------------------------------------------------------------------GSRKAVDGVVAVFYTVLTPLLNPVVYTLR------------------------------------------------------------------------------------------------------------------------NKEVKKALLKLKDKVAHSQSK-----------------",
-        "active.total": -320.884,
-        "active.ic": -104.73,
-        "inactive.total": -484.815,
-        "inactive.ic": -136.763,
+        "best_agonist": "5275978d29dfd72a5698f468f3a64906",
         "expression": 57
     },
     "OR10G9":
@@ -24375,10 +24312,7 @@
         },
         "btree": "000000001101000001",
         "aligned": "------------------------------------------------------------MSKTSLVTAFILTGLPHAPGLDAPLFGIFLVVYVLTVLGNLLILLVIR------------------------------------------------------------------------------------------------------VDSHLHTPMYYFLTNLSFIDMWFSTVTVPKMLMTLV-----------------------------------------------------------------------------SPSGRAISFHSCVAQLYFFHFLGSTECFLYTVMSYDRYLAISY-------------------------------------------------------------------------------------------------------PLRYTSMMSGSRCALLATSTWLSGSLHSAVQTILT---------------------------------------------------------------------FHLPYCGPNQIQHYLCDAPPILKLACADTSANEMVIFVDIGLVASGCFLLIVLSYVSIVCSILRI--------------------------------------------------------------------------------------HTSEGRHRAFQTCASHCIVVLCFFVPCVFIYLRP---------------------------------------------------------------------------------------------------GSRDVVDGVVAIFYTVLTPLLNPVVYTLR------------------------------------------------------------------------------------------------------------------------NKEVKKAVLKLRDKVAHSQGE-----------------",
-        "active.total": -328.421,
-        "active.ic": -101.799,
-        "inactive.total": -466.642,
-        "inactive.ic": -145.85,
+        "best_agonist": "95c96a6310a267a67a3a90e86ea053ab",
         "expression": 46
     },
     "OR10H1":
@@ -24475,10 +24409,7 @@
         },
         "btree": "000000001100001000",
         "aligned": "----------------------------------------------------------MQRANHSTVTQFILVGFSVFPHLQLMLFLLFLLMYLFTLLGNLLIMATVW------------------------------------------------------------------------------------------------------SERSLHTPMYLFLCALSVSEILYTVAIIPRMLADLL------------------------------------------------------------------------------STQRSIAFLACASQMFFSFSFGFTHSFLLTVMGYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYNVLMSPRGCACLVGCSWAGGLVMGMVVTSAI--------------------------------------------------------------------FHLAFCGHKEIHHFACHVPPLLKLACGDDVLVVAKGVGLVCITALLGCFLLILLSYAFIVAAILKI--------------------------------------------------------------------------------------PSAEGRNKAFSTCASHLTVVVVHYGFASVIYLKPK-------------------------------------------------------------------------------------------------SPQSLEGDTLMGITYTVLTPFLSPIIFSLR------------------------------------------------------------------------------------------------------------------------NKELKVAMKKTFFSKLYPEKNVMM--------------",
-        "active.total": -128.383,
-        "active.ic": -61.6843,
-        "inactive.total": -489.09,
-        "inactive.ic": -162.779,
+        "best_agonist": "561739682e1f29534c4c2020fe07cbc8",
         "expression": 100
     },
     "OR10H2":
@@ -24570,10 +24501,7 @@
         },
         "btree": "00000000110000101",
         "aligned": "----------------------------------------------------------MLGLNHTSMSEFILVGFSAFPHLQLMLFLLFLLMYLFTLLGNLLIMATVW------------------------------------------------------------------------------------------------------SERSLHTPMYLFLCVLSVSEILYTVAIIPRMLADLL------------------------------------------------------------------------------STQRSIAFLACASQMFFSFSFGFTHSFLLTVMGYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYNVLMSPRGCACLVGCSWAGGSVMGMVVTSAI--------------------------------------------------------------------FQLTFCGSHEIQHFLCHVPPLLKLACGNNVPAVALGVGLVCIMALLGCFLLILLSYAFIVADILKI--------------------------------------------------------------------------------------PSAEGRNKAFSTCASHLIVVIVHYGFASVIYLKPK-------------------------------------------------------------------------------------------------GPHSQEGDTLMATTYAVLTPFLSPIIFSLR------------------------------------------------------------------------------------------------------------------------NKELKVAMKRTFLSTLYSSGT-----------------",
-        "active.total": -100.109,
-        "active.ic": -53.7255,
-        "inactive.total": -402.344,
-        "inactive.ic": -96.7148,
+        "best_agonist": "75c11069422d59c99a00c2cad1224503",
         "expression": 69
     },
     "OR10H3":
@@ -24855,10 +24783,7 @@
         },
         "btree": "000000001100001001",
         "aligned": "----------------------------------------------------------MQGLNHTSVSEFILVGFSAFPHLQLMLFLLFLLMYLFTLLGNLLIMATVW------------------------------------------------------------------------------------------------------SERSLHMPMYLFLCALSITEILYTVAIIPRMLADLL------------------------------------------------------------------------------STQRSIAFLACASQMFFSFSFGFTHSFLLTVMGYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYNVLMSLRGCTCRVGCSWAGGLVMGMVVTSAI--------------------------------------------------------------------FHLAFCGHKEIHHFFCHVPPLLKLACGDDVLVVAKGVGLVCITALLGCFLLILLSYAFIVAAILKI--------------------------------------------------------------------------------------PSAEGRNKAFSTCASHLTVVVVHYGFASVIYLKPK-------------------------------------------------------------------------------------------------GPQSPEGDTLMGITYTVLTPFLSPIIFSLR------------------------------------------------------------------------------------------------------------------------NKELKVAMKKTCFTKLFPQNC-----------------",
-        "active.total": -270.994,
-        "active.ic": -60.3107,
-        "inactive.total": -513.04,
-        "inactive.ic": -153.782,
+        "best_agonist": "ed63ea395381cf765bc75d9c5d035db5",
         "expression": 96
     },
     "OR10J1":
@@ -24946,10 +24871,7 @@
         },
         "btree": "00000000110000010000",
         "aligned": "-----------------------------------------------MLLCFRFGNQSMKRENFTLITDFVFQGFSSFHEQQITLFGVFLALYILTLAGNIIIVTIIR------------------------------------------------------------------------------------------------------MDLHLHTPMYFFLSMLSTSETVYTLVILPRMLSSLVG------------------------------------------------------------------------------MSQPISLAGCATQMFFFVTFGITNCFLLTAMGYDRYVAICN-------------------------------------------------------------------------------------------------------PLRYMVIMNKRLRIQLVLGACSIGLIVAITQVTSV----------------------------------------------------------------------FRLPFCARKVPHFFCDIRPVMKLSCIDTTVNEILTLIISVLVLVVPMGLVFISYVLIISTILKI--------------------------------------------------------------------------------------ASVEGRKKAFATCASHLTVVIVHYSCASIAYLKPK-------------------------------------------------------------------------------------------------SENTREHDQLISVTYTVITPLLNPVVYTLR------------------------------------------------------------------------------------------------------------------------NKEVKDALCRAVGGKFS---------------------",
-        "active.total": 15140100000,
-        "active.ic": 15140100000,
-        "inactive.total": -239.034,
-        "inactive.ic": -101.269,
+        "best_agonist": "7f886eda208ad20856b819efc283ac27",
         "expression": 80
     },
     "OR10J3":
@@ -25220,10 +25142,7 @@
         },
         "btree": "000000001100000101",
         "aligned": "----------------------------------------------------------MKRKNFTEVSEFIFLGFSSFGKHQITLFVVFLTVYILTLVANIIIVTIIC------------------------------------------------------------------------------------------------------IDHHLHTPMYFFLSMLASSETVYTLVIVPRMLLSLIF------------------------------------------------------------------------------HNQPISLAGCATQMFFFVILATNNCFLLTAMGYDRYVAICR-------------------------------------------------------------------------------------------------------PLRYTVIMSKGLCAQLVCGSFGIGLTMAVLHVTAM----------------------------------------------------------------------FNLPFCGTVVDHFFCDIYPVMKLSCIDTTINEIINYGVSSFVIFVPIGLIFISYVLVISSILQI--------------------------------------------------------------------------------------ASAEGRKKTFATCVSHLTVVIVHCGCASIAYLKPK-------------------------------------------------------------------------------------------------SESSIEKDLVLSVTYTIITPLLNPVVYSLR------------------------------------------------------------------------------------------------------------------------NKEVKDALCRVVGRNIS---------------------",
-        "active.total": 18865900000,
-        "active.ic": 18865900000,
-        "inactive.total": -372.862,
-        "inactive.ic": -115.661,
+        "best_agonist": "b4bd27512f9429c13062d3747c0a3994",
         "expression": 84
     },
     "OR10K1":
@@ -25309,10 +25228,7 @@
         },
         "btree": "000000001100000000",
         "aligned": "-----------------------------------------------------------MEQVNKTVVREFVVLGFSSLARLQQLLFVIFLLLYLFTLGTNAIIISTIV-----------------------------------------------------------------------------------------------------LDRALHTPMYFFLAILSCSEICYTFVIVPKMLVDLL------------------------------------------------------------------------------SQKKTISFLGCAIQMFSFLFFGSSHSFLLAAMGYDRYMAICN-------------------------------------------------------------------------------------------------------PLRYSVLMGHGVCMGLMAAACACGFTVSLVTTSLV---------------------------------------------------------------------FHLPFHSSNQLHHFFCDISPVLKLASQHSGFSQLVIFMLGVFALVIPLLLILVSYIRIISAILKI--------------------------------------------------------------------------------------PSSVGRYKTFSTCASHLIVVTVHYSCASFIYLRPK-------------------------------------------------------------------------------------------------TNYTSSQDTLISVSYTILTPLFNPMIYSLR------------------------------------------------------------------------------------------------------------------------NKEFKSALRRTIGQTFYPLS------------------",
-        "active.total": -148.458,
-        "active.ic": -80.0343,
-        "inactive.total": -549.203,
-        "inactive.ic": -222.656,
+        "best_agonist": "2341956e65a5894ca16a1dd275c5dbfb",
         "expression": 100
     },
     "OR10K2":
@@ -25577,10 +25493,7 @@
         },
         "btree": "0000000011000101",
         "aligned": "------------------------------------------------------MPVGKLVFNQSEPTEFVFRAFTTATEFQVLLFLLFLLLYLMILCGNTAIIWVVC------------------------------------------------------------------------------------------------------THSTLRTPMYFFLSNLSFLELCYTTVVVPLMLSNIL------------------------------------------------------------------------------GAQKPISLAGCGAQMFFFVTLGSTDCFLLAIMAYDRYVAICH--------------------------------------------------------------------------------------------------------PLHYTLIMTRELCTQMLGGALGLALFPSLQLTALI--------------------------------------------------------------------FTLPFCGHHQEINHFLCDVPPVLRLACADIRVHQAVLYVVSILVLTIPFLLICVSYVFITCAILSI--------------------------------------------------------------------------------------RSAEGRRRAFSTCSFHLTVVLLQYGCCSLVYLRPR-------------------------------------------------------------------------------------------------SSTSEDEDSQIALVYTFVTPLLNPLLYSLR------------------------------------------------------------------------------------------------------------------------NKDVKGALRSAIIRKAASDAN----------------",
-        "active.total": -294.017,
-        "active.ic": -80.7869,
-        "inactive.total": -489.043,
-        "inactive.ic": -163.889,
+        "best_agonist": "1f633b7a97d558a2a2aa887c6a17fc9c",
         "expression": 100
     },
     "OR10R2":
@@ -25762,10 +25675,7 @@
         },
         "btree": "00000000110101",
         "aligned": "---------------------------------------------MTSRSVCEKMTMTTENPNQTVVSHFFLEGLRYTAKHSSLFFLLFLLIYSITVAGNLLILLTVG------------------------------------------------------------------------------------------------------SDSHLSLPMYHFLGHLSFLDACLSTVTVPKVMAGLL-----------------------------------------------------------------------------TLDGKVISFEGCAVQLYCFHFLASTECFLYTVMAYDRYLAICQ-------------------------------------------------------------------------------------------------------PLHYPVAMNRRMCAEMAGITWAIGATHAAIHTSLT---------------------------------------------------------------------FRLLYCGPCHIAYFFCDIPPVLKLACTDTTINELVMLASIGIVAAGCLILIVISYIFIVAAVLRI--------------------------------------------------------------------------------------RTAQGRQRAFSPCTAQLTGVLLYYVPPVCIYLQPR---------------------------------------------------------------------------------------------------SSEAGAGAPAVFYTIVTPMLNPFIYTLR------------------------------------------------------------------------------------------------------------------------NKEVKHALQRLLCSSFRESTAGSPPP------------",
-        "active.total": -301.752,
-        "active.ic": -84.4295,
-        "inactive.total": -508.981,
-        "inactive.ic": -193.877,
+        "best_agonist": "2e4859776a44d062dd9e5b5fd3476738",
         "expression": 92
     },
     "OR10T2":
@@ -26492,10 +26402,7 @@
         },
         "btree": "0000000011001010011",
         "aligned": "-------------------------------------------------------------------MEFVLLGFSDIPNLHWMLFSIFLLMYLMILMCNGIIILLIK------------------------------------------------------------------------------------------------------IHPALQTPMYFFLSNFSLLEICYVTIIIPRMLMDIW------------------------------------------------------------------------------TQKGNISLFACATQMCFFLMLGGTECLLLTVMAYDRYVAICK-------------------------------------------------------------------------------------------------------PLQYPLVMNHKVCIQLIIASWTITIPVVIGETCQI---------------------------------------------------------------------FLLPFCGTNTINHFFCDIPPILKLACGNIFVNEITVHVVAVVFITVPFLLIVVSYGKIISNILKL--------------------------------------------------------------------------------------SSARGKAKAFSTCSSHLIVVILFFGAGTITYLQP-------------------------------------------------------------------------------------------------KPHQFQRMGKLISLFYTILIPTLNPIIYTLR------------------------------------------------------------------------------------------------------------------------NKDIMVALRKLLAKLLT---------------------",
-        "active.total": -303.816,
-        "active.ic": -59.0672,
-        "inactive.total": -362.679,
-        "inactive.ic": -35.0952,
+        "best_agonist": "69fceb91b4585f75c2eb932cb963d0e8",
         "expression": 65
     },
     "OR11A1":
