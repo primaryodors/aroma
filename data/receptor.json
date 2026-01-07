@@ -26494,10 +26494,7 @@
         },
         "btree": "000000001000001",
         "aligned": "--------------------------------------------------------MEIVSTGNETITEFVLLGFYDIPELHFLFFIVFTAVYVFIIIGNMLIIVAVV------------------------------------------------------------------------------------------------------SSQRLHKPMYIFLANLSFLDILYTSAVMPKMLEGFL-------------------------------------------------------------------------------QEATISVAGCLLQFFIFGSLATAECLLLAVMAYDRYLAICY-------------------------------------------------------------------------------------------------------PLHYPLLMGPRRYMGLVVTTWLSGFVVDGLVVALV---------------------------------------------------------------------AQLRFCGPNHIDQFYCDFMLFVGLACSDPRVAQVTTLILSVFCLTIPFGLILTSYARIVVAVLRV--------------------------------------------------------------------------------------PAGASRRRAFSTCSSHLAVVTTFYGTLMIFYVAPS-------------------------------------------------------------------------------------------------AVHSQLLSKVFSLLYTVVTPLFNPVIYTMR------------------------------------------------------------------------------------------------------------------------NKEVHQALRKILCIKQTETLD-----------------",
-        "active.total": -417.382,
-        "active.ic": -167.25,
-        "inactive.total": -400.096,
-        "inactive.ic": -152.623,
+        "best_agonist": "d786a94526354eb20a50bca99de832e0",
         "expression": 100
     },
     "OR11G2":
@@ -26586,10 +26583,7 @@
         },
         "btree": "0000000010000001",
         "aligned": "--------------------MHFLSQNDLNINLIPHLCLHRHSVIAGAFTIHRHMKIFNSPSNSSTFTGFILLGFPCPREGQILLFVLFTVVYLLTLMGNGSIICAVH------------------------------------------------------------------------------------------------------WDQRLHAPMYILLANFSFLEICYVTSTVPSMLANFL------------------------------------------------------------------------------SDTKIISFSGCFLQFYFFFSLGSTECFFLAVMAFDRYLAICR-------------------------------------------------------------------------------------------------------PLRYPTIMTRRLCTNLVVNCWVLGFIWFLIPIVNI---------------------------------------------------------------------SQMSFCGSRIIDHFLCDPAPLLTLTCKKGPVIELVFSVLSPLPVFMLFLFIVGSYALVVRAVLRV--------------------------------------------------------------------------------------PSAAGRRKAFSTCGSHLAVVSLFYGSVLVMYGSPP-------------------------------------------------------------------------------------------------SKNEAGKQKTVTLFYSVVTPLLNPVIYSLR------------------------------------------------------------------------------------------------------------------------NKDMRKALKKFWGT------------------------",
-        "active.total": -318.583,
-        "active.ic": -35.1276,
-        "inactive.total": 86337.1,
-        "inactive.ic": 4614.06,
+        "best_agonist": "fc56a0d6211badf103af5aa1c0ff66a4",
         "expression": 80
     },
     "OR11H1":
@@ -26863,6 +26857,7 @@
         },
         "btree": "0000000010000000110",
         "aligned": "------------------------------------------------MSFFFVDLRPMNRSATHIVTEFILLGFPGCWKIQIFLFSLFLVIYVLTLLGNGAIIYAVR------------------------------------------------------------------------------------------------------CNPLLHTPMYFLLGNFAFLEIWYVSSTIPNMLVNIL------------------------------------------------------------------------------SKTKAISFSGCFLQFYFFFSLGTTECLFLAVMAYDRYLAICH-------------------------------------------------------------------------------------------------------PLQYPAIMTVRFCGKLVSFCWLIGFLGYPIPIFYI---------------------------------------------------------------------SQLPFCGPNIIDHFLCDMDPLMALSCAPAPITECIFYTQSSLVLFFTSMYILRSYILLLTAVFQV--------------------------------------------------------------------------------------PSAAGRRKAFSTCGSHLVVVSLFYGTVMVMYVSPT-------------------------------------------------------------------------------------------------YGIPTLLQKILTLVYSVTTPLFNPLIYTLR------------------------------------------------------------------------------------------------------------------------NKDMKLALRNVLFGMRIRQNS-----------------",
+        "best_agonist": "7e1a4085d0862610a1c01436af59600d",
         "expression": 100
     },
     "OR11H6":
@@ -27040,7 +27035,8 @@
             }
         },
         "btree": "0000000010000000111",
-        "aligned": "----------------------------------------------------------MNNSQISTVTQFVLLGFPGPWKIQIIFFSMILLVYIFTLTGNMAIICAVR------------------------------------------------------------------------------------------------------WDHRLHTPMYVLLANFSFLEIWYVTCTVPNMLVNFF------------------------------------------------------------------------------SKTKTISFSGCFTQFHFFFSLGTTECFFLCVMAYDRYLAICH-------------------------------------------------------------------------------------------------------PLHYPSIMTGQLCGILVSLCWLIGFLGHSISIFFI---------------------------------------------------------------------FQLPFCGPNIIDHFLCDVDPLMALSSAPTHIIGHVFHSVSSLFINLTMVYILGSYTLVLRTVLQV--------------------------------------------------------------------------------------PSSAGWQKAISTCGSHLVVVSLFYGAIMLMYVSPT-------------------------------------------------------------------------------------------------PGNSVAMHKLITLIYSVVTPVLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDMKYALHHVFCGMRIIQRS-----------------"
+        "aligned": "----------------------------------------------------------MNNSQISTVTQFVLLGFPGPWKIQIIFFSMILLVYIFTLTGNMAIICAVR------------------------------------------------------------------------------------------------------WDHRLHTPMYVLLANFSFLEIWYVTCTVPNMLVNFF------------------------------------------------------------------------------SKTKTISFSGCFTQFHFFFSLGTTECFFLCVMAYDRYLAICH-------------------------------------------------------------------------------------------------------PLHYPSIMTGQLCGILVSLCWLIGFLGHSISIFFI---------------------------------------------------------------------FQLPFCGPNIIDHFLCDVDPLMALSSAPTHIIGHVFHSVSSLFINLTMVYILGSYTLVLRTVLQV--------------------------------------------------------------------------------------PSSAGWQKAISTCGSHLVVVSLFYGAIMLMYVSPT-------------------------------------------------------------------------------------------------PGNSVAMHKLITLIYSVVTPVLNPLIYSLR------------------------------------------------------------------------------------------------------------------------NKDMKYALHHVFCGMRIIQRS-----------------",
+        "best_agonist": "65ea33a3f24ba7e85758516edec26283"
     },
     "OR11H12":
     {
@@ -27128,6 +27124,7 @@
         "btree": "0000000010000000001",
         "aligned": "-------------------------------------------MCPLTLQVTGLMNVSEPNSSFAFVNEFILQGFTCEWTIQIFLFSLFTTTYALTITGNGAIAFVLW------------------------------------------------------------------------------------------------------CDWRLHTPMYMFLGNFSFLEIWYVSSTVPKMLVNFL------------------------------------------------------------------------------SEKKNISFAGCFLQFYFFFSLGTSECLLLTVMAFDQYLAICR-------------------------------------------------------------------------------------------------------PLLYPNIMTGHLCAKLVILCWVCGFLWFLIPIVLI---------------------------------------------------------------------SQMPFCGPNIIDHVVCDPGPRFALDCVSAPRIQLFCYTLSSLVIFGNFLFIIGSYTLVLKAVLGM--------------------------------------------------------------------------------------PSSTGRHKAFSTCGSHLAVVSLCYSSLMVMYVSPG-------------------------------------------------------------------------------------------------LGHSTGMQKIETLFYAMVTPLFNPLIYSLQ------------------------------------------------------------------------------------------------------------------------NKEIKAALRKVLGSSNII--------------------",
         "expression": 92,
+        "best_agonist": "d644ce426eb9b78f103cd652bae6a5b7",
         "agecorr": 0.5564
     },
     "OR11L1":
@@ -28895,6 +28892,7 @@
         },
         "btree": "0000100011",
         "aligned": "------------------------------------------------------------MVNLTSMSGFLLMGFSDERKLQILHALVFLVTYLLALTGNLLIITIIT------------------------------------------------------------------------------------------------------VDRRLHSPMYYFLKHLSLLDLCFISVTVPQSIANSLM------------------------------------------------------------------------------GNGYISLVQCILQVFFFIALASSEVAILTVMSYDRYAAICQ-------------------------------------------------------------------------------------------------------PLHYETIMDPRACRHAVIAVWIAGGLSGLMHAAIN---------------------------------------------------------------------FSIPLCGKRVIHQFFCDVPQMLKLACSYEFINEIALAAFTTSAAFICLISIVLSYIRIFSTVLRI--------------------------------------------------------------------------------------PSAEGRTKVFSTCLPHLFVATFFLSAAGFEFLRLP-------------------------------------------------------------------------------------------------SDSSSTVDLVFSVFYTVIPPTLNPVIYSLR------------------------------------------------------------------------------------------------------------------------NDSMKAALRKMLSKEELPQRKMCLKAMFKL--------",
+        "best_agonist": "1d5d388c0e0238cee237797696d46710",
         "expression": 88
     },
     "OR14K1":
@@ -29418,6 +29416,7 @@
         },
         "btree": "00010010110",
         "aligned": "------------------------------------------------------------MWPNITAAPFLLTGFPGLEAAHHWISIPFFAVYVCILLGNGMLLYLIK------------------------------------------------------------------------------------------------------HDHSLHEPMYYFLTMLAGTDLMVTLTTMPTVMGIL------------------------------------------------------------------------------WVNHREISSVGCFLQAYFIHSLSVVESGSLLAMAYDCFIAIRN-------------------------------------------------------------------------------------------------------PLRYASILTNTRVIALGVGVFLRGFVSILPVILRL---------------------------------------------------------------------FSFSYCKSHVITRAFCLHQEIMRLACADITFNRLYPVILISLTIFLDCLIILFSYILILNTVIGI--------------------------------------------------------------------------------------ASGEERAKALNTCISHISCVLIFYVTVMGLTFIYR-----------------------------------------------------------------------------------------------FGKNVPEVVHIIMSYIYFLFPPLMNPVIYSIK------------------------------------------------------------------------------------------------------------------------TKQIQYGIIRLLSKHRFSS-------------------",
+        "best_agonist": "bfd6d55c31a15054ccded6100bd3b0d6",
         "expression": 100
     },
     "OR51B4":
@@ -29506,6 +29505,7 @@
             }
         },
         "btree": "0001001010",
+        "best_agonist": "c0fa22d4575dddc533baf75fdb8ff59b",
         "aligned": "------------------------------------------------------------MWYNNSAGPFLLTGFLGSEAVHYRISMSFFVIYFSVLFGNGTLLVLIW------------------------------------------------------------------------------------------------------NDHSLHEPMYYFLAMLADTDLGMTFTTMPTVLGVLLL-------------------------------------------------------------------------------DQREIAHAACFTQSFIHSLAIVESGILLVLAYDCFIAIRT-------------------------------------------------------------------------------------------------------PLRYNCILTNSRVMNIGLGVLMRGFMSILPIILSL---------------------------------------------------------------------YCYPYCGSRALLHTFCLHQDVIKLACADITFNHIYPIIQTSLTVFLDALIIIFSYILILKTVMGI--------------------------------------------------------------------------------------ASGQEEAKSLNTCVSHISCVLVFHITVMGLSFIHR-----------------------------------------------------------------------------------------------FGKHAPHVVPITMSYVHFLFPPFVNPIIYSIK------------------------------------------------------------------------------------------------------------------------TKQIQRSIIRLFSGQSRA--------------------",
         "expression": 100
     },
@@ -29591,6 +29591,7 @@
             }
         },
         "btree": "0001001011100",
+        "best_agonist": "1bf8d63e1593909486c3f37956488442",
         "aligned": "------------------------------------------------------------MSSSGSSHPFLLTGFPGLEEAHHWISVFFLFMYISILFGNGTLLLLIK------------------------------------------------------------------------------------------------------EDHNLHEPMYFFLAMLAATDLGLALTTMPTVLGVL------------------------------------------------------------------------------WLDHREIGSAACFSQAYFIHSLSFLESGILLAMAYDRFIAICN-------------------------------------------------------------------------------------------------------PLRYTSVLTNTRVVKIGLGVLMRGFVSVVPPIRPL---------------------------------------------------------------------YFFLYCHSHVLSHAFCLHQDVIKLACADTTFNRLYPAVLVVFIFVLDYLIIFISYVLILKTVLSI--------------------------------------------------------------------------------------ASREERAKALITCVSHICCVLVFYVTVIGLSLIHR-----------------------------------------------------------------------------------------------FGKQVPHIVHLIMSYAYFLFPPLMNPITYSVK------------------------------------------------------------------------------------------------------------------------TKQIQNAILHLFTTHRIGT-------------------"
     },
     "OR51B6":
@@ -29675,6 +29676,7 @@
             }
         },
         "btree": "000100101111",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "------------------------------------------------------------MGLNKSASTFQLTGFPGMEKAHHWIFIPLLAAYISILLGNGTLLFLIR------------------------------------------------------------------------------------------------------NDHNLHEPMYYFLAMLAATDLGVTLTTMPTVLGVL------------------------------------------------------------------------------WLDHREIGHGACFSQAYFIHTLSVMESGVLLAMAYDCFITIRS-------------------------------------------------------------------------------------------------------PLRYTSILTNTQVMKIGVRVLTRAGLSIMPIVVRL---------------------------------------------------------------------HWFPYCRSHVLSHAFCLHQDVIKLACADITFNRLYPVVVLFAMVLLDFLIIFFSYILILKTVMGI--------------------------------------------------------------------------------------GSGGERAKALNTCVSHICCILVFYVTVVCLTFIHR-----------------------------------------------------------------------------------------------FGKHVPHVVHITMSYIHFLFPPFMNPFIYSIK------------------------------------------------------------------------------------------------------------------------TKQIQSGILRLFSLPHSRA-------------------"
     },
     "OR51D1":
@@ -29848,6 +29850,7 @@
             }
         },
         "btree": "000100100011",
+        "best_agonist": "ae2fb03b006ca5a141676fa9b7266be0",
         "aligned": "--------------------------------------------------------MVDPNGNESSATYFILIGLPGLEEAQFWLAFPLCSLYLIAVLGNLTIIYIVR------------------------------------------------------------------------------------------------------TEHSLHEPMYIFLCMLSGIDILISTSSMPKMLAIF------------------------------------------------------------------------------WFNSTTIQFDACLLQMFAIHSLSGMESTVLLAMAFDRYVAICH-------------------------------------------------------------------------------------------------------PLRHATVLTLPRVTKIGVAAVVRGAALMAPLPVFI---------------------------------------------------------------------KQLPFCRSNILSHSYCLHQDVMKLACDDIRVNVVYGLIVIISAIGLDSLLISFSYLLILKTVLGL---------------------------------------------------------------------------------------TREAQAKAFGTCVSHVCAVFIFYVPFIGLSMVHR-----------------------------------------------------------------------------------------------FSKRRDSPLPVILANIYLLVPPVLNPIVYGVK------------------------------------------------------------------------------------------------------------------------TKEIRQRILRLFHVATHASEP-----------------",
         "expression": 100
     },
@@ -29934,6 +29937,7 @@
             }
         },
         "btree": "0001001000100",
+        "best_agonist": "1ff123ce259e6780a461b887cd9c4432",
         "aligned": "-----------------------------------------------------------MSSCNFTHATFVLIGIPGLEKAHFWVGFPLLSMYVVAMFGNCIVVFIVR------------------------------------------------------------------------------------------------------TERSLHAPMYLFLCMLAAIDLALSTSTMPKILALF------------------------------------------------------------------------------WFDSREISFEACLTQMFFIHALSAIESTILLAMAFDRYVAICH-------------------------------------------------------------------------------------------------------PLRHAAVLNNTVTAQIGIVAVVRGSLFFFPLPLLI---------------------------------------------------------------------KRLAFCHSNVLSHSYCVHQDVMKLAYADTLPNVVYGLTAILLVMGVDVMFISLSYFLIIRTVLQL--------------------------------------------------------------------------------------PSKSERAKAFGTCVSHIGVVLAFYVPLIGLSVVHR-----------------------------------------------------------------------------------------------FGNSLHPIVRVVMGDIYLLLPPVINPIIYGAK------------------------------------------------------------------------------------------------------------------------TKQIRTRVLAMFKISCDKDLQAVGGK------------",
         "expression": 96
     },
@@ -30536,6 +30540,7 @@
             }
         },
         "btree": "000100100000010",
+        "best_agonist": "bfd6d55c31a15054ccded6100bd3b0d6",
         "aligned": "----------------------------------------------------------MGLFNVTHPAFFLLTGIPGLESSHSWLSGPLCVMYAVALGGNTVILQAVR------------------------------------------------------------------------------------------------------VEPSLHEPMYYFLSMLSFSDVAISMATLPTVLRTFCL------------------------------------------------------------------------------NARNITFDACLIQMFLIHFFSMMESGILLAMSFDRYVAICD-------------------------------------------------------------------------------------------------------PLRYATVLTTEVIAAMGLGAAARSFITLFPLPFLI---------------------------------------------------------------------KRLPICRSNVLSHSYCLHPDMMRLACADISINSIYGLFVLVSTFGMDLFFIFLSYVLILRSVMAT--------------------------------------------------------------------------------------ASREERLKALNTCVSHILAVLAFYVPMIGVSTVHR-----------------------------------------------------------------------------------------------FGKHVPCYIHVLMSNVYLFVPPVLNPLIYSAK------------------------------------------------------------------------------------------------------------------------TKEIRRAIFRMFHHIKI---------------------",
         "expression": 100
     },
@@ -30708,6 +30713,7 @@
             }
         },
         "btree": "00010010000000001",
+        "best_agonist": "a276ab392949e6a20f3aeeebbc9ebb92",
         "aligned": "--------------------------------------------------------MGDWNNSDAVEPIFILRGFPGLEYVHSWLSILFCLAYLVAFMGNVTILSVIW------------------------------------------------------------------------------------------------------IESSLHQPMYYFISILAVNDLGMSLSTLPTMLAVL------------------------------------------------------------------------------WLDAPEIQASACYAQLFFIHTFTFLESSVLLAMAFDRFVAICH-------------------------------------------------------------------------------------------------------PLHYPTILTNSVIGKIGLACLLRSLGVVLPTPLLL---------------------------------------------------------------------RHYHYCHGNALSHAFCLHQDVLRLSCTDARTNSIYGLCVVIATLGVDSIFILLSYVLILNTVLDI--------------------------------------------------------------------------------------ASREEQLKALNTCVSHICVVLIFFVPVIGVSMVHR-----------------------------------------------------------------------------------------------FGKHLSPIVHILMADIYLLLPPVLNPIVYSVR------------------------------------------------------------------------------------------------------------------------TKQIRLGILHKFVLRRRF--------------------",
         "expression": 88
     },
@@ -31054,6 +31060,7 @@
             }
         },
         "btree": "0001001001",
+        "best_agonist": "39156613d880f2e50d7c2af1b81ae8fb",
         "aligned": "--------------------------------------------------------MAIFNNTTSSSSNFLLTAFPGLECAHVWISIPVCCLYTIALLGNSMIFLVII------------------------------------------------------------------------------------------------------TKRRLHKPMYYFLSMLAAVDLCLTITTLPTVLGVL------------------------------------------------------------------------------WFHAREISFKACFIQMFFVHAFSLLESSVLVAMAFDRFVAICN-------------------------------------------------------------------------------------------------------PLNYATILTDRMVLVIGLVICIRPAVFLLPLLVAI---------------------------------------------------------------------NTVSFHGGHELSHPFCYHPEVIKYTYSKPWISSFWGLFLQLYLNGTDVLFILFSYVLILRTVLGI--------------------------------------------------------------------------------------VARKKQQKALSTCVCHICAVTIFYVPLISLSLAHR-----------------------------------------------------------------------------------------------LFHSTPRVLCSTLANIYLLLPPVLNPIIYSLK------------------------------------------------------------------------------------------------------------------------TKTIRQAMFQLLQSKGSWGFNVRGLRGRWD--------",
         "expression": 76
     },
@@ -31313,6 +31320,7 @@
             }
         },
         "btree": "00010000001110",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "------------------------------------------------------MALPITNGTLFMPFVLTFIGIPGFESVQCWIGIPFCATYVIALIGNSLLLIIIK------------------------------------------------------------------------------------------------------SEPSLHEPMYIFLATLGATDISLSTSIVPKMLDIF------------------------------------------------------------------------------WFHLPEIYFDACLFQMWLIHTFQGIESGVLLAMALDRCVAICY-------------------------------------------------------------------------------------------------------PLRRAIVFTRQLVTYIVVGVTLRPAILVIPCLLLI--------------------------------------------------------------------KCHLKLYRTKLIYHTYCERVALVKLATEDVYINKVYGILGAFIVGGLDFIFITLSYIQIFITVFHL--------------------------------------------------------------------------------------PLKEARLKVFNTCIPHIYVFFQFYLLAFFFIFYSQ------------------------------------------------------------------------------------------------IWILYPIICTYHLVQSLPTGPTIPQPLYLWV-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------KDQTH",
         "expression": 46
     },
@@ -31401,6 +31409,7 @@
             }
         },
         "btree": "00010000001111",
+        "best_agonist": "afd5ef2c8a9deab5a58799a633e4416a",
         "aligned": "--------------------------------------------------------MPTFNGSVFMPSAFILIGIPGLESVQCWIGIPFSAMYLIGVIGNSLILVIIK------------------------------------------------------------------------------------------------------YENSLHIPMYIFLAMLAATDIALNTCILPKMLGIF------------------------------------------------------------------------------WFHLPEISFDACLFQMWLIHSFQAIESGILLAMALDRYVAICI-------------------------------------------------------------------------------------------------------PLRHATIFSQQFLTHIGLGVTLRAAILIIPSLGLI--------------------------------------------------------------------KCCLKHYRTTVISHSYCEHMAIVKLATEDIRVNKIYGLFVAFAILGFDIIFITLSYVQIFITVFQL--------------------------------------------------------------------------------------PQKEARFKAFNTCIAHICVFLQFYLLAFFSFFTHR------------------------------------------------------------------------------------------------FGSHIPPYIHILLSNLYLLVPPFLNPIVYGV-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------KTKQIRDHIVKVFFFKKVT",
         "expression": 92
     },
@@ -31487,6 +31496,7 @@
             }
         },
         "btree": "000100000111",
+        "best_agonist": "c63d864c72bb0b2ec67e69dd82b03bd3",
         "aligned": "--------------------------------------------------------MSHTNVTIFHPAVFVLPGIPGLEAYHIWLSIPLCLIYITAVLGNSILIVVIV------------------------------------------------------------------------------------------------------MERNLHVPMYFFLSMLAVMDILLSTTTVPKALAIF------------------------------------------------------------------------------WLQAHNIAFDACVTQGFFVHMMFVGESAILLAMAFDRFVAICA-------------------------------------------------------------------------------------------------------PLRYTTVLTWPVVGRIALAVITRSFCIIFPVIFLL---------------------------------------------------------------------KRLPFCLTNIVPHSYCEHIGVARLACADITVNIWYGFSVPIVMVILDVILIAVSYSLILRAVFRL--------------------------------------------------------------------------------------PSQDARHKALSTCGSHLCVILMFYVPSFFTLLTHH-----------------------------------------------------------------------------------------------FGRNIPQHVHILLANLYVAVPPMLNPIVYGVK------------------------------------------------------------------------------------------------------------------------TKQIREGVAHRFFDIKTWCCTSPLGS------------",
         "expression": 100
     },
@@ -31734,6 +31744,7 @@
             }
         },
         "btree": "000100000101",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "-------------------------------------------------------MSDSNLSDNHLPDTFFLTGIPGLEAAHFWIAIPFCAMYLVALVGNAALILVIA------------------------------------------------------------------------------------------------------MDNALHAPMYLFLCLLSLTDLALSSTTVPKMLAIL------------------------------------------------------------------------------WLHAGEISFGGCLAQMFCVHSIYALESSILLAMAFDRYVAICN-------------------------------------------------------------------------------------------------------PLRYTTILNHAVIGRIGFVGLFRSVAIVSPFIFLL---------------------------------------------------------------------RRLPYCGHRVMTHTYCEHMGIARLACANITVNIVYGLTVALLAMGLDSILIAISYGFILHAVFHL--------------------------------------------------------------------------------------PSHDAQHKALSTCGSHIGIILVFYIPAFFSFLTHR----------------------------------------------------------------------------------------------FGHHEVPKHVHIFLANLYVLVPPVLNPILYGAR------------------------------------------------------------------------------------------------------------------------TKEIRSRLLKLLHLGKTSI-------------------",
         "expression": 100
     },
@@ -32168,6 +32179,7 @@
             }
         },
         "btree": "000100000100011",
+        "best_agonist": "0b86e64eef34ff884e54359c7b383cc2",
         "aligned": "----------------------------------------------------MAGRMSTSNHTQFHPSSFLLLGIPGLEDVHIWIGVPFFFVYLVALLGNTALLFVIQ------------------------------------------------------------------------------------------------------TEQSLHEPMYYFLAMLDSIDLGLSTATIPKMLGIF------------------------------------------------------------------------------WFNTKEISFGGCLSHMFFIHFFTAMESIVLVAMAFDRYIAICK-------------------------------------------------------------------------------------------------------PLRYTMILTSKIISLIAGIAVLRSLYMVVPLVFLL----------------------------------------------------------------------LRLPFCGHRIIPHTYCEHMGIARLACASIKVNIRFGLGNISLLLLDVILIILSYVRILYAVFCL--------------------------------------------------------------------------------------PSWEARLKALNTCGSHIGVILAFFTPAFFSFLTHR-----------------------------------------------------------------------------------------------FGHNIPQYIHIILANLYVVVPPALNPVIYGVR------------------------------------------------------------------------------------------------------------------------TKQIRERVLRIFLKTNH---------------------",
         "expression": 84
     },
@@ -32407,6 +32419,7 @@
             }
         },
         "btree": "000100010",
+        "best_agonist": "31a065920f27e2d1ca803e145cf053a7",
         "aligned": "----------------------------MCQQILRDCILLIHHLCINRKKVSLVMLGPAYNHTMETPASFLLVGIPGLQSSHLWLAISLSAMYIIALLGNTIIVTAIW------------------------------------------------------------------------------------------------------MDSTRHEPMYCFLCVLAAVDIVMASSVVPKMVSIFC------------------------------------------------------------------------------SGDSSISFSACFTQMFFVHLATAVETGLLLTMAFDRYVAICK-------------------------------------------------------------------------------------------------------PLHYKRILTPQVMLGMSMAITIRAIIAITPLSWMV---------------------------------------------------------------------SHLPFCGSNVVVHSYCEHIALARLACADPVPSSLYSLIGSSLMVGSDVAFIAASYILILKAVFGL--------------------------------------------------------------------------------------SSKTAQLKALSTCGSHVGVMALYYLPGMASIYAAW----------------------------------------------------------------------------------------------LGQDVVPLHTQVLLADLYVIIPATLNPIIYGMR------------------------------------------------------------------------------------------------------------------------TKQLRERIWSYLMHVLFDHSNLGS--------------",
         "expression": 100
     },
@@ -32561,6 +32574,7 @@
             }
         },
         "btree": "0001000000011",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "--------------------------------------------------------MLPSNITSTHPAVFLLVGIPGLEHLHAWISIPFCFAYTLALLGNCTLLFIIQ------------------------------------------------------------------------------------------------------ADAALHEPMYLFLAMLATIDLVLSSTTLPKMLAIF------------------------------------------------------------------------------WFRDQEINFFACLVQMFFLHSFSIMESAVLLAMAFDRYVAICK-------------------------------------------------------------------------------------------------------PLHYTTVLTGSLITKIGMAAVARAVTLMTPLPFLL---------------------------------------------------------------------RRFHYCRGPVIAHCYCEHMAVVRLACGDTSFNNIYGIAVAMFIVVLDLLFVILSYVFILQAVLQL--------------------------------------------------------------------------------------ASQEARYKAFGTCVSHIGAILSTYTPVVISSVMHR-----------------------------------------------------------------------------------------------VARHAAPRVHILLAIFYLLFPPMVNPIIYGVK------------------------------------------------------------------------------------------------------------------------TKQIREYVLSLFQRKNM---------------------",
         "expression": 92
     },
@@ -32652,6 +32666,7 @@
             }
         },
         "btree": "0001000000010",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "--------------------------------------------------------MSASNITLTHPTAFLLVGIPGLEHLHIWISIPFCLAYTLALLGNCTLLLIIQ------------------------------------------------------------------------------------------------------ADAALHEPMYLFLAMLAAIDLVLSSSALPKMLAIF------------------------------------------------------------------------------WFRDREINFFACLAQMFFLHSFSIMESAVLLAMAFDRYVAICK-------------------------------------------------------------------------------------------------------PLHYTKVLTGSLITKIGMAAVARAVTLMTPLPFLL---------------------------------------------------------------------RCFHYCRGPVIAHCYCEHMAVVRLACGDTSFNNIYGIAVAMFIVVLDLLLVILSYIFILQAVLLL--------------------------------------------------------------------------------------ASQEARYKAFGTCVSHIGAILAFYTTVVISSVMHR-----------------------------------------------------------------------------------------------VARHAAPHVHILLANFYLLFPPMVNPIIYGVK------------------------------------------------------------------------------------------------------------------------TKQIRESILGVFPRKDM---------------------",
         "expression": 80
     },
@@ -32741,6 +32756,7 @@
             }
         },
         "btree": "000100000000001",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "----------------------------------------MTLVSFFSFLSKPLIMLLSNSSWRLSQPSFLLVGIPGLEESQHWIALPLGILYLLALVGNVTILFIIW------------------------------------------------------------------------------------------------------MDPSLHQSMYLFLSMLAAIDLVLASSTAPKALAVLLV------------------------------------------------------------------------------HAHEIGYIVCLIQMFFIHAFSSMESGVLVAMALDCYVAICH-------------------------------------------------------------------------------------------------------PLHHSTILHPGVIGCIGMVVLVRGLLLLIPFPILL---------------------------------------------------------------------GKLIFCQATIIGHAYCEHMAVVKLACSETTVNRAYGLTMALLVIGLDVLAIGVSYAHILQAVLKV--------------------------------------------------------------------------------------PGSEARLKAFSTCGSHICVILVFYVPGIFSFLTHR-----------------------------------------------------------------------------------------------FGHHVPHHVHVLLATWYLLMPPALNPLVYGVK------------------------------------------------------------------------------------------------------------------------TQQIRQRVLRVFTQKD----------------------",
         "expression": 96
     },
@@ -33047,6 +33063,7 @@
             }
         },
         "btree": "0001000000101",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "--------------------------------------------------MPLFNSLCWFPTIHVTPPSFILNGIPGLERVHVWISLPLCTMYIIFLVGNLGLVYLIY-----------------------------------------------------------------------------------------------------YEESLHHPMYFFFGHALSLIDLLTCTTTLPNALCIF------------------------------------------------------------------------------WFSLKEINFNACLAQMFFVHGFTGVESGVLMLMALDRYVAICY-------------------------------------------------------------------------------------------------------PLRYATTLTNPIIAKAELATFLRGVLLMIPFPFLV---------------------------------------------------------------------KRLPFCQSNIISHTYCDHMSVVKLSCASIKVNVIYGLMVALLIGVFDICCISLSYTLILKAAISL--------------------------------------------------------------------------------------SSSDARQKAFSTCTAHISAIIITYVPAFFTFFAHR----------------------------------------------------------------------------------------------FGGHTIPPSLHIIVANLYLLLPPTLNPIVYGVK------------------------------------------------------------------------------------------------------------------------TKQIRKSVIKFFQGDKGAG-------------------",
         "expression": 92
     },
@@ -33283,6 +33300,7 @@
             }
         },
         "btree": "000100001",
+        "best_agonist": "f3f52df6203f10ad31b89ce1deaa5a0d",
         "aligned": "-----------------------------------------------------MAETLQLNSTFLHPNFFILTGFPGLGSAQTWLTLVFGPIYLLALLGNGALPAVVW------------------------------------------------------------------------------------------------------IDSTLHQPMFLLLAILAATDLGLATSIAPGLLAVL------------------------------------------------------------------------------WLGPRSVPYAVCLVQMFFVHALTAMESGVLLAMACDRAAAIGR-------------------------------------------------------------------------------------------------------PLHYPVLVTKACVGYAALALALKAVAIVVPFPLLV---------------------------------------------------------------------AKFEHFQAKTIGHTYCAHMAVVELVVGNTQATNLYGLALSLAISGMDILGITGSYGLIAHAVLQL--------------------------------------------------------------------------------------PTREAHAKAFGTCSSHICVILAFYIPGLFSYLTHR----------------------------------------------------------------------------------------------FGHHTVPKPVHILLSNIYLLLPPALNPLIYGAR------------------------------------------------------------------------------------------------------------------------TKQIRDRLLETFTFRKSPL-------------------",
         "expression": 100
     },
@@ -33368,6 +33386,7 @@
             }
         },
         "btree": "0001011000",
+        "best_agonist": "afd5ef2c8a9deab5a58799a633e4416a",
         "aligned": "---------------------------------------------------MIQPMASPSNSSTVPVSEFLLICFPNFQSWQHWLSLPLSLLFLLAMGANTTLLITIQ------------------------------------------------------------------------------------------------------LEASLHQPLYYLLSLLSLLDIVLCLTVIPKVLAIF------------------------------------------------------------------------------WYDLRSISFPACFLQMFIMNSFLPMESCTFMVMAYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYPSIITNQFVAKASVFIVVRNALLTAPIPILT---------------------------------------------------------------------SLLHYCGENVIENCICANLSVSRLSCDNFTLNRIYQFVAGWTLLGSDLFLIFLSYTFILRAVLRF--------------------------------------------------------------------------------------KAEGAAVKALSTCGSHFILILFFSTILLVVVLTNV-----------------------------------------------------------------------------------------------ARKKVPMDILILLNVLHHLIPPALNPIVYGVR------------------------------------------------------------------------------------------------------------------------TKEIKQGIQKLLQRGR----------------------",
         "expression": 100,
         "agecorr": -0.5533
@@ -33453,6 +33472,7 @@
             }
         },
         "btree": "0001011001",
+        "best_agonist": "9eddcecb096618242940feeee841de38",
         "aligned": "------------------------------------------------------MTTHRNDTLSTEASDFLLNCFVRSPSWQHWLSLPLSLLFLLAVGANTTLLMTIW------------------------------------------------------------------------------------------------------LEASLHQPLYYLLSLLSLLDIVLCLTVIPKVLTIF------------------------------------------------------------------------------WFDLRPISFPACFLQMYIMNCFLAMESCTFMVMAYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYPSIITDHFVVKAAMFILTRNVLMTLPIPILS---------------------------------------------------------------------AQLRYCGRNVIENCICANMSVSRLSCDDVTINHLYQFAGGWTLLGSDLILIFLSYTFILRAVLRL--------------------------------------------------------------------------------------KAEGAVAKALSTCGSHFMLILFFSTILLVFVLTHV-----------------------------------------------------------------------------------------------AKKKVSPDVPVLLNVLHHVIPAALNPIIYGVR------------------------------------------------------------------------------------------------------------------------TQEIKQGMQRLLKKGC----------------------",
         "expression": 96
     },
@@ -33537,6 +33557,7 @@
             }
         },
         "btree": "0001011010",
+        "best_agonist": "ac35ffb2ee7416888479094607d05069",
         "aligned": "-------------------------------------------------------MASPSNDSTAPVSEFLLICFPNFQSWQHWLSLPLSLLFLLAMGANTTLLITIQ------------------------------------------------------------------------------------------------------LEASLHQPLYYLLSLLSLLDIVLCLTVIPKVLAIF------------------------------------------------------------------------------WFDLRSISFPACFLQMFIMNSFLTMESCTFMVMAYDRYVAICH-------------------------------------------------------------------------------------------------------PLRYPSIITDQFVARAVVFVIARNAFVSLPVPMLS---------------------------------------------------------------------ARLRYCAGNIIKNCICSNLSVSKLSCDDITFNQLYQFVAGWTLLGSDLILIVISYSFILKVVLRI--------------------------------------------------------------------------------------KAEGAVAKALSTCGSHFILILFFSTVLLVLVITNL-----------------------------------------------------------------------------------------------ARKRIPPDVPILLNILHHLIPPALNPIVYGVR------------------------------------------------------------------------------------------------------------------------TKEIKQGIQNLLKRL-----------------------",
         "expression": 100
     },
@@ -33620,6 +33641,7 @@
             }
         },
         "btree": "0001011011",
+        "best_agonist": "c63d864c72bb0b2ec67e69dd82b03bd3",
         "aligned": "-------------------------------------------------------MTLPSNNSTSPVFEFFLICFPSFQSWQHWLSLPLSLLFLLAMGANATLLITIY------------------------------------------------------------------------------------------------------LEASLHQPLYYLLSLLSLLDIVLCLTVIPKVLAIF------------------------------------------------------------------------------WFDLRSISFPACFLQVFIMNSFLTMESCTFMIMAYDRYVAICK-------------------------------------------------------------------------------------------------------PLQYSSIITDQFVARAAIFVVARNGLLTMPIPILS---------------------------------------------------------------------SRLRYCAGHIIKNCICTNVSVSKLSCDDITLNQSYQFVIGWTLLGSDLILIVLSYFFILKTVLRI--------------------------------------------------------------------------------------KGEGDMAKALGTCGSHFILILFFTTVLLVLVITNL-----------------------------------------------------------------------------------------------ARKRIPPDVPILLNILHHLIPPALNPIVYGVR------------------------------------------------------------------------------------------------------------------------TKEIKQGIQNLLRRL-----------------------",
         "expression": 69
     },
@@ -33879,6 +33901,7 @@
             }
         },
         "btree": "00010101",
+        "best_agonist": "b013143acfa662e12b38998c4c06679d",
         "aligned": "----------------------------------------------------MDTSTSVTYDSSLQISQFILMGLPGIHEWQHWLSLPLTLLYLLALGANLLIIITIQ------------------------------------------------------------------------------------------------------HETVLHEPMYHLLGILAVVDIGLATTIMPKILAIF------------------------------------------------------------------------------WFDAKAISLPMCFAQIYAIHCFFCIESGIFLCMAVDRYIAICR-------------------------------------------------------------------------------------------------------PLQYPSIVTKAFVFKATGFIMLRNGLLTIPVPILA---------------------------------------------------------------------AQRHYCSRNEIEHCLCSNLGVISLACDDITVNKFYQLMLAWVLVGSDMALVFSSYAVILHSVLRL--------------------------------------------------------------------------------------NSAEAMSKALSTCSSHLILILFHTGIIVLSVTHLAE-------------------------------------------------------------------------------------------------KKIPLIPVFLNVLHNVIPPALNPLACALR------------------------------------------------------------------------------------------------------------------------MHKLRLGFQRLLGLGQDVSK------------------",
         "expression": 96
     },
@@ -33953,6 +33976,7 @@
             }
         },
         "btree": "0011",
+        "best_agonist": "fb5314ad827bfeb1bf44f583fbee122d",
         "aligned": "-----------------------------------------------------------MMPFCHNIINISCVKNNWSNDVRASLYSLMVLIILTTLVGNLIVIVSISHF------------------------------------------------------------------------------------------------------KQLHTPTNWLIHSMATVDFLLGCLVMPYSMVRSAE------------------------------------------------------------------------------HCWYFGEVFCKIHTSTDIMLSSASIFHLSFISIDRYYAVCD-------------------------------------------------------------------------------------------------------PLRYKAKMNILVICVMIFISWSVPAVFAFGMIFLEL----------------------------------------------------------------------------NFKGAEEIYYKHVHCRGGCSVFFSKISGVLTFMTSFYIPGSIMLCVYYRIYLIAKEQARLISDAN------------------------------------------------------------------QKLQIGLEMKNGISQSKERKAVKTLGIVMGVFLICWCPFFICTVMDPF-----------------------------------------------------------------------------------------------LHYIIPPTLNDVLIWFGYLNSTFNPMVYAFF------------------------------------------------------------------------------------------------------------------------YPWFRKALKMMLF-------------------------"
     },
     "TAAR2":
@@ -34034,6 +34058,7 @@
             }
         },
         "btree": "00101",
+        "best_agonist": "fb5314ad827bfeb1bf44f583fbee122d",
         "aligned": "---------------------------------------MAVSSEQHELSHFKRTQTKKEKFNCSEYGNRSCPENERSLGVRVAMYSFMAGSIFITIFGNLAMIISISYF------------------------------------------------------------------------------------------------------KQLHTPTNFLILSMAITDFLLGFTIMPYSMIRSVE------------------------------------------------------------------------------NCWYFGLTFCKIYYSFDLMLSITSIFHLCSVAIDRFYAICY-------------------------------------------------------------------------------------------------------PLLYSTKITIPVIKRLLLLCWSVPGAFAFGVVFSEA-----------------------------------------------------------------------------YADGIEGYDILVACSSSCPVMFNKLWGTTLFMAGFFTPGSMMVGIYGKIFAVSRKHAHAINN--------------------------------------------------------------------------LRENQNNQVKKDKKAAKTLGIVIGVFLLCWFPCFFTILLDPF-----------------------------------------------------------------------------------------------LNFSTPVVLFDALTWFGYFNSTCNPLIYGFF------------------------------------------------------------------------------------------------------------------------YPWFRRALKYILL-------------------------"
     },
     "TAAR5":
@@ -34109,6 +34134,7 @@
             }
         },
         "btree": "001000",
+        "best_agonist": "fb5314ad827bfeb1bf44f583fbee122d",
         "aligned": "------------------------------------------------MRAVFIQGAEEHPAAFCYQVNGSCPRTVHTLGIQLVIYLACAAGMLIIVLGNVFVAFAVSYF------------------------------------------------------------------------------------------------------KALHTPTNFLLLSLALADMFLGLLVLPLSTIRSVE------------------------------------------------------------------------------SCWFFGDFLCRLHTYLDTLFCLTSIFHLCFISIDRHCAICD-------------------------------------------------------------------------------------------------------PLLYPSKFTVRVALRYILAGWGVPAAYTSLFLYTDV------------------------------------------------------------------------------VETRLSQWLEEMPCVGSCQLLLNKFWGWLNFPLFFVPCLIMISLYVKIFVVATRQAQQITTL--------------------------------------------------------------------------SKSLAGAAKHERKAAKTLGIAVGIYLLCWLPFTIDTMVDSL-----------------------------------------------------------------------------------------------LHFITPPLVFDIFIWFAYFNSACNPIIYVFS------------------------------------------------------------------------------------------------------------------------YQWFRKALKLTLS-------------------------"
     },
     "TAAR6":
@@ -34316,6 +34342,7 @@
             }
         },
         "btree": "00100101",
+        "best_agonist": "9c746685469bcb6f7e8ea54bbe604320",
         "aligned": "--------------------------------------------------MVNNFSQAEAVELCYKNVNESCIKTPYSPGPRSILYAVLGFGAVLAAFGNLLVMIAILHF------------------------------------------------------------------------------------------------------KQLHTPTNFLIASLACADFLVGVTVMPFSTVRSVE------------------------------------------------------------------------------SCWYFGDSYCKFHTCFDTSFCFASLFHLCCISVDRYIAVTD-------------------------------------------------------------------------------------------------------PLTYPTKFTVSVSGICIVLSWFFSVTYSFSIFYTGA------------------------------------------------------------------------------NEEGIEELVVALTCVGGCQAPLNQNWVLLCFLLFFIPNVAMVFIYSKIFLVAKHQARKIESTA------------------------------------------------------------------SQAQSSSESYKERVAKRERKAAKTLGIAMAAFLVSWLPYLVDAVIDAY-----------------------------------------------------------------------------------------------MNFITPPYVYEILVWCVYYNSAMNPLIYAFF------------------------------------------------------------------------------------------------------------------------YQWFGKAIKLIVS-------------------------"
     },
     "VN1R1":
@@ -34377,6 +34404,7 @@
             }
         },
         "btree": "010",
+        "best_agonist": "74dedcb4b9d15289a42eb0b9c7d9446e",
         "aligned": "---------------------------------------------------------------------------------------MVGDTLKLLSPLMTRYFFLLFYSTDSSDLNENQHPLDFDEMAFGKVKSGISFLIQTGVGILGNSFLLCFYNLILF------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TGHKLRPTDLILSQLALANSMVLFFKGIPQTMAAFG------------------------------------------------------------------------------------------------------------------------------------------------LKYLLNDTGCKFVFYYHRVGTRVSLSTICLLNGFQAIKLN-------------------------------------------------------------------------------------------------------------------------------------------------------------------------PSICRWMEIKIRSPRFIDFCCLLCWAPHVLMNASVLLLVN--------------------------------------------------------------------------------------------------------------------------------------------------GPLNSKNSSAKNNYGYCSYKASKRFS-SLHAVLYFSP-DFMSLGFMVWASGSMVFFLYRHKQQVQH-------------------------------------------------------------------------------------------------------------------------------------------------NHSNRLSCRPSQEARATHTIMVLVSSFFVFYSVHSFLTIWTTVV----------------------------------------------------------------------------------------------------------------------------------------------------------------------ANPGQWIVTNSVLVASCFPARSPFVLIMSD--------------------------------------------THISQFCFACRTRKTLFPNLVVMP"
     },
     "VN1R2":
@@ -34443,6 +34471,7 @@
             }
         },
         "btree": "01100",
+        "best_agonist": "e9bd06228eb347c23b0a820fda231c98",
         "aligned": "----------------------------------------------MTHTLYPTPFALYPINISAAWHLGPLPVSCFVSNKYQCSLAFGATTGLRVLVVVVPQTQLSFLSSLCLVSLFLHSLVSAHGEKPTKPVGLDPTLFQVVVGILGNFSLLYYYMFLYF------------------------------------------------------------------------------------------------------------------------------------------------------------------------------RGYKPRSTDLILRHLTVADSLVILSKRIPETMATFG------------------------------------------------------------------------------------------------------------------------------------------------LKHFDNYFGCKFLLYAHRVGRGVSIGSTCLLSVFQVITIN-------------------------------------------------------------------------------------------------------------------------------------------------------------------------PRNSRWAEMKVKAPTYIGLSNILCWAFHMLVNAIFPIYTT--------------------------------------------------------------------------------------------------------------------------------------------------GKWSNNNITKKGDLGYCSAPLSDEVTKSVYAALTSFH-DVLCLGLMLWASSSIVLVLYRHKQQVQH-------------------------------------------------------------------------------------------------------------------------------------------------ICRNNLYPNSSPGNRAIQSILALVSTFALCYALSFITYVYLALF----------------------------------------------------------------------------------------------------------------------------------------------------------------------DNSSWWLVNTAALIIACFPTISPFVLMCRD--------------------------------------------PSRSRLCSICCRRNRRFFHDFRKM"
     },
     "VN1R3":
@@ -34510,6 +34539,7 @@
             }
         },
         "btree": "0111",
+        "best_agonist": "66f5442bbfde5b89a686df5fe8b80985",
         "aligned": "-------------------------------------------------------------------------------------------------------------------------------MASKDFAIGMILLSQIMVGFLGNFFLLYHYSFLCF------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TRGMLQSTDLILKHLTIANSLVILSKGIPQTMAAFG------------------------------------------------------------------------------------------------------------------------------------------------LKDSLSDIGCKFVFYVHRVGRAVCVGNACLLSVFQVITIS------------------------------------------------------------------------------------------------------------------------------------------------------------------------PSEFRWAELKLHAHKYIRSFILVLCWILNTLVNITVLLHVT--------------------------------------------------------------------------------------------------------------------------------------------------GKWNSINSTKTNDYGYCSGGSRSRIPHSLHIVLLSSL-DVLCLGLMTLASGSMVFILHRHKQQVQH---------------------------------------------------------------------------------------------------------------------------------------------------IHGTNLSARSSPESRVTQSILVLVSTLCYFTRSPPSLHMSLF----------------------------------------------------------------------------------------------------------------------------------------------------------------------PNPSWWLLNTSALITACFPMVSPFVLMSRH--------------------------------------------PRIPRLGSACCGRNPQFPKLVR"
     },
     "VN1R4":
@@ -34576,6 +34606,7 @@
             }
         },
         "btree": "011010",
+        "best_agonist": "5275978d29dfd72a5698f468f3a64906",
         "aligned": "--------------------------------------------------------------------------------------------------------------------------------MASRYVAVGMILSQTVVGVLGSFSVLLHYLSFYC------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TGCRLRSTDLIVKHLIVANFLALRCKGVPQTMAAFG------------------------------------------------------------------------------------------------------------------------------------------------VRYFLNALGCKLVFYLHRVGRGVSIGTTCLLSVFQVITVS-------------------------------------------------------------------------------------------------------------------------------------------------------------------------SRKSRWAKLKEKAPKHVGFSVLLCWIVCMLVNIIFPMYVT--------------------------------------------------------------------------------------------------------------------------------------------------GKWNYTNITVNEDLGYCSGGGNNKIAQTLRAMLLSFP-DVLCLGLMLWVSSSMVCILHRHKQRVQH-------------------------------------------------------------------------------------------------------------------------------------------------IDRSDLSPRASPENRATQSILILVSTFVSSYTLSCLFQVCMALL----------------------------------------------------------------------------------------------------------------------------------------------------------------------DNPNSLLVNTSALMSVCFPTLSPFVLMSCD--------------------------------------------PSVYRFCFAWKR"
     },
     "VN1R5":
@@ -34646,6 +34677,7 @@
             }
         },
         "btree": "011011",
+        "best_agonist": "e9bd06228eb347c23b0a820fda231c98",
         "aligned": "------------------------------------------------------------------------------------------MLKLVIIENMAEIMLFSLDLLLFSTDILCFNFPSKMIKLPGFITIQIFFYPQASFGISANTILLLFHIFTFV------------------------------------------------------------------------------------------------------------------------------------------------------------------------------FSHRSKSIDMIISHLSLIHILLLFTQAILVSLDFFG------------------------------------------------------------------------------------------------------------------------------------------------SQNTQDDLRYKVIVFLNKVMRGLSICTPCLLSVLQAIISP--------------------------------------------------------------------------------------------------------------------------------------------------------------------------SIFSLAKLKHPSASHILGFFLFSWVLNMFIGVIFCCTLR------------------------------------------------------------------------------------------------------------------------------------------------------LPPVKRGQSSVCHTALFLFAHELHPQETVFHTN-DFEGCHLYRVHGPLKRLHGDYFIQTIRG-----------------------------------------------------------------------------------------------------------------------------------------------YLSAFTQPACPRVSPVKRASQAILLLVSFVFTYWVDFTFSFSGGVT----------------------------------------------------------------------------------------------------------------------------------------------------------------------WINDSLLVWLQVIVANSYAAISPLMLIYAD--------------------------------------------NQIFKTLQMLWFKYLSPPKLMLKFNRQCGSTKK"
     },
     "MS4A1":
