@@ -341,7 +341,7 @@
 #define _dbg_cond_basic_acd_lig 0
 #define _dbg_conj_chg 0
 #define _dbg_conjugation 0
-#define _dbg_contact_anomaly 1
+#define _dbg_contact_anomaly 0
 #define _dbg_cs_pairing 0
 #define _dbg_cvty_pose_filter 0
 #define _dbg_eclipsing_contacts 0
@@ -356,7 +356,7 @@
 #define _dbg_Huckel 0
 #define _dbg_hxrax 0
 #define _dbg_hydrogenate 0
-#define _dbg_icreshape 1
+#define _dbg_icreshape 0
 #define _dbg_identify_rings 0
 #define _dbg_imidazole_check 0
 #define _dbg_improvements_only_residue 158
