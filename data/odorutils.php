@@ -215,7 +215,7 @@ function make_clickable_notes($notes)
 
 function all_empirical_pairs_for_receptor($protein, $return_1dim = false, $agonists_only = false)
 {
-	global $odors;
+	global $odors, $prots;
 
 	$array = [];
 	$sortable = [];
@@ -282,6 +282,11 @@ function all_empirical_pairs_for_receptor($protein, $return_1dim = false, $agoni
 				{
 					$array[$oid]['ant_ref'] = $ref;
 					$value -= 0.0001;
+				}
+				if (isset($prots[$protein]["best_agonist"]) && $oid == $prots[$protein]["best_agonist"])
+				{
+					$array[$oid]['best'] = 1;
+					$value += 1e9;
 				}
 				$sortable[$oid] = $value;
 			}

@@ -219,6 +219,18 @@ p.ref
     display: block;
 }
 
+tr.best_ag
+{
+    font-weight: bold;
+    background-color: #9f6053;
+    color: #ffeecc;
+}
+
+tr.best_ag a
+{
+    color: #99ffcc;
+}
+
 table:not(.notannoying) tr:hover td
 {
     background-color: rgba(69, 195, 175, 0.2);
