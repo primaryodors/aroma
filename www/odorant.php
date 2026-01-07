@@ -229,11 +229,11 @@ window.setTimeout( function()
     if (@$odor['notes'])
     {
         echo "<br><strong>Notes:</strong><br>";
-        echo "{$odor['notes']['text']}";
+        if (isset($odor['notes']['text'])) echo "{$odor['notes']['text']}";
 
         $comma = false;
         echo "<sup>";
-        foreach ($odor['notes']['refs'] as $refurl)
+        if (isset($odor['notes']['refs'])) foreach ($odor['notes']['refs'] as $refurl)
         {
             if ($comma) echo ", ";
             $refno = get_refno($refurl);
