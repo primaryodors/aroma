@@ -782,7 +782,9 @@ foreach ($pairs as $oid => $pair)
     $pq = array_unique($pq);
 
     $ufn = urlencode($odor['full_name']);
-    echo "<tr>\n";
+    echo "<tr class=\"";
+    if (isset($prots[$rcpid]["best_agonist"]) && $prots[$rcpid]["best_agonist"] == $oid) echo "best_ag";
+    echo "\">\n";
     echo "<td><a href=\"odorant.php?o=$oid\" style=\"white-space: nowrap;\"";
 
     $smilesesc = str_replace("\\", "\\\\", $odor['smiles']);
@@ -872,7 +874,7 @@ if (count($predictions))
             $lodor = $odors[$oid];
             echo "<tr>\n";
             echo "<td><a href=\"odorant.php?o=$oid\" style=\"white-space: nowrap;\"";
-        
+
             $smilesesc = str_replace("\\", "\\\\", $lodor['smiles']);
             echo " onmouseenter=\"showSkeletal(event, '$smilesesc');\"";
             echo " onmouseout=\"$('#skeletal').hide();\"";
