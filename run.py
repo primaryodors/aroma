@@ -166,7 +166,7 @@ for rcpid in data.protutils.prots.keys():
         newcfg.append("NORESWARN")
         newcfg.append("NOFAIL")
 
-        cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-5.0", "nooil"]
+        cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-3.0", "nooil"]
         print(" ".join(cmd))
         proc = subprocess.run(cmd, stdout=subprocess.PIPE)
         for ln in proc.stdout.decode().split('\n'):
