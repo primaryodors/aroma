@@ -179,6 +179,13 @@ for rcpid in data.protutils.prots.keys():
             ln = re.sub("-", " ", ln).strip()
             if ln: newcfg.append("CNTCT "+ln)
 
+        if fam[0:2] == "OR":
+            sub = int(re.sub("[^0-9]", "", fam))
+            if sub < 50:
+                newcfg.append("CNTCT data/OR_ClassII_a.ic")
+            else:
+                newcfg.append("CNTCT data/OR_ClassI_a.ic")
+
         if pocket:
             if "atomto" in pocket:
                 if isinstance(pocket["atomto"], str):
@@ -207,6 +214,8 @@ for rcpid in data.protutils.prots.keys():
             ln = newcfg[i]
             if ln[0:4] == "PROT" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
+            if ln[0:6] == "CNTCT ":
+                newcfg[i] = ln.replace("_a.ic", "_i.ic")
         with open("tmp/" + conffni, 'w') as f:
             f.write("\n".join(newcfg) + "\n\n")
 

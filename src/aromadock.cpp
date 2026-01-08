@@ -210,6 +210,8 @@ float best_pose_energy;
 Atom *best_ligand_stays, *best_ligand_stays_other;
 #endif
 
+ICHelixGroup hg;
+
 #if _dummy_atoms_for_debug
 std::vector<Atom> dummies;
 #endif
@@ -1132,9 +1134,16 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "CNTCT"))
     {
-        soft_contact_a[n_soft_contact].set(words[1]);
-        soft_contact_b[n_soft_contact].set(words[2]);
-        n_soft_contact++;
+        if (file_exists(words[1]))
+        {
+            hg.load_ic_file(words[i]);
+        }
+        else
+        {
+            soft_contact_a[n_soft_contact].set(words[1]);
+            soft_contact_b[n_soft_contact].set(words[2]);
+            n_soft_contact++;
+        }
         return 2;
     }
     else if (!strcmp(words[0], "COLORS"))
@@ -2002,6 +2011,35 @@ void apply_protein_specific_settings(Protein* p)
                         }
                         i=j;
                         break;
+                    }
+                }
+            }
+        }
+
+        if (hg.n_helix)
+        {
+            for (i=0; i<hg.n_helix; i++)
+            {
+                if (hg.helices[i].n_ic)
+                {
+                    for (j=0; j<hg.helices[i].n_ic; j++)
+                    {
+                        InternalContact* lic = &(hg.helices[i].ic[j]);
+                        lic->res1.resolve_resno(p);
+                        lic->res2.resolve_resno(p);
+                        if (lic->res1.resno && lic->res2.resno)
+                        {
+                            AminoAcid* aa1 = p->get_residue(lic->res1.resno);
+                            AminoAcid* aa2 = p->get_residue(lic->res2.resno);
+
+                            if (aa1 && aa2
+                                && aa1->get_reach_atom(hbond)
+                                && aa2->get_reach_atom(hbond)
+                                )
+                            {
+                                aa1->movability = aa2->movability = MOV_PINNED;
+                            }
+                        }
                     }
                 }
             }
