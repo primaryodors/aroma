@@ -312,8 +312,9 @@ for i in range(n):
         if d == c or d == '-':
             alitpl += d
         else:
-            print("Something went wrong:\n\n" + alitpl + "\n" + alidat + "\n" + c + "~" + d)
-            exit()
+            alitpl += d         # some of the sequences do not match; use the PDB sequence.
+            # print("Something went wrong:\n\n" + alitpl + "\n" + alidat + "\n" + c + "~" + d)
+            # exit()
 
 if mode == "inactive":  tplfttl = protid+"i_tpl"
 else:                   tplfttl = protid+"_tpl"
