@@ -122,6 +122,7 @@ with open(tplpdb, 'r') as ftpl:
     for ln in c.split("\n"):
         if ln[0:6] == "ATOM  ":
             resno = int(ln[22:28].strip())
+            if resno < 1 or resno > len(is_helix): continue
             if is_helix[resno-1] == '-': continue
             if not startres or (resno and resno<startres): startres = resno
             cout += ln + "\n"
@@ -136,6 +137,7 @@ with open(inppdb, 'r') as fin:
             cout = ln + "\n" + cout
         if ln[0:6] == "ATOM  ":
             resno = int(ln[22:28].strip())
+            if resno < 1 or resno > len(is_helix): continue
             if is_helix[resno-1] == '-': continue
             # if not startres or (resno and resno<startres): startres = resno
         if ln[0:6] == "HETATM":
