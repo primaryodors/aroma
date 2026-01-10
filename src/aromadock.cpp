@@ -3515,7 +3515,7 @@ _try_again:
             }
 
             ligand->reset_conformer_momenta();
-            
+
             if (rcn)
             {
                 for (i=0; i<rcn; i++)
@@ -3585,6 +3585,41 @@ _try_again:
                     appears[i].update(protein, 0);
                 }
             }
+
+            // Stays rotation
+            #if stays_rotation
+            if (ligand->stay_close_mine && ligand->stay_close_other
+                && fabs(ligand->stay_close_mine->is_polar()) >= hydrophilicity_cutoff
+                && fabs(ligand->stay_close_other->is_polar()) >= hydrophilicity_cutoff
+                )
+            {
+                bool do_stays_rot = true;
+                if (ligand->stay_close2_mine && ligand->stay_close2_other)
+                {
+                    if (fabs(ligand->stay_close2_mine->is_polar()) >= hydrophilicity_cutoff
+                        && fabs(ligand->stay_close2_other->is_polar()) >= hydrophilicity_cutoff)
+                    {
+                        do_stays_rot = false;
+                    }
+                }
+                else if (pdpst == pst_best_binding)
+                {
+                    if (fabs(g_bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
+                        && fabs(g_bbr->sec_tgt->polarity()) >= hydrophilicity_cutoff
+                        )
+                    {
+                        do_stays_rot = false;
+                    }
+                }
+                if (do_stays_rot)
+                {
+                    cout << "Performing stays rotation step..." << endl << flush;
+                    float frot = Search::stays_rotate_byinter(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
+                    frot += Search::stays_rotate_headtotail(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
+                    cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
+                }
+            }
+            #endif
 
             /////////////////////////////////////////////////////////////////////////////////
             // Main call to conformational search function.

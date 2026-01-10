@@ -1163,6 +1163,25 @@ Atom *Molecule::get_nearest_atom_to_line(Point A, Point B) const
     return atoms[j];
 }
 
+Atom *Molecule::get_farthest_atom(Point loc) const
+{
+    if (noAtoms(atoms)) return 0;
+
+    int i, j;
+    float best, r;
+    for (i=0; atoms[i]; i++)
+    {
+        r = loc.get_3d_distance(atoms[i]->loc);
+        if (!i || r > best)
+        {
+            j=i;
+            best=r;
+        }
+    }
+
+    return atoms[j];
+}
+
 std::vector<Atom*> Molecule::longest_dimension()
 {
     std::vector<Atom*> retval;

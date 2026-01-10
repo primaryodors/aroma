@@ -166,6 +166,7 @@
 #define recapture_ejected_ligand 0
 #define reuse_best_pose 1
 #define stay_close_conform_iters 1
+#define stays_rotation 1
 #define summed_missed_connections 1
 #define use_exclusions 1
 #define warn_orphan_atoms 0
