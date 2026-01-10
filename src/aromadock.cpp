@@ -3530,6 +3530,7 @@ _try_again:
             }
 
             // Stays rotation
+            #if stays_rotation
             if (ligand->stay_close_mine && ligand->stay_close_other
                 && fabs(ligand->stay_close_mine->is_polar()) >= hydrophilicity_cutoff
                 && fabs(ligand->stay_close_other->is_polar()) >= hydrophilicity_cutoff
@@ -3542,11 +3543,6 @@ _try_again:
                         && fabs(ligand->stay_close2_other->is_polar()) >= hydrophilicity_cutoff)
                     {
                         do_stays_rot = false;
-                        /* cout << "Secondary stay-close atoms "
-                            << ligand->stay_close2_mine->name
-                            << "~"
-                            << ligand->stay_close2_other->residue << ":" << ligand->stay_close2_other->name
-                            << " are hydrophilic." << endl; */
                     }
                 }
                 else if (pdpst == pst_best_binding)
@@ -3556,7 +3552,6 @@ _try_again:
                         )
                     {
                         do_stays_rot = false;
-                        // cout << "Secondary best-binding residue and target are hydrophilic." << endl;
                     }
                 }
                 if (do_stays_rot)
@@ -3567,12 +3562,7 @@ _try_again:
                     cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
                 }
             }
-            /* else if (ligand->stay_close_mine && ligand->stay_close_other)
-                cout << ligand->stay_close_mine->name << " and "
-                    << ligand->stay_close_other->residue << ":" << ligand->stay_close_other->name
-                    << " are hydrophobic." << endl;
-            else cout << "No stays, no gooshy." << endl;                // if the cat stays inside all night, she gets canned food in the morning.
-            */
+            #endif
 
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0);
             if (end_program) poses = pose;
