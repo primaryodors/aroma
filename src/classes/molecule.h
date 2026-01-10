@@ -127,6 +127,7 @@ public:
     Atom* get_nearest_atom(Point loc) const;
     Atom* get_nearest_atom(Point loc, intera_type capable_of, int sgn_polarity = any_element) const;
     Atom* get_nearest_atom_to_line(Point A, Point B) const;
+    Atom* get_farthest_atom(Point loc) const;
     Point get_bounding_box() const;				// Return the +x+y+z vertex of a bounding box, including vdW radii, if center={0,0,0}.
     float get_volume();
     float get_surface_area(bool polaronly = false, bool overwrite_atom_areas = true);

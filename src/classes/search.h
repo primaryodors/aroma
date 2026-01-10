@@ -68,7 +68,12 @@ class Search
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);
     static void clear_candidates();
 
+    static float stays_rotate_byinter(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
+    static float stays_rotate_headtotail(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
+
     protected:
+    static float stays_rotate(Protein* protein, Molecule* ligand, LocatedVector axis);
+
     static bool any_resnos_priority;
 };
 

@@ -1603,6 +1603,48 @@ void Search::clear_candidates()
     }
 }
 
+float Search::stays_rotate_byinter(Protein *p, Molecule *l, Atom *sc, Atom *ls)
+{
+    LocatedVector lv = (Vector)sc->loc.subtract(ls->loc);
+    lv.origin = ls->loc;
+    return stays_rotate(p, l, lv);
+}
+
+float Search::stays_rotate_headtotail(Protein *p, Molecule *l, Atom *sc, Atom *ls)
+{
+    Atom* farthest = l->get_farthest_atom(sc->loc);
+    LocatedVector lv = (Vector)farthest->loc.subtract(ls->loc);
+    lv.origin = ls->loc;
+    return stays_rotate(p, l, lv);
+}
+
+float Search::stays_rotate(Protein *protein, Molecule *ligand, LocatedVector axis)
+{
+    float theta = 0;
+    AminoAcid* rs[SPHREACH_MAX];
+    Point pocketcen = protein->find_loneliest_point(ligand->get_barycenter());
+    int sphres = protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, Point(7,7,7));
+
+    Pose best(ligand);
+    Interaction ebest = ligand->get_intermol_binding((Molecule**)rs);
+    int i, n=30;
+    float step = M_PI*2 / n;
+    for (i=0; i<n; i++)
+    {
+        ligand->rotate(axis, step);
+        Interaction enew = ligand->get_intermol_binding((Molecule**)rs);
+        if (enew.improved(ebest))
+        {
+            best.copy_state(ligand);
+            ebest = enew;
+            theta = step*i;
+        }
+    }
+    best.restore_state(ligand);
+
+    return theta;
+}
+
 float LigandTarget::charge()
 {
     if (single_atom) return single_atom->get_orig_charge();

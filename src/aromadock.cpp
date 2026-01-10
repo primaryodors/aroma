@@ -3529,6 +3529,34 @@ _try_again:
                 }
             }
 
+            if (ligand->stay_close_mine && ligand->stay_close_other
+                && fabs(ligand->stay_close_mine->is_polar()) >= hydrophilicity_cutoff
+                && fabs(ligand->stay_close_other->is_polar()) >= hydrophilicity_cutoff
+                )
+            {
+                bool do_stays_rot = true;
+                if (ligand->stay_close2_mine && ligand->stay_close2_other)
+                {
+                    if (fabs(ligand->stay_close2_mine->is_polar()) >= hydrophilicity_cutoff
+                        && fabs(ligand->stay_close2_other->is_polar()) >= hydrophilicity_cutoff)
+                        do_stays_rot = false;
+                    else if (pdpst == pst_best_binding)
+                    {
+                        if (fabs(g_bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
+                            && fabs(g_bbr->sec_tgt->polarity()) >= hydrophilicity_cutoff
+                            )
+                        do_stays_rot = false;
+                    }
+                    if (do_stays_rot)
+                    {
+                        cout << "Performing stays rotation step..." << endl << flush;
+                        float frot = Search::stays_rotate_byinter(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
+                        frot += Search::stays_rotate_headtotail(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
+                        cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << flush;
+                    }
+                }
+            }
+
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0);
             if (end_program) poses = pose;
             float postdock_mclashes = protein->total_mclashes();
