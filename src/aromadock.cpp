@@ -3613,10 +3613,10 @@ _try_again:
                 }
                 if (do_stays_rot)
                 {
-                    cout << "Performing stays rotation step..." << endl << flush;
+                    // cout << "Performing stays rotation step..." << endl << flush;
                     float frot = Search::stays_rotate_byinter(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
                     frot += Search::stays_rotate_headtotail(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
-                    cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
+                    // cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
                 }
             }
             #endif
