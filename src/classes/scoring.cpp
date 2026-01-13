@@ -329,6 +329,9 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
             if (sfe < 0 && reaches_spheroid[i]->is_ic_res) pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
         }
 
+        ligand_h2o_displacement_energy = ligand->get_volume() / global_water.get_volume()
+            * global_water.solvent_free_energy();               // There's probably a better way.
+
         #if compute_clashdirs
         if (lb > 0 && ligand->clash1 && ligand->clash2)
         {
@@ -792,6 +795,7 @@ _btyp_unassigned:
     output << "Ligand pocket solvation energy: " << dr.ligand_pocket_wet_energy*dr.energy_mult << endl;
     output << "Pocket hydration energy: " << dr.pocket_wet_solvation_energy*dr.energy_mult << endl;
     output << "Pocket bound hydration energy: " << dr.pocket_bound_solvation_energy*dr.energy_mult << endl;
+    output << "Estimated water displacement energy: " << dr.ligand_h2o_displacement_energy << endl;
     output << "Solvation energy stabilizing internal contacts: " << dr.pocket_ic_DeltaG_solvation*dr.energy_mult << endl;
     #if compute_lsrb
     output << "Ligand surface receptor binding: " << dr.ligand_surface_receptor_binding << endl;
