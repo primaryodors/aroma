@@ -137,7 +137,7 @@ foreach ($prots as $protid => $p)
             $c = file_get_contents($fpn);
             $lines = explode("\n", $c);
             $benerg = 0;
-            $lsfe = $lsbe = $phfe = $phbe = 0;
+            $lsfe = $lsbe = $phfe = $phbe = $ewde = 0;
             $nump = 0;
             $occl = 0;
             $tds = 0;
@@ -163,6 +163,10 @@ foreach ($prots as $protid => $p)
                 else if (!$phbe && substr($ln, 0, 31) == "Pocket bound hydration energy: ")
                 {
                     $phbe = floatval(substr($ln, 31));
+                }
+                else if (!$ewde && substr($ln, 0, 37) == "Estimated water displacement energy: ")
+                {
+                    $ewde = floatval(substr($ln, 37));
                 }
                 else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
                 {
@@ -204,6 +208,7 @@ foreach ($prots as $protid => $p)
                 "lsbe" => $lsbe,
                 "phfe" => $phfe,
                 "phbe" => $phbe,
+                "ewde" => $ewde,
                 "occl" => $occl,
                 "nump" => $nump,
                 "tds"  => $tds,
@@ -211,7 +216,7 @@ foreach ($prots as $protid => $p)
         }
 
         $rows[$rowid]["benerg_raw_$mode"] = $benerg;
-        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) - $tds;
+        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) + $ewde - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 

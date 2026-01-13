@@ -330,7 +330,7 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
         }
 
         ligand_h2o_displacement_energy = ligand->get_volume() / global_water.get_volume()
-            * global_water.solvent_free_energy();               // There's probably a better way.
+            * global_water.solvent_free_energy() / 4;               // There's got to be a better way.
 
         #if compute_clashdirs
         if (lb > 0 && ligand->clash1 && ligand->clash2)
