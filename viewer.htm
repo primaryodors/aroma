@@ -73,11 +73,6 @@ var complex_spcfill_skeleton = "ball+stick";
 var molid = getParameterByName('mol') ? getParameterByName('mol') : 'rand';
 var protid = getParameterByName('prot') ? getParameterByName('prot') : false;
 
-var website = "http://127.0.0.1/aroma";
-var is_localhost = false;
-
-var test = "http://127.0.0.1";
-
 function loadFile(fileData, fileName = "", custom_color_scheme = false)
 {
 	$("#pleasewait").show();
@@ -103,7 +98,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 
     $.ajax(
     {
-		url: website + "/recepinfo.php",
+		url: "recepinfo.php",
 		data:
         {
 			recep: orid,
@@ -721,7 +716,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 				{
 		            $.ajax(
 		            {
-						url: website + "/pdb.php",
+						url: "pdb.php",
 						data:
 		                {
 							"p": orid,
@@ -997,7 +992,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 function do_initial_load()
 {
 	if (molid == "none") return;
-	var url = getParameterByName('url') ? getParameterByName('url') : website+'/sdf.php';
+	var url = getParameterByName('url') ? getParameterByName('url') : 'sdf.php';
 
 	var literal_pdb = false;
 	var literal_fname = "";
@@ -1016,40 +1011,20 @@ function do_initial_load()
 	}
 }
 
-if (!is_localhost) $.ajax(
+$.ajax(
 {
-	url: test + "/instcheck.php",
+	url: "instcheck.php",
 	cache: false,
 	success: function(result)
 	{
 		if (result == "b00d1cca")
 		{
-			website = test;
-			is_localhost = true;
 			do_initial_load();
 		}
 	},
 	error: function(result)
 	{
-		test = "http://127.0.0.1/aromadock";
-		if (!is_localhost) $.ajax(
-		{
-			url: test + "/instcheck.php",
-			cache: false,
-			success: function(result)
-			{
-				if (result == "b00d1cca")
-				{
-					website = test;
-					is_localhost = true;
-					do_initial_load();
-				}
-			},
-			error: function(result)
-			{
-				do_initial_load();
-			}
-		});
+		console.log("instcheck failed.");
 	}
 });
 
