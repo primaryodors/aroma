@@ -78,6 +78,8 @@ class DockResult
     float ligvol;
     Atom* stay_close_ligand = nullptr;
     Atom* stay_close_protein = nullptr;
+    Atom* stay_close2_ligand = nullptr;
+    Atom* stay_close2_protein = nullptr;
     float ligand_surface_receptor_binding = 0;
     #if compute_lsrb
     Point* lsrb_points = nullptr;
