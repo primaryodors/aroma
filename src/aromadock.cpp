@@ -3419,6 +3419,27 @@ _try_again:
                                     << g_bbr[l].pri_res->get_residue_no() << ":" << llig->stay_close_other->name << endl;
                             }
 
+                            #if bb_secondary_must_be_farthest_from_primary
+                            if (g_bbr[l].tert_res && g_bbr[l].tert_tgt
+                                && ((g_bbr[l].tert_res->has_hbond_acceptors() && g_bbr[l].tert_tgt->has_hb_donors())
+                                    || (g_bbr[l].tert_res->has_hbond_donors() && g_bbr[l].tert_tgt->has_hb_acceptors())
+                                    || (g_bbr[l].tert_res->coordmtl)
+                                    )
+                                )
+                            {
+                                if (g_bbr[l].tert_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].tert_tgt->single_atom;
+                                else if (g_bbr[l].tert_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].tert_tgt->conjgrp->get_nearest_atom(g_bbr[l].tert_res->get_CA_location());
+                                llig->stay_close2_mol = g_bbr[l].tert_res;
+                                if (g_bbr[l].tert_res->coordmtl) llig->stay_close2_other = g_bbr[l].tert_res->coordmtl;
+                                else llig->stay_close2_other = g_bbr[l].tert_res->get_reach_atom(g_bbr[l].tert_tgt->best_interaction());
+                                if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].tert_res->get_nearest_atom(g_bbr[l].tert_tgt->barycenter());
+                                if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
+
+                                if (pose <= 1 && llig->stay_close2_other) cout << "Staying " << llig->stay_close2_mine->name << " near " 
+                                    << g_bbr[l].tert_res->get_residue_no() << ":" << llig->stay_close2_other->name << endl;
+                            }
+                            else
+                            #endif
                             if (g_bbr[l].sec_res && g_bbr[l].sec_tgt
                                 && ((g_bbr[l].sec_res->has_hbond_acceptors() && g_bbr[l].sec_tgt->has_hb_donors())
                                     || (g_bbr[l].sec_res->has_hbond_donors() && g_bbr[l].sec_tgt->has_hb_acceptors())
@@ -3613,10 +3634,14 @@ _try_again:
                 }
                 if (do_stays_rot)
                 {
-                    // cout << "Performing stays rotation step..." << endl << flush;
+                    #if stays_rotation_verbose
+                    cout << "Performing stays rotation step..." << endl << flush;
+                    #endif
                     float frot = Search::stays_rotate_byinter(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
                     frot += Search::stays_rotate_headtotail(protein, ligand, ligand->stay_close_other, ligand->stay_close_mine);
-                    // cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
+                    #if stays_rotation_verbose
+                    cout << "Rotated " << (frot*fiftyseven) << "deg." << endl << endl << flush;
+                    #endif
                 }
             }
             #endif

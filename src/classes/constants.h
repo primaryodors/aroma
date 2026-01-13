@@ -167,6 +167,7 @@
 #define reuse_best_pose 1
 #define stay_close_conform_iters 1
 #define stays_rotation 1
+#define stays_rotation_verbose 0
 #define summed_missed_connections 1
 #define use_exclusions 1
 #define warn_orphan_atoms 0
@@ -234,6 +235,7 @@
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.2
 #define bb_realign_iters 1
+#define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333
 #define bb_stochastic_A 1.5
 #define bb_stochastic_ligflex 0

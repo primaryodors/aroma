@@ -51,6 +51,8 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
         ligvol = ligand->get_volume();
         stay_close_ligand = ligand->stay_close_mine;
         stay_close_protein = ligand->stay_close_other;
+        stay_close2_ligand = ligand->stay_close2_mine;
+        stay_close2_protein = ligand->stay_close2_other;
         ligand_solvation_energy = ligand->solvent_free_energy();
         ligand_pocket_wet_energy = ligand_solvation_energy;
         ligand_waters_energy = 0;
@@ -326,6 +328,9 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
             pocket_bound_solvation_energy += sbe;
             if (sfe < 0 && reaches_spheroid[i]->is_ic_res) pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
         }
+
+        ligand_h2o_displacement_energy = ligand->get_volume() / global_water.get_volume()
+            * global_water.solvent_free_energy() / 4;               // There's got to be a better way.
 
         #if compute_clashdirs
         if (lb > 0 && ligand->clash1 && ligand->clash2)
@@ -790,6 +795,7 @@ _btyp_unassigned:
     output << "Ligand pocket solvation energy: " << dr.ligand_pocket_wet_energy*dr.energy_mult << endl;
     output << "Pocket hydration energy: " << dr.pocket_wet_solvation_energy*dr.energy_mult << endl;
     output << "Pocket bound hydration energy: " << dr.pocket_bound_solvation_energy*dr.energy_mult << endl;
+    output << "Estimated water displacement energy: " << dr.ligand_h2o_displacement_energy << endl;
     output << "Solvation energy stabilizing internal contacts: " << dr.pocket_ic_DeltaG_solvation*dr.energy_mult << endl;
     #if compute_lsrb
     output << "Ligand surface receptor binding: " << dr.ligand_surface_receptor_binding << endl;
@@ -804,6 +810,16 @@ _btyp_unassigned:
         output << " ~ "
             << dr.stay_close_protein->aa3let << dr.stay_close_protein->residue << ":" << dr.stay_close_protein->name
             << " at " << dr.stay_close_protein->distance_to(dr.stay_close_ligand) << " A." << endl;
+        if (dr.stay_close2_ligand)
+        {
+            output << "Maintained " << dr.stay_close2_ligand->name;
+            Atom* heavy = nullptr;
+            if (dr.stay_close2_ligand->Z == 1 && dr.stay_close2_ligand->get_bonded_heavy_atoms_count()) heavy = dr.stay_close2_ligand->get_bond_by_idx(0)->atom2;
+            if (heavy) output << " (" << heavy->name << ")"; 
+            output << " ~ "
+                << dr.stay_close2_protein->aa3let << dr.stay_close2_protein->residue << ":" << dr.stay_close2_protein->name
+                << " at " << dr.stay_close2_protein->distance_to(dr.stay_close2_ligand) << " A." << endl;
+        }
     }
     output << "Worst atom clash: " << dr.worst_energy*dr.energy_mult << endl;
 

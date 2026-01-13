@@ -67,6 +67,7 @@ class DockResult
     float ligand_pocket_wet_energy = 0;
     float pocket_wet_solvation_energy = 0;
     float pocket_bound_solvation_energy = 0;
+    float ligand_h2o_displacement_energy = 0;
     float pocket_ic_DeltaG_solvation = 0;
     float ligand_waters_energy = 0;         // Actual energy between ligand and water inside protein.
     bool do_output_colors = false;
@@ -78,6 +79,8 @@ class DockResult
     float ligvol;
     Atom* stay_close_ligand = nullptr;
     Atom* stay_close_protein = nullptr;
+    Atom* stay_close2_ligand = nullptr;
+    Atom* stay_close2_protein = nullptr;
     float ligand_surface_receptor_binding = 0;
     #if compute_lsrb
     Point* lsrb_points = nullptr;

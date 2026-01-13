@@ -668,9 +668,28 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 continue;
             }
 
+            #if bb_secondary_must_be_farthest_from_primary
+            int kfar = -1;
+            float kfarthest = 0;
             for (k=0; k<ntarg; k++)
             {
+                float r = targets[k].barycenter().get_3d_distance(targets[i].barycenter());
+                if (r > kfarthest)
+                {
+                    kfarthest = r;
+                    kfar = k;
+                }
+            }
+
+            if (kfar >= 0)
+            #else
+            for (k=0; k<ntarg; k++)
+            #endif
+            {
+                k = kfar;
+                #if !bb_secondary_must_be_farthest_from_primary
                 if (ntarg>=2 && k<=i) continue;
+                #endif
                 if (targets[k].contains(&targets[i])) continue;
                 if (targets[i].contains(&targets[k])) continue;
                 float kchg = targets[k].charge();
@@ -888,6 +907,9 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 && (has_pi || !require_pi)
                                )
                             {
+                                #if bb_secondary_must_be_farthest_from_primary
+                                int i1 = i, j1 = j, i2 = k, j2 = l, i3 = m, j3 = n;
+                                #else
                                 // Assign by importance.
                                 int i1, i2, i3, j1, j2, j3;
                                 float iimp, kimp, mimp;
@@ -959,6 +981,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                         // cout << "swapped" << endl;
                                     }
                                 }
+                                #endif
 
                                 *output = bbr;
                                 output->pri_res = pocketres[j1];
