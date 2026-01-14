@@ -5591,6 +5591,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                 mm[i]->lastbind = benerg.summed();
 
+                #if generate_new_sidechain_clashes
                 if (ares && frand(0,1) < 0.2)
                 {
                     Atom *la, *ra;
@@ -5615,6 +5616,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         }
                     }
                 }
+                #endif
             }   // if MOV_CAN_FLEX
 
             #endif
