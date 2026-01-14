@@ -118,6 +118,7 @@
 #define clash_limit_per_aa 7.0
 #define clash_limit_per_atom 5.0
 #define double_hydrogen_clash_allowance_multiplier 1.5
+#define generate_new_sidechain_clashes 0
 #define global_clash_allowance 0.4
 #define ignore_double_hydrogen_clashes 0
 #define ignore_nonpolar_hydrogen_clashes 0
