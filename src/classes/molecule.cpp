@@ -5606,7 +5606,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             benerg = cfmol_multibind(a, nearby);
                             a->conform_atom_to_location(ra, la, 20, rtarget);
                             tryenerg = cfmol_multibind(a, nearby);
-                            if (tryenerg.clash <= benerg.clash)
+                            if (/* tryenerg.clash > clash_limit_per_aa || */ !tryenerg.accept_change(benerg))
                             {
                                 pib.restore_state(a);
                                 break;
