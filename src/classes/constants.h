@@ -184,6 +184,7 @@
 #define _fullrot_every 5
 #define _fullrot_stepdeg 7
 #define _fullrot_steprad (fiftyseventh*_fullrot_stepdeg)
+#define attempt_to_connect_hydrogen_bonds_to_ligand 0
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle square/2
@@ -194,6 +195,7 @@
 #define fullrot_flex_unfavorable_energy_only 0
 #define fullrot_forbid_residues 1
 #define sidechain_flexion_frequency 0.333
+#define stochastic_flexion_of_clashing_residues 0
 
 // Dynamic modification constants.
 #define _water_satisfaction_threshold -5

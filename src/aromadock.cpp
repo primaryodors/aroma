@@ -599,29 +599,6 @@ void iteration_callback(int iter, Molecule** mols)
     float progress, bbest;
     Point bary;
 
-    if (!cfmol_known_good[0])
-    {
-        for (i=0; mols[i]; i++)
-        {
-            cfmol_known_good[i] = new Pose(mols[i]);
-        }
-        cfmol_known_good[i] = nullptr;
-    }
-
-    // STOP IT WITH THE FUCKING INTERNAL CLASHES IN SIDE CHAINS, RETARD!
-    for (i=0; mols[i]; i++)
-    {
-        if (!cfmol_known_good[i]) continue;
-        if (mols[i]->get_internal_clashes() > clash_limit_per_aa*2)
-        {
-            cfmol_known_good[i]->restore_state(mols[i]);
-        }
-        else
-        {
-            cfmol_known_good[i]->copy_state(mols[i]);
-        }
-    }
-
     float occl = ligand->surface_occlusion(mols);
     if (occl < frand(0.4, 0.7))
     {
@@ -637,9 +614,12 @@ void iteration_callback(int iter, Molecule** mols)
         goto _oei;
     }
 
+    freeze_bridged_residues();
+
     abhor_vacuum(iter, mols);
 
     // Stochastically force flexion on some side chains that get clashes.
+    #if stochastic_flexion_of_clashing_residues
     for (l=0; mols[l]; l++)
     {
         if (mols[l]->movability & MOV_PINNED) continue;
@@ -676,10 +656,10 @@ void iteration_callback(int iter, Molecule** mols)
             mols[l]->movability = MOV_FORCEFLEX;
         }
     }
-
-    freeze_bridged_residues();
+    #endif
 
     // Attempt to connect hydrogen bonds to ligand.
+    #if attempt_to_connect_hydrogen_bonds_to_ligand
     if (flex)
     {
         n = ligand->get_atom_count();
@@ -748,6 +728,7 @@ void iteration_callback(int iter, Molecule** mols)
             }
         }
     }
+    #endif
 
     if (pivotal_hbond_aaa && pivotal_hbond_la) do_pivotal_hbond_rot_and_scoot();
 
@@ -781,7 +762,7 @@ void iteration_callback(int iter, Molecule** mols)
     #if enforce_no_bb_pullaway
     if (pdpst == pst_best_binding)
     {
-        // TODO:
+        // TODO: This functionality was never written. Has it been obviated by the more recent "stays" feature?
     }
     #endif
 
@@ -893,7 +874,7 @@ void iteration_callback(int iter, Molecule** mols)
             Vector movamt = a->loc.subtract(b->loc);
             movamt.r = fmin(speed_limit, (r-optimal)/5);
             waters[i]->move(movamt);
-            
+
             rpl = ligand->get_intermol_binding(waters[i]).clash;
             if (rpl > clash_limit_per_atom)
             {
