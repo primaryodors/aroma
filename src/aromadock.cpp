@@ -960,7 +960,7 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_
         FILE* pfout = fopen(out_pdb_fn.c_str(), "wb");
         if (/*!pftmp ||*/ !pfout)
         {
-            cerr << "Failed to open " << out_pdb_fn << " for writing." << endl;
+            cerr << "Failed to open output PDB file " << out_pdb_fn << " for writing." << endl;
             throw 0xbadf12e;
         }
 
@@ -2622,7 +2622,7 @@ int main(int argc, char** argv)
         FILE* fp = fopen(copyfrom_filename.c_str(), "rb");
         if (!fp)
         {
-            cerr << "Failed to open " << copyfrom_filename << " for reading." << endl;
+            cerr << "Failed to open pre-conformation file " << copyfrom_filename << " for reading." << endl;
             throw 0xbadf12e;
         }
 

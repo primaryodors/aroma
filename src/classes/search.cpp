@@ -343,7 +343,7 @@ void Search::copy_ligand_position_from_file(Protein* protein, Molecule* ligand, 
     FILE* fp = fopen(filename, "rb");
     if (!fp)
     {
-        cout << "Failed to open " << filename << " for reading." << endl;
+        cout << "Failed to open ligand position file " << filename << " for reading." << endl;
         throw 0xbadf12e;
     }
 

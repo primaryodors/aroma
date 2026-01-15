@@ -25,7 +25,7 @@ void Reshape::load_rshpm_file(const char* infname, Molecule* ligand)
     FILE* fp = fopen(infname, "rb");
     if (!fp)
     {
-        cerr << "Failed to open " << infname << " for reading." << endl;
+        cerr << "Failed to open reshape motions file " << infname << " for reading." << endl;
         throw 0xbadf12e;
     }
 
@@ -848,7 +848,7 @@ void ICHelixGroup::load_ic_file(const char *filename)
     FILE* fp = fopen(filename, "rb");
     if (!fp)
     {
-        cerr << "Failed to open " << filename << " for reading." << endl;
+        cerr << "Failed to open internal contacts file " << filename << " for reading." << endl;
         return;
     }
 
