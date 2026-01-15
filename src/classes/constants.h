@@ -188,7 +188,7 @@
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle square/2
 #define flexion_probability_multiplier 1
-#define flexion_sub_iterations 5
+#define flexion_sub_iterations 1
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
