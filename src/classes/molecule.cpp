@@ -5670,7 +5670,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
-                                if ((fal || !wfal) && tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
+                                if ((fal || !wfal) && tryenerg.improved(benerg)
+                                    && a->get_internal_clashes() <= self_clash
+                                    && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                   )
                                 {
                                     benerg = tryenerg;
                                     best_theta = theta;
@@ -5723,7 +5726,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg) && a->get_internal_clashes() <= self_clash)
+                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                && a->get_internal_clashes() <= self_clash
+                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                               )
                             {
                                 // Leaving this in case the "nearbys" feature misses any more clashable residues.
                                 // If it does, adjust the constants on the cosine in AminoAcid::can_reach().
