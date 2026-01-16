@@ -208,14 +208,30 @@ for rcpid in data.protutils.prots.keys():
                 for st in pocket["stcr"]:
                     newcfg.append("STCR " + st)
 
-        with open("tmp/" + conffna, 'w') as f:
-            f.write("\n".join(newcfg) + "\n\n")
+        newcfga = "\n".join(newcfg)
         for i in range(len(newcfg)):
             ln = newcfg[i]
             if ln[0:4] == "PROT" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
             if ln[0:6] == "CNTCT ":
                 newcfg[i] = ln.replace("_a.ic", "_i.ic")
+        newcfgi = "\n".join(newcfg)
+
+        if pocket:
+            # TODO: bridge, flxr, and stcr
+            if "atomtoa" in pocket:
+                if isinstance(pocket["atomtoa"], str):
+                    pocket["atomtoa"] = [pocket["atomtoa"]]
+                for a2 in pocket["atomtoa"]:
+                    newcfga += "\n" + "ATOMTO " + a2
+            if "atomtoi" in pocket:
+                if isinstance(pocket["atomtoa"], str):
+                    pocket["atomtoa"] = [pocket["atomtoa"]]
+                for a2 in pocket["atomtoa"]:
+                    newcfgi += "\n" + "ATOMTO " + a2
+
+        with open("tmp/" + conffna, 'w') as f:
+            f.write(newcfga + "\n\n")
         with open("tmp/" + conffni, 'w') as f:
             f.write("\n".join(newcfg) + "\n\n")
 

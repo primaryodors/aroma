@@ -2915,6 +2915,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
             if (!lmtl->residue) lmtl->residue = aa->get_residue_no();
             aa->movability = MOV_FLEXONLY;
             r1 = coord_atoms[j]->distance_to(lmtl);
+            if (!aa->mclashables) set_clashables(aa->get_residue_no());
             aa->conform_atom_to_location(coord_atoms[j]->name, lmtl->loc, 20, optimal[j]);
             r1 = coord_atoms[j]->distance_to(lmtl);
             aa->movability = MOV_PINNED;
@@ -3699,6 +3700,8 @@ bool Protein::disulfide_bond(int resno1, int resno2)
                         H2 = S2->is_bonded_to("H");
                         if (H2)
                         {
+                            if (!res1->mclashables) set_clashables(res1->get_residue_no());
+                            if (!res2->mclashables) set_clashables(res2->get_residue_no());
                             res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
                             res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
 
@@ -4272,6 +4275,8 @@ void Protein::bridge(int resno1, int resno2)
     float r = aa1->get_CA_location().get_3d_distance(aa2->get_CA_location()) - aa1->get_reach() - aa2->get_reach();
     if (r > 4)
     {
+        if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
+        if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc);
         aa2->conform_atom_to_location(aa2->get_reach_atom()->name, aa1->get_reach_atom()->loc);
         aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc);
@@ -4307,6 +4312,8 @@ void Protein::bridge(int resno1, int resno2)
     r = (aa1->stay_close_mine && aa1->stay_close_other) ? aa1->stay_close_mine->distance_to(aa1->stay_close_other) : -1;
     if (r>0 && r > aa1->stay_close_optimal)
     {
+        if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
+        if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close_mine && aa1->stay_close_other)
             aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
         if (aa2->stay_close_mine && aa2->stay_close_other) 
@@ -4319,6 +4326,8 @@ void Protein::bridge(int resno1, int resno2)
     r = (aa1->stay_close2_mine && aa1->stay_close_other) ? aa1->stay_close2_mine->distance_to(aa1->stay_close_other) : -1;
     if (r>0 && r > aa1->stay_close_optimal)
     {
+        if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
+        if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close2_mine && aa1->stay_close_other)
             aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
         if (aa2->stay_close2_mine && aa2->stay_close_other) 

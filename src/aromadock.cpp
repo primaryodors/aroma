@@ -1913,12 +1913,13 @@ void apply_protein_specific_settings(Protein* p)
                 nfwarned += (std::string)" " + (std::string)aname;
                 if (progressbar) progb.erase();
             }
-            
+
             continue;
         }
 
         MovabilityType aamov = aa->movability;
         aa->movability = MOV_FLEXONLY;
+        if (!aa->mclashables) protein->set_clashables(aa->get_residue_no());
         aa->conform_atom_to_location(a->name, target->get_CA_location());
         aa->movability = aamov;
 
@@ -3967,20 +3968,20 @@ _try_again:
             }
 
             n = protein->get_end_resno();
-            for (i=1; i<n; i++)
+            for (i=1; i<sphres; i++)
             {
-                AminoAcid* aa1 = protein->get_residue(i);
+                AminoAcid* aa1 = reaches_spheroid[nodeno][i];
                 if (!aa1) continue;
-                for (j=i+2; j<=n; j++)
+                for (j=aa1->get_residue_no()+2; j<=n; j++)
                 {
                     AminoAcid* aa2 = protein->get_residue(j);
                     if (!aa2) continue;
 
-                    Interaction f = aa1->get_intermol_clashes(aa2);
-                    if (f.clash > clash_limit_per_aa)
+                    float f = aa1->get_intermol_clashes(aa2);
+                    if (f > clash_limit_per_aa*5)
                     {
                         dr[drcount][nodeno].disqualified = true;
-                        std::string reason = "Side chain clash";
+                        std::string reason = (std::string)"Side chain clash " + std::to_string(f);
                         dr[drcount][nodeno].disqualify_reason += reason;
                         i=j=n+2;
                         break;

@@ -161,7 +161,11 @@ int main(int argc, char** argv)
             AminoAcid* target = tres ? p.get_residue(tres) : nullptr;
             Atom* tatom = target ? target->get_nearest_atom(pointing->loc) : nullptr;
 
-            if (aa && pointing && target) aa->conform_atom_to_location(pointing->name, tatom->loc, 20, InteratomicForce::optimal_distance(pointing, tatom));
+            if (aa && pointing && target)
+            {
+                if (!aa->mclashables) p.set_clashables(aa->get_residue_no());
+                aa->conform_atom_to_location(pointing->name, tatom->loc, 20, InteratomicForce::optimal_distance(pointing, tatom));
+            }
         }
         else if ((buffer[0] == '-' && buffer[1] == 'm') || !strcmp(buffer, "--metal"))
         {
@@ -222,6 +226,7 @@ int main(int argc, char** argv)
                     mc.coordres[mc.ncoordres++] = rp;
                     AminoAcid* aa = p.get_residue(rp.resno);
                     Atom* a = aa->get_one_most_bindable(mcoord);
+                    if (!aa->mclashables) p.set_clashables(aa->get_residue_no());
                     aa->conform_atom_to_location(a->name, mcen);
                 }
 

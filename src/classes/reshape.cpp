@@ -496,6 +496,8 @@ void ReshapeMotion::apply(Protein *p)
 
             if (a1 && a2)
             {
+                if (!aa1->mclashables) p->set_clashables(aa1->get_residue_no());
+                if (!aa2->mclashables) p->set_clashables(aa2->get_residue_no());
                 aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
                 aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
                 aa1->conform_atom_to_location(a1, a2, 20, tgtdist);

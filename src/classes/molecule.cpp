@@ -3452,6 +3452,15 @@ float Molecule::get_intermol_clashes(Molecule** ligands)
                 // if (atoms[i]->shares_bonded_with(ligands[l]->atoms[j])) continue;
 
                 if (a->is_backbone && b->is_backbone && abs(a->residue - b->residue) < 2) continue;
+                float apol = a->is_polar(), bpol = b->is_polar();
+                if (fabs(apol) >= hydrophilicity_cutoff && fabs(bpol) >= hydrophilicity_cutoff
+                    && sgn(apol) == -sgn(bpol))
+                    continue;
+
+                if (fabs(a->get_charge()) >= 0.75)
+                {
+                    if (sgn(a->get_charge()) == -sgn(b->get_charge())) continue;
+                }
 
                 float f = fmax(InteratomicForce::Lennard_Jones(a, b), 0);
 

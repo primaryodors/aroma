@@ -997,6 +997,7 @@ int main(int argc, char** argv)
                 if (!a) raise_error((std::string)"Atom not found " + std::to_string(resno) + (std::string)":" + (std::string)aname);
 
                 aa->movability = MOV_FLEXONLY;
+                if (!aa->mclashables) working->set_clashables(aa->get_residue_no());
                 aa->conform_atom_to_location(a->name, target);
             }	// ATOMTO
 

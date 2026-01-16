@@ -3673,6 +3673,122 @@ bool AminoAcid::is_amide()
     return false;
 }
 
+void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od)
+{
+    if (!atoms) return;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (!strcmp(atoms[i]->name, an))
+        {
+            conform_atom_to_location(i, t, iters, od);
+            return;
+        }
+    }
+}
+
+void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float od)
+{
+    if (!(movability & MOV_CAN_FLEX)) return;
+    if (!a) return;
+
+    int iter, j, l, circdiv = 144;
+    Bond** b = get_rotatable_bonds();
+    if (!b) return;
+
+    float oc = get_internal_clashes() + get_intermol_clashes(mclashables);
+
+    Pose best(this);
+    float bestr = Avogadro;
+    for (iter = 0; iter < iters; iter++)
+    {
+        float r;
+        for (j=0; b[j]; j++)
+        {
+            if (!b[j]->can_rotate)
+            {
+                if (b[j]->can_flip) circdiv = 2;
+                else continue;
+            }
+            float step = M_PI*2.0/circdiv;
+            for (l=0; l<=circdiv; l++)
+            {
+                b[j]->rotate(step, false, true);
+                r = a->distance_to(target);
+                if (od) r = fabs(r-od);
+
+                #if _dbg_atom_pointing
+                cout << " " << bestr;
+                #endif
+
+                float c = get_internal_clashes() + get_intermol_clashes(mclashables);
+                if (r < bestr && c < oc+clash_limit_per_aa)
+                {
+                    bestr = r;
+                    best.copy_state(this);
+                }
+            }
+            best.restore_state(this);
+
+            #if _dbg_atom_pointing
+            cout << endl << name << "." << iter << ": " << circdiv << "|" << bestr << endl;
+            #endif
+        }
+    }
+    best.restore_state(this);
+}
+
+void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
+{
+    if (!(movability & MOV_CAN_FLEX)) return;
+
+    int iter, j, l, circdiv = 144;
+    Bond** b = get_rotatable_bonds();
+    if (!b) return;
+    Atom* a = atoms[i];
+    if (!a) return;
+
+    float oc = get_internal_clashes() + get_intermol_clashes(mclashables);
+
+    Pose best(this);
+    float bestr = Avogadro;
+    for (iter = 0; iter < iters; iter++)
+    {
+        float r;
+        for (j=0; b[j]; j++)
+        {
+            if (!b[j]->can_rotate)
+            {
+                if (b[j]->can_flip) circdiv = 2;
+                else continue;
+            }
+            float step = M_PI*2.0/circdiv;
+            for (l=0; l<=circdiv; l++)
+            {
+                b[j]->rotate(step, false, true);
+                r = a->loc.get_3d_distance(t);
+                if (od) r = fabs(r-od);
+
+                #if _dbg_atom_pointing
+                cout << " " << bestr;
+                #endif
+
+                float c = get_internal_clashes() + get_intermol_clashes(mclashables);
+                if (r < bestr && c < oc+clash_limit_per_aa)
+                {
+                    bestr = r;
+                    best.copy_state(this);
+                }
+            }
+            best.restore_state(this);
+
+            #if _dbg_atom_pointing
+            cout << endl << name << "." << iter << ": " << circdiv << "|" << bestr << endl;
+            #endif
+        }
+    }
+    best.restore_state(this);
+}
 
 
 
