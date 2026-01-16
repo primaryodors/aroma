@@ -29,28 +29,16 @@ $famsub = $fam.subfamily_from_protid($rcpid);
 if ($famno < 50)
 {
     // Binding site residues from Man et al (2004) and de March et al (2024)
-    $bsr = array_flip(
-        [
-            "2.53",
-            "3.29", "3.32", "3.33", "3.36", "3.37", "3.40", "3.41",
-            "4.53", "4.57", "4.60",
-            "45.49", "45.51", "45.52",
-            "5.39", "5.43", "5.46", "5.47",
-            "6.48", "6.51", "6.55",
-            "7.38", "7.39", "7.42",
-        ]);
+    $bsr = array_flip(explode(" ",
+            "2.53 3.29 3.32 3.33 3.36 3.37 3.40 3.41 4.53 4.57 4.60 45.49 45.51 45.52 5.39 5.43 5.46 5.47 6.48 6.51 6.55 7.38 7.39 7.42",
+        ));
 }
 else
 {
     // Binding site residues from Billesboelle et al (2022), Choi et al (2023), and de March et al (2024)
-    $bsr = array_flip(
-        [
-            "3.33", "3.37",
-            "4.57", "4.60",
-            "45.52", "45.53",
-            "5.39", "5.42", "5.43", "5.47",
-            "6.55", "6.59",
-        ]);
+    $bsr = array_flip(explode(" ",
+            "3.33 3.37 4.57 4.60 45.52 45.53 5.39 5.42 5.43 5.47 6.55 6.59",
+        ));
 }
 
 if ($fam == 'TAAR' || $famsub == "OR2M" || $famsub == "OR2T" || $famsub == "OR2V") $bsr['5.42'] = count($bsr);
@@ -782,7 +770,9 @@ foreach ($pairs as $oid => $pair)
     $pq = array_unique($pq);
 
     $ufn = urlencode($odor['full_name']);
-    echo "<tr>\n";
+    echo "<tr class=\"";
+    if (isset($prots[$rcpid]["best_agonist"]) && $prots[$rcpid]["best_agonist"] == $oid) echo "best_ag";
+    echo "\">\n";
     echo "<td><a href=\"odorant.php?o=$oid\" style=\"white-space: nowrap;\"";
 
     $smilesesc = str_replace("\\", "\\\\", $odor['smiles']);
@@ -872,7 +862,7 @@ if (count($predictions))
             $lodor = $odors[$oid];
             echo "<tr>\n";
             echo "<td><a href=\"odorant.php?o=$oid\" style=\"white-space: nowrap;\"";
-        
+
             $smilesesc = str_replace("\\", "\\\\", $lodor['smiles']);
             echo " onmouseenter=\"showSkeletal(event, '$smilesesc');\"";
             echo " onmouseout=\"$('#skeletal').hide();\"";

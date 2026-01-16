@@ -79,6 +79,13 @@
 #define vdw_surface_density 15
 #define water_surface_H 0.59
 
+// Atomic similarity constants
+#define similarity_charged 1.0
+#define similarity_polar 1.0
+#define similarity_antipolar 0.75
+#define similarity_nonpolar 0.333
+#define similarity_pi 0.13
+
 // Molecular generation and conformation constants.
 #define _default_mutation_rate 0.05
 #define _default_population_size 80
@@ -185,16 +192,19 @@
 #define _fullrot_every 5
 #define _fullrot_stepdeg 7
 #define _fullrot_steprad (fiftyseventh*_fullrot_stepdeg)
+#define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle square/2
 #define flexion_probability_multiplier 1
-#define flexion_sub_iterations 5
+#define flexion_sub_iterations_ligand 5
+#define flexion_sub_iterations_sidechain 1
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
 #define fullrot_forbid_residues 1
 #define sidechain_flexion_frequency 0.333
+#define stochastic_flexion_of_clashing_residues 1
 
 // Dynamic modification constants.
 #define _water_satisfaction_threshold -5
@@ -232,11 +242,12 @@
 #define bb_find_empty_space 1
 #define bb_group_distance_cutoff 4.3
 #define bb_lonely_radius 2
-#define bb_pocket_res_extra_spacing 3.5
+#define bb_pocket_res_extra_spacing 2.5
 #define bb_pocket_res_spacing_allowance 2
 #define bb_pullaway_allowance 1.0
-#define bb_realign_amount 0.2
+#define bb_realign_amount 0.1
 #define bb_realign_iters 1
+#define bb_realign_only_hydro 1
 #define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333
 #define bb_stochastic_A 1.5
@@ -305,8 +316,7 @@
 #define compute_vdw_repulsion 0
 #define compute_clashdirs 0
 #define redo_tumble_spheres_every_node 0
-#define write_activation_matrix 0
-#define write_active_rotation 1
+#define accommodate_ligand_in_post 0
 
 
 // Debugging stuff.
@@ -330,6 +340,8 @@
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
+#define _dbg_atom_mov_to_clash 0
+#define _dbg_atom_pointing 0
 #define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
 #define _dbg_bb_pairs 0
@@ -345,6 +357,7 @@
 #define _dbg_cond_basic_acd_lig 0
 #define _dbg_conj_chg 0
 #define _dbg_conjugation 0
+#define _dbg_contact_anomaly 0
 #define _dbg_cs_pairing 0
 #define _dbg_cvty_pose_filter 0
 #define _dbg_eclipsing_contacts 0
@@ -359,10 +372,12 @@
 #define _dbg_Huckel 0
 #define _dbg_hxrax 0
 #define _dbg_hydrogenate 0
+#define _dbg_icreshape 0
 #define _dbg_identify_rings 0
 #define _dbg_imidazole_check 0
 #define _dbg_improvements_only_residue 158
 #define _dbg_improvements_only_rule 0
+#define _dbg_intera_applicable 0
 #define _dbg_interatomic_forces 0
 #define _dbg_internal_energy 0
 #define _dbg_linear_motion 0
@@ -383,13 +398,17 @@
 #define _dbg_optimize_hydrogens 0
 #define _dbg_optimize_hydrogens_resno 260
 #define _dbg_path_search 0
+#define _dbg_peptide_bond_formation 0
 #define _dbg_pocket_DeltaG_solv 0
 #define _dbg_point_avg 0
+#define _dbg_polar_calc 0
 #define _dbg_polsat 0
+#define _dbg_rap_resolve_special_atom 0
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0
 #define _dbg_residue_poses 0
 #define _dbg_rock_pic 0
+#define _dbg_rshpm_apply 0
 #define _dbg_soft 0
 #define _dbg_softpivot 0
 #define _dbg_stays_assignment 0

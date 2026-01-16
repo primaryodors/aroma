@@ -444,6 +444,30 @@ function similar_receptors($rcpid, $lbsr = [])
 	return $results;
 }
 
+function protid_sequential($protid)
+{
+	$fam = family_from_protid($protid);
+	$sub = subfamily_from_protid($protid);
+	$member = intval(substr($protid, strlen($fam.$sub)));
+
+	$result = 0;
+	if (substr($fam, 0, 2) == "OR") $result += 1e6 * intval(substr($fam, 2));
+	else if ($fam == "TAAR") $result += 1e8;
+	else if ($fam == "VN1R") $result += 2e8;
+	else if ($fam == "MS4A") $result += 3e8;
+
+	if ($sub)
+	{
+		$sixtyfour = ord('A')-1;
+		$result += 1e3 * (ord(substr($sub, -1))-$sixtyfour);
+		if (strlen($sub) > 1) $result += 26e3 * (ord(substr($sub, 0, 1))-$sixtyfour);
+	}
+
+	$result += $member;
+
+	return $result;
+}
+
 $cwd = getcwd();
 chdir(__DIR__);
 chdir("..");

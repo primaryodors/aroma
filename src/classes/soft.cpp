@@ -223,7 +223,11 @@ void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired)
     }
     else
     {
-        for (i=0; contacts[i].local; i++);
+        for (i=0; contacts[i].local; i++)               // get count
+        {
+            if (contacts[i].local == local && contacts[i].distant == distant) return;               // prevent duplicates
+            if (contacts[i].local == distant && contacts[i].distant == local) return;
+        }
         if (i >= allocated-1)
         {
             int j;

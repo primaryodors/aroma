@@ -215,6 +215,12 @@ int find_var_index(const char* varname, char** out_varname = nullptr)
         char buffer1[256];
         strcpy(buffer1, c);
 
+        if (c>buffer && *(c-1) == '[')
+        {
+            char* bracket = strchr(buffer1, ']');
+            if (bracket) *bracket = 0;
+        }
+
         while (c[1])
         {
             Star s;
@@ -224,7 +230,7 @@ int find_var_index(const char* varname, char** out_varname = nullptr)
                 s.psz = interpret_single_string(buffer1);
             }
 
-            if (s.n)
+            if (s.n || *c == '%')
             {
                 char buffer2[512];
                 if (*c == '%')
@@ -2734,7 +2740,6 @@ int main(int argc, char** argv)
                 if (!l) raise_error("No residues loaded.");
                 working->set_name_from_pdb_name(words[1]);
                 if (include_ligand) ligand.from_pdb(pf, true);
-
                 fclose(pf);
 
             _prot_deets:
@@ -2960,11 +2965,29 @@ int main(int argc, char** argv)
                 std::string atom2 = atom_names ? interpret_single_string(words[4]) : "CA";
 
                 AminoAcid *aa1 = working->get_residue(res1), *aa2 = working->get_residue(res2);
-                if (!res1 || !aa1) raise_error("Residue A not found in protein.");
-                if (!res2 || !aa2) raise_error("Residue B not found in protein.");
+                if (!res1 || !aa1) raise_error((std::string)"Residue "+(std::string)words[1]+(std::string)" not found in protein.");
+                if (!res2 || !aa2) raise_error((std::string)"Residue "+(std::string)words[atom_names ? 3 : 2]+(std::string)" not found in protein.");
 
                 Atom *a1, *a2;
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));
+                if (!strcmp(atom1.c_str(), "NEARESV"))
+                {
+                    a1 = aa1->get_nearest_atom(working->get_atom_location(res2, "CA"));
+                    if (a1) a1 = a1->get_heavy_atom();
+                }
+                else if (!strcmp(atom1.c_str(), "EXTENT")) a1 = aa1->get_reach_atom();
+                else if (!strcmp(atom1.c_str(), "EXTH"))
+                {
+                    a1 = aa1->get_reach_atom(hbond);
+                    if (a1) a1 = a1->get_heavy_atom();
+                    // if (a1) cout << a1->name << endl;
+                }
+                else if (!strcmp(atom1.c_str(), "EXTHVY"))
+                {
+                    a1 = aa1->get_reach_atom();
+                    if (a1) a1 = a1->get_heavy_atom();
+                    // if (a1) cout << a1->name << endl;
+                }
                 else a1 = working->get_atom(res1, atom1.c_str());
                 if (!a1)
                 {
@@ -2975,6 +2998,24 @@ int main(int argc, char** argv)
                         );
                 }
                 if (!strcmp(atom2.c_str(), "NEAREST")) a2 = aa2->get_nearest_atom(working->get_atom_location(res1, "CA"));
+                if (!strcmp(atom2.c_str(), "NEARESV"))
+                {
+                    a2 = aa2->get_nearest_atom(working->get_atom_location(res1, "CA"));
+                    if (a2) a2 = a2->get_heavy_atom();
+                }
+                else if (!strcmp(atom2.c_str(), "EXTENT")) a2 = aa2->get_reach_atom();
+                else if (!strcmp(atom2.c_str(), "EXTH"))
+                {
+                    a2 = aa2->get_reach_atom(hbond);
+                    if (a2) a2 = a2->get_heavy_atom();
+                    // if (a2) cout << a2->name << endl;
+                }
+                else if (!strcmp(atom2.c_str(), "EXTHVY"))
+                {
+                    a2 = aa2->get_reach_atom();
+                    if (a2) a2 = a2->get_heavy_atom();
+                    // if (a2) cout << a2->name << endl;
+                }
                 else a2 = working->get_atom(res2, atom2.c_str());
                 if (!a2)
                 {
@@ -2992,7 +3033,7 @@ int main(int argc, char** argv)
                 if (!strcmp(atom1.c_str(), "NEAREST")) a1 = aa1->get_nearest_atom(a2->loc);
                 if (!strcmp(atom2.c_str(), "NEAREST")) a2 = aa2->get_nearest_atom(a1->loc);
 
-                float r = working->get_atom_location(res1, atom1.c_str()).get_3d_distance(working->get_atom_location(res2, atom2.c_str()));
+                float r = a1->distance_to(a2);
 
                 Star s;
                 s.f = r;

@@ -29,6 +29,12 @@ float (*conj_get_charge)(void* lconjugation) = nullptr;
 float (*preflex_cb)(void*) = nullptr;
 bool (*postflex_cb)(void*,float) = nullptr;
 
+#if _dbg_atom_mov_to_clash
+void (*movclash_cb)(Atom* caller, void* prot) = nullptr;
+void *movclash_prot = nullptr;
+bool movclash_justtesting = false;
+#endif
+
 void Atom::read_elements()
 {
     if (read_elem_syms) return;
@@ -555,11 +561,18 @@ bool Atom::move(Point* pt)
         return false;
     }
 
+    // if (residue==198 || residue==277) throw 0xbadc0de;
+
     location = *pt;
     location.weight = at_wt;
     if (geov) delete[] geov;
     geov = NULL;
     geometry_dirty = true;
+
+    #if _dbg_atom_mov_to_clash
+    // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
+    #endif
+
     return true;
 }
 
@@ -901,7 +914,7 @@ Atom* Atom::is_bonded_to(const char* element, const int lcardinality)
         if (bonded_to[i].atom2)
             if (!strcmp(bonded_to[i].atom2->get_elem_sym(), element)
                     &&
-                    bonded_to[i].cardinality == lcardinality
+                    fabs(bonded_to[i].cardinality - lcardinality) <= 0.25
                )
                 return bonded_to[i].atom2;
     return 0;
@@ -1055,7 +1068,6 @@ Point average_of_atom_locs(Atom** atoms)
     return result;
 }
 
-#define _dbg_polar_calc 0
 float Atom::is_polar()
 {
     if (!polar_calcd)
@@ -1695,6 +1707,10 @@ _cannot_reverse_bondrot:
     total_rotations += theta;
 
     // cout << theta << endl;
+
+    #if _dbg_atom_mov_to_clash
+    if (movclash_cb && movclash_prot) movclash_cb(this->atom2, movclash_prot);
+    #endif
 
     if (last_fail != bf_limited_rotation) last_fail = bf_none;
     return true;
@@ -2386,7 +2402,7 @@ float Atom::get_sum_pi_bonds()
     return retval;
 }
 
-void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
+void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
 {
     if (vanished) return;
     char numbuf[16];
@@ -2400,7 +2416,7 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno)
     /*
     ATOM   2039  CA  ALA   128      -6.065 -24.834  -5.744  1.00001.00           C
     */
-    fprintf(pf, residue ? "ATOM   " : "HETATM ");
+    fprintf(pf, (residue && !fh) ? "ATOM   " : "HETATM ");
     sprintf(numbuf, "%d", atomno);
     fprintf(pf, "%4s ", numbuf);
 

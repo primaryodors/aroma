@@ -278,7 +278,7 @@ public:
     }
 
     // Serialization
-    void save_pdb_line(FILE* pf, unsigned int atomno);
+    void save_pdb_line(FILE* pf, unsigned int atomno, bool force_het = false);
     void stream_pdb_line(ostream& os, unsigned int atomno, bool force_hetatm = false);              // Atoms can be forced het, unlike humans.
 
     // Spatial functions.
@@ -419,5 +419,10 @@ extern float (*conj_get_charge)(void* lconjugation);
 extern float (*preflex_cb)(void*);
 extern bool (*postflex_cb)(void*,float);
 
+#if _dbg_atom_mov_to_clash
+extern void (*movclash_cb)(Atom* caller, void* prot);
+extern void *movclash_prot;
+extern bool movclash_justtesting;
 #endif
 
+#endif

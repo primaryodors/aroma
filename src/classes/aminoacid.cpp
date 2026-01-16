@@ -979,7 +979,6 @@ void AminoAcid::predict_next_NHCA(Point* retval)
     retval[2] = neighborCA;
 }
 
-#define _dbg_attprdc 0
 void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
 {
     MovabilityType fmov = movability;
@@ -990,7 +989,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
     Point moveby = predicted[0].subtract( CO ? get_atom_location("C") : get_atom_location("N") );
     aamove(moveby);
     anomaly = predicted[0].get_3d_distance( CO ? get_atom_location("C") : get_atom_location("N") );
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.001) cout << "Error: " << ( CO ? "C" : "N" ) << " anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << endl;
     #endif
 
@@ -1002,7 +1001,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
     rotate(lv, rot.a);
     pt1 = CO ? get_atom_location("O") : HN_or_substitute_location();
     anomaly = predicted[1].get_3d_distance(pt1);
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.1) cout << "Error: " << ( CO ? "O" : "HN" ) << " anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << endl;
     #endif
 
@@ -1035,7 +1034,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
         rotate(lv, theta*2);
         anomaly = predicted[2].get_3d_distance(get_atom_location("CA"));
     }
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.1) cout << "Error: CA anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << "." << endl;
     #endif
 
@@ -1067,12 +1066,31 @@ std::string AminoAcid::printable()
 
 void AminoAcid::save_pdb(FILE* os, int atomno_offset)
 {
-    int i;
+    int i, j, n;
+    nconects = 0;
 
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->pdbchain = pdbchain;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
+
+        if (!atoms[i]->is_backbone)
+        {
+            n = atoms[i]->get_bonded_atoms_count();
+            for (j=0; j<n; j++)
+            {
+                if (nconects >= CONECTS_MAX) continue;
+                Bond* b = atoms[i]->get_bond_by_idx(j);
+                if (!b) continue;
+                if (b->atom1 != atoms[i]) continue;
+                if (!b->atom2) continue;
+                if (b->atom2->residue <= atoms[i]->residue) continue;
+                if (b->atom2->is_backbone) continue;
+                conecta1[nconects] = atoms[i];
+                conecta2[nconects] = b->atom2;
+                conectcard[nconects++] = b->cardinality;
+            }
+        }
     }
 }
 
@@ -1094,6 +1112,14 @@ int AminoAcid::from_pdb(FILE* is, int rno)
         lasttell = ftell(is);
         char* got = fgets(buffer, 1003, is);
         if (!got) break;
+        if (buffer[0] == 'H'
+            && buffer[1] == 'E'
+            && buffer[2] == 'T'
+            && buffer[3] == 'A'
+            && buffer[4] == 'T'
+            && buffer[5] == 'M'
+            )
+            goto _return_added;
         if (buffer[0] == 'A' &&
             buffer[1] == 'T' &&
             buffer[2] == 'O' &&
@@ -1322,7 +1348,7 @@ int AminoAcid::from_pdb(FILE* is, int rno)
                             }
                         }
                     }
-                    
+
                     if (!found_aabond)
                     {
                         Atom* bta = nullptr;		// bond to atom.
@@ -1712,6 +1738,7 @@ Atom* AminoAcid::get_reach_atom()
 
     int i;
     float maxr = 0;
+    int anotaton = 0;
     Atom* CA = get_atom("CA");
     Atom* retval = nullptr;
     if (!CA) return nullptr;
@@ -1721,11 +1748,13 @@ Atom* AminoAcid::get_reach_atom()
         if (atoms[i]->is_backbone) continue;
         float r = atoms[i]->distance_to(CA);
 
-        if (r > maxr)
+        int Greek = atoms[i]->get_Greek();
+        if (r > maxr && Greek >= anotaton)
         {
             maxr = r;
             retval = atoms[i];
         }
+        if (Greek > anotaton) anotaton = Greek;
     }
 
     return retval;
@@ -1737,6 +1766,7 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
 
     int i;
     float maxr = 0;
+    int anotaton = 0;
     Atom* CA = get_atom("CA");
     Atom* retval = nullptr;
     if (!CA) return nullptr;
@@ -1775,9 +1805,11 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
         if (!type_ok) continue;
 
         float r = atoms[i]->distance_to(CA);
-        if (r > maxr)
+        int Greek = atoms[i]->get_Greek();
+        if (r > maxr && Greek >= anotaton)
         {
             maxr = r;
+            anotaton = Greek;
             retval = atoms[i];
         }
     }

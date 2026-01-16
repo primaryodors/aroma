@@ -41,6 +41,9 @@ Casting an integer to a Cartesian obtains the location of the CA atom for that r
 But note that e.g. `LET @foo = %motif + 2` will not work. The arithmetic must come first e.g. `LET %foo = %motif + 2` followed by
 `LET @foo = %foo`.
 
+Casting an integer to a string creates a string representation of that integer.
+To get the one-letter code for a residue of the sequence, use AAAT.
+
 Casting a Cartesian back to float or integer obtains the magnitude of the Cartesian, equal to sqrt(x^2 + y^2 + z^2).
 
 The command line arguments are made available to the script as `$arg1`, `$arg2`, etc. Normally, `$arg1` will be the .phew script filename.
@@ -95,6 +98,15 @@ e.g. `$A.6.48`, refers to the indicated strand, in this example strand A.
 # Commands
 
 The following commands are supported:
+
+# AAAT
+Example:
+```
+AAAT 259 $residue                           # Reads which amino acid is at position 259 and sets the value of $residue to its one-letter code.
+AAAT %6.48 $res                             # Gets the amino acid at Ballesteros-Weinstein number 6.48.
+```
+
+Obtains the one-letter code for the amino acid at a specified residue number and loads the result into a variable.
 
 
 # ALIGN

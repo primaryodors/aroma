@@ -396,7 +396,8 @@ void Pose::restore_state(Molecule* m)
 
     for (i=0; i<sz && m->atoms[i]; i++)
     {
-        m->atoms[i]->move(saved_atom_locs[i]);
+        if (!(m->movability & MOV_PINNED))
+            m->atoms[i]->move(saved_atom_locs[i]);
     }
 }
 
@@ -554,13 +555,49 @@ void Molecule::reset_conformer_momenta()
     }
 }
 
+float Molecule::similar_atom_proximity(Molecule* o)
+{
+    if (o == this) return 1;
+    int i, j;
+    float similarity, result=0;
+
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->Z < 2) continue;
+        for (j=0; o->atoms[j]; j++)
+        {
+            if (o->atoms[j]->Z < 2) continue;
+            float r = atoms[i]->distance_to(o->atoms[j]);
+            if (r > _INTERA_R_CUTOFF) continue;
+
+            similarity = 0;
+            float apol = atoms[i]->is_polar(), bpol = o->atoms[j]->is_polar();
+            if (fabs(apol) < hydrophilicity_cutoff) apol = 0;
+            if (fabs(bpol) < hydrophilicity_cutoff) bpol = 0;
+            if (sgn(atoms[i]->get_charge()) == sgn(o->atoms[j]->get_charge())) similarity += similarity_charged;
+            if (!apol && !bpol) similarity += similarity_nonpolar;
+            else if (sgn(apol) == sgn(bpol)) similarity += similarity_polar / (1.0+fabs(apol-bpol));
+            else if (sgn(apol) == -sgn(bpol)) similarity += similarity_antipolar / (1.0+fabs(apol+bpol));
+            if (atoms[i]->is_pi() == o->atoms[j]->is_pi()) similarity += similarity_pi;
+
+            similarity /= (similarity_charged + similarity_polar + similarity_pi);
+
+            result += similarity / (1.0 + r);
+        }
+    }
+
+    result /= (i * sqrt(j));
+    return result;
+}
+
 void Molecule::reallocate()
 {
-    if (!(atcount % _def_atc))
+    // if (!(atcount % _def_atc))
+    if (atcount >= atcallocd-8)
     {
         int oac = atcount;
         int ac1 = oac + _def_atc;
-        Atom** latoms = new Atom*[ac1+10];
+        Atom** latoms = new Atom*[atcallocd = ac1+16];
 
         // if (atcount) cout << "Molecule " << (name?name:"(no name)") << " has " << atcount << " atoms." << endl;
 
@@ -739,7 +776,15 @@ int Molecule::get_hydrogen_count()
     return retval;
 }
 
-int Molecule::count_atoms_by_element(const char* esym)
+Atom *Molecule::get_atom_by_pdbidx(const int pdbidx) const
+{
+    if (!atoms || !atcount) return nullptr;
+    int i;
+    for (i=0; atoms[i]; i++) if (atoms[i]->pdbidx == pdbidx) return atoms[i];
+    return nullptr;
+}
+
+int Molecule::count_atoms_by_element(const char *esym)
 {
     if (noAtoms(atoms)) return 0;
     int findZ = Atom::Z_from_esym(esym);
@@ -1027,10 +1072,10 @@ Point Molecule::get_atom_location(int i)
 
 Atom* Molecule::get_nearest_atom(Point loc) const
 {
-    if (noAtoms(atoms)) return 0;
+    if (noAtoms(atoms)) return nullptr;
 
     int i, j;
-    float best, r;
+    float best = Avogadro, r;
     for (i=0; atoms[i]; i++)
     {
         r = loc.get_3d_distance(atoms[i]->loc);
@@ -1042,6 +1087,28 @@ Atom* Molecule::get_nearest_atom(Point loc) const
     }
 
     return atoms[j];
+}
+
+Atom *Molecule::get_nearest_atom(Point loc, const char *esym, bool ib) const
+{
+    if (noAtoms(atoms)) return nullptr;
+
+    int i, j=-1, Z = Atom::Z_from_esym(esym);
+    if (!Z) return nullptr;
+    float best = Avogadro, r;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->Z != Z) continue;
+        if (ib && atoms[i]->is_backbone) continue;
+        r = loc.get_3d_distance(atoms[i]->loc);
+        if (!i || r < best)
+        {
+            j=i;
+            best=r;
+        }
+    }
+
+    return (j<0) ? nullptr : atoms[j];
 }
 
 Atom* Molecule::get_nearest_atom(Point loc, intera_type capable_of, int sp) const
@@ -1295,10 +1362,35 @@ float Molecule::octant_occlusion(Molecule *ligand, bool ip)
     return octant_occlusion(tmp, ip);
 }
 
+Point Molecule::polar_barycenter()
+{
+    if (!atoms) return Point(0,0,0);
+    int i;
+    float sum = 0;
+    Point result = get_barycenter();
+    for (i=0; atoms[i]; i++)
+    {
+        float apol = fabs(atoms[i]->is_polar());
+        if (apol > hydrophilicity_cutoff)
+        {
+            Vector toadd = atoms[i]->loc;
+            toadd.r = apol;
+            if (!sum) result = toadd;
+            else result = result.add(toadd);
+            sum += apol;
+        }
+    }
+    if (sum) result.multiply(1.0 / sum);
+    return result;
+}
+
 float Molecule::octant_occlusion(Molecule **ligands, bool ip)
 {
     if (!atoms) return 0;
     int h, i, j, l;
+
+    float Helecn = Atom::electronegativity_from_Z(1);
+    float Oelecn = Atom::electronegativity_from_Z(8);
 
     #if per_atom_occlusions
     float worst_occlusion = 1835;
@@ -1410,7 +1502,6 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
     float total_occlusions = 0;
     Sphere octant_atoms[8];
     float octant_atom_pol[8];
-    float octant_atom_charge[8];
 
     for (i=0; i<8; i++) octant_atoms[i].radius = octant_atom_pol[i] = 0;
 
@@ -1435,7 +1526,6 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
                 octant_atoms[octi].center = rel;
                 octant_atoms[octi].radius = a->vdW_radius + b->vdW_radius;
                 octant_atom_pol[octi] = fabs(a->is_polar());
-                octant_atom_charge[octi] = a->get_charge() * b->get_charge();
                 #if _dbg_octant_occlusion
                 cout << "Atom " << ligands[i]->name << ":" << a->name << " for octant " << octi << endl;
                 #endif
@@ -1473,8 +1563,7 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
             #endif
             if (ip)
             {
-                if (octant_atom_charge[j] < -hydrophilicity_cutoff) partial = 0;
-                else partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(3.44-2.20)));
+                partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(Oelecn-Helecn)));
             }
             total_occlusions += partial/4;
         }
@@ -1850,6 +1939,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
     */
     char buffer[1024];
     int added=0;
+    bool has_conects = false;
 
     while (!feof(is))
     {
@@ -1912,31 +2002,71 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                     Point aloc(atof(words[5+offset]), atof(words[6+offset]),atof(words[7+offset]));
 
                     Atom* a = add_atom(esym, words[2], &aloc, 0, 0, charge);
+                    a->pdbidx = atoi(words[1]);
+                    // cout << "Load " << a->name << " as pdbidx " << a->pdbidx << endl;
+                    if (offset) a->pdbchain = words[4][0];
                     added++;
 
                     // a->residue = atoi(words[4]);
-
-                    for (i=0; atoms[i]; i++)
-                    {
-                        if (atoms[i] == a) continue;
-                        float r = aloc.get_3d_distance(atoms[i]->loc);
-                        if (r < 5)
-                        {
-                            if (r < 1.05* InteratomicForce::covalent_bond_radius(a, atoms[i], 1))
-                                a->bond_to(atoms[i], 1);
-                        }
-                    }
-
                 }
                 catch (int ex)
                 {
                     ;
                 }
             }
+            else if (!strcmp(words[0], "CONECT") && words[1] && words[2])
+            {
+                has_conects = true;
+                int ia1 = atoi(words[1]), ia2 = atoi(words[2]);
+                Atom *a1 = get_atom_by_pdbidx(ia1), *a2 = get_atom_by_pdbidx(ia2);
+                if (a1 && a2)
+                {
+                    float card = 1;
+                    if (words[3] && strchr(words[3], '.'))
+                    {
+                        card = atof(words[3]);
+                        a1->bond_to(a2, card);
+                        // cout << a1->name << " bond to " << a2->name << " card " << card << endl;
+                    }
+                    else
+                    {
+                        a1->bond_to(a2, card);
+                        // cout << a1->name << " bond to " << a2->name << " &c" << endl;
+                        int l;
+                        for (l=3; words[l]; l++)
+                        {
+                            ia2 = atoi(words[l]);
+                            a2 = get_atom_by_pdbidx(ia2);
+                            if (a2)
+                            {
+                                a1->bond_to(a2, card);
+                                // cout << a1->name << " bond to " << a2->name << endl;
+                            }
+                        }
+                    }
+                }
+            }
         }
         buffer[0] = 0;
 
-        delete words;
+        delete[] words;
+    }
+
+    if (atoms && !has_conects)
+    {
+        int i, j;
+        for (i=0; atoms[i]; i++)
+        {
+            for (j=i+1; atoms[j]; j++)
+            {
+                float r = atoms[i]->distance_to(atoms[j]);
+                if (r < 5)
+                {
+                    if (r < 1.05* InteratomicForce::covalent_bond_radius(atoms[i], atoms[j], 1))
+                        atoms[i]->bond_to(atoms[j], 1);
+                }
+            }
+        }
     }
 
     identify_conjugations();
@@ -2133,14 +2263,43 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
 void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
 {
-    int i;
+    int i, j, l;
 
+    nconects = 0;
     for (i=0; atoms[i]; i++)
     {
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
+        l = atoms[i]->get_bonded_atoms_count();
+        // cout << "Save " << atoms[i]->name << " as pdbidx " << atoms[i]->pdbidx << " bonded to " << l << " atoms" << endl;
+        for (j=0; j<l; j++)
+        {
+            Bond* b = atoms[i]->get_bond_by_idx(j);
+
+            if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i] && nconects < CONECTS_MAX)
+            {
+                conecta1[nconects] = atoms[i];
+                conecta2[nconects] = b->atom2;
+                // cout << conecta1[nconects]->name << " is bonded to " << conecta2[nconects]->name << endl;
+                conectcard[nconects] = b->cardinality;
+                nconects++;
+            }
+        }
     }
 
-    if (endpdb) fprintf(os, "\nTER\nEND\n\n");
+    if (endpdb)
+    {
+        for (i=0; i<nconects; i++)
+        {
+            j = conecta1[i]->pdbidx;
+            l = conecta2[i]->pdbidx;
+            /*cout << "Save " << conecta1[i]->name << " pdbidx=" << conecta1[i]->pdbidx
+                << " bonded to " << conecta2[i]->name << " pdbidx=" << conecta2[i]->pdbidx
+                << endl;*/
+            fprintf(os, "CONECT %d %d %.2f\n", j, l, conectcard[i]);
+        }
+        fprintf(os, "\nTER\nEND\n\n");
+        nconects = 0;
+    }
     else fprintf(os, "\n\n");
 }
 
@@ -5013,8 +5172,6 @@ void Molecule::conform_atom_to_location(Atom *a, Atom *target, int iters, float 
     best.restore_state(this);
 }
 
-#define _dbg_atom_pointing 0
-
 void Molecule::conform_atom_to_location(int i, Point t, int iters, float od)
 {
     if (!(movability & MOV_CAN_FLEX)) return;
@@ -5157,6 +5314,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             #endif
 
             Point aloc = a->get_barycenter();
+            int flexion_sub_iterations = ares ? flexion_sub_iterations_sidechain : flexion_sub_iterations_ligand;
 
             Interaction benerg = 0;
             if (1) // !ares)
@@ -5360,6 +5518,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     cout << i << ": Flipping " << mm[i]->name << endl;
                     #endif
                     if (ares) wfal = mm[i]->faces_any_ligand(mm);
+                    #if _dbg_atom_mov_to_clash
+                    movclash_justtesting = true;
+                    #endif
                     mm[i]->do_histidine_flip(mm[i]->hisflips[l]);
                     fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                     if (audit) sprintf(triedchange, "histidine flip");
@@ -5379,7 +5540,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 }
             }
             /**** End histidine flip ****/
-        
+
             #if _dbg_asunder_atoms
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
@@ -5498,6 +5659,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
                             {
                                 prior_state.restore_state(a);
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 bb[q]->rotate(theta, false);
                                 a->enforce_stays(multimol_stays_enforcement);
                                 tryenerg = cfmol_multibind(a, nearby);
@@ -5509,7 +5673,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
-                                if ((fal || !wfal) && tryenerg.improved(benerg) && a->get_internal_clashes() <= self_clash)
+                                if ((fal || !wfal) && tryenerg.improved(benerg)
+                                    && a->get_internal_clashes() <= self_clash
+                                    && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                   )
                                 {
                                     benerg = tryenerg;
                                     best_theta = theta;
@@ -5542,6 +5709,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (isra)
                             {
                                 if (rang) continue;
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 isra->flip_atom(bb[q]->atom1);
                                 rang++;
                                 flipped_rings = true;
@@ -5549,8 +5719,42 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
                             else
                             {
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 bb[q]->rotate(theta, false);
                                 if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
+                            }
+
+                            tryenerg = cfmol_multibind(a, nearby);
+                            tryenerg.clash += a->total_eclipses();
+                            fal = ares ? mm[i]->faces_any_ligand(mm) : true;
+
+                            #if _dbg_mol_flexion
+                            if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
+                            #endif
+
+                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                && a->get_internal_clashes() <= self_clash
+                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                               )
+                            {
+                                benerg = tryenerg;
+                                pib.copy_state(a);
+                                a->been_flexed = true;
+                                test_and_update_absolute_best_poses
+
+                                #if _dbg_mol_flexion
+                                if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
+                                #endif
+                            }
+                            else
+                            {
+                                pib.restore_state(a);
+
+                                #if _dbg_mol_flexion
+                                if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                #endif
                             }
 
                             a->enforce_stays(multimol_stays_enforcement);
@@ -5562,18 +5766,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg) && a->get_internal_clashes() <= self_clash)
+                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                && a->get_internal_clashes() <= self_clash
+                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                               )
                             {
-                                // Leaving this in case the "nearbys" feature misses any more clashable residues.
-                                // If it does, adjust the constants on the cosine in AminoAcid::can_reach().
-                                /*if (a->is_residue() == 109)
-                                {
-                                    cout << endl << "Nearby: ";
-                                    int nb;
-                                    for (nb=0; nearby[nb]; nb++) cout << nearby[nb]->is_residue() << " ";
-                                    cout << endl << "Accepted: " << -tryenerg.attractive << "+" << tryenerg.clash << endl;
-                                }*/
-
                                 benerg = tryenerg;
                                 pib.copy_state(a);
                                 a->been_flexed = true;
@@ -5681,6 +5878,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (abc=0; abc<nmm; abc++)
     {
+        if (mm[abc]->movability & MOV_PINNED) continue;
         if (mm[abc]->is_residue()) absolute_best[abc].restore_state_relative(mm[abc], "CA");
         else absolute_best[abc].restore_state(mm[abc]);
     }
@@ -6619,9 +6817,8 @@ Atom** Molecule::get_most_bindable(int max_count)
             score += 20;
         else if (atoms[i]->is_polar())
             score += 100 * fabs(atoms[i]->is_polar());
-
-        if (atoms[i]->is_pi())
-            score += 50;
+        else if (atoms[i]->is_pi())
+            score += 5;
 
         if (!score) score += 5;		// van der Waals.
 

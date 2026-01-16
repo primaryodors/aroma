@@ -1,5 +1,14 @@
+#include <iostream>
+#include <stdio.h>
+#include <string>
+#include <math.h>
+#include <stdlib.h>
+#include <fstream>
+#include "classes/search.h"
+#include "classes/reshape.h"
+#include "classes/progress.h"
 
-#include "classes/protein.h"
+using namespace std;
 
 int main(int argc, char** argv)
 {
@@ -8,16 +17,18 @@ int main(int argc, char** argv)
         cout << "Usage:" << endl << endl;
         cout << "bin/ic path/to/structure.pdb [strand ID] [save]" << endl;
         cout << endl << "Optional strand ID is a letter between A and Z specifying the target strand of the source PDB file." << endl;
-        cout << "This program will optimize the positions of certain hydrogen atoms. If the optional save param is specified, it will overwrite the original PDB with the optimized structure." << endl;
+        cout << "This program will optimize the positions of certain atoms. If the optional save param is specified, it will overwrite the original PDB with the optimized structure." << endl;
         return -1;
     }
     char* fname;
     Protein p("testing");
-    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false;
+    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false, dorshps = false, dohg = false;
     ResiduePlaceholder rotres;
     char* rota1 = nullptr;
     char* rota2 = nullptr;
     float rota = 0;
+    Reshape rshp;
+    ICHelixGroup hg;
 
     int i;
     FILE* fp;
@@ -39,6 +50,10 @@ int main(int argc, char** argv)
         else if (!strcmp(argv[i], "nooil"))
         {
             polaronly = true;
+        }
+        else if (!strcmp(argv[i], "verbose"))
+        {
+            rshp_verbose = true;
         }
         else if (!strcmp(argv[i], "tall"))
         {
@@ -68,6 +83,17 @@ int main(int argc, char** argv)
 
             cout << "Loaded " << p.get_seq_length() << " residues." << endl;
         }
+        else if (strstr(argv[i], ".rshpm"))
+        {
+            rshp.load_rshpm_file(argv[i], nullptr);
+            dorshps = true;
+        }
+        else if (strstr(argv[i], ".ic"))
+        {
+            cout << "Loading internal contacts file " << argv[i] << "..." << endl;
+            hg.load_ic_file(argv[i]);
+            dohg = true;
+        }
     }
 
     if (dohyd)
@@ -84,6 +110,14 @@ int main(int argc, char** argv)
             cout << "." << flush;
         }
         cout << endl;
+    }
+
+    if (dorshps) rshp.apply(&p, false);
+
+    if (dohg)
+    {
+        float anomaly = hg.optimize_helices(&p);
+        cout << "Post-optimization anomaly: " << anomaly << endl;
     }
 
     if (rota1 && rota2 && rota)
@@ -202,6 +236,7 @@ int main(int argc, char** argv)
         fp = fopen(fname, "wb");
         if (fp)
         {
+            p.set_pdb_chain('A');           // Important for fixfail.py.
             p.save_pdb(fp);
             p.end_pdb(fp);
             fclose(fp);

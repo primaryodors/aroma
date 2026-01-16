@@ -3813,6 +3813,8 @@ function process_cavity_ln(ln)
 	cavdata['chargep'] = pieces[7].indexOf('+') >= 0;
 	cavdata['chargen'] = pieces[7].indexOf('-') >= 0;
 	cavdata['hydro'] = pieces[7].indexOf('H') >= 0;
+	cavdata['hyda'] = pieces[7].indexOf('A') >= 0;
+	cavdata['hydd'] = pieces[7].indexOf('D') >= 0;
 	cavdata['thio'] = pieces[7].indexOf('S') >= 0;
 	cavdata['pi'] = pieces[7].indexOf('P') >= 0;
 	cavdata['priority'] = pieces[7].indexOf('!') >= 0;
@@ -4387,6 +4389,8 @@ function show_stats()
 
 function show_pockets()
 {
+	if (cavities.length == 1 && !cavities[0]['residues'].length) return show_hide_cavity(0, 1);
+
 	var pocketsdd = document.createElement('div');
 	pocketsdd.id = "pocketsdd";
 	pocketsdd.style.position = "absolute";
@@ -4427,6 +4431,8 @@ function show_pockets()
 
 			bzclick += "showSideChain("+resno+");";
 		}
+
+		if (!bzclick) bzclick = "show_hide_cavity("+i+", 1);";
 
 		html += "</a> <a id=\"cavres"+i+"\" onclick=\""+bzclick+"\" style=\"cursor: pointer;\">\u232c</a>";
 		html += "<br><br>\n\n";
@@ -4655,13 +4661,15 @@ function show_cavity(cavno, cmode=1)
 		switch (cmode)
 		{
 			case 1:
-			if (cavities[cavno][i]["metal"]) { red = 0.75; green = 0.6; blue = 0.5; }
-			else if (cavities[cavno][i]["chargen"] && cavities[cavno][i]["chargep"]) { red = 0.9; green = 0.9; blue = 0.9; }
-			else if (cavities[cavno][i]["chargen"]) { red = 0.99; green = 0.05; blue = 0.01; }
-			else if (cavities[cavno][i]["chargep"]) { red = 0.01; green = 0.04; blue = 0.99; }
-			else if (cavities[cavno][i]["hydro"]) { red = 0.01; green = 0.81; blue = 0.99; }
-			else if (cavities[cavno][i]["thio"]) { red = 0.75; green = 0.75; blue = 0.50; }
-			else if (cavities[cavno][i]["pi"]) { red = 0.58; green = 0.53; blue = 0.58; }
+			if (cavities[cavno][i]['metal']) { red = 0.75; green = 0.6; blue = 0.5; }
+			else if (cavities[cavno][i]['chargen'] && cavities[cavno][i]['chargep']) { red = 0.9; green = 0.9; blue = 0.9; }
+			else if (cavities[cavno][i]['chargen']) { red = 0.99; green = 0.05; blue = 0.01; }
+			else if (cavities[cavno][i]['chargep']) { red = 0.01; green = 0.04; blue = 0.99; }
+			else if (cavities[cavno][i]['hydro']) { red = 0.01; green = 0.81; blue = 0.99; }
+			else if (cavities[cavno][i]['hyda']) { red = 0.01; green = 0.91; blue = 0.99; }
+			else if (cavities[cavno][i]['hydd']) { red = 0.01; green = 0.43; blue = 0.99; }
+			else if (cavities[cavno][i]['thio']) { red = 0.75; green = 0.75; blue = 0.50; }
+			else if (cavities[cavno][i]['pi']) { red = 0.58; green = 0.37; blue = 0.58; }
 			else { red = 0.6; green = 0.6; blue = 0.6; }
 
 			var lum = 0.29*red + 0.57*green + 0.14*blue;
@@ -4713,7 +4721,7 @@ function show_cavity(cavno, cmode=1)
 	var shapeComp = stage.addComponentFromObject(shape);
 	cavities[cavno]['shapeComp'] = shapeComp;
 
-	cavities[cavno]['shapeComp'].addRepresentation("buffer", { opacity: 0.1 });
+	cavities[cavno]['shapeComp'].addRepresentation("buffer", { opacity: cavities[cavno]['residues'].length ? 0.1 : 0.53 });
 	cavities[cavno]['shown'] = true;
 	last_clicked_cavity = cavities[cavno];
 	$('#cavtgl'+cavno).addClass('hilite');
