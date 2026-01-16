@@ -1142,7 +1142,7 @@ int interpret_config_line(char** words)
     {
         if (file_exists(words[1]))
         {
-            hg.load_ic_file(words[i]);
+            hg.load_ic_file(words[1]);
         }
         else
         {
