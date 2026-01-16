@@ -422,6 +422,7 @@ extern bool (*postflex_cb)(void*,float);
 #if _dbg_atom_mov_to_clash
 extern void (*movclash_cb)(Atom* caller, void* prot);
 extern void *movclash_prot;
+extern bool movclash_justtesting;
 #endif
 
 #endif

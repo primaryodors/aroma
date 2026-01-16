@@ -5521,6 +5521,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     cout << i << ": Flipping " << mm[i]->name << endl;
                     #endif
                     if (ares) wfal = mm[i]->faces_any_ligand(mm);
+                    #if _dbg_atom_mov_to_clash
+                    movclash_justtesting = true;
+                    #endif
                     mm[i]->do_histidine_flip(mm[i]->hisflips[l]);
                     fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                     if (audit) sprintf(triedchange, "histidine flip");
@@ -5540,7 +5543,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 }
             }
             /**** End histidine flip ****/
-        
+
             #if _dbg_asunder_atoms
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
@@ -5659,6 +5662,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
                             {
                                 prior_state.restore_state(a);
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 bb[q]->rotate(theta, false);
                                 a->enforce_stays(multimol_stays_enforcement);
                                 tryenerg = cfmol_multibind(a, nearby);
@@ -5706,6 +5712,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (isra)
                             {
                                 if (rang) continue;
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 isra->flip_atom(bb[q]->atom1);
                                 rang++;
                                 flipped_rings = true;
@@ -5713,6 +5722,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
                             else
                             {
+                                #if _dbg_atom_mov_to_clash
+                                movclash_justtesting = true;
+                                #endif
                                 bb[q]->rotate(theta, false);
                                 if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
                             }

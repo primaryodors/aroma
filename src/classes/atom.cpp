@@ -32,6 +32,7 @@ bool (*postflex_cb)(void*,float) = nullptr;
 #if _dbg_atom_mov_to_clash
 void (*movclash_cb)(Atom* caller, void* prot) = nullptr;
 void *movclash_prot = nullptr;
+bool movclash_justtesting = false;
 #endif
 
 void Atom::read_elements()
@@ -569,7 +570,7 @@ bool Atom::move(Point* pt)
     geometry_dirty = true;
 
     #if _dbg_atom_mov_to_clash
-    if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
+    // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
     #endif
 
     return true;
@@ -1706,6 +1707,10 @@ _cannot_reverse_bondrot:
     total_rotations += theta;
 
     // cout << theta << endl;
+
+    #if _dbg_atom_mov_to_clash
+    if (movclash_cb && movclash_prot) movclash_cb(this->atom2, movclash_prot);
+    #endif
 
     if (last_fail != bf_limited_rotation) last_fail = bf_none;
     return true;

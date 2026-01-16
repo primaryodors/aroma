@@ -603,9 +603,14 @@ void check_moved_atom_for_clashes(Atom* caller, void* prot)
         AminoAcid* aa = p->get_residue(resno);
         if (aa)
         {
+            if (movclash_justtesting)
+            {
+                movclash_justtesting = false;
+                return;
+            }
             if (!aa->mclashables) p->set_clashables(resno);
             float c = aa->get_intermol_clashes(aa->mclashables);
-            if (c > clash_limit_per_aa*10) throw 0xbadc0de;
+            if (c > clash_limit_per_aa*33) throw 0xbadc0de;
         }
     }
 }
@@ -2738,11 +2743,6 @@ _try_again:
         // protein = new Protein(protfname);
         protein = &pose_proteins[pose-1];
 
-        #if _dbg_atom_mov_to_clash
-        movclash_prot = protein;
-        movclash_cb = &check_moved_atom_for_clashes;
-        #endif
-
         if (temp_pdb_file.length())
         {
             pf = fopen(temp_pdb_file.c_str(), "r");
@@ -3649,6 +3649,11 @@ _try_again:
             }
             #endif
 
+            #if _dbg_atom_mov_to_clash
+            movclash_prot = protein;
+            movclash_cb = &check_moved_atom_for_clashes;
+            #endif
+
             /////////////////////////////////////////////////////////////////////////////////
             // Main call to conformational search function.
             /////////////////////////////////////////////////////////////////////////////////
@@ -3928,6 +3933,11 @@ _try_again:
             #endif
 
             protein->optimize_hydrogens();
+
+            #if _dbg_atom_mov_to_clash
+            movclash_prot = nullptr;
+            movclash_cb = nullptr;
+            #endif
 
             dr[drcount][nodeno] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
             dr[drcount][nodeno].out_per_res_e = out_per_res_e;
