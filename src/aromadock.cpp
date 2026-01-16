@@ -603,14 +603,16 @@ void check_moved_atom_for_clashes(Atom* caller, void* prot)
         AminoAcid* aa = p->get_residue(resno);
         if (aa)
         {
-            if (movclash_justtesting)
-            {
-                movclash_justtesting = false;
-                return;
-            }
             if (!aa->mclashables) p->set_clashables(resno);
             float c = aa->get_intermol_clashes(aa->mclashables);
-            if (c > clash_limit_per_aa*33) throw 0xbadc0de;
+            if (c > clash_limit_per_aa)
+            {
+                if (!movclash_justtesting)
+                {
+                    throw 0xbadc0de;
+                }
+                movclash_justtesting = false;
+            }
         }
     }
 }

@@ -5729,6 +5729,37 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
                             }
 
+                            tryenerg = cfmol_multibind(a, nearby);
+                            tryenerg.clash += a->total_eclipses();
+                            fal = ares ? mm[i]->faces_any_ligand(mm) : true;
+
+                            #if _dbg_mol_flexion
+                            if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
+                            #endif
+
+                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                && a->get_internal_clashes() <= self_clash
+                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                               )
+                            {
+                                benerg = tryenerg;
+                                pib.copy_state(a);
+                                a->been_flexed = true;
+                                test_and_update_absolute_best_poses
+
+                                #if _dbg_mol_flexion
+                                if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
+                                #endif
+                            }
+                            else
+                            {
+                                pib.restore_state(a);
+
+                                #if _dbg_mol_flexion
+                                if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                #endif
+                            }
+
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby);
                             tryenerg.clash += a->total_eclipses();

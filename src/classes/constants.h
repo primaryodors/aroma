@@ -330,7 +330,7 @@
 #define _dbg_anemia 0
 #define _dbg_appears 0
 #define _dbg_asunder_atoms 0
-#define _dbg_atom_mov_to_clash 1
+#define _dbg_atom_mov_to_clash 0
 #define _dbg_atom_pointing 0
 #define _dbg_attprdc 0
 #define _dbg_bb_clash_avoidance 0

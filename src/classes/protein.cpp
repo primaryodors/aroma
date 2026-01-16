@@ -2719,6 +2719,9 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
             {
                 for (l=0; l<opth_fullrot_steps; l++)
                 {
+                    #if _dbg_atom_mov_to_clash
+                    movclash_justtesting = true;
+                    #endif
                     b[j]->rotate(opth_fullrot_stepa);
                     Interaction during = aa->get_intermol_binding(sphres);
                     if (during.improved(before))
@@ -2736,6 +2739,9 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
             }
             else if (b[j]->can_flip)
             {
+                #if _dbg_atom_mov_to_clash
+                movclash_justtesting = true;
+                #endif
                 if (!b[j]->flip_angle) b[j]->flip_angle = M_PI;
                 b[j]->rotate(b[j]->flip_angle);
                 Interaction during = aa->get_intermol_binding(sphres);
@@ -2743,6 +2749,9 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
                 if (during.worst_atom_clash < 1.1 * before.worst_atom_clash) during.worst_atom_clash = before.worst_atom_clash = 0;
                 if (!during.improved(before))
                 {
+                    #if _dbg_atom_mov_to_clash
+                    movclash_justtesting = true;
+                    #endif
                     b[j]->rotate(b[j]->flip_angle);
                     #if _dbg_optimize_hydrogens
                     if (aa->get_residue_no() == _dbg_optimize_hydrogens_resno) 
