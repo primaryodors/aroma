@@ -79,12 +79,13 @@
 #define vdw_surface_density 15
 #define water_surface_H 0.59
 
-// Molecular generation constants.
+// Molecular generation and conformation constants.
 #define _default_mutation_rate 0.05
 #define _default_population_size 80
 #define _evolution_aromatic_rigidity 50
 #define _evolution_atom_displacement 1.0
 #define _evolution_default_generations 5000
+#define stretch_out_molecules_by_interatomic_distance 1
 
 // Protein structure constants.
 #define chain_length_per_aa 3.9

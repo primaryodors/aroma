@@ -156,6 +156,7 @@ public:
     bool shielded(Atom* a, Atom* b) const;
     float correct_structure(int iters = 500);
     float close_loop(Atom** path, float closing_bond_cardinality);
+    float sum_interatomic_distances();
     bool is_chiral();
     void mirror();
     float total_eclipses();
@@ -163,7 +164,7 @@ public:
     float distance_to(Molecule* other_mol);
     std::vector<Atom*> longest_dimension();
     float get_atom_bond_length_anomaly(Atom* atom, Atom* ignore = nullptr);
-    float evolve_structure(int generations = _evolution_default_generations, float mutation_rate = _default_mutation_rate, int pop_size = _default_population_size);
+    float refine_structure(int generations = _evolution_default_generations, float mutation_rate = _default_mutation_rate, int pop_size = _default_population_size);
     int atoms_inside_sphere(Sphere container, bool* byindex, float radius_multiplier = 1);     // If byindex is not null, sets byindex[n] to true for atoms inside the sphere, but does not set to false.
     float surface_occlusion(Molecule** ligands);
     float surface_occlusion(Molecule* ligand);

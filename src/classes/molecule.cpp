@@ -4744,7 +4744,11 @@ void Molecule::minimize_internal_clashes()
     base_internal_clashes = base_eclipses = 0;
 
     int i, j, iter;
+    #if stretch_out_molecules_by_interatomic_distance
+    float clash = -sum_interatomic_distances();
+    #else
     float clash = get_internal_clashes() + total_eclipses();
+    #endif
 
     if (!clash) return;		// Already zero, nothing to decrease to.
 
@@ -4769,7 +4773,11 @@ void Molecule::minimize_internal_clashes()
         for (j=0; step*j < M_PI*2; j++)
         {
             b[i]->rotate(step);
+            #if stretch_out_molecules_by_interatomic_distance
+            float clash1 = -sum_interatomic_distances();
+            #else
             float clash1 = get_internal_clashes() + total_eclipses();
+            #endif
             // cout << (step*j*fiftyseven) << "deg " << clash1 << endl;
 
             if (clash1 < clash)
@@ -4788,7 +4796,11 @@ void Molecule::minimize_internal_clashes()
         for (i=0; i<numrb; i++)
         {
             b[i]->rotate(angle[i]);
+            #if stretch_out_molecules_by_interatomic_distance
+            float clash1 = -sum_interatomic_distances();
+            #else
             float clash1 = get_internal_clashes() + total_eclipses();
+            #endif
 
             if (clash1 <= clash)
             {
@@ -5837,7 +5849,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!i) cout << "final " << -benerg << " " << endl << flush;
             #endif
 
-            if (!ares && flipped_rings) a->evolve_structure(100);
+            if (!ares && flipped_rings) a->refine_structure(100);
 
             if (!i && !ares)
             {
@@ -6730,6 +6742,35 @@ float Molecule::close_loop(Atom** path, float lcard)
     return anomaly;
 }
 
+float Molecule::sum_interatomic_distances()
+{
+    float result = 0;
+    float local_hydro_cutoff = pow(hydrophilicity_cutoff, 0.5);
+    if (!atoms) return result;
+    int i, j;
+    for (i=0; atoms[i]; i++)
+    {
+        for (j=i+1; atoms[j]; j++)
+        {
+            if (atoms[i]->is_bonded_to(atoms[j])) continue;
+            if (fabs(atoms[i]->is_polar()) >= local_hydro_cutoff
+                && fabs(atoms[j]->is_polar()) >= local_hydro_cutoff
+                )
+            {
+                if (sgn(atoms[i]->is_polar()) == -sgn(atoms[j]->is_polar()))
+                {
+                    result -= 25.0 * fabs(atoms[i]->distance_to(atoms[j]) - 2.5);
+                    continue;
+                }
+            }
+
+            float r = atoms[i]->distance_to(atoms[j]);
+            result += r + atoms[i]->vdW_radius + atoms[j]->vdW_radius;
+        }
+    }
+    return result;
+}
+
 Atom** Molecule::get_most_bindable(int max_count)
 {
     if (noAtoms(atoms)) return 0;
@@ -7465,7 +7506,7 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore)
     return anomaly;
 }
 
-float Molecule::evolve_structure(int gens, float mr, int ps)
+float Molecule::refine_structure(int gens, float mr, int ps)
 {
     if (!atoms) return 0;
     int ac = get_atom_count();

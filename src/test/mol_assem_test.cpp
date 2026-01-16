@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 
     #if _use_generational_algorithm
     m.minimize_internal_clashes();
-    cout << "# Evolving structure; this may take some time..." << endl << flush;
-    float anomaly = m.evolve_structure();
+    cout << "# Refining structure; this may take some time..." << endl << flush;
+    float anomaly = m.refine_structure();
     cout << "# Post-evolution per-atom anomaly: " << anomaly << endl;
     #endif
 
