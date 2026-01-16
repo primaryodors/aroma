@@ -79,6 +79,13 @@
 #define vdw_surface_density 15
 #define water_surface_H 0.59
 
+// Atomic similarity constants
+#define similarity_charged 1.0
+#define similarity_polar 1.0
+#define similarity_antipolar 0.75
+#define similarity_nonpolar 0.333
+#define similarity_pi 0.13
+
 // Molecular generation and conformation constants.
 #define _default_mutation_rate 0.05
 #define _default_population_size 80
@@ -185,7 +192,7 @@
 #define _fullrot_every 5
 #define _fullrot_stepdeg 7
 #define _fullrot_steprad (fiftyseventh*_fullrot_stepdeg)
-#define attempt_to_connect_hydrogen_bonds_to_ligand 0
+#define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle square/2
@@ -197,7 +204,7 @@
 #define fullrot_flex_unfavorable_energy_only 0
 #define fullrot_forbid_residues 1
 #define sidechain_flexion_frequency 0.333
-#define stochastic_flexion_of_clashing_residues 0
+#define stochastic_flexion_of_clashing_residues 1
 
 // Dynamic modification constants.
 #define _water_satisfaction_threshold -5
@@ -335,7 +342,6 @@
 #define _dbg_asunder_atoms 0
 #define _dbg_atom_mov_to_clash 0
 #define _dbg_atom_pointing 0
-#define _dbg_attprdc 0
 #define _dbg_bb_clash_avoidance 0
 #define _dbg_bb_contact_lonely 0
 #define _dbg_bb_pairs 0
@@ -392,6 +398,7 @@
 #define _dbg_optimize_hydrogens 0
 #define _dbg_optimize_hydrogens_resno 260
 #define _dbg_path_search 0
+#define _dbg_peptide_bond_formation 0
 #define _dbg_pocket_DeltaG_solv 0
 #define _dbg_point_avg 0
 #define _dbg_polar_calc 0

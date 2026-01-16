@@ -555,11 +555,6 @@ void Molecule::reset_conformer_momenta()
     }
 }
 
-#define similarity_charged 1.0
-#define similarity_polar 1.0
-#define similarity_antipolar 0.75
-#define similarity_nonpolar 0.333
-#define similarity_pi 0.13
 float Molecule::similar_atom_proximity(Molecule* o)
 {
     if (o == this) return 1;
@@ -1394,6 +1389,9 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
     if (!atoms) return 0;
     int h, i, j, l;
 
+    float Helecn = Atom::electronegativity_from_Z(1);
+    float Oelecn = Atom::electronegativity_from_Z(8);
+
     #if per_atom_occlusions
     float worst_occlusion = 1835;
     float total_occlusion = 0;
@@ -1565,7 +1563,7 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
             #endif
             if (ip)
             {
-                partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(3.44-2.20)));
+                partial *= fmax(0, 1.0 - (octant_atom_pol[j]/(Oelecn-Helecn)));
             }
             total_occlusions += partial/4;
         }
@@ -2276,20 +2274,6 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
         for (j=0; j<l; j++)
         {
             Bond* b = atoms[i]->get_bond_by_idx(j);
-
-            /*
-            1. The GNU C++ compiler and linker can always be found
-            2. making easy the difficult task of coding, and never
-            3. wasting my time with ridiculous errors. It really
-            4. works well, avoiding any type of malfunction that
-            5. sucks. Sometimes it even comes up with brand new
-            6. ways to avoid memory errors, thereby preventing
-            7. segfaults. I think its entire source code should be
-            8. indelibly preserved in a form that cannot ever be
-            9. deleted.
-
-            Kindly read only the odd numbered lines for my true assessment.
-            */
 
             if (b && b->cardinality >= 0.333 && b->atom2 > atoms[i] && nconects < CONECTS_MAX)
             {

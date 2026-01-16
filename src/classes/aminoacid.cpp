@@ -989,7 +989,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
     Point moveby = predicted[0].subtract( CO ? get_atom_location("C") : get_atom_location("N") );
     aamove(moveby);
     anomaly = predicted[0].get_3d_distance( CO ? get_atom_location("C") : get_atom_location("N") );
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.001) cout << "Error: " << ( CO ? "C" : "N" ) << " anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << endl;
     #endif
 
@@ -1001,7 +1001,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
     rotate(lv, rot.a);
     pt1 = CO ? get_atom_location("O") : HN_or_substitute_location();
     anomaly = predicted[1].get_3d_distance(pt1);
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.1) cout << "Error: " << ( CO ? "O" : "HN" ) << " anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << endl;
     #endif
 
@@ -1034,7 +1034,7 @@ void AminoAcid::attach_to_prediction(Point* predicted, bool CO)
         rotate(lv, theta*2);
         anomaly = predicted[2].get_3d_distance(get_atom_location("CA"));
     }
-    #if _dbg_attprdc
+    #if _dbg_peptide_bond_formation
     if (anomaly > 0.1) cout << "Error: CA anomaly outside tolerance!" << endl << "# Anomaly is " << anomaly << "." << endl;
     #endif
 
