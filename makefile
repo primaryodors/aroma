@@ -34,7 +34,7 @@ CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 CFLAGS+=-O3
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # For gprof
 # example command line:

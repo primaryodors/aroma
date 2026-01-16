@@ -29,6 +29,11 @@ float (*conj_get_charge)(void* lconjugation) = nullptr;
 float (*preflex_cb)(void*) = nullptr;
 bool (*postflex_cb)(void*,float) = nullptr;
 
+#if _dbg_atom_mov_to_clash
+void (*movclash_cb)(Atom* caller, void* prot) = nullptr;
+void *movclash_prot = nullptr;
+#endif
+
 void Atom::read_elements()
 {
     if (read_elem_syms) return;
@@ -562,6 +567,11 @@ bool Atom::move(Point* pt)
     if (geov) delete[] geov;
     geov = NULL;
     geometry_dirty = true;
+
+    #if _dbg_atom_mov_to_clash
+    if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
+    #endif
+
     return true;
 }
 

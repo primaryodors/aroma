@@ -5731,16 +5731,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                )
                             {
-                                // Leaving this in case the "nearbys" feature misses any more clashable residues.
-                                // If it does, adjust the constants on the cosine in AminoAcid::can_reach().
-                                /*if (a->is_residue() == 109)
-                                {
-                                    cout << endl << "Nearby: ";
-                                    int nb;
-                                    for (nb=0; nearby[nb]; nb++) cout << nearby[nb]->is_residue() << " ";
-                                    cout << endl << "Accepted: " << -tryenerg.attractive << "+" << tryenerg.clash << endl;
-                                }*/
-
                                 benerg = tryenerg;
                                 pib.copy_state(a);
                                 a->been_flexed = true;

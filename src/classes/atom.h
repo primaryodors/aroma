@@ -419,5 +419,9 @@ extern float (*conj_get_charge)(void* lconjugation);
 extern float (*preflex_cb)(void*);
 extern bool (*postflex_cb)(void*,float);
 
+#if _dbg_atom_mov_to_clash
+extern void (*movclash_cb)(Atom* caller, void* prot);
+extern void *movclash_prot;
 #endif
 
+#endif

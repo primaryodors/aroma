@@ -593,6 +593,24 @@ void abhor_vacuum(int iter, Molecule** mols)
     #endif
 }
 
+#if _dbg_atom_mov_to_clash
+void check_moved_atom_for_clashes(Atom* caller, void* prot)
+{
+    int resno = caller->residue;
+    if (resno)
+    {
+        Protein* p = reinterpret_cast<Protein*>(prot);
+        AminoAcid* aa = p->get_residue(resno);
+        if (aa)
+        {
+            if (!aa->mclashables) p->set_clashables(resno);
+            float c = aa->get_intermol_clashes(aa->mclashables);
+            if (c > clash_limit_per_aa*10) throw 0xbadc0de;
+        }
+    }
+}
+#endif
+
 void iteration_callback(int iter, Molecule** mols)
 {
     int i, j, l, n, ac;
@@ -2716,10 +2734,14 @@ _try_again:
             }
         }
 
-
         // delete protein;
         // protein = new Protein(protfname);
         protein = &pose_proteins[pose-1];
+
+        #if _dbg_atom_mov_to_clash
+        movclash_prot = protein;
+        movclash_cb = &check_moved_atom_for_clashes;
+        #endif
 
         if (temp_pdb_file.length())
         {
