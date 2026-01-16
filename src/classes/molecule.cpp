@@ -5330,6 +5330,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             #endif
 
             Point aloc = a->get_barycenter();
+            int flexion_sub_iterations = ares ? flexion_sub_iterations_sidechain : flexion_sub_iterations_ligand;
 
             Interaction benerg = 0;
             if (1) // !ares)
