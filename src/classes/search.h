@@ -63,7 +63,7 @@ class Search
     static void pair_targets(Molecule* ligand, LigandTarget* targets, AminoAcid** pocketres, Point loneliest, 
         BestBindingResult* output, Cavity* container = nullptr, bool allow_thiolation = true, Progressbar *pbr = nullptr);
     static void scan_protein(Protein* prot, Molecule* ligand, LigandTarget* targets, BestBindingResult* results, int max_results, Box limit = Box());
-    static void align_targets(Molecule* ligand, Point pocketcen, BestBindingResult* bbr, float amt = 1);
+    static void align_targets(Molecule* ligand, Point pocketcen, BestBindingResult* bbr, float amt = 1, bool nooil = false);
     static bool target_compatibility(float chg1, float chg2, float pol1, float pol2, int pi1, int pi2,
         bool hba1, bool hba2, bool hbd1, bool hbd2);
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);

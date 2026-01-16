@@ -774,7 +774,11 @@ void iteration_callback(int iter, Molecule** mols)
         Molecule* llig = ligand->get_monomer(l);
         Interaction before = llig->get_intermol_binding(mols);
         Pose was(llig);
+        #if bb_realign_only_hydro
         Search::align_targets(llig, loneliest, &g_bbr[l], bb_realign_amount);
+        #else
+        Search::align_targets(llig, loneliest, &g_bbr[l], bb_realign_amount);
+        #endif
         Interaction after = llig->get_intermol_binding(mols);
         if (!after.improved(before)) was.restore_state(llig);
     }
@@ -4059,7 +4063,7 @@ _try_again:
                     AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
                     if (aacfmolsi->get_letter() == 'P') continue;
                 }
-                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*2)
+                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*5)
                 {
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";

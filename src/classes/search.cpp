@@ -1388,7 +1388,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
     putitback.restore_state(ligand);
 }
 
-void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt)
+void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt, bool nooil)
 {
     if (!bbr || !bbr->protein) return;
     ligand->movability = MOV_ALL;
@@ -1417,6 +1417,19 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     int sphres = bbr->protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, ligand->get_bounding_box());
     float e, enew;
 
+    bool pripol = bbr->pri_res->coordmtl
+        || (fabs(bbr->pri_res->hydrophilicity()) >= hydrophilicity_cutoff
+            && fabs(bbr->pri_tgt->polarity()) >= hydrophilicity_cutoff
+            );
+    bool secpol = bbr->sec_res->coordmtl
+        || (fabs(bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
+            && fabs(bbr->sec_tgt->polarity()) >= hydrophilicity_cutoff
+            );
+    bool tertpol = (bbr->tert_res && bbr->tert_tgt) ? (bbr->tert_res->coordmtl
+        || (fabs(bbr->tert_res->hydrophilicity()) >= hydrophilicity_cutoff
+            && fabs(bbr->tert_tgt->polarity()) >= hydrophilicity_cutoff
+            )) : false;
+
     // Align primary.
     Atom* aaaa = bbr->pri_res->coordmtl ? bbr->pri_res->coordmtl : bbr->pri_res->get_nearest_atom(pocketcen);       // amino acid alignment atom
     #if bb_find_empty_space
@@ -1426,7 +1439,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     Rotation rot = align_points_3d(bbr->pri_tgt->barycenter(), aaaa->loc, pocketcen);
     #endif
     rot.a *= amt;
-    if (!aaaa->vanished) ligand->rotate(rot, pocketcen);
+    if ((!nooil || pripol) && !aaaa->vanished) ligand->rotate(rot, pocketcen);
     e = ligand->get_intermol_clashes((Molecule**)rs);
     p.copy_state(ligand);
 
@@ -1438,7 +1451,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     Vector rel;
     #if enable_bb_scooch
     aaaa = bbr->pri_res->get_nearest_atom(pocketcen);
-    if (!aaaa->vanished)
+    if ((!nooil || pripol) && !aaaa->vanished)
     {
         rel = aaaa->loc.subtract(bbr->pri_tgt->barycenter().randomize(bb_stochastic_A));
         rel.r -= 2.5;
@@ -1471,7 +1484,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     float step = M_PI*2.0 / n;
     LocatedVector lv = (Vector)bbr->pri_res->get_barycenter().subtract(pocketcen);
     lv.origin = pocketcen;
-    for (i=0; i<n; i++)
+    if (!nooil || pripol) for (i=0; i<n; i++)
     {
         ligand->rotate(lv, step);
         enew = ligand->get_intermol_clashes((Molecule**)rs);
@@ -1509,7 +1522,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     aaaa = bbr->sec_res->get_nearest_atom(pocketcen);
     Point ref = bbr->pri_tgt->barycenter();
     #endif
-    if (!aaaa->vanished)
+    if ((!nooil || secpol) && !aaaa->vanished)
     {
         #if bb_find_empty_space
         rot = align_points_3d(bbr->sec_tgt->barycenter(), nearby.randomize(bb_stochastic_A), ref);
@@ -1544,7 +1557,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         bbr->tert_res->get_nearest_atom(pocketcen)->loc.randomize(bb_stochastic_A), ref, axis);
     lv = axis;
     lv.origin = ref;
-    if (!aaaa->vanished) ligand->rotate(lv, theta*amt);
+    if ((!nooil || tertpol) && !aaaa->vanished) ligand->rotate(lv, theta*amt);
     enew = ligand->get_intermol_clashes((Molecule**)rs);
     if (enew < bb_clash_avoidance_threshold || enew < e)
     {
