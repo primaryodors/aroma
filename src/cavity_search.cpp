@@ -321,6 +321,8 @@ int main(int argc, char** argv)
     if (strlen(outfile)) cout << "Generating " << outfile << "..." << endl;
     cout << endl;
 
+    #if 0
+    // How occluded are the residues?
     m = p.get_end_resno();
     for (i=1; i<=m; i++)
     {
@@ -334,6 +336,7 @@ int main(int argc, char** argv)
         }
     }
     return 0;
+    #endif
 
 
     ////////////////////////////////////////////////////////////////////////////

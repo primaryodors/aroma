@@ -127,6 +127,17 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax)
                 dummy.recenter(pt);
                 int sphres = p->get_residues_can_clash_ligand(can_clash, &dummy, pt, size, priorities, true);
                 if (sphres < 8+pqty) continue;          // Too isolated.
+
+                float occltot = 0;
+                for (i=0; i<sphres; i++)
+                {
+                    float f = can_clash[i]->octant_occlusion();
+                    occltot += f;
+                }
+                float occlavg = occltot / i;
+                // cout << occlavg << endl;
+                if (occlavg < 0.7) continue;            // Too isolated.
+
                 float rmin;
                 CPartial working;
                 for (i=0; i<sphres; i++)
