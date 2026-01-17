@@ -611,6 +611,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
         bool ihbd = targets[i].has_hb_donors();
         Point icen = targets[i].barycenter();
         bool imc = false;
+        float iimp, kimp, mimp;
+        iimp = targets[i].importance(ligand);
         if (multichalc) for (ii=0; mcatoms[ii]; ii++) if (targets[i].contains(mcatoms[ii])) imc = true;
 
         for (j=0; pocketres[j]; j++)
@@ -625,6 +627,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
             bool jhba = pocketres[j]->has_hbond_acceptors();
             bool jhbd = pocketres[j]->has_hbond_donors();
             Atom* jmtl = pocketres[j]->coordmtl;
+            Point jext = pocketres[j]->get_reach_atom_location();
 
             bool ijmc = jmtl && (ifam == CHALCOGEN || ifam == PNICTOGEN) && ((iZ != 8 && ichg <= 0) || imc);
 
@@ -704,6 +707,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 bool khbd = targets[k].has_hb_donors();
                 bool kmc = false;
                 if (multichalc) for (ii=0; mcatoms[ii]; ii++) if (targets[k].contains(mcatoms[ii])) kmc = true;
+                kimp = targets[k].importance(ligand);
+                if (kimp > iimp) continue;
 
                 #if bb_secondary_must_be_farthest_from_primary
                 int lfar = -1;
@@ -722,6 +727,21 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                         lfarthest = r;
                         lfar = l;
                     }
+
+                    bool shadowed = false;
+                    for (n=0; pocketres[n] && !shadowed; n++)
+                    {
+                        if (n != j && n != l)
+                        {
+                            Point J = pocketres[j]->get_reach_atom_location();
+                            Point L = pocketres[l]->get_reach_atom_location();
+                            Point N = pocketres[n]->get_CA_location();
+                            float JL = J.get_3d_distance(L);
+                            float JN = J.get_3d_distance(N);
+                            if (JN < JL && pocketres[n]->intersects(J, L)) shadowed = true;
+                        }
+                    }
+                    if (shadowed) continue;
                 }
 
                 if (lfar >= 0)
@@ -730,7 +750,22 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 #else
                 for (l=0; pocketres[l]; l++)
                 {
+                    bool shadowed = false;
+                    for (n=0; pocketres[n] && !shadowed; n++)
+                    {
+                        if (n != j && n != l)
+                        {
+                            Point J = pocketres[j]->get_reach_atom_location();
+                            Point L = pocketres[l]->get_reach_atom_location();
+                            Point N = pocketres[n]->get_CA_location();
+                            float JL = J.get_3d_distance(L);
+                            float JN = J.get_3d_distance(N);
+                            if (JN < JL && pocketres[n]->intersects(J, L)) shadowed = true;
+                        }
+                    }
+                    if (shadowed) continue;
                 #endif
+
                     if (l==j) continue;
                     float lchg, lpol, lcba;
                     int lpi;
@@ -757,6 +792,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                         int mfam, mZ, mpi;
                         Point mcen;
                         bool mhba, mhbd;
+                        mimp = (m >= 0) ? targets[m].importance(ligand) : 0;
+                        if (mimp > iimp) continue;
 
                         if (m >= 0)
                         {
@@ -937,10 +974,6 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                                 #else
                                 // Assign by importance.
                                 int i1, i2, i3, j1, j2, j3;
-                                float iimp, kimp, mimp;
-                                iimp = targets[i].importance(ligand);
-                                kimp = targets[k].importance(ligand);
-                                mimp = (m >= 0) ? targets[m].importance(ligand) : 0;
 
                                 if (ijmc) iimp += 1000;
                                 if (klmc) kimp += 1000;

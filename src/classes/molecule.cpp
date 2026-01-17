@@ -1158,6 +1158,17 @@ Atom *Molecule::get_nearest_atom_to_line(Point A, Point B) const
     return atoms[j];
 }
 
+bool Molecule::intersects(Point A, Point B) const
+{
+    Atom* a = get_nearest_atom_to_line(A, B);
+    if (a)
+    {
+        float r = a->loc.get_distance_to_line(A, B);
+        if (r < a->vdW_radius) return true;
+    }
+    return false;
+}
+
 Atom *Molecule::get_farthest_atom(Point loc) const
 {
     if (noAtoms(atoms)) return 0;
