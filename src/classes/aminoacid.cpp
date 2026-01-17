@@ -3745,7 +3745,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     Molecule* mols[2];
     mols[0] = (Molecule*)this;
     mols[1] = nullptr;
-    conform_molecules(mols, mclashables, 20);
+    conform_molecules(mols, mclashables, 50);
 }
 
 void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
@@ -3799,10 +3799,10 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
     }
     best.restore_state(this);
 
-    /*Molecule* mols[2];
+    Molecule* mols[2];
     mols[0] = (Molecule*)this;
     mols[1] = nullptr;
-    conform_molecules(mols, mclashables, 20);*/
+    conform_molecules(mols, mclashables, 50);
 }
 
 
