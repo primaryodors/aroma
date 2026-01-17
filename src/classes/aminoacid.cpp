@@ -2554,6 +2554,11 @@ Atom* AminoAcid::get_one_most_bindable(intera_type bt)
     return retval;
 }
 
+float AminoAcid::octant_occlusion()
+{
+    return Molecule::octant_occlusion(mclashables);
+}
+
 float AminoAcid::hydrophilicity() const
 {
     int i, count=0;
@@ -3696,7 +3701,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     Bond** b = get_rotatable_bonds();
     if (!b) return;
 
-    float oc = get_internal_clashes() + get_intermol_clashes(mclashables);
+    float oc = get_internal_clashes();
 
     Pose best(this);
     float bestr = Avogadro;
@@ -3721,7 +3726,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 cout << " " << bestr;
                 #endif
 
-                float c = get_internal_clashes() + get_intermol_clashes(mclashables);
+                float c = get_internal_clashes();
                 if (r < bestr && c < oc+clash_limit_per_aa)
                 {
                     bestr = r;
@@ -3736,6 +3741,11 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
         }
     }
     best.restore_state(this);
+
+    Molecule* mols[2];
+    mols[0] = (Molecule*)this;
+    mols[1] = nullptr;
+    conform_molecules(mols, mclashables, 20);
 }
 
 void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
@@ -3748,7 +3758,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
     Atom* a = atoms[i];
     if (!a) return;
 
-    float oc = get_internal_clashes() + get_intermol_clashes(mclashables);
+    float oc = get_internal_clashes();
 
     Pose best(this);
     float bestr = Avogadro;
@@ -3773,7 +3783,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 cout << " " << bestr;
                 #endif
 
-                float c = get_internal_clashes() + get_intermol_clashes(mclashables);
+                float c = get_internal_clashes();
                 if (r < bestr && c < oc+clash_limit_per_aa)
                 {
                     bestr = r;
@@ -3788,6 +3798,11 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
         }
     }
     best.restore_state(this);
+
+    /*Molecule* mols[2];
+    mols[0] = (Molecule*)this;
+    mols[1] = nullptr;
+    conform_molecules(mols, mclashables, 20);*/
 }
 
 

@@ -78,12 +78,13 @@ int main(int argc, char** argv)
     char buffer[65536];
     protein = &p;
     outfile[0] = 0;
+    bool condense = false;
 
     protfname = nullptr;
 
     FILE* fp;
 
-    int i, j, k, l, n;
+    int i, j, k, l, m, n;
     for (i=0; i<64; i++) priorities[i] = nullptr;
     buffer[0] = 0;
     for (i=1; i<argc; i++)
@@ -246,6 +247,7 @@ int main(int argc, char** argv)
         else if (!strcmp(buffer, "--yzrlim")) cav_yzrlim = atof(argv[++i]);
         else if (!strcmp(buffer, "--sr")) cav_resmin = atoi(argv[++i]);
         else if (!strcmp(buffer, "--er")) cav_resmax = atoi(argv[++i]);
+        else if ((buffer[0] == '-' && buffer[1] == 'c') || !strcmp(buffer, "--condense")) condense = true;
         else if ((buffer[0] == '-' && buffer[1] == 'h') || !strcmp(buffer, "--help"))
         {
             cout << "Usage:" << endl << endl;
@@ -319,6 +321,20 @@ int main(int argc, char** argv)
     if (strlen(outfile)) cout << "Generating " << outfile << "..." << endl;
     cout << endl;
 
+    m = p.get_end_resno();
+    for (i=1; i<=m; i++)
+    {
+        AminoAcid* aa = p.get_residue(i);
+        if (!aa) cout << i << ": " << "-" << endl;
+        else
+        {
+            if (!aa->mclashables) p.set_clashables(i);
+            float f = aa->octant_occlusion();
+            cout << i << ": " << f << endl;
+        }
+    }
+    return 0;
+
 
     ////////////////////////////////////////////////////////////////////////////
     // Phase I: Cavity Search.                                                //
@@ -338,7 +354,30 @@ int main(int argc, char** argv)
     for (i=0; i<qfound; i++)
     {
         n = cavities[i].count_partials();
-        for (j=0; j<n; j++)
+        if (condense)
+        {
+            m = p.get_end_resno();
+            bool represented[m+1];
+            for (j=1; j<=m; j++) represented[j] = false;
+            for (j=0; j<n; j++)
+            {
+                int x, y;
+                CPartial* part = cavities[i].get_partial_by_idx(j);
+                int partres[100];
+                x = part->resnos_as_array(&p, partres);
+                for (y=0; y<x; y++) represented[partres[y]] = true;
+            }
+
+            std::string repstr = "";
+            for (j=1; j<=m; j++)
+                if (represented[j])
+                    repstr += std::to_string(j) + (std::string)" ";
+
+            sprintf(outbuffer, "%d: %s", i, repstr.c_str());
+            if (fp) fprintf(fp, "%s\n", outbuffer);
+            else printf("%s\n", outbuffer);
+        }
+        else for (j=0; j<n; j++)
         {
             CPartial* part = cavities[i].get_partial_by_idx(j);
             part->write_cvty_line(outbuffer, i, protein);

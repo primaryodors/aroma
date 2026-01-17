@@ -1074,6 +1074,28 @@ std::string CPartial::resnos_as_string(Protein* p)
     return result;
 }
 
+int CPartial::resnos_as_array(Protein *p, int *output)
+{
+    int i, j, l, n = p->get_end_resno();
+    bool intersect[n+4];
+    for (i=1; i<=n; i++)
+    {
+        AminoAcid* aa = p->get_residue(i);
+        if (!aa)
+        {
+            intersect[i] = false;
+            continue;
+        }
+        j = aa->atoms_inside_sphere(s, nullptr, aa->priority ? 4.0 : 1.1);
+        intersect[i] = (j>0);
+    }
+
+    l=0;
+    for (i=1; i<=n; i++) if (intersect[i]) output[l++] = i;
+    output[l] = 0;
+    return l;
+}
+
 int CPartial::from_cvty_line(char* lndata)
 {
     int cno;

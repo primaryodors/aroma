@@ -22,6 +22,7 @@ struct CPartial
     bool pi = false;
     // int resno = 0;
     std::string resnos_as_string(Protein* p);
+    int resnos_as_array(Protein* p, int* output);
     int from_cvty_line(char* lndata);               // Returns the cavity number from the first column.
     void write_cvty_line(char* outdata, int cno, Protein* protein);
     float atom_match_score(Atom* a);

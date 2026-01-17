@@ -704,8 +704,33 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 bool khbd = targets[k].has_hb_donors();
                 bool kmc = false;
                 if (multichalc) for (ii=0; mcatoms[ii]; ii++) if (targets[k].contains(mcatoms[ii])) kmc = true;
+
+                #if bb_secondary_must_be_farthest_from_primary
+                int lfar = -1;
+                float lfarthest = 0;
+                for (l=0; l<ntarg; l++)
+                {
+                    float lpol = pocketres[l]->hydrophilicity();
+                    if (lpol < hydrophilicity_cutoff) lpol = 0;
+
+                    if (!pocketres[l]->coordmtl)
+                        if ((kpol && !lpol) || (!kpol && lpol)) continue;
+
+                    float r = pocketres[l]->get_barycenter().get_3d_distance(pocketres[j]->get_barycenter());
+                    if (r > lfarthest)
+                    {
+                        lfarthest = r;
+                        lfar = l;
+                    }
+                }
+
+                if (lfar >= 0)
+                {
+                    l = lfar;
+                #else
                 for (l=0; pocketres[l]; l++)
                 {
+                #endif
                     if (l==j) continue;
                     float lchg, lpol, lcba;
                     int lpi;
