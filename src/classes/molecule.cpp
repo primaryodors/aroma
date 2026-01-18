@@ -5725,6 +5725,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (!bb[q]->flip_angle) bb[q]->flip_angle = M_PI;
                             }
 
+                            benerg = cfmol_multibind(a, nearby);
+                            benerg.clash += a->total_eclipses();
+                            benerg.clash += a->get_internal_clashes();
+                            benerg.clash += a->get_intermol_clashes(nearby);
+
                             Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
                             if (isra)
                             {
@@ -5748,6 +5753,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                             tryenerg = cfmol_multibind(a, nearby);
                             tryenerg.clash += a->total_eclipses();
+                            tryenerg.clash += a->get_internal_clashes();
+                            tryenerg.clash += a->get_intermol_clashes(nearby);
                             fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
                             #if _dbg_mol_flexion
@@ -5755,8 +5762,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             #endif
 
                             if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                && a->get_internal_clashes() <= self_clash
-                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                // && a->get_internal_clashes() <= self_clash
+                                // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                )
                             {
                                 benerg = tryenerg;
@@ -5780,6 +5787,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby);
                             tryenerg.clash += a->total_eclipses();
+                            tryenerg.clash += a->get_internal_clashes();
+                            tryenerg.clash += a->get_intermol_clashes(nearby);
                             fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
                             #if _dbg_mol_flexion
@@ -5787,8 +5796,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             #endif
 
                             if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                && a->get_internal_clashes() <= self_clash
-                                && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                // && a->get_internal_clashes() <= self_clash
+                                // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                )
                             {
                                 benerg = tryenerg;
