@@ -2466,7 +2466,7 @@ int main(int argc, char** argv)
             wgaf = fread(buffer, 1, 65535, pf);
             fclose(pf);
             ligand->from_sdf(buffer);
-            if (ligand->get_atom_count() > 1 && ligand->get_bounding_box().magnitude() < 0.1)
+            if (ligand->get_atom_count() > 1 && ligand->get_bounding_box().size().magnitude() < 0.1)
             {
                 cout << "Error in input file " << lligfname << endl;
                 throw 0xbadda7a;
@@ -2539,9 +2539,9 @@ int main(int argc, char** argv)
     if (debug) *debug << "Loaded ligand." << endl;
     #endif
 
-    Point box = ligand->get_bounding_box();
+    Point box = ligand->get_bounding_box().size();
 
-    if (debug) *debug << "Ligand bounding box corner (centered at zero): " << box.printable() << endl;
+    if (debug) *debug << "Ligand bounding box size: " << box.printable() << endl;
     #if _DBG_STEPBYSTEP
     if (debug) *debug << "Ligand bounding box." << endl;
     #endif

@@ -3032,6 +3032,20 @@ void Molecule::crumple(float theta)
     }
 }
 
+void Molecule::mangle()
+{
+    if (!atoms) return;
+    Box bx = get_bounding_box();
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        float x = bx.x1 + frand(0, bx.width()),
+              y = bx.y1 + frand(0, bx.height()),
+              z = bx.z1 + frand(0, bx.depth());
+        atoms[i]->move(Point(x, y, z));
+    }
+}
+
 void Molecule::clear_cache()
 {
     rotatable_bonds = nullptr;
@@ -6970,11 +6984,12 @@ Atom** Molecule::get_most_bindable(int max_num, Atom* for_atom)
     return bba;
 }
 
-Point Molecule::get_bounding_box() const
+Box Molecule::get_bounding_box() const
 {
-    if (noAtoms(atoms)) return 0;
+    if (noAtoms(atoms)) return Box(0,0,0,0,0,0);
 
     int i;
+    float xmin=0, ymin=0, zmin=0;
     float xmax=0, ymax=0, zmax=0;
 
     for (i=0; atoms[i]; i++)
@@ -6987,13 +7002,17 @@ Point Molecule::get_bounding_box() const
         pt.y = fabs(pt.y)+r;
         pt.z = fabs(pt.z)+r;
 
-        if (pt.x > xmax) xmax = pt.x;
-        if (pt.y > ymax) ymax = pt.y;
-        if (pt.z > zmax) zmax = pt.z;
+        if (!i || pt.x < xmin) xmin = pt.x;
+        if (!i || pt.y < ymin) ymin = pt.y;
+        if (!i || pt.z < zmin) zmin = pt.z;
+
+        if (!i || pt.x > xmax) xmax = pt.x;
+        if (!i || pt.y > ymax) ymax = pt.y;
+        if (!i || pt.z > zmax) zmax = pt.z;
     }
 
-    Point pt(xmax, ymax, zmax);
-    return pt;
+    Box bx(xmin, xmax, ymin, ymax, zmin, zmax);
+    return bx;
 }
 
 float Molecule::get_volume()

@@ -9,7 +9,7 @@ OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/intera.o $(OBJ)/molecule.
 	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
 DOBJ=$(OBJ)/dynamic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
-	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test \
+	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test test/conj_test
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
@@ -145,6 +145,9 @@ test/conj_test: src/test/conj_test.cpp $(OBJS)
 
 test/moiety_test: src/test/moiety_test.cpp $(OBJS)
 	$(CPL) src/test/moiety_test.cpp $(OBJS) -o test/moiety_test $(CFLAGS)
+
+test/ameliorate_test: src/test/ameliorate_test.cpp $(OBJS)
+	$(CPL) src/test/ameliorate_test.cpp $(OBJS) -o test/ameliorate_test $(CFLAGS)
 
 test/mol_assem_test: src/test/mol_assem_test.cpp $(OBJS)
 	$(CPL) src/test/mol_assem_test.cpp $(OBJS) -o test/mol_assem_test $(CFLAGS)

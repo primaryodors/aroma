@@ -27,7 +27,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
     for (i=0; i<tsphsz+4; i++) outer_sphere[i] = inner_sphere[i] = 0;
 
     Point pocketsize = protein->estimate_pocket_size(tsphres);
-    Point ligbbox = ligand->get_bounding_box();
+    Point ligbbox = ligand->get_bounding_box().size();
 
     for (i=0; !ligbbox.fits_inside(pocketsize) && i<100; i++)
     {
@@ -103,7 +103,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
             {
                 for (zrad=0; zrad <= M_PI*2; zrad += step)
                 {
-                    ligbbox = ligand->get_bounding_box();
+                    ligbbox = ligand->get_bounding_box().size();
 
                     if (ligbbox.x > ligbbox.y && pocketsize.x < pocketsize.y) continue;
                     if (ligbbox.x > ligbbox.z && pocketsize.x < pocketsize.z) continue;
@@ -211,7 +211,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
                         #if _DBG_TUMBLE_SPHERES
                         tsdbgb = tsdbg;
 
-                        cout << "Tumble score " << score << " for ligand box " << ligand->get_bounding_box() << endl;
+                        cout << "Tumble score " << score << " for ligand box " << ligand->get_bounding_box().size() << endl;
 
 
                         #if output_tumble_debug_docs
@@ -1472,7 +1472,9 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     }
 
     AminoAcid* rs[SPHREACH_MAX];
-    int sphres = bbr->protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, ligand->get_bounding_box());
+    Point lsz = ligand->get_bounding_box().size();
+    lsz.multiply(0.5);
+    int sphres = bbr->protein->get_residues_can_clash_ligand(rs, ligand, pocketcen, lsz);
     float e, enew;
 
     bool pripol = bbr->pri_res->coordmtl

@@ -130,7 +130,7 @@ public:
     Atom* get_nearest_atom_to_line(Point A, Point B) const;
     bool intersects(Point A, Point B) const;
     Atom* get_farthest_atom(Point loc) const;
-    Point get_bounding_box() const;				// Return the +x+y+z vertex of a bounding box, including vdW radii, if center={0,0,0}.
+    Box get_bounding_box() const;				// Return the +x+y+z vertex of a bounding box, including vdW radii, if center={0,0,0}.
     float get_volume();
     float get_surface_area(bool polaronly = false, bool overwrite_atom_areas = true);
     float get_exposed_surface_area(Molecule** neighbors, bool polaronly = false, bool overwrite_atom_areas = true);
@@ -162,9 +162,11 @@ public:
     void mirror();
     float total_eclipses();
     void crumple(float theta);					// Randomly rotate all rotatable bonds by +/- the specified angle.
+    void mangle();                              // Randomize the locations of atoms.
     float distance_to(Molecule* other_mol);
     std::vector<Atom*> longest_dimension();
     float get_atom_bond_length_anomaly(Atom* atom, Atom* ignore = nullptr);
+    float get_atom_bond_angle_anomaly(Atom* atom, Atom* ignore = nullptr);
     float refine_structure(int generations = _evolution_default_generations, float mutation_rate = _default_mutation_rate, int pop_size = _default_population_size);
     int atoms_inside_sphere(Sphere container, bool* byindex, float radius_multiplier = 1);     // If byindex is not null, sets byindex[n] to true for atoms inside the sphere, but does not set to false.
     float surface_occlusion(Molecule** ligands);
