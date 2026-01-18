@@ -1310,7 +1310,7 @@ float Molecule::total_eclipses()
     return result - base_eclipses;
 }
 
-int Molecule::atoms_inside_sphere(Sphere s, bool* bi, float rm)
+int Molecule::atoms_inside_sphere(Sphere s, bool *bi, float rm)
 {
     if (!atoms) return 0;
     int numfound = 0;
@@ -7506,7 +7506,7 @@ void Molecule::identify_cages()
     }
 }
 
-float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore)
+float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore, bool op)
 {
     if (!atoms) return 0;
     if (!a) return 0;
@@ -7524,9 +7524,10 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore)
         if (thesebonds[i]->atom2)
         {
             if (thesebonds[i]->atom2 == ignore) continue;
+            if (op && (thesebonds[i]->atom2 > a)) continue;
             float optimal = InteratomicForce::covalent_bond_radius(a, thesebonds[i]->atom2, thesebonds[i]->cardinality);
             float r = a->distance_to(thesebonds[i]->atom2);
-            anomaly += InteratomicForce::Morse_potential(r, 400, 1.0/(350*thesebonds[i]->cardinality), optimal);
+            anomaly += 100.0 * fabs(r-optimal);
 
             #if _dbg_molstruct_evolution_bond_lengths
             if (fabs(r-optimal) > 0.01) cout << "Atoms " << a->name << " and " << thesebonds[i]->atom2->name
@@ -7539,7 +7540,7 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore)
     return anomaly;
 }
 
-float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore)
+float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool op)
 {
     if (!atoms) return 0;
     if (!a) return 0;
@@ -7581,6 +7582,8 @@ float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore)
         if (!bi) continue;
         if (!bi->atom2) continue;
         if (bi->atom2 == a) bi = bi->get_reversed();
+        if (bi->atom2 == ignore) continue;
+        if (op && (bi->atom2 > a)) continue;
         Point iloc = bi->atom2->loc;
         for (j=0; j<i; j++)
         {
@@ -7627,7 +7630,7 @@ float Molecule::refine_structure(int gens, float mr, int ps)
 
     int ibest, i2best;          // Indices of best and second-best anomalies.
     float fbest, f2best;        // Values of best and second-best anomalies.
-    float atom_displacement = _evolution_atom_displacement;
+    float max_atom_displacement = _evolution_atom_displacement;
     // Main loop
     for (gen=1; gen<=gens; gen++)
     {
@@ -7635,10 +7638,9 @@ float Molecule::refine_structure(int gens, float mr, int ps)
 
         for (i=0; i<ps; i++)
         {
+            float atom_displacement = frand(0, max_atom_displacement);
             for (j=0; j<ac; j++)
             {
-                // if (atoms[j]->is_pi()) atom_displacement /= _evolution_aromatic_rigidity;
-
                 switch (i)
                 {
                     case 0:
@@ -7654,40 +7656,12 @@ float Molecule::refine_structure(int gens, float mr, int ps)
                     if (frand(0, 1) < mr) population[i][j].y += frand(-atom_displacement, atom_displacement);
                     population[i][j].z = parents[which_parent][j].z;
                     if (frand(0, 1) < mr) population[i][j].z += frand(-atom_displacement, atom_displacement);
-
-                    if (frand(0,1) < 0.81)
-                    {
-                        Bond* b0 = atoms[j]->get_bond_by_idx(0);
-                        if (b0)
-                        {
-                            Atom* aparent = b0->atom2;
-                            if (aparent)
-                            {
-                                optimal = InteratomicForce::covalent_bond_radius(atoms[j], aparent, b0->cardinality);
-                                Vector v = population[i][j].subtract(aparent->loc);
-                                v.r = optimal;
-                                population[i][j] = aparent->loc.add(v);
-                            }
-                        }
-                    }
                 }
 
                 atoms[j]->move(population[i][j]);
             }
 
-            float anomaly = 0;
-            for (j=0; j<ac; j++)
-            {
-                // anomaly += get_atom_error(j, nullptr, false);
-                Bond* b0 = atoms[j]->get_bond_by_idx(0);
-                if (!b0) continue;
-
-                Atom* aparent = b0->atom2;
-                if (!aparent) continue;
-
-                anomaly += get_atom_bond_length_anomaly(aparent, atoms[j]);
-                anomaly += get_atom_bond_angle_anomaly(aparent);
-            }
+            float anomaly = bond_strain_for_structure_refinement();
             anomaly += get_internal_clashes();
             anomalies[i] = anomaly;
 
@@ -7707,41 +7681,56 @@ float Molecule::refine_structure(int gens, float mr, int ps)
 
         for (i=0; i<ac; i++)
         {
-            Vector tomov = population[ibest][i].subtract(atoms[i]->loc);
-            atoms[i]->move(population[ibest][i]);
-            tomov.r = frand(0, tomov.r);
-            tomov.theta = frand(0, M_PI);
-            tomov.phi = frand(0, M_PI);
-
-            Interaction eold = 0;
-            eold.clash += get_atom_bond_length_anomaly(atoms[i]);
-            eold.clash += get_atom_bond_angle_anomaly(atoms[i]);
-            Point oldloc = atoms[i]->loc;
-            atoms[i]->move_rel(tomov);
-            Interaction enew = 0;
-            enew.clash += get_atom_bond_length_anomaly(atoms[i]);
-            enew.clash += get_atom_bond_angle_anomaly(atoms[i]);
-
-            if (!enew.accept_change(eold))
-            {
-                atoms[i]->move(oldloc);
-            }
-        }
-
-        for (i=0; i<ac; i++)
-        {
             parents[0][i] = population[ibest][i];
             parents[1][i] = population[i2best][i];
         }
 
-        atom_displacement *= pow(0.5, 1.0/gens);
+        max_atom_displacement *= pow(0.5, 1.0/gens);
 
         #if _dbg_molstruct_evolutions
-        cout << ibest << ':' << fbest << ' ' << i2best << ':' << f2best << endl << flush;
+        cout << "Gen " << gen << " has "
+            // << "parent anomalies " << anomalies[0] << " and " << anomalies[1] << ", and "
+            << "best anomalies " << ibest << ':' << fbest << ' ' << i2best << ':' << f2best
+            << endl << flush;
         #endif
     }
 
+    for (i=0; i<ac; i++)
+    {
+        atoms[i]->move(parents[0][i]);
+    }
+
     return fbest / get_atom_count();
+}
+
+float Molecule::bond_strain_for_structure_refinement()
+{
+    #if 1
+    return total_bond_strain();
+    #else
+    if (!atoms) return 0;
+    float strain = 0;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        strain += get_atom_bond_angle_anomaly(atoms[i], nullptr, true);
+        strain += get_atom_bond_length_anomaly(atoms[i], nullptr, true);
+    }
+    return strain;
+    #endif
+}
+
+float Molecule::total_bond_strain()
+{
+    if (!atoms) return 0;
+    float strain = 0;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        strain += get_atom_bond_angle_anomaly(atoms[i]);
+        strain += get_atom_bond_length_anomaly(atoms[i]);
+    }
+    return strain;
 }
 
 bool Molecule::is_chiral()
