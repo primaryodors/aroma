@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <memory>
+#include "progress.h"
 
 #define _solve_nonpol 2.1 / 84.5 / _kcal_per_kJ
 #define _solve_np2pol -6.9 / 19.9 / _kcal_per_kJ
@@ -168,7 +169,12 @@ public:
     float get_atom_bond_length_anomaly(Atom* atom, Atom* ignore = nullptr, bool onlyprev = false);
     float get_atom_bond_angle_anomaly(Atom* atom, Atom* ignore = nullptr, bool onlyprev = false);
     // TODO: add a function for torsional strain and test cyclopropane ~= 24.5 kJ/mol.
-    float refine_structure(int generations = _evolution_default_generations, float mutation_rate = _default_mutation_rate, int pop_size = _default_population_size);
+    float refine_structure(int generations = _evolution_default_generations,
+        float mutation_rate = _default_mutation_rate,
+        int pop_size = _default_population_size,
+        Molecule** ligands = nullptr,
+        Progressbar* pgb = nullptr
+        );
     float total_bond_strain();
     float bond_strain_for_structure_refinement();
     int atoms_inside_sphere(Sphere container, bool* byindex, float radius_multiplier = 1);     // If byindex is not null, sets byindex[n] to true for atoms inside the sphere, but does not set to false.

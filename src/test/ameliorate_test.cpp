@@ -33,8 +33,12 @@ int main(int argc, char** argv)
     float strain = m.total_bond_strain();
     cout << "Initial bond strain: " << strain << " kJ/mol." << endl;
 
+    Progressbar pgb;
+    pgb.set_color(128, 224, 64);
+
     // m.mangle();
-    m.refine_structure();
+    m.refine_structure(_evolution_default_generations, _default_mutation_rate, _default_population_size,
+        nullptr, &pgb);
 
     strain = m.total_bond_strain();
     cout << "Post-refine bond strain: " << strain << " kJ/mol." << endl;

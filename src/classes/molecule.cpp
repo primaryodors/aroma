@@ -7612,7 +7612,7 @@ float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool op)
     return anomaly;
 }
 
-float Molecule::refine_structure(int gens, float mr, int ps)
+float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands, Progressbar* pgb)
 {
     if (!atoms) return 0;
     int ac = get_atom_count();
@@ -7626,6 +7626,13 @@ float Molecule::refine_structure(int gens, float mr, int ps)
     for (i=0; i<ac; i++)
     {
         parents[0][i] = parents[1][i] = atoms[i]->loc;
+    }
+
+    if (pgb)
+    {
+        pgb->minimum = 0;
+        pgb->maximum = gens;
+        cout << endl;
     }
 
     int ibest, i2best;          // Indices of best and second-best anomalies.
@@ -7661,8 +7668,13 @@ float Molecule::refine_structure(int gens, float mr, int ps)
                 atoms[j]->move(population[i][j]);
             }
 
-            float anomaly = bond_strain_for_structure_refinement();
-            anomaly += get_internal_clashes();
+            Interaction energy = 0;
+            if (ligands) energy = get_intermol_binding(ligands);
+            energy.clash += bond_strain_for_structure_refinement();
+            energy.clash += get_internal_clashes();
+            energy.clash += total_eclipses();
+            energy.clash += sum_interatomic_distances()*1e-6;
+            float anomaly = energy.summed();
             anomalies[i] = anomaly;
 
             if (ibest < 0 || anomaly < fbest)
@@ -7693,12 +7705,16 @@ float Molecule::refine_structure(int gens, float mr, int ps)
             << "best anomalies " << ibest << ':' << fbest << ' ' << i2best << ':' << f2best
             << endl << flush;
         #endif
+
+        if (pgb) pgb->update(gen);
     }
 
     for (i=0; i<ac; i++)
     {
         atoms[i]->move(parents[0][i]);
     }
+
+    if (pgb) pgb->erase();
 
     return fbest / get_atom_count();
 }
