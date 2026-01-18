@@ -21,7 +21,7 @@
 #define kB_kJ (kB/1000)
 #define temperature 310.2
 #define R 0.00831446261815324
-#define kJ_mol_per_summed_sin_bond_strain 39.2
+#define kJ_mol_per_summed_bond_strain (91.0 / 4.332)
 #define pH 6.0
 #define hydrophilicity_cutoff 0.28
 #define charge_attraction 60.0
@@ -91,7 +91,7 @@
 #define _default_mutation_rate 0.4
 #define _default_population_size 80
 #define _evolution_aromatic_rigidity 50
-#define _evolution_atom_displacement 1.0
+#define _evolution_atom_displacement 2.0
 #define _evolution_default_generations 5000
 #define stretch_out_molecules_by_interatomic_distance 1
 

@@ -1471,6 +1471,12 @@ float InteratomicForce::Lennard_Jones(Atom* atom1, Atom* atom2, float sigma)
     return Lennard_Jones_epsilon_x4 * (std::pow(sigma_r, 12) - 2.0*std::pow(sigma_r, 6));
 }
 
+float InteratomicForce::Morse_potential(float r, float De, float beta, float re)
+{
+    // V(r) = De * [1 - exp(-beta * (r - re))]^2
+    return De * std::pow(1.0 - std::exp(-beta * (r - re)), 2);
+}
+
 bool Interaction::improved(Interaction rel)
 {
     if (clash > clash_limit_per_aa || worst_atom_clash > clash_limit_per_atom) return rel.clash > clash;

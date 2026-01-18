@@ -63,6 +63,7 @@ public:
     static Interaction total_binding(Atom* a, Atom* b);
     static float optimal_distance(Atom* a, Atom* b);
     static float Lennard_Jones(Atom* atom1, Atom* atom2, float sigma = 0);
+    static float Morse_potential(float r, float dissoc_energy, float bond_stiffness, float optimal_length);
     static float distance_anomaly(Atom* a, Atom* b);
     static float covalent_bond_radius(Atom* a, Atom* b, float cardinality);
     static float coordinate_bond_radius(Atom* a, Atom* b, intera_type btype);

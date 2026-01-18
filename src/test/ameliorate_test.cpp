@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     }
     cout << "Initial bond strain: " << strain << " kJ/mol." << endl;
 
-    m.mangle();
+    // m.mangle();
     m.refine_structure();
 
     strain = 0;
