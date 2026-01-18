@@ -7539,6 +7539,65 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore)
     return anomaly;
 }
 
+float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore)
+{
+    if (!atoms) return 0;
+    if (!a) return 0;
+
+    Bond* thesebonds[16];
+    a->fetch_bonds(thesebonds);
+    if (!thesebonds) return 0;
+    int i, j;
+    float anomaly = 0;
+    float optimal = 0;
+
+    int geometry = a->get_geometry();
+    switch (geometry)
+    {
+        case 1:
+        case 2:
+        optimal = M_PI;
+        break;
+
+        case 3:
+        optimal = triangular;
+        break;
+
+        case 4:
+        optimal = tetrahedral;
+        break;
+
+        default:
+        // TODO: geometries higher than 4
+        return 0;
+    }
+
+    if (a->is_pi() && geometry > 3) optimal = triangular;
+
+    Point aloc = a->loc;
+    for (i=0; i<geometry; i++)
+    {
+        Bond* bi = a->get_bond_by_idx(i);
+        if (!bi) continue;
+        if (!bi->atom2) continue;
+        Point iloc = bi->atom2->loc;
+        for (j=0; j<geometry; j++)
+        {
+            if (j==i) continue;
+            Bond* bj = a->get_bond_by_idx(i);
+            if (!bj) continue;
+            if (!bj->atom2) continue;
+            Point jloc = bj->atom2->loc;
+
+            float theta = find_3d_angle(iloc, jloc, aloc);
+            float deviation = fabs(sin(theta - optimal));
+            anomaly += deviation * kJ_mol_per_summed_sin_bond_strain;
+        }
+    }
+
+    return anomaly;
+}
+
 float Molecule::refine_structure(int gens, float mr, int ps)
 {
     if (!atoms) return 0;

@@ -26840,6 +26840,12 @@
         },
         "oid": "9b66ce282570d15a3cb4687defdb97d5"
     },
+    "9bb459a982dd12eee54d698ae71e3b9c":
+    {
+        "full_name": "cyclopropane",
+        "smiles": "C1CC1",
+        "oid": "9bb459a982dd12eee54d698ae71e3b9c"
+    },
     "9bc88d489ce398951dcd26e415850d4c":
     {
         "full_name": "ethyl p-anisate",

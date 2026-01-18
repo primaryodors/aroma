@@ -29,6 +29,17 @@ int main(int argc, char** argv)
     }
     else return -1;
 
+    int i, n = m.get_atom_count();
+    float strain = 0;
+    for (i=0; i<n; i++)
+    {
+        Atom* a = m.get_atom(i);
+        if (!a) continue;
+        strain += m.get_atom_bond_length_anomaly(a);
+        strain += m.get_atom_bond_angle_anomaly(a);
+    }
+    cout << "Initial bond strain: " << strain << " kJ/mol." << endl;
+
     m.mangle();
 
     fp = fopen(ofname.c_str(), "wb");
