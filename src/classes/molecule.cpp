@@ -7690,6 +7690,8 @@ float Molecule::refine_structure(int gens, float mr, int ps)
             anomaly += get_internal_clashes();
             anomalies[i] = anomaly;
 
+            // TODO: call Interaction::probability().
+
             if (ibest < 0 || anomaly < fbest)
             {
                 i2best = ibest;
@@ -7715,9 +7717,28 @@ float Molecule::refine_structure(int gens, float mr, int ps)
         #endif
     }
 
+
     for (i=0; i<ac; i++)
     {
+        Vector tomov = population[ibest][i].subtract(atoms[i]->loc);
         atoms[i]->move(population[ibest][i]);
+        tomov.r = frand(0, tomov.r);
+        tomov.theta = frand(0, M_PI);
+        tomov.phi = frand(0, M_PI);
+
+        Interaction eold = 0;
+        eold.clash += get_atom_bond_length_anomaly(atoms[i]);
+        eold.clash += get_atom_bond_angle_anomaly(atoms[i]);
+        Point oldloc = atoms[i]->loc;
+        atoms[i]->move_rel(tomov);
+        Interaction enew = 0;
+        enew.clash += get_atom_bond_length_anomaly(atoms[i]);
+        enew.clash += get_atom_bond_angle_anomaly(atoms[i]);
+
+        if (!enew.accept_change(eold))
+        {
+            atoms[i]->move(oldloc);
+        }
     }
 
     return fbest / get_atom_count();

@@ -88,7 +88,7 @@
 #define similarity_pi 0.13
 
 // Molecular generation and conformation constants.
-#define _default_mutation_rate 0.05
+#define _default_mutation_rate 0.4
 #define _default_population_size 80
 #define _evolution_aromatic_rigidity 50
 #define _evolution_atom_displacement 1.0
