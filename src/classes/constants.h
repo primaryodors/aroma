@@ -21,7 +21,7 @@
 #define kB_kJ (kB/1000)
 #define temperature 310.2
 #define R 0.00831446261815324
-#define kJ_mol_per_summed_sin_bond_strain 2.678
+#define kJ_mol_per_summed_sin_bond_strain 39.2
 #define pH 6.0
 #define hydrophilicity_cutoff 0.28
 #define charge_attraction 60.0

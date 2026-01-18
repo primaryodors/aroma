@@ -41,6 +41,17 @@ int main(int argc, char** argv)
     cout << "Initial bond strain: " << strain << " kJ/mol." << endl;
 
     m.mangle();
+    m.refine_structure();
+
+    strain = 0;
+    for (i=0; i<n; i++)
+    {
+        Atom* a = m.get_atom(i);
+        if (!a) continue;
+        strain += m.get_atom_bond_length_anomaly(a);
+        strain += m.get_atom_bond_angle_anomaly(a);
+    }
+    cout << "Post-refine bond strain: " << strain << " kJ/mol." << endl;
 
     fp = fopen(ofname.c_str(), "wb");
     if (fp)

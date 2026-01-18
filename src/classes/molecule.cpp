@@ -7580,18 +7580,27 @@ float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore)
         Bond* bi = a->get_bond_by_idx(i);
         if (!bi) continue;
         if (!bi->atom2) continue;
+        if (bi->atom2 == a) bi = bi->get_reversed();
         Point iloc = bi->atom2->loc;
         for (j=0; j<geometry; j++)
         {
             if (j==i) continue;
-            Bond* bj = a->get_bond_by_idx(i);
+            Bond* bj = a->get_bond_by_idx(j);
             if (!bj) continue;
             if (!bj->atom2) continue;
+            if (bj->atom2 == a) bj = bj->get_reversed();
             Point jloc = bj->atom2->loc;
 
             float theta = find_3d_angle(iloc, jloc, aloc);
-            float deviation = fabs(sin(theta - optimal));
-            anomaly += deviation * kJ_mol_per_summed_sin_bond_strain;
+            float deviation = sin(fabs(theta - optimal)) * kJ_mol_per_summed_sin_bond_strain;
+            // anomaly += deviation;
+            if (deviation > anomaly) anomaly = deviation;
+            #if 0
+            cout << bi->atom2->name << "-" << a->name << "-" << bj->atom2->name
+                << " angle " << (theta*fiftyseven) << " should be " << (optimal*fiftyseven)
+                << " anomaly " << deviation << " kJ/mol." << endl;
+            throw 0x7e57196;
+            #endif
         }
     }
 
@@ -7676,10 +7685,9 @@ float Molecule::refine_structure(int gens, float mr, int ps)
                 if (!aparent) continue;
 
                 anomaly += get_atom_bond_length_anomaly(aparent, atoms[j]);
-
-                Vector v = atoms[j]->loc.subtract(aparent->loc);
-                anomaly += aparent->get_bond_angle_anomaly(v, atoms[j]);
+                anomaly += get_atom_bond_angle_anomaly(aparent);
             }
+            anomaly += get_internal_clashes();
             anomalies[i] = anomaly;
 
             if (ibest < 0 || anomaly < fbest)
