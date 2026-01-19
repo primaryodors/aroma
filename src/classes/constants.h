@@ -90,7 +90,7 @@
 // Molecular generation and conformation constants.
 #define _default_mutation_rate 0.1
 #define _default_population_size 100
-#define _evolution_atom_displacement 1.0
+#define _evolution_atom_displacement 4.0
 #define _evolution_default_generations 2000
 #define stretch_out_molecules_by_interatomic_distance 1
 

@@ -7697,7 +7697,7 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
             parents[1][i] = population[i2best][i];
         }
 
-        max_atom_displacement *= pow(0.5, 1.0/gens);
+        max_atom_displacement *= pow(0.1, 1.0/gens);
 
         #if _dbg_molstruct_evolutions
         cout << "Gen " << gen << " has "
