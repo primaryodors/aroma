@@ -35,6 +35,8 @@ int main(int argc, char** argv)
     FILE* fp;
     char buffer[65536];
 
+    time_t began = time(NULL);
+
     for (i=1; i<argc; i++)
     {
         if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "--area"))
@@ -74,6 +76,7 @@ int main(int argc, char** argv)
 
                 *ext = 0;
                 ligname = fttl;
+                cout << "Ligand is " << ligname << endl;
                 *ext = '.';
             }
             else if (!strcmp(ext, ".pdb"))
@@ -87,9 +90,14 @@ int main(int argc, char** argv)
                 prot.load_pdb(fp);
                 fclose(fp);
 
+                char* dot = strchr(fttl, '.');
+                if (dot) *dot = 0;
+
                 *ext = 0;
                 protname = fttl;
+                cout << "Protein is " << protname << endl;
                 *ext = '.';
+                if (dot) *dot = '.';
             }
         }
     }
@@ -194,6 +202,32 @@ int main(int argc, char** argv)
     // TODO: Once the ligand is optimized, individually refine all the BSRs around it.
 
     // TODO: Then refine the rest of the protein one residue at a time.
+
+
+
+    // After-Dock Work
+
+    time_t concluded = time(NULL);
+    int seconds = concluded-began;
+    int minutes = seconds/60;
+    seconds -= 60*minutes;
+    int hours = minutes/60;
+    minutes -= 60*hours;
+
+    std::string elapsed;
+    if (hours)
+    {
+        elapsed += std::to_string(hours);
+        elapsed += (std::string)":";
+        if (minutes < 10) elapsed += (std::string)"0";
+    }
+    elapsed += std::to_string(minutes);
+    elapsed += (std::string)":";
+    if (seconds < 10) elapsed += (std::string)"0";
+    elapsed += std::to_string(seconds);
+
+    cout << "\nCalculation time: " << elapsed << "." << endl;
+
 
     std::string fam = family_from_protid(protname);
     char outfname[1024];
