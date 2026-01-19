@@ -15,7 +15,7 @@ void Progressbar::set_color(int r, int g, int b)
 void Progressbar::update(float value)
 {
     // value = value/(poses) + (float)(pose-1)*100.0/poses;
-    float percentage = value/(maximum-minimum)*width;
+    float percentage = (value-minimum)/(maximum-minimum)*width;
     if (percentage > width) percentage = width;
     cout << "\033[A|";
     int i;

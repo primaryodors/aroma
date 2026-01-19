@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
     for (i=1; i<argc; i++)
     {
-        if (!strcmp(argv[i], "-a") || strcmp(argv[i], "--area"))
+        if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "--area"))
         {
             search_area.x1 = atof(argv[++i]);
             search_area.y1 = atof(argv[++i]);
@@ -46,13 +46,14 @@ int main(int argc, char** argv)
             search_area.y2 = atof(argv[++i]);
             search_area.z2 = atof(argv[++i]);
         }
-        else if (!strcmp(argv[i], "-b") || strcmp(argv[i], "--bsr"))
+        else if (!strcmp(argv[i], "-b") || !strcmp(argv[i], "--bsr"))
         {
             i++;
             while (i<argc && argv[i][0] >= '0' && argv[i][0] <= '9')
             {
                 bsr[nbsr++].set(argv[i++]);
             }
+            i--;
         }
         else if (file_exists(argv[i]))
         {
@@ -118,17 +119,28 @@ int main(int argc, char** argv)
             if (!aa) continue;
 
             Point CA = aa->get_CA_location();
+            // cout << aa->get_name() << " CA = " << CA << endl;
             if (!j || CA.x < search_area.x1) search_area.x1 = CA.x;
             if (!j || CA.y < search_area.y1) search_area.y1 = CA.y;
             if (!j || CA.z < search_area.z1) search_area.z1 = CA.z;
             if (!j || CA.x > search_area.x2) search_area.x2 = CA.x;
             if (!j || CA.y > search_area.y2) search_area.y2 = CA.y;
             if (!j || CA.z > search_area.z2) search_area.z2 = CA.z;
+            j++;
         }
     }
 
+    cav_xmin = search_area.x1;
+    cav_xmax = search_area.x2;
+    cav_ymin = search_area.y1;
+    cav_ymax = search_area.y2;
+    cav_zmin = search_area.z1;
+    cav_zmax = search_area.z2;
     pbr.set_color(224, 192, 64);            // curmi uelor
-    cout << "Performing cavity search..." << endl;
+    cout << "Performing cavity search within box "
+        << "(" << cav_xmin << "," << cav_ymin << "," << cav_zmin << "), "
+        << "(" << cav_xmax << "," << cav_ymax << "," << cav_zmax << ")"
+        << "..." << endl;
 
     Cavity cavities[1029];
     int qfound = Cavity::scan_in_protein(&prot, cavities, 1024, &pbr);
