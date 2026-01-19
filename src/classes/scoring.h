@@ -13,6 +13,7 @@ class DockResult
     public:
     DockResult();
     DockResult(Protein* prot, Molecule* lig, Point search_size, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
+    DockResult(Protein* prot, Molecule* lig, int sphres, AminoAcid** reaches_spheroid, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
 
     bool clashes_with(DockResult* other);
     DockResult merge(DockResult* other);

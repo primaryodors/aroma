@@ -4847,7 +4847,8 @@ float Protein::tumble_ligand_inside_pocket(Molecule *ligand, Point pocketcen, fl
     }
     else ligand->recenter(pocketcen);
 
-    for (i=0; i<sphres; i++) cout << *rs[i] << " ";
+    cout << "Residues used for tumble algorithm:";
+    for (i=0; i<sphres; i++) cout << " " << *rs[i];
     cout << endl;
 
     if (pgb)

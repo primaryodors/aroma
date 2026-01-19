@@ -204,6 +204,9 @@ int main(int argc, char** argv)
     // TODO: Then refine the rest of the protein one residue at a time.
 
 
+    // Scoring
+    DockResult dr(&prot, &ligand, cavities[j].boundingbox().size());
+    cout << dr;
 
     // After-Dock Work
 
@@ -256,5 +259,17 @@ int main(int argc, char** argv)
     prot.save_pdb(fp, &ligand);
     fclose(fp);
     cout << "Wrote " << outfname << endl;
+
+    sprintf(outfname, "output/%s/%s/%s~%s.dock", fam.c_str(), protname.c_str(), protname.c_str(), ligname.c_str());
+    fp = fopen(outfname, "wb");
+    if (!fp)
+    {
+        cerr << "FAILED to open " << outfname << " for writing." << endl;
+        return 1;
+    }
+    std::stringstream s;
+    s << dr;
+    fwrite(s.str().c_str(), sizeof(char), strlen(s.str().c_str()), fp);
+    fclose(fp);
 }
 

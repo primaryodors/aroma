@@ -19,7 +19,13 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size, in
     int end1 = SPHREACH_MAX+4;
     AminoAcid* reaches_spheroid[end1];
     int sphres = protein->get_residues_can_clash_ligand(reaches_spheroid, ligand, ligand->get_barycenter(), search_size, addl_resno);
-    // cout << "sphres " << sphres << endl;
+
+    DockResult(protein, ligand, sphres, reaches_spheroid, addl_resno, drcount, waters, is_movie);
+}
+
+DockResult::DockResult(Protein* protein, Molecule* ligand, int sphres, AminoAcid** reaches_spheroid, int* addl_resno, int drcount, Molecule** waters, bool is_movie)
+{
+    int end1 = SPHREACH_MAX+4;
     mprot = protein;
     mlig = ligand;
     Molecule* met = protein->metals_as_molecule();
