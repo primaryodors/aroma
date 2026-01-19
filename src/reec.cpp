@@ -191,6 +191,10 @@ int main(int argc, char** argv)
 
     // TODO: Perform bond rotations of heavy atoms bound to hydrogen and only one other heavy atom.
 
+    // TODO: Once the ligand is optimized, individually refine all the BSRs around it.
+
+    // TODO: Then refine the rest of the protein one residue at a time.
+
     std::string fam = family_from_protid(protname);
     char outfname[1024];
 
