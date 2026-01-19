@@ -4935,3 +4935,16 @@ std::ostream& operator<<(std::ostream& os, const BallesterosWeinstein& bw)
     return os;
 }
 
+std::string family_from_protid(std::string protid)
+{
+    char buffer[1024];
+    strcpy(buffer, protid.c_str());
+    if (buffer[0] == 'O' && buffer[1] == 'R')
+    {
+        int i;
+        for (i=2; buffer[i] >= '0' && buffer[i] <= '9'; i++);
+        buffer[i] = 0;
+    }
+    else buffer[4] = 0;
+    return std::string(buffer);
+}

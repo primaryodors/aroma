@@ -328,6 +328,13 @@ bool file_exists(std::string fname)
     else return false;
 }
 
+bool dir_exists(const char* path)
+{
+    struct stat info;
+    if (stat(path, &info) != 0) return false;
+    else if (info.st_mode & S_IFDIR) return true;
+    else return false;
+}
 
 void colorrgb(int r, int g, int b)
 {

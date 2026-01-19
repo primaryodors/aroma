@@ -85,7 +85,7 @@ Box Cavity::boundingbox()
     return result; 
 }
 
-int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax)
+int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb)
 {
     if (!p || !cavs) return 0;
     if (cmax < 1) return 0;
@@ -113,10 +113,19 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax)
     j=0;
     bool any_priority = false;
 
-    cout << "Cavity search in progress..." << flush;
-    for (x = pcen.x - pbox.x + min_dist_bounding_box; x <= pcen.x + pbox.x - min_dist_bounding_box; x += step)
+    float xmin = pcen.x - pbox.x + min_dist_bounding_box, xmax = pcen.x + pbox.x - min_dist_bounding_box;
+    if (pgb)
     {
-        cout << "." << flush;
+        pgb->minimum = xmin;
+        pgb->maximum = xmax;
+        cout << endl;
+    }
+    else cout << "Cavity search in progress..." << flush;
+
+    for (x = xmin; x <= xmax; x += step)
+    {
+        if (pgb) pgb->update(x);
+        else cout << "." << flush;
         yoff = yoff ? 0 : step/2;
         for (y = pcen.y - pbox.y + min_dist_bounding_box - yoff; y <= pcen.y + pbox.y - min_dist_bounding_box; y += step)
         {
@@ -195,7 +204,8 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax)
             }
         }
     }
-    cout << endl;
+    if (pgb) pgb->erase();
+    else cout << endl;
 
     // Now consolidate all partials into glommed cavities.
     Cavity tmpcav[4096];
@@ -1062,6 +1072,36 @@ std::string Cavity::resnos_as_string(Protein* p)
     }
 
     return result;
+}
+
+int Cavity::resnos_as_array(Protein *p, int *output)
+{
+    int i, j, l, m, n;
+
+    n = p->get_end_resno();
+    bool included[n+1];
+    int tmp[256];
+
+    for (i=0; i<n; i++) included[i] = false;
+
+    for (i=0; i<pallocd; i++)
+    {
+        if (partials[i].s.radius)
+        {
+            m = partials[i].resnos_as_array(p, tmp);
+            for (j=0; j<m; j++)
+            {
+                included[tmp[j]] = true;
+            }
+        }
+    }
+
+    l=0;
+    for (i=1; i<n; i++)
+    {
+        if (included[i]) output[l++] = i;
+    }
+    return l;
 }
 
 std::string CPartial::resnos_as_string(Protein* p)

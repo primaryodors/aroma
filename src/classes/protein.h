@@ -290,6 +290,7 @@ protected:
 };
 
 std::ostream& operator<<(std::ostream& os, const BallesterosWeinstein& bw);
+std::string family_from_protid(std::string protid);
 
 extern float *g_rgnxform_r, *g_rgnxform_theta, *g_rgnxform_y, *g_rgnrot_alpha, *g_rgnrot_w, *g_rgnrot_u;
 

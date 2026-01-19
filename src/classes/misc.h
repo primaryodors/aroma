@@ -75,6 +75,7 @@ std::string cardinality_printable(float card);
 float protonation(float pKa);
 float larger(float v1, float v2);
 bool file_exists(std::string fname);
+bool dir_exists(const char* path);
 
 void colorrgb(int r, int g, int b);
 void colorize(float f);

@@ -1,4 +1,5 @@
 #include "protein.h"
+#include "progress.h"
 
 #ifndef _CAVITY
 #define _CAVITY
@@ -31,7 +32,7 @@ struct CPartial
 class Cavity
 {
     public:
-    static int scan_in_protein(Protein* p, Cavity* results, int results_max);
+    static int scan_in_protein(Protein* p, Cavity* results, int results_max, Progressbar* pgb = nullptr);
     CPartial* get_nearest_partial(Point pt);
     float partial_intersects_cavity(CPartial p);
     void add_partial(CPartial p);
@@ -48,6 +49,7 @@ class Cavity
     float match_ligand(Molecule* ligand, Atom** match_atom = nullptr, CPartial** match_partial = nullptr, Protein* prot = nullptr);
     int resnos(Protein* p, AminoAcid** result);
     std::string resnos_as_string(Protein* p);
+    int resnos_as_array(Protein* p, int* output);
     Protein* prot = nullptr;
     float cavity_intersection(Cavity* other);
     void unify(Cavity* cavfrom);
