@@ -170,8 +170,8 @@ int main(int argc, char** argv)
         }
     }
 
-    cout << "Total cavity volume: " << cavities[j].get_volume() << " Å³" << endl;
-    cout << "Ligand volume: " << ligand.get_volume() << " Å³" << endl;
+    // cout << "Total cavity volume: " << cavities[j].get_volume() << " Å³" << endl;
+    // cout << "Ligand volume: " << ligand.get_volume() << " Å³" << endl;
 
     Point pocketcen = cavities[j].get_center();
 
