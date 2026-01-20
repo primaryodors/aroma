@@ -63,6 +63,7 @@ struct Box
     Box(Point pt1, Point pt2);
     Box(double X1, double X2, double Y1, double Y2, double Z1, double Z2);
     Point size();
+    Point center();
     float width() const { return fabs(x2-x1); }
     float height() const { return fabs(y2-y1); }
     float depth() const { return fabs(z2-z1); }

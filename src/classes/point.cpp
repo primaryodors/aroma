@@ -806,6 +806,11 @@ Point Box::size()
     return Point(fabs(x2-x1), fabs(y2-y1), fabs(z2-z1));
 }
 
+Point Box::center()
+{
+    return Point((x1+x2)/2, (y1+y2)/2, (z1+z2)/2);
+}
+
 Box Box::outer(Box other)
 {
     Box result;

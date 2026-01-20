@@ -7506,10 +7506,16 @@ void Molecule::identify_cages()
     }
 }
 
-float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore, bool op)
+float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore, bool ep)
 {
     if (!atoms) return 0;
     if (!a) return 0;
+
+    Interaction e = -a->last_bind_energy;
+    if (ep)
+    {
+        if (frand(0,1) > e.probability(0)) return 0;
+    }
 
     Bond* thesebonds[16];
     a->fetch_bonds(thesebonds);
@@ -7524,7 +7530,12 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore, bool op)
         if (thesebonds[i]->atom2)
         {
             if (thesebonds[i]->atom2 == ignore) continue;
-            if (op && (thesebonds[i]->atom2 > a)) continue;
+
+            if (ep)
+            {
+                if (frand(0,1) > e.probability(-thesebonds[i]->atom2->last_bind_energy)) continue;
+            }
+
             float optimal = InteratomicForce::covalent_bond_radius(a, thesebonds[i]->atom2, thesebonds[i]->cardinality);
             float r = a->distance_to(thesebonds[i]->atom2);
             anomaly += 100.0 * fabs(r-optimal);
@@ -7540,10 +7551,16 @@ float Molecule::get_atom_bond_length_anomaly(Atom* a, Atom* ignore, bool op)
     return anomaly;
 }
 
-float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool op)
+float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool ep)
 {
     if (!atoms) return 0;
     if (!a) return 0;
+
+    Interaction e = -a->last_bind_energy;
+    if (ep)
+    {
+        if (frand(0,1) > e.probability(0)) return 0;
+    }
 
     Bond* thesebonds[16];
     a->fetch_bonds(thesebonds);
@@ -7583,7 +7600,12 @@ float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool op)
         if (!bi->atom2) continue;
         if (bi->atom2 == a) bi = bi->get_reversed();
         if (bi->atom2 == ignore) continue;
-        if (op && (bi->atom2 > a)) continue;
+
+        if (ep)
+        {
+            if (frand(0,1) > e.probability(-bi->atom2->last_bind_energy)) continue;
+        }
+
         Point iloc = bi->atom2->loc;
         for (j=0; j<i; j++)
         {
@@ -7592,6 +7614,12 @@ float Molecule::get_atom_bond_angle_anomaly(Atom *a, Atom *ignore, bool op)
             if (!bj) continue;
             if (!bj->atom2) continue;
             if (bj->atom2 == a) bj = bj->get_reversed();
+
+            if (ep)
+            {
+                if (frand(0,1) > e.probability(-bj->atom2->last_bind_energy)) continue;
+            }
+
             Point jloc = bj->atom2->loc;
 
             float theta = fabs(find_3d_angle(iloc, jloc, aloc));
@@ -7729,8 +7757,8 @@ float Molecule::bond_strain_for_structure_refinement()
     int i;
     for (i=0; atoms[i]; i++)
     {
-        strain += get_atom_bond_angle_anomaly(atoms[i], nullptr, true);
-        strain += get_atom_bond_length_anomaly(atoms[i], nullptr, true);
+        strain += get_atom_bond_angle_anomaly(atoms[i]);
+        strain += get_atom_bond_length_anomaly(atoms[i]);
     }
     return strain;
     #endif

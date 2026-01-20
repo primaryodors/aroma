@@ -1484,14 +1484,15 @@ float Interaction::probability(Interaction rel)
 {
     // Metropolis Criterion
     float Emine = summed(), Eyours = rel.summed();
-    if (Emine < Eyours) return 1;
-    return exp((Eyours-Emine)/(kB_kJ*temperature));
+    // if (Emine < Eyours) return 1;
+    float K = exp((Eyours-Emine)/(kB_kJmol*temperature));
+    return K / (K+1);
 }
 
 bool Interaction::accept_change(Interaction rel)
 {
     #if metropolis_criterion
-    return probability(rel) > frand(0,1);
+    return (summed() < rel.summed()) || probability(rel) > frand(0,1);
     #else
     return improved(rel);
     #endif

@@ -158,14 +158,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // Biggest cavity
+    // Nearest cavity to search center
     j = n = 0;
+    float bestr = Avogadro;
     for (i=0; i<qfound; i++)
     {
-        l = cavities[i].count_partials();
-        if (l>n)
+        float r = cavities[i].get_center().get_3d_distance(search_area.center());
+        if (r < bestr)
         {
-            n = l;
+            bestr = r;
             j = i;
         }
     }
@@ -174,10 +175,19 @@ int main(int argc, char** argv)
     // cout << "Ligand volume: " << ligand.get_volume() << " Å³" << endl;
 
     Point pocketcen = cavities[j].get_center();
+    ligand.recenter(pocketcen);
+
+    fp = fopen("tmp/fuckup1.pdb", "wb");
+    prot.save_pdb(fp, &ligand);
+    fclose(fp);
 
     pbr.set_color(160, 224, 64);
     cout << "Tumbling ligand inside cavity..." << endl;
     prot.tumble_ligand_inside_pocket(&ligand, pocketcen, 1, &pbr);
+
+    fp = fopen("tmp/fuckup2.pdb", "wb");
+    prot.save_pdb(fp, &ligand);
+    fclose(fp);
 
     int bsresno[1024];
     Molecule* bsresm[1024];

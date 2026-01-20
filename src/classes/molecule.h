@@ -166,8 +166,8 @@ public:
     void mangle();                              // Randomize the locations of atoms.
     float distance_to(Molecule* other_mol);
     std::vector<Atom*> longest_dimension();
-    float get_atom_bond_length_anomaly(Atom* atom, Atom* ignore = nullptr, bool onlyprev = false);
-    float get_atom_bond_angle_anomaly(Atom* atom, Atom* ignore = nullptr, bool onlyprev = false);
+    float get_atom_bond_length_anomaly(Atom* atom, Atom* ignore = nullptr, bool energprob = false);
+    float get_atom_bond_angle_anomaly(Atom* atom, Atom* ignore = nullptr, bool energprob = false);
     // TODO: add a function for torsional strain and test cyclopropane ~= 24.5 kJ/mol.
     float refine_structure(int generations = _evolution_default_generations,
         float mutation_rate = _default_mutation_rate,
