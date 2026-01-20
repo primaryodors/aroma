@@ -4662,6 +4662,24 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
     return kJmol;
 }
 
+Interaction Molecule::get_atom_binding(Atom *a)
+{
+    Interaction kJmol;
+    if (!atoms) return 0;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        Point iloc = atoms[i]->loc;
+        float r = a->loc.get_3d_distance(iloc);
+        if (r < _INTERA_R_CUTOFF)
+        {
+            Interaction abind = InteratomicForce::total_binding(atoms[i], a);
+            kJmol += abind;
+        }
+    }
+    return kJmol;
+}
+
 float Molecule::get_intermol_contact_area(Molecule* ligand, bool hpho)
 {
     if (!ligand) return 0;

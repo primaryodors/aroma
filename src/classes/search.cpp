@@ -1720,6 +1720,58 @@ float Search::stays_rotate_headtotail(Protein *p, Molecule *l, Atom *sc, Atom *l
     return stays_rotate(p, l, lv);
 }
 
+float Search::do_nonrandom_walk_atom(Atom *a, Molecule **ligands, Vector step, int ring_size)
+{
+    int i, j, l;
+    float theta, distance_traveled = 0, thinc = M_PI * 2.0 / ring_size, r;
+    Interaction e;
+    Point was = a->loc, advance[ring_size+1], yref(0,fabs(step.r),0), ref0(0,0,0);
+    Rotation rot = align_points_3d(yref, step, ref0);
+
+    e = 0;
+    for (i=0; ligands[i]; i++) e += ligands[i]->get_atom_binding(a);
+
+    while (distance_traveled < 8)
+    {
+        advance[0] = a->loc.add(step);
+        r = fabs(step.r) / 2 + distance_traveled / 2;
+        for (i=0; i<ring_size; i++)
+        {
+            theta = thinc*i;
+            Point pt = yref.add(Point( r * sin(theta), 0, r * cos(theta) ));
+            rotate3D(pt, ref0, rot);
+            advance[i+1] = a->loc.add(pt);
+        }
+
+        Interaction eloc;
+        j = 0;
+
+        for (l=0; l<=ring_size; l++)
+        {
+            a->move(advance[l]);
+            Interaction enew = 0;
+            for (i=0; ligands[i]; i++) enew += ligands[i]->get_atom_binding(a);
+
+            if (!l || enew.accept_change(eloc))
+            {
+                eloc = enew;
+                j = l;
+            }
+        }
+
+        if (eloc.accept_change(e))
+        {
+            e = eloc;
+            distance_traveled += was.get_3d_distance(advance[j]);
+            a->move(was = advance[j]);
+        }
+        else if (eloc.summed() > 0) break;
+    }
+
+    a->move(was);
+    return e.summed();
+}
+
 float Search::stays_rotate(Protein *protein, Molecule *ligand, LocatedVector axis)
 {
     float theta = 0;

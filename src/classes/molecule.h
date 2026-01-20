@@ -243,6 +243,7 @@ public:
     float get_worst_clash();
     Interaction get_intermol_binding(Molecule* ligand, bool subtract_clashes = true, bool priority_boost = false);
     Interaction get_intermol_binding(Molecule** ligands, bool subtract_clashes = true, bool priority_boost = false);
+    Interaction get_atom_binding(Atom* a);
     float get_intermol_potential(Molecule* ligand, bool disregard_distance = false);
     float get_intermol_potential(Molecule** ligands, bool disregard_distance = false);
     float hydrophilicity();

@@ -72,6 +72,8 @@ class Search
     static float stays_rotate_byinter(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
     static float stays_rotate_headtotail(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
 
+    static float do_nonrandom_walk_atom(Atom* a, Molecule** ligands, Vector step, int ring_size = 6);
+
     protected:
     static float stays_rotate(Protein* protein, Molecule* ligand, LocatedVector axis);
 
