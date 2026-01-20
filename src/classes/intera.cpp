@@ -1492,7 +1492,7 @@ float Interaction::probability(Interaction rel)
 bool Interaction::accept_change(Interaction rel)
 {
     #if metropolis_criterion
-    return (summed() < rel.summed()) || probability(rel) > frand(0,1);
+    return improved(rel) || probability(rel) > frand(0,1);
     #else
     return improved(rel);
     #endif
