@@ -200,6 +200,7 @@ int main(int argc, char** argv)
         bsresm[l++] = (Molecule*)aa;
     }
     bsresm[l] = nullptr;
+    int nbsresm = l;
 
     // TODO: Move individual ligand atoms outward from ligand center to where they're energetically favored.
 
@@ -215,7 +216,7 @@ int main(int argc, char** argv)
 
 
     // Scoring
-    DockResult dr(&prot, &ligand, cavities[j].boundingbox().size());
+    DockResult dr(&prot, &ligand, nbsresm, (AminoAcid**)bsresm);
     cout << dr;
 
     // After-Dock Work
