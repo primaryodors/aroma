@@ -203,29 +203,23 @@ int main(int argc, char** argv)
     int nbsresm = l;
 
     // Move individual ligand atoms outward from ligand center to where they're energetically favored.
-    pbr.set_color(64, 224, 96);
-    cout << "Applying the nonrandom walk algorithm..." << endl << endl;
+    cout << "Applying the nonrandom walk algorithm..." << endl;
     n = ligand.get_atom_count();
-    pbr.minimum = 0;
-    pbr.maximum = n;
     Point molcen = ligand.get_barycenter();
     for (i=0; i<n; i++)
     {
-        pbr.update(i);
         Atom* a = ligand.get_atom(i);
         if (!a) continue;
         Vector v = a->loc.subtract(molcen);
         v.r = 1;
-        Search::do_nonrandom_walk_atom(a, bsresm, v);
-        pbr.update(i);
+        Search::do_nonrandom_walk_atom(a, bsresm, v, 30);
     }
 
     fp = fopen("tmp/fuckup3.pdb", "wb");
     prot.save_pdb(fp, &ligand);
     fclose(fp);
-    pbr.erase();
 
-    pbr.set_color(64, 224, 192);
+    pbr.set_color(64, 224, 128);
     cout << "Now the magic happens..." << endl;
     ligand.refine_structure(5000, 0.1, 100, bsresm, &pbr);
 
