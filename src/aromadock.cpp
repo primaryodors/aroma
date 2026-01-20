@@ -3872,6 +3872,8 @@ _try_again:
                 }
             }
 
+            ligand->refine_structure(2000, _default_mutation_rate, 20, (Molecule**)reaches_spheroid[nodeno]);
+
             if (!nodeno) // && outpdb.length())
             {
                 protein->get_internal_clashes(1, protein->get_end_resno(), false);
@@ -3963,7 +3965,9 @@ _try_again:
             if (dr[drcount][nodeno].ligand_pocket_occlusion < 0.65)
             {
                 dr[drcount][nodeno].disqualified = true;
-                std::string reason = "Insufficient occlusion";
+                std::string reason = "Insufficient occlusion ";
+                reason += std::to_string(dr[drcount][nodeno].ligand_pocket_occlusion);
+                reason += (std::string)". ";
                 dr[drcount][nodeno].disqualify_reason += reason;
             }
 
@@ -3981,7 +3985,7 @@ _try_again:
                     if (f > clash_limit_per_aa*5)
                     {
                         dr[drcount][nodeno].disqualified = true;
-                        std::string reason = (std::string)"Side chain clash " + std::to_string(f);
+                        std::string reason = (std::string)"Side chain clash " + std::to_string(f) + (std::string)". ";
                         dr[drcount][nodeno].disqualify_reason += reason;
                         i=j=n+2;
                         break;
@@ -4000,10 +4004,10 @@ _try_again:
                         std::string reason = "Soft chain constraint violation: ";
                         if (softrgns[i].prgv) reason += std::to_string(softrgns[i].prge) + (std::string)"~"
                             + std::to_string(softrgns[i].rgn.start) + (std::string)"="
-                            + std::to_string(softrgns[i].prgd) + "A ";
+                            + std::to_string(softrgns[i].prgd) + "A. ";
                         if (softrgns[i].nrgv) reason += std::to_string(softrgns[i].rgn.end) + (std::string)"~"
                             + std::to_string(softrgns[i].nrgs) + (std::string)"="
-                            + std::to_string(softrgns[i].prgd) + "A ";
+                            + std::to_string(softrgns[i].prgd) + "A. ";
                         dr[drcount][nodeno].disqualify_reason += reason;
                     }
                     if (!softrgns[i].num_contacts())
@@ -4229,7 +4233,7 @@ _try_again:
 
             if (btot <= kJmol_cutoff && !dr[drcount][0].disqualified) success_sofar = true;
 
-            if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
+            // if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
 
             // For performance reasons, once a path node (including #0) fails to meet the binding energy threshold, discontinue further
             // calculations for this pose.
