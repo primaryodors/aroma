@@ -33,6 +33,7 @@ do_test "moiety_test"
 do_test "mol_assem_test"
 do_test "pi_stack_test" # check this, it's probably wrong
 do_test "vdw_vertex_test"
+do_test "probability_test"
 
 # TODO: change these to not require a command line arg, else change the test framework to accommodate args.
 # do_test "atom_test"

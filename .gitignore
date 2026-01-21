@@ -30,6 +30,7 @@ hm/allgpcr.*
 *.gcov
 *.gcno
 *.gcda
+*.old
 bin/
 obj/
 *.dSYM/
@@ -50,6 +51,7 @@ OR*.png
 tmp
 temp
 test.*
+test/received/*
 *.phew
 data/seq*
 data/*.php
@@ -81,3 +83,6 @@ hm/MS4A*
 data/__pycache__/
 preserve
 www/consOR*.png
+www/primary*
+www/prymary*
+*bna*

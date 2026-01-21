@@ -38,8 +38,8 @@ Interaction::Interaction()
 
 Interaction::Interaction(double v)
 {
-    attractive = fmax(v, 0);
-    clash = fmax(-v, 0);
+    attractive = fmax(-v, 0);
+    clash = fmax(v, 0);
     worst_atom_clash = 0;
 }
 

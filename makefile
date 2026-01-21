@@ -11,7 +11,8 @@ DOBJ=$(OBJ)/dynamic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/c
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
-	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test test/conj_test
+	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
+	  test/conj_test test/probability_test
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit
 all: $(DIRS) \
@@ -196,6 +197,9 @@ test/vdw_vertex_test: src/test/vdw_vertex_test.cpp $(OBJS)
 
 test/eclipse: src/test/eclipse.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/test/eclipse.cpp $(OBJS) -o test/eclipse $(CFLAGS)
+
+test/probability_test: src/test/probability_test.cpp $(OBJS) $(DOBJ)
+	$(CPL) src/test/probability_test.cpp $(OBJS) -o test/probability_test $(CFLAGS)
 
 
 # Apps
