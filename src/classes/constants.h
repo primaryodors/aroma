@@ -246,7 +246,7 @@
 #define bb_pocket_res_spacing_allowance 1
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.3
-#define bb_realign_iters 1
+#define bb_realign_iters 0
 #define bb_realign_only_hydro 1
 #define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333

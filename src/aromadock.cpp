@@ -3340,7 +3340,7 @@ _try_again:
                             upivsmfpoy:
                             try
                             {
-                                Search::pair_targets(llig, llt, lrs, searchcen, &g_bbr[l], cv, !l);
+                                Search::pair_targets(protein, llig, llt, lrs, searchcen, &g_bbr[l], cv, !l);
                             }
                             catch (int sodivld)
                             {

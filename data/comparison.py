@@ -42,9 +42,12 @@ rcppl = len(rcppatt)
 pattlc = rcppatt[-1:]
 
 bwnos = []
+show_top_agonist = False
 for a in sys.argv[2:]:
     if a == 'bsr':
         bwnos = bwnos + data.protutils.bsrs
+    elif a == 'ta':
+        show_top_agonist = True
     else:
         bwnos.append(a)
 
@@ -73,4 +76,8 @@ for rcpid in data.protutils.prots.keys():
             print(letter.ljust(bwl, " "), end="")
         else: print("-", end="")
         print(colorless, end="")
+    if show_top_agonist:
+        if "best_agonist" in p:
+            taoid = p["best_agonist"]
+            print(data.odorutils.odors[taoid]["full_name"], end="")
     print("")

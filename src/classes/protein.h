@@ -200,6 +200,7 @@ public:
     Atom* region_pivot_atom(Region region, Atom** other_atom = nullptr);
     Point get_region_bounds(int startres, int endres);
     float optimize_hydrogens(int start_resno = 1, int end_resno = INT_MAX, int* force_resnos = nullptr);
+    float get_empty_space_between_residues(int resno1, int resno2);
 
     // Motion functions
     void upright();

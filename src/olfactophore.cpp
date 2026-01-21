@@ -494,7 +494,7 @@ int main(int argc, char** argv)
         BestBindingResult bbr;
         pgb.set_color(128, 64, 255);
         cout << endl;
-        Search::pair_targets(&existing, lt, bsr, cen, &bbr, nullptr, true, &pgb);
+        Search::pair_targets(&prot, &existing, lt, bsr, cen, &bbr, nullptr, true, &pgb);
         Search::align_targets(&existing, cen, &bbr, 1);
         #endif
         if (prot.get_residue_bw(7, 50))

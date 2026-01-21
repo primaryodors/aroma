@@ -223,7 +223,7 @@ int main(int argc, char** argv)
 
             AminoAcid* aa;
             Point pt4avg[pcn+2];
-            
+
             int j=0;
             for (i=0; i<pcn; i++)
             {
@@ -261,7 +261,7 @@ int main(int argc, char** argv)
         p.get_residues_can_clash_ligand(reaches_spheroid, &m, pocketcen, Point(7,7,7), nullptr);
 
         BestBindingResult bbr;
-        Search::pair_targets(&m, lt, reaches_spheroid, loneliest, &bbr);
+        Search::pair_targets(&p, &m, lt, reaches_spheroid, loneliest, &bbr);
         if (bbr.pri_res && bbr.pri_tgt)
         {
             cout << "Paired: " << bbr.pri_res->get_name() << "...";

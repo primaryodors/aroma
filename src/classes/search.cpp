@@ -501,7 +501,9 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
     return found;
 }
 
-void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **pocketres, Point loneliest,
+void Search::pair_targets(Protein* prot, Molecule *ligand,
+    LigandTarget *targets, AminoAcid **pocketres,
+    Point loneliest,
     BestBindingResult* output, Cavity* container, bool allow_thiolation, Progressbar *pbr)
 {
     int i, j, k, l, m, n, ii;
@@ -731,6 +733,8 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                         if ((kpol && !lpol) || (!kpol && lpol)) continue;
 
                     float r = pocketres[l]->get_barycenter().get_3d_distance(pocketres[j]->get_barycenter());
+                    r += prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(),
+                        pocketres[l]->get_residue_no());
                     if (r > lfarthest)
                     {
                         lfarthest = r;
