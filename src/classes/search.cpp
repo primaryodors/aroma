@@ -501,7 +501,7 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
     return found;
 }
 
-void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **pocketres, Point loneliest, 
+void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **pocketres, Point loneliest,
     BestBindingResult* output, Cavity* container, bool allow_thiolation, Progressbar *pbr)
 {
     int i, j, k, l, m, n, ii;
@@ -646,6 +646,15 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                     << endl;
             #endif
 
+            #if 0
+            int jrno = pocketres[j]->get_residue_no();
+
+            if (jrno == 262)
+            {
+                cout << ichg << endl;
+            }
+            #endif
+
             if (!override_target_compatibility) if (!ijmc && !target_compatibility(ichg, jchg, ipol, jpol, ipi, jpi, ihba, jhba, ihbd, jhbd)) continue;
 
             if (ntarg < 2 || npr < 2)
@@ -713,7 +722,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
                 #if bb_secondary_must_be_farthest_from_primary
                 int lfar = -1;
                 float lfarthest = 0;
-                for (l=0; l<ntarg; l++)
+                for (l=0; pocketres[l]; l++)
                 {
                     float lpol = pocketres[l]->hydrophilicity();
                     if (lpol < hydrophilicity_cutoff) lpol = 0;
@@ -1067,6 +1076,7 @@ void Search::pair_targets(Molecule *ligand, LigandTarget *targets, AminoAcid **p
 
                             if (m<0) break;
                         }
+                        if (ntarg < 3) break;
                     }
                 }
             }
