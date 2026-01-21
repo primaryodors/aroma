@@ -3872,8 +3872,6 @@ _try_again:
                 }
             }
 
-            ligand->refine_structure(2000, _default_mutation_rate, 20, (Molecule**)reaches_spheroid[nodeno]);
-
             if (!nodeno) // && outpdb.length())
             {
                 protein->get_internal_clashes(1, protein->get_end_resno(), false);
