@@ -45,15 +45,20 @@ int main (int argc, char** argv)
 
     Point ptrot8, ptref(pt5.x + 0, pt5.y + 0, pt5.z + 1);
 
-    float f;
+    float f, f57, f_57, test;
     for (f=0; f<M_PI*2; f+=0.1)
     {
         ptrot8.x = pt5.x + sin(f);
         ptrot8.y = pt5.y + 0;
         ptrot8.z = pt5.z + cos(f);
 
-        cout << "Rotation " << (f*fiftyseven) << " points are "
-             << find_3d_angle(ptrot8, ptref, pt5)*fiftyseven << " degrees apart."
+        f57 = f*fiftyseven;
+        f_57 = 360 - f57;
+        test = find_3d_angle(ptrot8, ptref, pt5)*fiftyseven;
+
+        cout << ((fabs(test-f57) > 0.01 && fabs(test-f_57) > 0.01) ? "" : "# ")
+             << "Rotation " << f57 << " points are "
+             << test << " degrees apart."
              << endl;
     }
 
@@ -65,10 +70,18 @@ int main (int argc, char** argv)
         float thvec = find_angle_along_vector(ptrot8, ptref, pt5, axis);
         Point ptrot9 = rotate3D(ptrot8, pt5, axis, thvec);
 
-        cout << "Rotation " << (f*fiftyseven)
-            << " find_3d_angle() gives " << (th3d*fiftyseven) << "deg"
-            << " find_angle_along_vector() gives " << (thvec*fiftyseven) << "deg"
-            << " putitback anomaly = " << ptrot9.get_3d_distance(ptref)
+        f57 = f*fiftyseven;
+        f_57 = 360 - f57;
+
+        float th3d57 = th3d*fiftyseven;
+        float thvec57 = thvec*fiftyseven;
+        test = ptrot9.get_3d_distance(ptref);
+
+        cout << ((test >= 0.0001) ? "" : "# ")
+            << "Rotation " << f57
+            << " find_3d_angle() gives " << th3d57 << "deg"
+            << " find_angle_along_vector() gives " << thvec57 << "deg"
+            << " putitback anomaly = " << test
             << endl;
     }
 }
