@@ -12,12 +12,22 @@ class DockResult
 {
     public:
     DockResult();
-    DockResult(Protein* prot, Molecule* lig, Point search_size, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
-    DockResult(Protein* prot, Molecule* lig, int sphres, AminoAcid** reaches_spheroid, int* addl_resno = nullptr, int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
+    DockResult(Protein* prot, Molecule* lig,
+        Point search_size, int* addl_resno = nullptr,
+        int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
+    DockResult(Protein* prot, Molecule* lig,
+        int sphres, AminoAcid** reaches_spheroid, int* addl_resno = nullptr,
+        int pose = 1, Molecule** waters = nullptr, bool is_movie = false);
 
     bool clashes_with(DockResult* other);
     DockResult merge(DockResult* other);
 
+    protected:
+    void initialize(Protein* prot, Molecule* lig,
+        int sphres, AminoAcid** reaches_spheroid, int* addl_resno,
+        int pose, Molecule** waters, bool is_movie);
+
+    public:
     int pose = 0;
     int auth = 0;
     float kJmol = 0;
