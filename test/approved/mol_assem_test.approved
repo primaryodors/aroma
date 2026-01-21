@@ -1,0 +1,14 @@
+Created empty molecule named Test.
+Added a carbon atom. Its location is [0,0,0].
+Added another carbon atom. Its location is [0,1.539,0].
+Added an oxygen atom. Its location is [0,2.016,-1.348].
+# Refining structure; this may take some time...
+# Post-evolution per-atom anomaly: 0.000260742
+# Internal clashes: 0 cu.A.
+Minimizing internal clashes...
+Adjusted internal clashes: 0 cu.A.
+Atom C1 has bond angles: 109.47 109.47 109.47 109.47 109.47 109.47
+Atom C2 has bond angles: 109.47 109.47 109.47 109.47 109.47 109.47
+Atom O3 has bond angles: 109.47
+Saved test.sdf
+

@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     cout << "Created empty molecule named " << m.get_name() << ".\n";
 
     Atom* anisoa;
-    bool colors = true;
+    bool colors = false;
 
     if (argc > 1 && argv[1][0] != '-')
     {
