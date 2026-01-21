@@ -345,6 +345,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
         ligand_h2o_displacement_energy = ligand->get_volume() / global_water.get_volume()
             * global_water.solvent_free_energy() / 4;               // There's got to be a better way.
+        if (isnanf(ligand_h2o_displacement_energy)) ligand_h2o_displacement_energy = 0;
 
         #if compute_clashdirs
         if (lb > 0 && ligand->clash1 && ligand->clash2)

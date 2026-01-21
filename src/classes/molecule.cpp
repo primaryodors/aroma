@@ -4319,6 +4319,7 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
 
     movamt = stay_close_other->loc.subtract(stay_close_mine->loc);
     movamt.r -= (stay_close_optimal+stay_close_tolerance);
+    movamt.r = fmin(speed_limit, movamt.r);
     if (movamt.r > 0)
     {
         movamt.r *= amt;
@@ -4335,8 +4336,9 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
     {
         Vector v = stay_close2_other->loc.subtract(stay_close2_mine->loc);
         v.r -= (stay_close2_optimal+stay_close_tolerance);
-        rot = align_points_3d(stay_close2_mine->loc, stay_close2_other->loc, stay_close_mine->loc);
-        rot.a *= amt;
+        v.r = fmin(speed_limit, v.r);
+        rot = align_points_3d(stay_close2_mine->loc, stay_close2_mine->loc.add(v), stay_close_mine->loc);
+        rot.a *= amt * secondary_stays_effect;
         lv = rot.v;
         lv.origin = stay_close2_mine->loc;
         rotate(lv, rot.a);
@@ -5366,7 +5368,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             #endif
 
             Point aloc = a->get_barycenter();
-            int flexion_sub_iterations = ares ? flexion_sub_iterations_sidechain : flexion_sub_iterations_ligand;
+            int flexion_sub_iterations = ares
+                ? flexion_sub_iterations_sidechain
+                : flexion_sub_iterations_ligand;
 
             Interaction benerg = 0;
             if (1) // !ares)
@@ -5725,7 +5729,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
-                                if ((fal || !wfal) && tryenerg.improved(benerg)
+                                if ((fal || !wfal) && tryenerg.accept_change(benerg)
                                     && a->get_internal_clashes() <= self_clash
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                    )

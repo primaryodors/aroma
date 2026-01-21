@@ -3980,7 +3980,7 @@ _try_again:
                     if (!aa2) continue;
 
                     float f = aa1->get_intermol_clashes(aa2);
-                    if (f > clash_limit_per_aa*5)
+                    if (f > clash_limit_per_aa*10)
                     {
                         dr[drcount][nodeno].disqualified = true;
                         std::string reason = (std::string)"Side chain clash " + std::to_string(f) + (std::string)". ";
@@ -4066,7 +4066,7 @@ _try_again:
                     AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
                     if (aacfmolsi->get_letter() == 'P') continue;
                 }
-                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*5)
+                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*10)
                 {
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";

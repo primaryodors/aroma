@@ -143,8 +143,6 @@
 // Docking features.
 #define _allow_conditional_basicity 1
 #define _allow_conditional_basicity_with_acid_ligand 1
-#define _ALLOW_FLEX_RINGS 0
-#define _allow_fullrot 1
 #define _ALLOW_PROTONATE_PNICTOGENS 0
 #define _dock_result_in_iter 1
 #define _teleport_dissatisfied_waters 0
@@ -189,6 +187,8 @@
 #define prerot_sidechains_from_ligand 0
 
 // Flexion settings.
+#define _ALLOW_FLEX_RINGS 0
+#define _allow_fullrot 1
 #define _fullrot_every 5
 #define _fullrot_stepdeg 7
 #define _fullrot_steprad (fiftyseventh*_fullrot_stepdeg)
@@ -197,7 +197,7 @@
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle square/2
 #define flexion_probability_multiplier 1
-#define flexion_sub_iterations_ligand 5
+#define flexion_sub_iterations_ligand 15
 #define flexion_sub_iterations_sidechain 1
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
@@ -217,8 +217,9 @@
 #define hydrogenate_add_missing_heavy_atoms 1
 
 // Ligand repositioning constants.
-#define multimol_stays_enforcement 0.666
+#define multimol_stays_enforcement 0.5
 #define multimol_stays_allow_revert_worsening 0
+#define secondary_stays_effect 0.5
 #define stays_tolerance_factor .15
 #define reuse_pose_probability 0.333
 #define best_pose_reset_frequency 0.25
@@ -246,7 +247,7 @@
 #define bb_pocket_res_spacing_allowance 1
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.3
-#define bb_realign_iters 0
+#define bb_realign_iters 1
 #define bb_realign_only_hydro 1
 #define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333
