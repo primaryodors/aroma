@@ -190,12 +190,12 @@
 #define _ALLOW_FLEX_RINGS 0
 #define _allow_fullrot 1
 #define _fullrot_every 5
-#define _fullrot_stepdeg 7
+#define _fullrot_stepdeg 3
 #define _fullrot_steprad (fiftyseventh*_fullrot_stepdeg)
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
-#define flexion_maxangle square/2
+#define flexion_maxangle hexagonal
 #define flexion_probability_multiplier 1
 #define flexion_sub_iterations_ligand 15
 #define flexion_sub_iterations_sidechain 1
