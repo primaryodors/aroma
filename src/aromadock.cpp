@@ -1033,7 +1033,8 @@ void search_callback(std::string mesg)
 
 void update_progressbar(float percentage)
 {
-    percentage = percentage/poses + (float)(pose-1)*100.0/poses;
+    int n = max(1, pathnodes);
+    percentage = percentage/poses/n + (float)(pose-1+(float)nodeno/n)*100.0/poses;
     if (success_sofar)
     {
         if (strstr(protfname, ".inactive.pdb"))
@@ -2967,7 +2968,7 @@ _try_again:
             // cout << "Loneliest is " << loneliest << endl;
 
             #if pocketcen_is_loneliest
-            nodecen = loneliest;
+            if (!pathstrs.size()) nodecen = loneliest;
             #endif
 
             Point lastnodecen = nodecen;
@@ -3331,7 +3332,7 @@ _try_again:
                         #if _dbg_bb_scoring
                         cout << "Node " << nodeno << "; sphres = " << sphres << endl;
                         #endif
-                        Point searchcen = loneliest;
+                        Point searchcen = pathnodes ? nodecen : loneliest;
                         for (l = 0; !l || l < copylig; l++)
                         {
                             llig = ligand->get_monomer(l);
