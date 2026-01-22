@@ -757,6 +757,21 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     if (shadowed) continue;
                 }
 
+                if (lfar < 0)
+                {
+                    for (l=0; pocketres[l]; l++)
+                    {
+                        float r = pocketres[l]->get_barycenter().get_3d_distance(pocketres[j]->get_barycenter());
+                        r += prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(),
+                            pocketres[l]->get_residue_no());
+                        if (r > lfarthest)
+                        {
+                            lfarthest = r;
+                            lfar = l;
+                        }
+                    }
+                }
+
                 if (lfar >= 0)
                 {
                     l = lfar;
@@ -796,7 +811,9 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     lmtl = pocketres[l]->coordmtl;
 
                     klmc = lmtl && (kfam == CHALCOGEN || kfam == PNICTOGEN) && ((kZ != 8 && kchg <= 0) || kmc);
+                    #if !bb_secondary_must_be_farthest_from_primary
                     if (!override_target_compatibility) if (!klmc && !target_compatibility(kchg, lchg, kpol, lpol, kpi, lpi, khba, lhba, khbd, lhbd)) continue;
+                    #endif
 
                     for (m=-1; m<ntarg; m++)
                     {
@@ -876,7 +893,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                             if (container) align_targets(ligand, bbr.barycenter(), &bbr);
                             score = bbr.score(ligcen, container) * (1.0 + frand(0,bb_stochastic));
 
-                            #if bb_avoid_eclipsing_contacts
+                            #if bb_avoid_eclipsing_contacts && !bb_secondary_must_be_farthest_from_primary
                             // Prefer contacts without intervening residues.
                             int h;
                             float jldist = bbr.pri_res->distance_to(bbr.sec_res), jndist, lndist;
@@ -978,8 +995,10 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                             bbr.add_to_candidates();
                             if (score > best
                                 && (has_ionic || !require_ionic)
+                                #if !bb_secondary_must_be_farthest_from_primary
                                 && (has_neutral_polar || !require_neutral_polar)
                                 && (has_pi || !require_pi)
+                                #endif
                                )
                             {
                                 #if bb_secondary_must_be_farthest_from_primary
@@ -1094,7 +1113,12 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
             override_target_compatibility = true;
             goto _new_attempt_no_tgt_comp;
         }
-        cout << "No candidate BB pairings found!" << endl;
+        cerr << "No candidate BB pairings found!" << endl;
+        cerr << "Ligand targets:" << endl;
+        for (i=0; i<ntarg; i++) cerr << targets[i] << endl;
+        cerr << "Pocket residues:";
+        for (i=0; pocketres[i]; i++) cerr << " " << pocketres[i]->get_name();
+        cerr << endl;
         throw 0x90ba1125;
     }
 
