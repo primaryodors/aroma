@@ -486,7 +486,7 @@ void do_pivotal_hbond_rot_and_scoot()
     ligand->rotate(lv, theta);
 }
 
-void output_iter(int iter, Molecule** mols, std::string mesg)
+void output_iter(int iter, Molecule** mols, std::string mesg, bool mols_include_res = false)
 {
     itersfname = (std::string)"tmp/" + (std::string)"_iters.dock";
     int i, liter = iter + movie_offset;
@@ -519,7 +519,7 @@ void output_iter(int iter, Molecule** mols, std::string mesg)
 
         for (i=0; mols[i]; i++)
         {
-            if (mols[i]->is_residue()) continue;
+            if (!mols_include_res && mols[i]->is_residue()) continue;
             mols[i]->save_pdb(fp, foff, false);
             foff += mols[i]->get_atom_count();
         }
@@ -936,7 +936,7 @@ void iteration_callback(int iter, Molecule** mols)
         }
     }
 
-    if (output_each_iter) output_iter(iter, mols, "dock iteration");
+    if (output_each_iter) output_iter(iter+nodeoff, mols, "dock iteration");
 }
 
 void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
@@ -2742,6 +2742,7 @@ _try_again:
     float best_energy = 0, best_acc_energy = 0, best_worst_clash = 0;
     for (pose = 1; pose <= poses; pose++)
     {
+        nodeno = 0;         // makes life easier when doing vestibules
         soft_contact_elasticity = initial_soft_contact_elasticity;
         ligand = &pose_ligands[pose];
         ligand->movability = MOV_ALL;
@@ -2817,9 +2818,10 @@ _try_again:
         {
             Point vestcen(0,0,0);
             int vestdiv = 0;
-
+            AminoAcid* vest_res[MAX_VESTIBULE*2+3];
             Molecule* mols[MAX_VESTIBULE*2+3];
             int nmols = 0;
+            int nvr = 0;
             mols[nmols++] = ligand;
 
             for (i=0; i<nvestibule_holder; i++)
@@ -2829,6 +2831,7 @@ _try_again:
                 if (aa)
                 {
                     mols[nmols++] = (Molecule*)aa;
+                    vest_res[nvr++] = aa;
                     aa->movability = MOV_FLEXONLY;
                     vestcen = vestcen.add(aa->get_CA_location());
                     vestdiv++;
@@ -2849,6 +2852,7 @@ _try_again:
                         if (aa)
                         {
                             mols[nmols++] = (Molecule*)aa;
+                            vest_res[nvr++] = aa;
                             aa->movability = MOV_FLEXONLY;
 
                             Point outthere = aa->get_CA_location().subtract(pocketcen);
@@ -2875,9 +2879,10 @@ _try_again:
                 }
 
                 mols[nmols] = nullptr;
+                vest_res[nvr] = nullptr;
                 Molecule::conform_molecules(mols, nullptr, 50);
 
-                dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
+                dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nvr, vest_res, nullptr, drcount, waters);
                 dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
                 dr[drcount][nodeno+nodeoff].out_per_btyp_e = out_per_btyp_e;
                 dr[drcount][nodeno+nodeoff].out_itemized_e_cutoff = out_itemized_e_cutoff;
@@ -2888,6 +2893,8 @@ _try_again:
                 dr[drcount][nodeno+nodeoff].display_clash_atoms = display_clash_atoms;
                 dr[drcount][nodeno+nodeoff].out_mc = out_mc;
                 dr[drcount][nodeno+nodeoff].out_vdw_repuls = out_vdw_repuls;
+
+                if (output_each_iter) output_iter(nodeoff, mols, "vestibular placement", true);
 
                 nodeoff = 1;
             }
@@ -2903,12 +2910,14 @@ _try_again:
                 AminoAcid* aa = protein->get_residue(vestibule_grabber[i].resno);
                 if (aa)
                 {
-                    Atom *ra = nullptr, *la = nullptr;
+                    aa->movability = MOV_FLEXONLY;
+                    aa->conform_atom_to_location(aa->get_reach_atom()->name, ligand->get_barycenter());
+                    /*Atom *ra = nullptr, *la = nullptr;
                     aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                     if (ra && la)
                     {
                         aa->conform_atom_to_location(ra, la, 50, 2.5);
-                    }
+                    }*/
                 }
             }
         }
@@ -3606,16 +3615,23 @@ _try_again:
                             }
 
                             // ligand->propagate_stays();
-                            g_bbr[l].protein = protein;
-                            Search::align_targets(llig, searchcen, &g_bbr[l]);
-                            searchcen = searchcen.add(searchcen.subtract(llig->get_barycenter()));
+                            if (nvestibule_holder)
+                            {
+                                ligand->recenter(searchcen);
+                            }
+                            else
+                            {
+                                g_bbr[l].protein = protein;
+                                Search::align_targets(llig, searchcen, &g_bbr[l]);
+                                searchcen = searchcen.add(searchcen.subtract(llig->get_barycenter()));
+                            }
                         }
                     }
                     else ligand->recenter(nodecen);
 
-                    cout << "Node " << nodeno
+                    /* cout << "Node " << nodeno
                         << " ligand centered at " << ligand->get_barycenter()
-                        << endl << endl;
+                        << endl << endl; */
 
                     abhor_vacuum(0, (Molecule**)reaches_spheroid[nodeno]);
 
@@ -3716,7 +3732,7 @@ _try_again:
                 if (!(reaches_spheroid[nodeno][j]->movability & MOV_PINNED)) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
             }
             freeze_bridged_residues();
-            if (output_each_iter) output_iter(0, cfmols, "initial placement");
+            if (output_each_iter) output_iter(nodeoff, cfmols, "initial placement");
             if (pdpst == pst_best_binding) ligand->movability = (MovabilityType)(MOV_CAN_AXIAL | MOV_CAN_RECEN | MOV_CAN_FLEX);
 
             freeze_bridged_residues();
