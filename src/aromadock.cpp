@@ -119,6 +119,10 @@ Pose* cfmol_known_good[SPHREACH_MAX+100];
 Point ligcen_target;
 Vector path[256];
 int pathnodes = 0;				// The pocketcen is the initial node.
+int nodeoff = 0;
+ResiduePlaceholder vestibule_holder[MAX_VESTIBULE];
+ResiduePlaceholder vestibule_grabber[MAX_VESTIBULE];
+int nvestibule_holder = 0, nvestibule_grabber = 0;
 int poses = 10;
 int iters = 50;
 int maxh2o = 0;
@@ -1109,7 +1113,7 @@ Point pocketcen_from_config_words(char** words, Point* old_pocketcen)
 
 int interpret_config_line(char** words)
 {
-    int i;
+    int i, j;
 
     optsecho = "";
 
@@ -1671,6 +1675,26 @@ int interpret_config_line(char** words)
     {
         strcpy(cvtyfname, words[1]);
         return 1;
+    }
+    else if (!strcmp(words[0], "VESTIBULE"))
+    {
+        j = 1;
+        bool do_holders = false, do_grabbers = false;
+        while (words[j])
+        {
+            if (!strcmp(words[j], "HOLDER")) do_grabbers = !(do_holders = true);
+            else if (!strcmp(words[j], "GRABBER")) do_grabbers = !(do_holders = false);
+            else if (do_holders)
+            {
+                vestibule_holder[nvestibule_holder++].set(words[j]);
+            }
+            else if (do_grabbers)
+            {
+                vestibule_grabber[nvestibule_grabber++].set(words[j]);
+            }
+            j++;
+        }
+        return j;
     }
 
     return 0;
@@ -2599,7 +2623,7 @@ int main(int argc, char** argv)
     if (output) *output << endl;
 
     i = poses*(triesleft+1)+8;
-    j = pathnodes+2;
+    j = pathnodes+nodeoff+2;
     DockResult dr[i][j];
 
     float rgnxform_r[i][pathnodes+2][PROT_MAX_RGN], rgnxform_theta[i][pathnodes+2][PROT_MAX_RGN], rgnxform_y[i][pathnodes+2][PROT_MAX_RGN];
@@ -2789,8 +2813,105 @@ _try_again:
 
         freeze_bridged_residues();
 
+        if (nvestibule_holder)
+        {
+            Point vestcen(0,0,0);
+            int vestdiv = 0;
+
+            Molecule* mols[MAX_VESTIBULE*2+3];
+            int nmols = 0;
+            mols[nmols++] = ligand;
+
+            for (i=0; i<nvestibule_holder; i++)
+            {
+                vestibule_holder[i].resolve_resno(protein);
+                AminoAcid* aa = protein->get_residue(vestibule_holder[i].resno);
+                if (aa)
+                {
+                    mols[nmols++] = (Molecule*)aa;
+                    aa->movability = MOV_FLEXONLY;
+                    vestcen = vestcen.add(aa->get_CA_location());
+                    vestdiv++;
+                }
+            }
+
+            if (vestdiv)
+            {
+                vestcen.multiply(1.0/vestdiv);
+                ligand->recenter(vestcen);
+
+                if (nvestibule_grabber)
+                {
+                    for (i=0; i<nvestibule_grabber; i++)
+                    {
+                        vestibule_grabber[i].resolve_resno(protein);
+                        AminoAcid* aa = protein->get_residue(vestibule_grabber[i].resno);
+                        if (aa)
+                        {
+                            mols[nmols++] = (Molecule*)aa;
+                            aa->movability = MOV_FLEXONLY;
+
+                            Point outthere = aa->get_CA_location().subtract(pocketcen);
+                            outthere.scale(10000);
+                            outthere = outthere.add(pocketcen);
+
+                            aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 20);
+
+                            Atom *ra = nullptr, *la = nullptr;
+                            aa->mutual_closest_hbond_pair(ligand, &ra, &la);
+                            if (ra && la)
+                            {
+                                if (!i)
+                                {
+                                    Rotation rot = align_points_3d(la->loc, ra->loc, ligand->get_barycenter());
+                                    ligand->rotate(rot);
+                                }
+                                // TODO: code to handle case of more than one grabber
+
+                                aa->conform_atom_to_location(ra, la, 50, 2.5);
+                            }
+                        }
+                    }
+                }
+
+                mols[nmols] = nullptr;
+                Molecule::conform_molecules(mols, nullptr, 50);
+
+                dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
+                dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
+                dr[drcount][nodeno+nodeoff].out_per_btyp_e = out_per_btyp_e;
+                dr[drcount][nodeno+nodeoff].out_itemized_e_cutoff = out_itemized_e_cutoff;
+                dr[drcount][nodeno+nodeoff].out_lig_int_e = out_lig_int_e;
+                dr[drcount][nodeno+nodeoff].out_lig_pol_sat = out_lig_pol_sat;
+                dr[drcount][nodeno+nodeoff].out_prox = out_prox;
+                dr[drcount][nodeno+nodeoff].out_pro_clash = out_pro_clash;
+                dr[drcount][nodeno+nodeoff].display_clash_atoms = display_clash_atoms;
+                dr[drcount][nodeno+nodeoff].out_mc = out_mc;
+                dr[drcount][nodeno+nodeoff].out_vdw_repuls = out_vdw_repuls;
+
+                nodeoff = 1;
+            }
+            else cerr << "Warning: vestibule holder specified but residues aren't present." << endl << endl;
+        }
+
         ligand->recenter(pocketcen);
         // cout << "Centered ligand at " << pocketcen << endl << endl << flush;
+        if (nvestibule_grabber)
+        {
+            for (i=0; i<nvestibule_grabber; i++)
+            {
+                AminoAcid* aa = protein->get_residue(vestibule_grabber[i].resno);
+                if (aa)
+                {
+                    Atom *ra = nullptr, *la = nullptr;
+                    aa->mutual_closest_hbond_pair(ligand, &ra, &la);
+                    if (ra && la)
+                    {
+                        aa->conform_atom_to_location(ra, la, 50, 2.5);
+                    }
+                }
+            }
+        }
 
         if (pdpst == pst_tumble_spheres)
         {
@@ -3286,7 +3407,11 @@ _try_again:
                 protein->set_conditional_basicities();
 
                 #if reuse_best_pose
-                if (aa_best_pose && ligand_best_pose[isono].has_data() && frand(0,1) <= reuse_pose_probability)
+                if (aa_best_pose
+                    && !pathnodes
+                    && ligand_best_pose[isono].has_data()
+                    && frand(0,1) <= reuse_pose_probability
+                   )
                 {
                     n = protein->get_end_resno();
                     for (i=1; i<n; i++)
@@ -3486,7 +3611,11 @@ _try_again:
                             searchcen = searchcen.add(searchcen.subtract(llig->get_barycenter()));
                         }
                     }
-                    else ligand->recenter(loneliest);
+                    else ligand->recenter(nodecen);
+
+                    cout << "Node " << nodeno
+                        << " ligand centered at " << ligand->get_barycenter()
+                        << endl << endl;
 
                     abhor_vacuum(0, (Molecule**)reaches_spheroid[nodeno]);
 
@@ -3529,7 +3658,7 @@ _try_again:
                 // Best-Binding Algorithm
                 // Find a binding pocket feature with a strong potential binding to the ligand.
                 std::string alignment_name = "";
-                
+
                 #if _DBG_STEPBYSTEP
                 if (debug) *debug << "Selected an alignment AA." << endl;
                 #endif
@@ -3613,7 +3742,7 @@ _try_again:
             {
                 if (!appears[i].disappear_iter || !appears[i].reappear_iter)
                 {
-                    appears[i].dispcen = protein->get_region_center(1, protein->get_end_resno()); // loneliest;
+                    appears[i].dispcen = protein->get_region_center(1, protein->get_end_resno());
                     appears[i].update(protein, 0);
                 }
             }
@@ -3947,27 +4076,27 @@ _try_again:
             movclash_cb = nullptr;
             #endif
 
-            dr[drcount][nodeno] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
-            dr[drcount][nodeno].out_per_res_e = out_per_res_e;
-            dr[drcount][nodeno].out_per_btyp_e = out_per_btyp_e;
-            dr[drcount][nodeno].out_itemized_e_cutoff = out_itemized_e_cutoff;
-            dr[drcount][nodeno].out_lig_int_e = out_lig_int_e;
-            dr[drcount][nodeno].out_lig_pol_sat = out_lig_pol_sat;
-            dr[drcount][nodeno].out_prox = out_prox;
-            dr[drcount][nodeno].out_pro_clash = out_pro_clash;
-            dr[drcount][nodeno].display_clash_atoms = display_clash_atoms;
-            dr[drcount][nodeno].out_mc = out_mc;
-            dr[drcount][nodeno].out_vdw_repuls = out_vdw_repuls;
-            dr[drcount][nodeno].mbbr = &g_bbr[0];
-            dr[drcount][nodeno].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
+            dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
+            dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
+            dr[drcount][nodeno+nodeoff].out_per_btyp_e = out_per_btyp_e;
+            dr[drcount][nodeno+nodeoff].out_itemized_e_cutoff = out_itemized_e_cutoff;
+            dr[drcount][nodeno+nodeoff].out_lig_int_e = out_lig_int_e;
+            dr[drcount][nodeno+nodeoff].out_lig_pol_sat = out_lig_pol_sat;
+            dr[drcount][nodeno+nodeoff].out_prox = out_prox;
+            dr[drcount][nodeno+nodeoff].out_pro_clash = out_pro_clash;
+            dr[drcount][nodeno+nodeoff].display_clash_atoms = display_clash_atoms;
+            dr[drcount][nodeno+nodeoff].out_mc = out_mc;
+            dr[drcount][nodeno+nodeoff].out_vdw_repuls = out_vdw_repuls;
+            dr[drcount][nodeno+nodeoff].mbbr = &g_bbr[0];
+            dr[drcount][nodeno+nodeoff].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
 
-            if (dr[drcount][nodeno].ligand_pocket_occlusion < 0.65)
+            if (dr[drcount][nodeno+nodeoff].ligand_pocket_occlusion < 0.65)
             {
-                dr[drcount][nodeno].disqualified = true;
+                dr[drcount][nodeno+nodeoff].disqualified = true;
                 std::string reason = "Insufficient occlusion ";
-                reason += std::to_string(dr[drcount][nodeno].ligand_pocket_occlusion);
+                reason += std::to_string(dr[drcount][nodeno+nodeoff].ligand_pocket_occlusion);
                 reason += (std::string)". ";
-                dr[drcount][nodeno].disqualify_reason += reason;
+                dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
             }
 
             n = protein->get_end_resno();
@@ -3983,9 +4112,9 @@ _try_again:
                     float f = aa1->get_intermol_clashes(aa2);
                     if (f > clash_limit_per_aa*10)
                     {
-                        dr[drcount][nodeno].disqualified = true;
+                        dr[drcount][nodeno+nodeoff].disqualified = true;
                         std::string reason = (std::string)"Side chain clash " + std::to_string(f) + (std::string)". ";
-                        dr[drcount][nodeno].disqualify_reason += reason;
+                        dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
                         i=j=n+2;
                         break;
                     }
@@ -3999,7 +4128,7 @@ _try_again:
                 {
                     if (!softrgns[i].check_chain_constraints(protein))
                     {
-                        dr[drcount][nodeno].disqualified = true;
+                        dr[drcount][nodeno+nodeoff].disqualified = true;
                         std::string reason = "Soft chain constraint violation: ";
                         if (softrgns[i].prgv) reason += std::to_string(softrgns[i].prge) + (std::string)"~"
                             + std::to_string(softrgns[i].rgn.start) + (std::string)"="
@@ -4007,7 +4136,7 @@ _try_again:
                         if (softrgns[i].nrgv) reason += std::to_string(softrgns[i].rgn.end) + (std::string)"~"
                             + std::to_string(softrgns[i].nrgs) + (std::string)"="
                             + std::to_string(softrgns[i].prgd) + "A. ";
-                        dr[drcount][nodeno].disqualify_reason += reason;
+                        dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
                     }
                     if (!softrgns[i].num_contacts())
                     {
@@ -4035,29 +4164,29 @@ _try_again:
                         float canom = softrgns[i].contact_anomaly(protein, j);
                         if (fabs(canom) < 0.1) continue;
                         AminoAcid *aac1 = softrgns[i].get_local_contact(j, protein), *aac2 = softrgns[i].get_distant_contact(j, protein);
-                        if (aac1 && aac2) dr[drcount][nodeno].miscdata += (std::string)"Contact anomaly for "
+                        if (aac1 && aac2) dr[drcount][nodeno+nodeoff].miscdata += (std::string)"Contact anomaly for "
                             + (std::string)"region " + std::to_string(i) + (std::string)" "
                             + (std::string)aac1->get_name() + (std::string)"..." + (std::string)aac2->get_name()
                             + (std::string)": " + std::to_string(canom)
                             + (std::string)"\n";
                     }
                 }
-                dr[drcount][nodeno].miscdata += (std::string)"Raw ligand binding energy: " 
-                    + std::to_string(dr[drcount][nodeno].kJmol) + (std::string)" kJ/mol.\n";
-                dr[drcount][nodeno].miscdata += (std::string)"Soft contact anomaly: " + std::to_string(anomaly) + (std::string)" kJ/mol.\n";
-                dr[drcount][nodeno].miscdata += (std::string)"Soft spatial anomaly: " + std::to_string(sanomaly) + (std::string)" A.\n";
+                dr[drcount][nodeno+nodeoff].miscdata += (std::string)"Raw ligand binding energy: " 
+                    + std::to_string(dr[drcount][nodeno+nodeoff].kJmol) + (std::string)" kJ/mol.\n";
+                dr[drcount][nodeno+nodeoff].miscdata += (std::string)"Soft contact anomaly: " + std::to_string(anomaly) + (std::string)" kJ/mol.\n";
+                dr[drcount][nodeno+nodeoff].miscdata += (std::string)"Soft spatial anomaly: " + std::to_string(sanomaly) + (std::string)" A.\n";
 
-                if (dr[drcount][nodeno].kJmol > 0 && !output_something_even_if_it_is_wrong)
+                if (dr[drcount][nodeno+nodeoff].kJmol > 0 && !output_something_even_if_it_is_wrong)
                 {
-                    dr[drcount][nodeno].disqualified = true;
-                    dr[drcount][nodeno].disqualify_reason += (std::string)"Unfavorable ligand binding energy. ";
+                    dr[drcount][nodeno+nodeoff].disqualified = true;
+                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)"Unfavorable ligand binding energy. ";
                 }
-                else if ((anomaly + dr[drcount][nodeno].kJmol) > 0)
+                else if ((anomaly + dr[drcount][nodeno+nodeoff].kJmol) > 0)
                 {
-                    dr[drcount][nodeno].disqualified = true;
-                    dr[drcount][nodeno].disqualify_reason += (std::string)"Soft anomaly greater than ligand binding energy. ";
+                    dr[drcount][nodeno+nodeoff].disqualified = true;
+                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)"Soft anomaly greater than ligand binding energy. ";
                 }
-                else dr[drcount][nodeno].kJmol += anomaly;
+                else dr[drcount][nodeno+nodeoff].kJmol += anomaly;
             }
 
             for (i=0; cfmols[i]; i++)
@@ -4069,17 +4198,17 @@ _try_again:
                 }
                 if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*10)
                 {
-                    dr[drcount][nodeno].disqualified = true;
-                    dr[drcount][nodeno].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
+                    dr[drcount][nodeno+nodeoff].disqualified = true;
+                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
                 }
             }
 
-            float btot = dr[drcount][nodeno].kJmol;
-            float pstot = dr[drcount][nodeno].polsat;
-            if (isomers.size()) dr[drcount][nodeno].isomer = ligand->get_name();
+            float btot = dr[drcount][nodeno+nodeoff].kJmol;
+            float pstot = dr[drcount][nodeno+nodeoff].polsat;
+            if (isomers.size()) dr[drcount][nodeno+nodeoff].isomer = ligand->get_name();
 
             if ((pose==1 && !nodeno) || best_energy > btot) best_energy = btot;
-            if ((pose==1 && !nodeno) || best_worst_clash > dr[drcount][nodeno].worst_energy) best_worst_clash = dr[drcount][nodeno].worst_energy;
+            if ((pose==1 && !nodeno) || best_worst_clash > dr[drcount][nodeno+nodeoff].worst_energy) best_worst_clash = dr[drcount][nodeno+nodeoff].worst_energy;
 
             #if reuse_best_pose
             if (!aa_best_pose || best_pose_energy > btot)
@@ -4114,7 +4243,7 @@ _try_again:
             n = protein->get_end_resno();
             for (i=1; i<=n; i++)
             {
-                if (dr[drcount][nodeno].residue_clash[i])
+                if (dr[drcount][nodeno+nodeoff].residue_clash[i])
                 {
                     for (j=0; regions[j].start; j++)
                     {
@@ -4126,79 +4255,79 @@ _try_again:
                             k = abs(i - rgcen);
                             if (k < 5) k = 1;
                             else k = (i < rgcen) ? 0 : 2;
-                            region_clashes[j][k] = region_clashes[j][k].add(dr[drcount][nodeno].res_clash_dir[i]);
+                            region_clashes[j][k] = region_clashes[j][k].add(dr[drcount][nodeno+nodeoff].res_clash_dir[i]);
                         }
                     }
                 }
             }
             #endif
 
-            dr[drcount][nodeno].proximity = ligand->get_barycenter().get_3d_distance(nodecen);
+            dr[drcount][nodeno+nodeoff].proximity = ligand->get_barycenter().get_3d_distance(nodecen);
 
             if (pdpst == pst_best_binding && out_bb_pairs)
             {
-                dr[drcount][nodeno].miscdata += (std::string)"Best-Binding Pairs:\n";
+                dr[drcount][nodeno+nodeoff].miscdata += (std::string)"Best-Binding Pairs:\n";
                 for (l=0; g_bbr[l].pri_res; l++)
                 {
                     if (g_bbr[l].pri_tgt && g_bbr[l].pri_res)
                     {
-                        dr[drcount][nodeno].miscdata += (std::string)g_bbr[l].pri_tgt->to_std_string() + (std::string)"..." 
+                        dr[drcount][nodeno+nodeoff].miscdata += (std::string)g_bbr[l].pri_tgt->to_std_string() + (std::string)"..." 
                             + (std::string)g_bbr[l].pri_res->get_name() + (std::string)"\n";
                     }
                     if (g_bbr[l].sec_tgt && g_bbr[l].sec_res)
                     {
-                        dr[drcount][nodeno].miscdata += (std::string)g_bbr[l].sec_tgt->to_std_string() + (std::string)"..." 
+                        dr[drcount][nodeno+nodeoff].miscdata += (std::string)g_bbr[l].sec_tgt->to_std_string() + (std::string)"..." 
                             + (std::string)g_bbr[l].sec_res->get_name() + (std::string)"\n";
                     }
                     if (g_bbr[l].tert_tgt && g_bbr[l].tert_res)
                     {
-                        dr[drcount][nodeno].miscdata += (std::string)g_bbr[l].tert_tgt->to_std_string() + (std::string)"..." 
+                        dr[drcount][nodeno+nodeoff].miscdata += (std::string)g_bbr[l].tert_tgt->to_std_string() + (std::string)"..." 
                             + (std::string)g_bbr[l].tert_res->get_name() + (std::string)"\n";
                     }
                 }
-                dr[drcount][nodeno].miscdata += (std::string)"\n";
+                dr[drcount][nodeno+nodeoff].miscdata += (std::string)"\n";
             }
 
             #if _DBG_STEPBYSTEP
             if (debug) *debug << "Allocated memory." << endl;
             #endif
 
-            dr[drcount][nodeno].auth = pose;
+            dr[drcount][nodeno+nodeoff].auth = pose;
 
             if (!nodeno)
             {
-                if ((dr[drcount][nodeno].ligand_self + ligand->total_eclipses()) < -clash_limit_per_aa*2)
+                if ((dr[drcount][nodeno+nodeoff].ligand_self + ligand->total_eclipses()) < -clash_limit_per_aa*2)
                 {
                     #if _dbg_worst_energy
-                    cout << "Internal ligand energy " << -dr[drcount][nodeno].ligand_self << " out of range." << endl << endl;
+                    cout << "Internal ligand energy " << -dr[drcount][nodeno+nodeoff].ligand_self << " out of range." << endl << endl;
                     #endif
 
                     break;          // Exit nodeno loop.
                 }
-                // else cout << "Internal ligand energy " << -dr[drcount][nodeno].ligand_self << " satisfactory." << endl << endl;
+                // else cout << "Internal ligand energy " << -dr[drcount][nodeno+nodeoff].ligand_self << " satisfactory." << endl << endl;
 
                 #if !_dbg_allow_excessive_aa_clashes
-                if (dr[drcount][nodeno].worst_energy > l_atom_clash_limit || dr[drcount][nodeno].worst_nrg_aa > clash_limit_per_aa)
+                if (dr[drcount][nodeno+nodeoff].worst_energy > l_atom_clash_limit || dr[drcount][nodeno+nodeoff].worst_nrg_aa > clash_limit_per_aa)
                 {
                     #if _dbg_worst_energy
-                    cout << "Total binding energy " << dr[drcount][nodeno].kJmol
-                        << " and worst energy " << dr[drcount][nodeno].worst_energy;
-                    if (dr[drcount][nodeno].worst_clash_1 && dr[drcount][nodeno].worst_clash_2)
+                    cout << "Total binding energy " << dr[drcount][nodeno+nodeoff].kJmol
+                        << " and worst energy " << dr[drcount][nodeno+nodeoff].worst_energy;
+                    if (dr[drcount][nodeno+nodeoff].worst_clash_1 && dr[drcount][nodeno+nodeoff].worst_clash_2)
                     {
-                        cout << " (" << dr[drcount][nodeno].worst_clash_1->residue << ":" << dr[drcount][nodeno].worst_clash_1->name
-                            << "-" << dr[drcount][nodeno].worst_clash_2->residue << ":" << dr[drcount][nodeno].worst_clash_2->name
+                        cout << " (" << dr[drcount][nodeno+nodeoff].worst_clash_1->residue << ":" << dr[drcount][nodeno+nodeoff].worst_clash_1->name
+                            << "-" << dr[drcount][nodeno+nodeoff].worst_clash_2->residue << ":" << dr[drcount][nodeno+nodeoff].worst_clash_2->name
                             << ") ";
                     }
                     cout << "; skipping." << endl << endl;
                     #endif
 
-                    // cout << "Least favorable binding energy " << dr[drcount][nodeno].worst_energy << " out of range." << endl << endl;
+                    // cout << "Least favorable binding energy " << dr[drcount][nodeno+nodeoff].worst_energy << " out of range." << endl << endl;
                     break;          // Exit nodeno loop.
                 }
-                // else cout << "Least favorable binding energy " << dr[drcount][nodeno].worst_energy << " satisfactory." << endl << endl;
+                // else cout << "Least favorable binding energy " << dr[drcount][nodeno+nodeoff].worst_energy << " satisfactory." << endl << endl;
                 #endif
 
-                if (pose==1) dr[drcount][nodeno].pose = pose;
+                if (pose==1) dr[drcount][nodeno+nodeoff].pose = pose;
                 else
                 {
                     int bestpose = pose;
@@ -4206,7 +4335,7 @@ _try_again:
                     {
                         if ((	(dr[i][0].kJmol - dr[i][0].ikJmol - dr[i][0].polsat * polar_sat_influence_for_scoring)
                                 >
-                                (dr[drcount][nodeno].kJmol - dr[drcount][nodeno].ikJmol - dr[drcount][nodeno].polsat * polar_sat_influence_for_scoring)
+                                (dr[drcount][nodeno+nodeoff].kJmol - dr[drcount][nodeno+nodeoff].ikJmol - dr[drcount][nodeno+nodeoff].polsat * polar_sat_influence_for_scoring)
                             )
                             ||
                             (	(dr[i][0].kJmol - dr[i][0].polsat * polar_sat_influence_for_scoring)
@@ -4218,7 +4347,7 @@ _try_again:
                             dr[i][0].pose++;
                         }
                     }
-                    dr[drcount][nodeno].pose = bestpose;
+                    dr[drcount][nodeno+nodeoff].pose = bestpose;
                     // cout << "Around the posie: "; for (i=0; i<=drcount; i++) cout << dr[i][nodeno].pose << " "; cout << endl << "Best: " << bestpose << endl;
                 }
                 #if _DBG_STEPBYSTEP
@@ -4226,13 +4355,13 @@ _try_again:
                 #endif
 
                 #if _DBG_MAX_CLASHES
-                cout << "Pose " << dr[drcount][nodeno].pose << " maxclash " << maxclash << " kJmol " << dr[drcount][nodeno].kJmol << endl;
+                cout << "Pose " << dr[drcount][nodeno+nodeoff].pose << " maxclash " << maxclash << " kJmol " << dr[drcount][nodeno+nodeoff].kJmol << endl;
                 #endif
             }
 
             if (btot <= kJmol_cutoff && !dr[drcount][0].disqualified) success_sofar = true;
 
-            // if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
+            // if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno+nodeoff].disqualify_reason << endl << endl;
 
             // For performance reasons, once a path node (including #0) fails to meet the binding energy threshold, discontinue further
             // calculations for this pose.
@@ -4331,7 +4460,7 @@ _try_again:
 
                     if (!best_acc_energy) best_acc_energy = dr[j][0].kJmol;
 
-                    for (k=0; k<=pathnodes; k++)
+                    for (k=0; k<=pathnodes+nodeoff; k++)
                     {
                         // If pathnode is not within kJ/mol cutoff, abandon it and all subsequent pathnodes of the same pose.
                         if (dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
