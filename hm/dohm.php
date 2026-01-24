@@ -80,6 +80,7 @@ $consOR1 = "'8uxy'";
 $consOR2 = "'8uy0'";
 $consOR2b = "'8uy0b'";
 $consOR4 = "'8uyq'";
+$Olfr110 = "9lkb";              // Equivalent to OR5V1.
 $CLASSII = "$consOR1, $consOR2, $consOR4";
 $TAAR1 = "'8jln', '8jlo', '8jlp', '8jlq', '8jlr', '8jso'";
 $mTAAR = "'8iwe', '8iwm', '8itf', '8iw4', '8iw9', '8pm2'";
@@ -146,12 +147,11 @@ switch ($fam)
     break;
 
     case 'OR5':
-    if ($rcpid == "OR5V1") $knowns = "$consOR4";
-    else $knowns = "$consOR1";
+    $knowns = "$Olfr110";
     break;
 
     case 'OR6':
-    $knowns = "$consOR1, $consOR4";
+    $knowns = "$consOR1, $consOR4, $Olfr110";
     if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
         $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
     break;
@@ -161,12 +161,11 @@ switch ($fam)
     break;
 
     case 'OR8':
-    if ($rcpid == "OR8S1") $knowns = "$consOR4";
-    else $knowns = "$consOR1";
+    $knowns = "$Olfr110";
     break;
 
     case 'OR9':
-    $knowns = "$consOR1";
+    $knowns = "$Olfr110";
     break;
 
     case 'OR10':
