@@ -2911,7 +2911,7 @@ _try_again:
                 if (aa)
                 {
                     aa->movability = MOV_FLEXONLY;
-                    aa->conform_atom_to_location(aa->get_reach_atom()->name, ligand->get_barycenter());
+                    aa->conform_atom_to_location(aa->get_reach_atom()->name, nodecen);
                     /*Atom *ra = nullptr, *la = nullptr;
                     aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                     if (ra && la)
