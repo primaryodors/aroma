@@ -4136,7 +4136,10 @@ _try_again:
                     if (f > clash_limit_per_aa*10)
                     {
                         dr[drcount][nodeno+nodeoff].disqualified = true;
-                        std::string reason = (std::string)"Side chain clash " + std::to_string(f) + (std::string)". ";
+                        std::string reason = (std::string)"Side chain clash "
+                            + (std::string)aa1->get_name() + (std::string)"~"
+                            + (std::string)aa2->get_name() + (std::string)" "
+                            + std::to_string(f) + (std::string)". ";
                         dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
                         i=j=n+2;
                         break;
