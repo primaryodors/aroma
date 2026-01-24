@@ -2880,7 +2880,8 @@ _try_again:
 
                 mols[nmols] = nullptr;
                 vest_res[nvr] = nullptr;
-                Molecule::conform_molecules(mols, nullptr, 50);
+                ligand->movability = MOV_ALL;
+                Molecule::conform_molecules(mols, nullptr, 500);
 
                 dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nvr, vest_res, nullptr, drcount, waters);
                 dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
@@ -2911,13 +2912,19 @@ _try_again:
                 if (aa)
                 {
                     aa->movability = MOV_FLEXONLY;
-                    aa->conform_atom_to_location(aa->get_reach_atom()->name, nodecen);
-                    /*Atom *ra = nullptr, *la = nullptr;
+                    Atom *CA = aa->get_atom("CA");
+                    if (CA)
+                    {
+                        Bond* b = CA->get_bond_between("CB");
+                        if (b) b->rotate(triangular*sgn(frand(-Avogadro, Avogadro)));
+                    }
+                    aa->conform_atom_to_location(aa->get_reach_atom()->name, nodecen, 20, _INTERA_R_CUTOFF);
+                    Atom *ra = nullptr, *la = nullptr;
                     aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                     if (ra && la)
                     {
                         aa->conform_atom_to_location(ra, la, 50, 2.5);
-                    }*/
+                    }
                 }
             }
         }
