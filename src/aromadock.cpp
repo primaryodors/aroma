@@ -2841,9 +2841,15 @@ _try_again:
             if (vestdiv)
             {
                 vestcen.multiply(1.0/vestdiv);
-                Vector outside = vestcen.subtract(pocketcen);
-                outside.r = 0.5*_INTERA_R_CUTOFF;
-                ligand->recenter(vestcen.add(outside));
+                // Vector outside = vestcen.subtract(pocketcen);
+                // outside.r = 0.5*_INTERA_R_CUTOFF;
+                ligand->recenter(vestcen); //.add(outside));
+                mols[nmols] = nullptr;
+                vest_res[nvr] = nullptr;
+                ligand->movability = MOV_ALL;
+                if (output_each_iter) output_iter(nodeoff++, mols, "vestibular center", true);
+                Molecule::conform_molecules(mols, nullptr, 2000);
+                if (output_each_iter) output_iter(nodeoff++, mols, "vestibular fit", true);
 
                 if (nvestibule_grabber)
                 {
@@ -2867,7 +2873,7 @@ _try_again:
                             aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                             if (ra && la)
                             {
-                                if (!i)
+                                if (0) // !i)
                                 {
                                     Rotation rot = align_points_3d(la->loc, ra->loc, ligand->get_barycenter());
                                     ligand->rotate(rot);
@@ -2875,6 +2881,10 @@ _try_again:
                                 // TODO: code to handle case of more than one grabber
 
                                 aa->conform_atom_to_location(ra, la, 50, 2.5);
+                                Molecule* lmols[2];
+                                lmols[0] = (Molecule*)aa;
+                                lmols[1] = nullptr;
+                                Molecule::conform_molecules(lmols, aa->mclashables, 50);
                             }
                         }
                     }
@@ -2882,7 +2892,7 @@ _try_again:
 
                 mols[nmols] = nullptr;
                 vest_res[nvr] = nullptr;
-                ligand->movability = MOV_NORECEN;
+                ligand->movability = MOV_ALL;
                 Molecule::conform_molecules(mols, nullptr, 2000);
 
                 dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nvr, vest_res, nullptr, drcount, waters);
@@ -2897,9 +2907,7 @@ _try_again:
                 dr[drcount][nodeno+nodeoff].out_mc = out_mc;
                 dr[drcount][nodeno+nodeoff].out_vdw_repuls = out_vdw_repuls;
 
-                if (output_each_iter) output_iter(nodeoff, mols, "vestibular placement", true);
-
-                nodeoff = 1;
+                if (output_each_iter) output_iter(nodeoff++, mols, "vestibular placement", true);
             }
             else cerr << "Warning: vestibule holder specified but residues aren't present." << endl << endl;
         }
