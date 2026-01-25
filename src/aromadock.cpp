@@ -123,6 +123,7 @@ int nodeoff = 0;
 ResiduePlaceholder vestibule_holder[MAX_VESTIBULE];
 ResiduePlaceholder vestibule_grabber[MAX_VESTIBULE];
 int nvestibule_holder = 0, nvestibule_grabber = 0;
+Point vestcen(0,0,0);
 int poses = 10;
 int iters = 50;
 int maxh2o = 0;
@@ -937,6 +938,11 @@ void iteration_callback(int iter, Molecule** mols)
     }
 
     if (output_each_iter) output_iter(iter+nodeoff, mols, "dock iteration");
+}
+
+void vestibule_callback(int iter, Molecule** mols)
+{
+    mols[0]->recenter(vestcen);
 }
 
 void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
@@ -2623,7 +2629,7 @@ int main(int argc, char** argv)
     if (output) *output << endl;
 
     i = poses*(triesleft+1)+8;
-    j = pathnodes+nodeoff+2;
+    j = pathnodes+16;           // more than enough cushion for node offsets
     DockResult dr[i][j];
 
     float rgnxform_r[i][pathnodes+2][PROT_MAX_RGN], rgnxform_theta[i][pathnodes+2][PROT_MAX_RGN], rgnxform_y[i][pathnodes+2][PROT_MAX_RGN];
@@ -2743,6 +2749,7 @@ _try_again:
     for (pose = 1; pose <= poses; pose++)
     {
         nodeno = 0;         // makes life easier when doing vestibules
+        nodeoff = 0;        // "
         soft_contact_elasticity = initial_soft_contact_elasticity;
         ligand = &pose_ligands[pose];
         ligand->movability = MOV_ALL;
@@ -2816,13 +2823,14 @@ _try_again:
 
         if (nvestibule_holder)
         {
-            Point vestcen(0,0,0);
             int vestdiv = 0;
-            AminoAcid* vest_res[MAX_VESTIBULE*2+3];
             Molecule* mols[MAX_VESTIBULE*2+3];
             int nmols = 0;
-            int nvr = 0;
             mols[nmols++] = ligand;
+            Atom *ra = nullptr, *la = nullptr, *vstayl = nullptr, *vstayr = nullptr;
+            Rotation rot;
+            float vestbest = -Avogadro;
+            Box vb(0,0,0,0,0,0);
 
             for (i=0; i<nvestibule_holder; i++)
             {
@@ -2830,25 +2838,50 @@ _try_again:
                 AminoAcid* aa = protein->get_residue(vestibule_holder[i].resno);
                 if (aa)
                 {
-                    mols[nmols++] = (Molecule*)aa;
-                    vest_res[nvr++] = aa;
                     aa->movability = MOV_FORCEFLEX;
                     vestcen = vestcen.add(aa->get_reach_atom_location());
                     vestdiv++;
+
+                    vb.accommodate(aa->get_CA_location());
+
+                    float f = aa->find_mutual_max_bind_potential(ligand, &ra, &la);
+                    if (f > vestbest)
+                    {
+                        vestbest = f;
+                        vstayl = la;
+                        vstayr = ra;
+                    }
                 }
             }
 
             if (vestdiv)
             {
+                ligand->movability = MOV_ALL;
+                ligand->stay_close_mine = vstayl;
+                ligand->stay_close_other = vstayr;
                 vestcen.multiply(1.0/vestdiv);
                 // Vector outside = vestcen.subtract(pocketcen);
                 // outside.r = 0.5*_INTERA_R_CUTOFF;
                 ligand->recenter(vestcen); //.add(outside));
+
+                if (vstayl && vstayr)
+                {
+                    rot = align_points_3d(vstayl->loc, vstayr->loc, vestcen);
+                    rot.a /= 30;
+                    for (i=0; i<30; i++)
+                    {
+                        ligand->rotate(rot);
+                        if (vstayl->distance_to(vstayr) < 2.9) break;
+                    }
+                }
+
+                nmols = 1+protein->get_residues_can_clash_ligand((AminoAcid**)&mols[1], ligand, vestcen,
+                    vb.size(), nullptr, false, nullptr);
+
                 mols[nmols] = nullptr;
-                vest_res[nvr] = nullptr;
-                ligand->movability = MOV_ALL;
+                ligand->movability = MOV_NORECEN;
                 if (output_each_iter) output_iter(nodeoff++, mols, "vestibular center", true);
-                Molecule::conform_molecules(mols, nullptr, 2000);
+                Molecule::conform_molecules(mols, nullptr, 200, &vestibule_callback);
                 if (output_each_iter) output_iter(nodeoff++, mols, "vestibular fit", true);
 
                 if (nvestibule_grabber)
@@ -2859,8 +2892,7 @@ _try_again:
                         AminoAcid* aa = protein->get_residue(vestibule_grabber[i].resno);
                         if (aa)
                         {
-                            mols[nmols++] = (Molecule*)aa;
-                            vest_res[nvr++] = aa;
+                            // mols[nmols++] = (Molecule*)aa;
                             aa->movability = MOV_FORCEFLEX;
 
                             Point outthere = aa->get_CA_location().subtract(vestcen);
@@ -2869,13 +2901,12 @@ _try_again:
 
                             aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 20);
 
-                            Atom *ra = nullptr, *la = nullptr;
                             aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                             if (ra && la)
                             {
-                                if (0) // !i)
+                                if (!i)
                                 {
-                                    Rotation rot = align_points_3d(la->loc, ra->loc, ligand->get_barycenter());
+                                    rot = align_points_3d(la->loc, ra->loc, ligand->get_barycenter());
                                     ligand->rotate(rot);
                                 }
                                 // TODO: code to handle case of more than one grabber
@@ -2888,14 +2919,14 @@ _try_again:
                             }
                         }
                     }
+                    if (output_each_iter) output_iter(nodeoff++, mols, "vestibular capture", true);
                 }
 
                 mols[nmols] = nullptr;
-                vest_res[nvr] = nullptr;
-                ligand->movability = MOV_ALL;
-                Molecule::conform_molecules(mols, nullptr, 2000);
+                ligand->movability = MOV_NORECEN;
+                Molecule::conform_molecules(mols, nullptr, 50, &vestibule_callback);
 
-                dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nvr, vest_res, nullptr, drcount, waters);
+                dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nmols-1, (AminoAcid**)&mols[1], nullptr, drcount, waters);
                 dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
                 dr[drcount][nodeno+nodeoff].out_per_btyp_e = out_per_btyp_e;
                 dr[drcount][nodeno+nodeoff].out_itemized_e_cutoff = out_itemized_e_cutoff;

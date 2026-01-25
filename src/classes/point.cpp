@@ -822,3 +822,19 @@ Box Box::outer(Box other)
     result.z2 = fmax(z2, other.z2);
     return result;
 }
+
+void Box::accommodate(Point p)
+{
+    if (!x1 && !x2 && !y1 && !y2 && !z1 && !z2)
+    {
+        x1 = x2 = p.x;
+        y1 = y2 = p.y;
+        z1 = z2 = p.z;
+    }
+    else
+    {
+        if (p.x < x1) x1 = p.x;
+        if (p.y < y1) y1 = p.y;
+        if (p.z < z1) z1 = p.z;
+    }
+}
