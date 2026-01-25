@@ -31,11 +31,11 @@ CPL=g++
 # Common flags for all modes
 CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
-# Default CFLAGS - release mode
-CFLAGS+=-O3
+# Release mode CFLAGS
+# CFLAGS+=-O3
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # For gprof
 # example command line:

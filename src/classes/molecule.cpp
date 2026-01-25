@@ -5127,7 +5127,7 @@ void Molecule::conform_molecules(Molecule** mm, Molecule** bkg, int iters, void 
         if (duplicate) continue;
 
         all[l++] = mm[i];
-        mm[i]->movability = static_cast<MovabilityType>(static_cast<int>(mm[i]->movability & !MOV_BKGRND));
+        mm[i]->movability = static_cast<MovabilityType>(static_cast<int>(mm[i]->movability & (0xffffffff ^ MOV_BKGRND)));
     }
 
     for (i=0; i<n; i++)
@@ -5149,7 +5149,7 @@ void Molecule::conform_molecules(Molecule** mm, Molecule** bkg, int iters, void 
 
     for (i=0; i<n; i++)
     {
-        bkg[i]->movability = static_cast<MovabilityType>(static_cast<int>(bkg[i]->movability & !MOV_BKGRND));
+        bkg[i]->movability = static_cast<MovabilityType>(static_cast<int>(bkg[i]->movability & (0xffffffff ^ MOV_BKGRND)));
     }
 }
 
