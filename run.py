@@ -208,6 +208,11 @@ for rcpid in data.protutils.prots.keys():
                     pocket["stcr"] = [pocket["stcr"]]
                 for st in pocket["stcr"]:
                     newcfg.append("STCR " + st)
+            if "vest" in pocket:
+                if isinstance(pocket["vest"], str):
+                    pocket["vest"] = [pocket["vest"]]
+                for vb in pocket["vest"]:
+                    newcfg.append("VESTIBULE " + vb)
 
         newcfga = "\n".join(newcfg)
         for i in range(len(newcfg)):

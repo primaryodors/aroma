@@ -2832,8 +2832,8 @@ _try_again:
                 {
                     mols[nmols++] = (Molecule*)aa;
                     vest_res[nvr++] = aa;
-                    aa->movability = MOV_FLEXONLY;
-                    vestcen = vestcen.add(aa->get_CA_location());
+                    aa->movability = MOV_FORCEFLEX;
+                    vestcen = vestcen.add(aa->get_reach_atom_location());
                     vestdiv++;
                 }
             }
@@ -2841,7 +2841,9 @@ _try_again:
             if (vestdiv)
             {
                 vestcen.multiply(1.0/vestdiv);
-                ligand->recenter(vestcen);
+                Vector outside = vestcen.subtract(pocketcen);
+                outside.r = 0.5*_INTERA_R_CUTOFF;
+                ligand->recenter(vestcen.add(outside));
 
                 if (nvestibule_grabber)
                 {
@@ -2853,11 +2855,11 @@ _try_again:
                         {
                             mols[nmols++] = (Molecule*)aa;
                             vest_res[nvr++] = aa;
-                            aa->movability = MOV_FLEXONLY;
+                            aa->movability = MOV_FORCEFLEX;
 
-                            Point outthere = aa->get_CA_location().subtract(pocketcen);
+                            Point outthere = aa->get_CA_location().subtract(vestcen);
                             outthere.scale(10000);
-                            outthere = outthere.add(pocketcen);
+                            outthere = outthere.add(vestcen);
 
                             aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 20);
 
@@ -2880,8 +2882,8 @@ _try_again:
 
                 mols[nmols] = nullptr;
                 vest_res[nvr] = nullptr;
-                ligand->movability = MOV_ALL;
-                Molecule::conform_molecules(mols, nullptr, 500);
+                ligand->movability = MOV_NORECEN;
+                Molecule::conform_molecules(mols, nullptr, 2000);
 
                 dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nvr, vest_res, nullptr, drcount, waters);
                 dr[drcount][nodeno+nodeoff].out_per_res_e = out_per_res_e;
