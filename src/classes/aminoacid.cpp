@@ -3792,7 +3792,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 #endif
 
                 float c = get_internal_clashes();
-                if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
+                if (r < bestr) // && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
                     best.copy_state(this);

@@ -942,7 +942,9 @@ void iteration_callback(int iter, Molecule** mols)
 
 void vestibule_callback(int iter, Molecule** mols)
 {
-    mols[0]->recenter(vestcen);
+    Vector movamt = vestcen.subtract(mols[0]->get_barycenter());
+    movamt.r *= 0.666;
+    mols[0]->move(movamt);
 }
 
 void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
@@ -2881,9 +2883,9 @@ _try_again:
 
                 mols[nmols] = nullptr;
                 ligand->movability = MOV_NORECEN;
-                if (output_each_iter) output_iter(nodeoff++, mols, "vestibular center", true);
+                // if (output_each_iter) output_iter(nodeoff++, mols, "vestibular center", true);
                 Molecule::conform_molecules(mols, nullptr, 200, &vestibule_callback);
-                if (output_each_iter) output_iter(nodeoff++, mols, "vestibular fit", true);
+                // if (output_each_iter) output_iter(nodeoff++, mols, "vestibular fit", true);
 
                 if (nvestibule_grabber)
                 {
@@ -2899,11 +2901,7 @@ _try_again:
                             Point outthere = aa->get_CA_location().subtract(pocketcen);
                             outthere.scale(100);
                             outthere = outthere.add(vestcen);
-
-                            cout << pocketcen << vestcen << outthere << endl;
-
-                            aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 20);
-
+                            aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 200);
                             aa->mutual_closest_hbond_pair(ligand, &ra, &la);
                             if (ra && la)
                             {
@@ -2922,7 +2920,7 @@ _try_again:
                             }
                         }
                     }
-                    if (output_each_iter) output_iter(nodeoff++, mols, "vestibular capture", true);
+                    // if (output_each_iter) output_iter(nodeoff++, mols, "vestibular capture", true);
                 }
 
                 mols[nmols] = nullptr;
