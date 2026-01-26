@@ -3705,6 +3705,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
 
     Pose best(this);
     float bestr = Avogadro;
+    bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
         float r;
@@ -3715,6 +3716,9 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 if (b[j]->can_flip) circdiv = 2;
                 else continue;
             }
+
+            CACB = !strcmp(b[j]->atom1->name, "CA") && !strcmp(b[j]->atom2->name, "CB");
+
             float step = M_PI*2.0/circdiv;
             for (l=0; l<=circdiv; l++)
             {
@@ -3727,7 +3731,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 #endif
 
                 float c = get_internal_clashes();
-                if (r < bestr && c < oc+clash_limit_per_aa)
+                if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
                     best.copy_state(this);
@@ -3762,6 +3766,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
 
     Pose best(this);
     float bestr = Avogadro;
+    bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
         float r;
@@ -3772,6 +3777,9 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 if (b[j]->can_flip) circdiv = 2;
                 else continue;
             }
+
+            CACB = !strcmp(b[j]->atom1->name, "CA") && !strcmp(b[j]->atom2->name, "CB");
+
             float step = M_PI*2.0/circdiv;
             for (l=0; l<=circdiv; l++)
             {
@@ -3784,7 +3792,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 #endif
 
                 float c = get_internal_clashes();
-                if (r < bestr && c < oc+clash_limit_per_aa)
+                if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
                     best.copy_state(this);

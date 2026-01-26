@@ -2823,6 +2823,7 @@ _try_again:
 
         if (nvestibule_holder)
         {
+            vestcen.scale(0);
             int vestdiv = 0;
             Molecule* mols[MAX_VESTIBULE*2+3];
             int nmols = 0;
@@ -2895,9 +2896,11 @@ _try_again:
                             // mols[nmols++] = (Molecule*)aa;
                             aa->movability = MOV_FORCEFLEX;
 
-                            Point outthere = aa->get_CA_location().subtract(vestcen);
-                            outthere.scale(10000);
+                            Point outthere = aa->get_CA_location().subtract(pocketcen);
+                            outthere.scale(100);
                             outthere = outthere.add(vestcen);
+
+                            cout << pocketcen << vestcen << outthere << endl;
 
                             aa->conform_atom_to_location(aa->get_reach_atom()->name, outthere, 20);
 
@@ -4527,10 +4530,10 @@ _try_again:
 
                     if (!best_acc_energy) best_acc_energy = dr[j][0].kJmol;
 
-                    for (k=0; k<=pathnodes+nodeoff; k++)
+                    for (k=nodeoff; k<=pathnodes+nodeoff; k++)
                     {
                         // If pathnode is not within kJ/mol cutoff, abandon it and all subsequent pathnodes of the same pose.
-                        if (dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
+                        if (k>=nodeoff && dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
                         {
                             cout << "Pose " << pose << " node " << k
                                  << " energy " << dr[j][k].kJmol*energy_mult
