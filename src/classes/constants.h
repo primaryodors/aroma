@@ -196,6 +196,7 @@ const float reach_per_carbon = 1.54 * sin(tetrahedral);
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
+#define downstream_dock_probability 0.03
 #define flexion_maxangle hexagonal
 #define flexion_probability_multiplier 1
 #define flexion_sub_iterations_ligand 1

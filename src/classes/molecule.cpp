@@ -5767,7 +5767,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         int heavy_atoms = bb[q]->count_heavy_moves_with_atom2();
                         if (heavy_atoms && (!(a->movability & MOV_CAN_FLEX) || (a->movability & MOV_FORBIDDEN))) continue;
 
-                        if (frand(0,1) < 0.01)
+                        if (frand(0,1) < downstream_dock_probability)
                         {
                             // This takes a lot more time so only do it sparingly.
                             a->best_downstream_conformer(bb[q], nearby);
