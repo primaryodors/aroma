@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 
     fp = fopen(pdbfn.c_str(), "rb");
     p.load_pdb(fp);
-
+    p.hydrogenate();
     fseek(fp, 0, SEEK_SET);
     m.from_pdb(fp, true);
     fclose(fp);

@@ -1422,6 +1422,12 @@ void Protein::add_remark(std::string new_remark)
     // TODO: Sort remarks by number, becarefuling to preserve the sequence of same numbered remarks.
 }
 
+void Protein::hydrogenate()
+{
+    int i;
+    for (i=0; residues[i]; i++) residues[i]->hydrogenate();
+}
+
 void Protein::set_clashables(int resno, bool recursed)
 {
     int i, j, k;

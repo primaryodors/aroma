@@ -5343,7 +5343,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
 
         // Continue rotating, then revert to the best energy pose and return interaction.
         test = get_intermol_binding(neighbors);
-        cout << "downstream " << depth << " angle " << (theta*fiftyseven) << " energy " << test.summed() << endl;
+        // cout << "downstream " << depth << " angle " << (theta*fiftyseven) << " energy " << test.summed() << endl;
         if (test.accept_change(result))
         {
             result = test;
@@ -5355,7 +5355,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
     }
 
     best.restore_state(this);
-    cout << "downstream " << depth << " accepted angle " << (bthet*fiftyseven) << " energy " << result.summed() << endl;
+    // cout << "downstream " << depth << " accepted angle " << (bthet*fiftyseven) << " energy " << result.summed() << endl;
 
     return result;
 }
