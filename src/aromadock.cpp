@@ -4472,66 +4472,74 @@ _try_again:
             protein = &pose_proteins[j];
             ligand = &pose_ligands[j+1];
 
-            if (dr[j][0].disqualified)
+            bool reject = false;
+            for (nodeno = 0; nodeno <= nodeoff; nodeno++)
             {
-                if (outdisq)
+                if (dr[j][nodeno].disqualified)
                 {
-                    cout << "Disqualified pose: " << dr[j][0].disqualify_reason << endl << dr[j][0].miscdata << endl;
-                    if (output) *output << "Disqualified pose: " << dr[j][0].disqualify_reason << endl << dr[j][0].miscdata << endl;
+                    if (outdisq)
+                    {
+                        cout << "Disqualified pose: " << dr[j][nodeno].disqualify_reason << endl << dr[j][nodeno].miscdata << endl;
+                        if (output) *output << "Disqualified pose: " << dr[j][nodeno].disqualify_reason << endl << dr[j][nodeno].miscdata << endl;
+                    }
+
+                    if (!strstr(outdisqrs.c_str(), dr[j][nodeno].disqualify_reason.c_str()))
+                        outdisqrs += dr[j][nodeno].disqualify_reason + (std::string)" ";
+
+                    reject = true;
+                    break;
+                }
+                dr[j][nodeno].ligpos.restore_state(ligand);
+
+                if (ncvtys)
+                {
+                    dr[j][nodeno].disqualified = true;
+                    int cno;
+                    float cp = 0;
+                    for (cno = 0; cno < ncvtys; cno++)
+                    {
+                        if (!cvtys[cno].count_partials()) continue;
+                        cp += cvtys[cno].molecule_inside_pocket(ligand);
+                    }
+
+                    if (cp >= min_cvty_ctnmt) dr[j][nodeno].disqualified = false;
+                    if (dr[j][nodeno].disqualified) dr[j][nodeno].disqualify_reason += (std::string)"Cavity containment. ";
                 }
 
-                if (!strstr(outdisqrs.c_str(), dr[j][0].disqualify_reason.c_str()))
-                    outdisqrs += dr[j][0].disqualify_reason + (std::string)" ";
-
-                continue;
-            }
-            dr[j][0].ligpos.restore_state(ligand);
-
-            if (ncvtys)
-            {
-                dr[j][0].disqualified = true;
-                int cno;
-                float cp = 0;
-                for (cno = 0; cno < ncvtys; cno++)
+                if (dr[j][nodeno].disqualified)
                 {
-                    if (!cvtys[cno].count_partials()) continue;
-                    cp += cvtys[cno].molecule_inside_pocket(ligand);
+                    if (outdisq)
+                    {
+                        cout << "Disqualified pose: " << dr[j][nodeno].disqualify_reason << endl;
+                        if (output) *output << "Disqualified pose: " << dr[j][nodeno].disqualify_reason << endl;
+                    }
+
+                    if (!strstr(outdisqrs.c_str(), dr[j][nodeno].disqualify_reason.c_str()))
+                        outdisqrs += dr[j][nodeno].disqualify_reason + (std::string)" ";
+
+                    reject = true;
+                    continue;
                 }
-
-                if (cp >= min_cvty_ctnmt) dr[j][0].disqualified = false;
-                if (dr[j][0].disqualified) dr[j][0].disqualify_reason += (std::string)"Cavity containment. ";
             }
-
-            if (dr[j][0].disqualified)
-            {
-                if (outdisq)
-                {
-                    cout << "Disqualified pose: " << dr[j][0].disqualify_reason << endl;
-                    if (output) *output << "Disqualified pose: " << dr[j][0].disqualify_reason << endl;
-                }
-
-                if (!strstr(outdisqrs.c_str(), dr[j][0].disqualify_reason.c_str()))
-                    outdisqrs += dr[j][0].disqualify_reason + (std::string)" ";
-
-                continue;
-            }
+            if (reject) continue;
 
             if (dr[j][0].pose == i && dr[j][0].pdbdat.length())
             {
-                if (dr[j][0].kJmol <= kJmol_cutoff || (output_something_even_if_it_is_wrong && !j))
+                if ((dr[j][0].kJmol <= kJmol_cutoff && dr[j][nodeoff].kJmol <= kJmol_cutoff)
+                    || (output_something_even_if_it_is_wrong && !j))
                 {
-                    if (dr[j][0].proximity > search_size.magnitude()) continue;
-                    if (dr[j][0].worst_nrg_aa > clash_limit_per_aa) continue;
+                    if (dr[j][nodeoff].proximity > search_size.magnitude()) continue;
+                    if (dr[j][nodeoff].worst_nrg_aa > clash_limit_per_aa) continue;
                     protein = &pose_proteins[j];
 
                     auths += (std::string)" " + std::to_string(dr[j][0].auth);
 
                     if (!best_acc_energy) best_acc_energy = dr[j][0].kJmol;
 
-                    for (k=nodeoff; k<=pathnodes+nodeoff; k++)
+                    for (k=0; k<=pathnodes+nodeoff; k++)
                     {
                         // If pathnode is not within kJ/mol cutoff, abandon it and all subsequent pathnodes of the same pose.
-                        if (k>=nodeoff && dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
+                        if (dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
                         {
                             cout << "Pose " << pose << " node " << k
                                  << " energy " << dr[j][k].kJmol*energy_mult
