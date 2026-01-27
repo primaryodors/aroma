@@ -265,6 +265,10 @@ public:
     static Interaction total_intermol_binding(Molecule** ligands);
 
     Interaction best_downstream_conformer(Bond* b, Molecule** neighbors);
+    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors,
+        Atom* approximate_mine, Atom* approximate_other, float approximation_distance);
+    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors,
+        Atom* approximate_mine, Point approximation_target, float approximation_distance);
 
     static void conform_molecules(Molecule** molecules, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
@@ -279,9 +283,9 @@ public:
 
     void quick_conform(Molecule** background, int iterations = 25);
 
-    void conform_atom_to_location(int atom_idx, Point target, int iterations = 50, float optimal_distance = 0);
-    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 20, float optimal_distance = 0);
-    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 50, float optimal_distance = 0);
+    void conform_atom_to_location(int atom_idx, Point target, int iterations = 5, float optimal_distance = 0);
+    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 5, float optimal_distance = 0);
+    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 5, float optimal_distance = 0);
     Vector motion_to_optimal_contact(Molecule* ligand);
 
     // Returns the sum of all possible atom-molecule interactions if all distances and anisotropies were somehow optimal.
@@ -400,7 +404,9 @@ protected:
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols);
     bool faces_any_ligand(Molecule** ligands);
-    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors, int depth, Atom* stop_at);
+    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors,
+        int depth, Atom* stop_at,
+        Atom* am, Atom* ao, Point at, float ar);
 
     public:
     const int& num_monomers = nmonomers;

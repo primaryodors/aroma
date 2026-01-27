@@ -5311,10 +5311,22 @@ Interaction Molecule::total_intermol_binding(Molecule** l)
 
 Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors)
 {
-    return best_downstream_conformer(b, neighbors, 1, b->atom1);
+    return best_downstream_conformer(b, neighbors, 1, b->atom1, nullptr, nullptr, Point(0,0,0), 0);
 }
 
-Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, int depth, Atom *stop_at)
+Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, Atom *am, Atom *ao, float ar)
+{
+    return best_downstream_conformer(b, neighbors, 1, b->atom1, am, ao, Point(0,0,0), ar);
+}
+
+Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, Atom *am, Point at, float ar)
+{
+    return best_downstream_conformer(b, neighbors, 1, b->atom1, am, nullptr, at, ar);
+}
+
+Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
+    int depth, Atom *stop_at,
+    Atom* am, Atom* ao, Point at, float ar)
 {
     Interaction result = get_intermol_binding(neighbors), test = 0;
     if (depth > recursrot_depth) return result;
@@ -5332,7 +5344,14 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
             b = b->get_reversed();
         }
     }
-    float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta, bthet=0;
+    float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta, bthet=0, r=0, br=0, av=0;
+
+    if (am)
+    {
+        if (ao) av = InteratomicForce::potential_binding(am, ao);
+        else av = 35.0;
+        br = Avogadro;
+    }
 
     for (theta=0; theta<M_PI*2; theta += step)
     {
@@ -5349,17 +5368,26 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
                 && b2[i]->atom2 != stop_at
                 && b2[i]->atom2->get_bonded_atoms_count() > 1
                 && (!resno || b2[i]->atom2->get_Greek() > Grk2))
-                test = best_downstream_conformer(b2[i], neighbors, depth+1, stop_at);       // DANGER!
+                test = best_downstream_conformer(b2[i], neighbors, depth+1, stop_at,
+                    am, ao, at, ar);       // DANGER!
         }
 
         // Continue rotating, then revert to the best energy pose and return interaction.
         test = get_intermol_binding(neighbors);
+        if (am)
+        {
+            if (ao) r = am->distance_to(ao);
+            else r = am->loc.get_3d_distance(at);
+            r -= ar;
+            if (r > 0) test.attractive += av / pow(1.0+r, 2);
+        }
         // cout << "downstream " << depth << " angle " << (theta*fiftyseven) << " energy " << test.summed() << endl;
-        if (test.accept_change(result))
+        if (test.accept_change(result) && (!av || r < br))
         {
             result = test;
             bthet = theta;
             best.copy_state(this);
+            br = r;
         }
 
         if (!step) break;
