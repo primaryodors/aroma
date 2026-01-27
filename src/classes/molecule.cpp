@@ -5321,7 +5321,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
     Pose best(this);
     int i, resno = b->atom1->residue, Grk1 = b->atom1->get_Greek(), Grk2 = b->atom2->get_Greek();
     if (resno && Grk1 > Grk2) b = b->get_reversed();
-    float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta;
+    float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta, bthet=0;
 
     for (theta=0; theta<M_PI*2; theta += step)
     {
@@ -5343,9 +5343,11 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
 
         // Continue rotating, then revert to the best energy pose and return interaction.
         test = get_intermol_binding(neighbors);
+        cout << "downstream " << depth << " angle " << (theta*fiftyseven) << " energy " << test.summed() << endl;
         if (test.accept_change(result))
         {
             result = test;
+            bthet = theta;
             best.copy_state(this);
         }
 
@@ -5353,6 +5355,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
     }
 
     best.restore_state(this);
+    cout << "downstream " << depth << " accepted angle " << (bthet*fiftyseven) << " energy " << result.summed() << endl;
 
     return result;
 }

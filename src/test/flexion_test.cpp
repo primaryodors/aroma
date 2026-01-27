@@ -11,6 +11,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+    int i, j;
     Molecule m("TheLigand");
     Protein p("TheProtein");
     FILE* fp;
@@ -21,6 +22,16 @@ int main(int argc, char** argv)
 
     fseek(fp, 0, SEEK_SET);
     m.from_pdb(fp, true);
+    fclose(fp);
+    Pose m8f76(&m);
+    m.delete_all_atoms();
+    fp = fopen("sdf/propionic_acid.sdf", "r");
+    char buffer[65536];
+    i = fread(buffer, 1, 65534, fp);
+    fclose(fp);
+    m.from_sdf(buffer);
+    m.dehydrogenate();
+    m8f76.restore_state(&m);
     m.hydrogenate();
     cout << "Ligand has " << m.get_atom_count() << " atoms." << endl;
 
@@ -33,8 +44,8 @@ int main(int argc, char** argv)
     Bond* bt = a->get_bond_between(b);
     float theta=0, during, step = hexagonal/10;
 
+    j=0;
     Molecule* neighbors[256];
-    int i, j=0;
     neighbors[j++] = &m;
     for (i=0; aa->mclashables[i]; i++) neighbors[j++] = aa->mclashables[i];
     neighbors[j] = nullptr;
@@ -61,7 +72,7 @@ int main(int argc, char** argv)
     Atom *CA = aa->get_atom("CA"), *CB = aa->get_atom("CB");
     Bond* B = CA->get_bond_between(CB);
     aa->best_downstream_conformer(B, neighbors);
-    after = m.get_intermol_binding(aa).summed();
+    after = aa->Molecule::get_intermol_binding(neighbors).summed();
     cout << "Post-conformation energy: " << after << endl;
 
     fp = fopen("tmp/flexed.pdb", "w");
