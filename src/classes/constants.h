@@ -356,6 +356,7 @@
 #define _dbg_chirality_detection 0
 #define _dbg_cond_basic 0
 #define _dbg_cond_basic_acd_lig 0
+#define _dbg_conects 0
 #define _dbg_conj_chg 0
 #define _dbg_conjugation 0
 #define _dbg_contact_anomaly 0

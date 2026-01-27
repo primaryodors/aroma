@@ -2037,12 +2037,16 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                     {
                         card = atof(words[3]);
                         a1->bond_to(a2, card);
-                        // cout << a1->name << " bond to " << a2->name << " card " << card << endl;
+                        #if _dbg_conects
+                        cout << a1->name << " bond to " << a2->name << " card " << card << endl;
+                        #endif
                     }
                     else
                     {
                         a1->bond_to(a2, card);
-                        // cout << a1->name << " bond to " << a2->name << " &c" << endl;
+                        #if _dbg_conects
+                        cout << a1->name << " bond to " << a2->name << " &c" << endl;
+                        #endif
                         int l;
                         for (l=3; words[l]; l++)
                         {
@@ -2051,7 +2055,9 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                             if (a2)
                             {
                                 a1->bond_to(a2, card);
-                                // cout << a1->name << " bond to " << a2->name << endl;
+                                #if _dbg_conects
+                                cout << a1->name << " bond to " << a2->name << endl;
+                                #endif
                             }
                         }
                     }
@@ -5289,6 +5295,54 @@ Interaction Molecule::total_intermol_binding(Molecule** l)
     }
 
     return f;
+}
+
+Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors)
+{
+    return best_downstream_conformer(b, neighbors, 1, b->atom1);
+}
+
+Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, int depth, Atom *stop_at)
+{
+    Interaction result = get_intermol_binding(neighbors), test = 0;
+    if (depth > 4) return result;
+    Pose best(this);
+    int i, resno = b->atom1->residue, Grk1 = b->atom1->get_Greek(), Grk2 = b->atom2->get_Greek();
+    if (resno && Grk1 > Grk2) b = b->get_reversed();
+    float step = b->can_rotate ? (hexagonal/2) : (b->can_flip ? b->flip_angle : 0), theta;
+
+    for (theta=0; theta<M_PI*2; theta += step)
+    {
+        // If bond is rotatable, rotate bond one unit step.
+        if (step) b->rotate(step);
+
+        // Enumerate atom2's other bonds.
+        // For each usable bond, RECURSIVELY call this function incrementing depth and passing stop_at.
+        Bond* b2[16];
+        b->atom2->fetch_bonds(b2);
+        for (i=0; b2[i]; i++)
+        {
+            if (b2[i]->atom2 != b->atom1
+                && b2[i]->atom2 != stop_at
+                && b2[i]->atom2->get_bonded_atoms_count() > 1
+                && (!resno || b2[i]->atom2->get_Greek() > Grk2))
+                test = best_downstream_conformer(b2[i], neighbors, depth+1, stop_at);       // DANGER!
+        }
+
+        // Continue rotating, then revert to the best energy pose and return interaction.
+        test = get_intermol_binding(neighbors);
+        if (test.accept_change(result))
+        {
+            result = test;
+            best.copy_state(this);
+        }
+
+        if (!step) break;
+    }
+
+    best.restore_state(this);
+
+    return result;
 }
 
 void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molecule**), void (*progress)(float), int mi)

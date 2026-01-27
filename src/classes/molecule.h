@@ -264,12 +264,14 @@ public:
 
     static Interaction total_intermol_binding(Molecule** ligands);
 
+    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors);
+
     static void conform_molecules(Molecule** molecules, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
         void (*progress)(float) = nullptr,
         int min_iter = 0
         );
-    
+
     static void conform_molecules(Molecule** molecules, Molecule** background, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
         void (*progress)(float) = nullptr
@@ -398,6 +400,7 @@ protected:
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols);
     bool faces_any_ligand(Molecule** ligands);
+    Interaction best_downstream_conformer(Bond* b, Molecule** neighbors, int depth, Atom* stop_at);
 
     public:
     const int& num_monomers = nmonomers;
