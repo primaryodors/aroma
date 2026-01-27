@@ -5320,7 +5320,18 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, i
     if (depth > recursrot_depth) return result;
     Pose best(this);
     int i, resno = b->atom1->residue, Grk1 = b->atom1->get_Greek(), Grk2 = b->atom2->get_Greek();
-    if (resno && Grk1 > Grk2) b = b->get_reversed();
+    if (depth < 2)
+    {
+        bool reverse = false;
+        if (resno && Grk1 > Grk2) reverse = true;
+        else if (stay_close_mine && b->atom_in_moves_with(stay_close_mine)) reverse = true;
+        else if (stay_close2_mine && b->atom_in_moves_with(stay_close2_mine)) reverse = true;
+        if (reverse)
+        {
+            stop_at = b->atom2;
+            b = b->get_reversed();
+        }
+    }
     float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta, bthet=0;
 
     for (theta=0; theta<M_PI*2; theta += step)
@@ -5756,70 +5767,77 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         int heavy_atoms = bb[q]->count_heavy_moves_with_atom2();
                         if (heavy_atoms && (!(a->movability & MOV_CAN_FLEX) || (a->movability & MOV_FORBIDDEN))) continue;
 
-                        #if _dbg_mol_flexion
-                        bool is_flexion_dbg_mol_bond = is_flexion_dbg_mol & !strcmp(bb[q]->atom2->name, "OG");
-                        #endif
-
-                        benerg.clash += a->total_eclipses();
-                        if (do_full_rotation && bb[q]->can_rotate
-                            #if fullrot_flex_first_subiter_only
-                            && !qiter
-                            #endif
-
-                            #if fullrot_forbid_residues
-                            && !ares
-                            #elif fullrot_flex_residues_only
-                            && ares
-                            #endif
-
-                            #if fullrot_flex_unfavorable_energy_only
-                            && benerg.summed() >= 0
-                            #endif
-                            )
+                        if (frand(0,1) < 0.01)
                         {
-                            float best_theta = 0;
-                            Pose prior_state;
-                            prior_state.copy_state(a);
-                            benerg = cfmol_multibind(a, nearby);
-                            for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
-                            {
-                                prior_state.restore_state(a);
-                                #if _dbg_atom_mov_to_clash
-                                movclash_justtesting = true;
-                                #endif
-                                bb[q]->rotate(theta, false);
-                                a->enforce_stays(multimol_stays_enforcement);
-                                tryenerg = cfmol_multibind(a, nearby);
-                                tryenerg.clash += a->total_eclipses();
-                                fal = ares ? mm[i]->faces_any_ligand(mm) : true;
-                                if (audit) sprintf(triedchange, "fullrot flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
-
-                                #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
-                                #endif
-
-                                if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                    && a->get_internal_clashes() <= self_clash
-                                    && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
-                                   )
-                                {
-                                    benerg = tryenerg;
-                                    best_theta = theta;
-                                    test_and_update_absolute_best_poses
-                                }
-                            }
-                            if (best_theta)
-                            {
-                                prior_state.restore_state(a);
-                                bb[q]->rotate(best_theta, false);
-                                a->been_flexed = true;
-
-                                #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << "Rotating to " << (best_theta*fiftyseven) << "deg." << endl << endl;
-                                #endif
-                            }
+                            // This takes a lot more time so only do it sparingly.
+                            a->best_downstream_conformer(bb[q], nearby);
                         }
                         else
+                        {
+                            #if _dbg_mol_flexion
+                            bool is_flexion_dbg_mol_bond = is_flexion_dbg_mol & !strcmp(bb[q]->atom2->name, "OG");
+                            #endif
+
+                            benerg.clash += a->total_eclipses();
+                            if (do_full_rotation && bb[q]->can_rotate
+                                #if fullrot_flex_first_subiter_only
+                                && !qiter
+                                #endif
+
+                                #if fullrot_forbid_residues
+                                && !ares
+                                #elif fullrot_flex_residues_only
+                                && ares
+                                #endif
+
+                                #if fullrot_flex_unfavorable_energy_only
+                                && benerg.summed() >= 0
+                                #endif
+                                )
+                            {
+                                float best_theta = 0;
+                                Pose prior_state;
+                                prior_state.copy_state(a);
+                                benerg = cfmol_multibind(a, nearby);
+                                for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
+                                {
+                                    prior_state.restore_state(a);
+                                    #if _dbg_atom_mov_to_clash
+                                    movclash_justtesting = true;
+                                    #endif
+                                    bb[q]->rotate(theta, false);
+                                    a->enforce_stays(multimol_stays_enforcement);
+                                    tryenerg = cfmol_multibind(a, nearby);
+                                    tryenerg.clash += a->total_eclipses();
+                                    fal = ares ? mm[i]->faces_any_ligand(mm) : true;
+                                    if (audit) sprintf(triedchange, "fullrot flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
+                                    #endif
+
+                                    if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                        && a->get_internal_clashes() <= self_clash
+                                        && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                    )
+                                    {
+                                        benerg = tryenerg;
+                                        best_theta = theta;
+                                        test_and_update_absolute_best_poses
+                                    }
+                                }
+                                if (best_theta)
+                                {
+                                    prior_state.restore_state(a);
+                                    bb[q]->rotate(best_theta, false);
+                                    a->been_flexed = true;
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << "Rotating to " << (best_theta*fiftyseven) << "deg." << endl << endl;
+                                    #endif
+                                }
+                            }
+                            else
                         {
                             theta = frand(-flexion_maxangle, flexion_maxangle);
                             if (ares) wfal = a->faces_any_ligand(mm);
@@ -5924,6 +5942,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #endif
                                 #endif
                             }
+                        }
                         }
                     }
                 }       // Rotatable bonds.

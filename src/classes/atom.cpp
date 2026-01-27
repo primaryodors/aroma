@@ -2529,6 +2529,14 @@ int Bond::count_heavy_moves_with_atom2()
     return j;
 }
 
+bool Bond::atom_in_moves_with(Atom *a)
+{
+    if (!moves_with_atom2) return false;
+    int i;
+    for (i=0; moves_with_atom2[i]; i++) if (moves_with_atom2[i] == a) return true;
+    return false;
+}
+
 Bond* Bond::get_reversed()
 {
     if (!atom1 || !atom2) return 0;

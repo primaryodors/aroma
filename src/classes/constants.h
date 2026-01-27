@@ -198,7 +198,7 @@ const float reach_per_carbon = 1.54 * sin(tetrahedral);
 #define default_pre_ligand_multimol_radius 15
 #define flexion_maxangle hexagonal
 #define flexion_probability_multiplier 1
-#define flexion_sub_iterations_ligand 15
+#define flexion_sub_iterations_ligand 1
 #define flexion_sub_iterations_sidechain 1
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
