@@ -313,6 +313,7 @@ public:
         swapped_chirality = !swapped_chirality;
         chirality_unspecified = false;
     }
+    float are_bonds_coplanar();
 
     void print_bond_angles();                   // For unit tests.
 

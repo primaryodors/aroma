@@ -557,6 +557,8 @@ AminoAcid::AminoAcid(const char letter, AminoAcid* prevaa, bool minintc, Protein
             atoms[i]->clear_all_moves_cache();
 
             float r = atoms[i]->distance_to(CA);
+            float rG = reach_per_carbon * (atoms[i]->get_Greek() - 1);
+            if (rG > r) r = rG;
             if (r > aa_defs[idx].reach) aa_defs[idx].reach = r;
         }
 

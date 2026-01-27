@@ -1027,7 +1027,7 @@ bool Atom::bond_to(Atom* latom2, float lcard)
 
     for (i=0; i<geometry; i++)
     {
-        if (!bonded_to[i].atom2)
+        if (!bonded_to[i].atom2 || bonded_to[i].atom2 == latom2)
         {
             bonded_to[i].atom1 = this;
             bonded_to[i].atom2 = latom2;
@@ -1539,6 +1539,20 @@ void Bond::enforce_moves_with_uniqueness()
             }
         }
     }
+}
+
+float Atom::are_bonds_coplanar()
+{
+    Atom* other = bonded_to[0].atom2;
+    if (!other) return -999;
+    Point pt1 = other->loc;
+    other = bonded_to[1].atom2;
+    if (!other) return -999;
+    Point pt2 = other->loc;
+    other = bonded_to[2].atom2;
+    if (!other) return -999;
+    Point pt3 = other->loc;
+    return are_points_planar(loc, pt1, pt2, pt3);
 }
 
 void Atom::print_bond_angles()

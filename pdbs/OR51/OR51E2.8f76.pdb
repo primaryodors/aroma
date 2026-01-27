@@ -2417,6 +2417,6 @@ CONECT 8171 8172 8174 8175
 CONECT 8172 8171 8173                                                           
 CONECT 8173 8172                                                                
 CONECT 8174 8171                                                                
-CONECT 8175 8171                                                                 
-TER
+CONECT 8175 8171                                                                
+TER                                                                             
 END                                                                             

@@ -27,6 +27,7 @@
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8
+const float reach_per_carbon = 1.54 * sin(tetrahedral);
 
 // Warning - increasing these constants significantly above the maximal 35.0, 60.0 values
 // will cause docking fails in the unit tests.
@@ -203,6 +204,8 @@
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
 #define fullrot_forbid_residues 1
+const int recursrot_depth = 4;
+const float recursrot_step = M_PI/5;
 #define sidechain_flexion_frequency 0.333
 #define stochastic_flexion_of_clashing_residues 1
 

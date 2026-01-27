@@ -824,7 +824,13 @@ void Molecule::hydrogenate(bool steric_only)
         {
             for (j=0; aib[j]; j++)
             {
-                if (aib[j]->atom2) bcardsum += aib[j]->cardinality;
+                if (aib[j]->atom2)
+                {
+                    bcardsum += aib[j]->cardinality;
+                    #if _dbg_hydrogenate
+                    cout << atoms[i]->name << " is bonded to " << aib[j]->atom2->name << endl;
+                    #endif
+                }
                 if (aib[j]->cardinality > 1) db++;
             }
         }
@@ -842,7 +848,7 @@ void Molecule::hydrogenate(bool steric_only)
         if (atoms[i]->is_backbone && !strcmp(atoms[i]->name, "N")) bcardsum = 1;
 
         #if _dbg_hydrogenate
-        cout << " given charge makes " << bcardsum << endl;
+        cout << " given charge of " << atoms[i]->get_charge() << " makes " << bcardsum << endl;
         #endif
 
         int fam = atoms[i]->get_family();
@@ -2069,9 +2075,9 @@ int Molecule::from_pdb(FILE* is, bool het_only)
         delete[] words;
     }
 
+    int i, j;
     if (atoms && !has_conects)
     {
-        int i, j;
         for (i=0; atoms[i]; i++)
         {
             for (j=i+1; atoms[j]; j++)
@@ -2084,6 +2090,12 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                 }
             }
         }
+    }
+
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->get_bonded_atoms_count() == 3 && atoms[i]->are_bonds_coplanar() < coplanar_threshold)
+            atoms[i]->aromatize();
     }
 
     identify_conjugations();
@@ -5305,11 +5317,11 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors)
 Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors, int depth, Atom *stop_at)
 {
     Interaction result = get_intermol_binding(neighbors), test = 0;
-    if (depth > 4) return result;
+    if (depth > recursrot_depth) return result;
     Pose best(this);
     int i, resno = b->atom1->residue, Grk1 = b->atom1->get_Greek(), Grk2 = b->atom2->get_Greek();
     if (resno && Grk1 > Grk2) b = b->get_reversed();
-    float step = b->can_rotate ? (hexagonal/2) : (b->can_flip ? b->flip_angle : 0), theta;
+    float step = b->can_rotate ? recursrot_step : (b->can_flip ? b->flip_angle : 0), theta;
 
     for (theta=0; theta<M_PI*2; theta += step)
     {
