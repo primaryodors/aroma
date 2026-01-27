@@ -153,9 +153,9 @@ public:
     void predict_next_NHCA(Point* result);
     void attach_to_prediction(Point* predicted, bool CO = false);		// Attach the AA to its neighbor by moving its NHCA or COCA to the result of a predict().
 
-    void conform_atom_to_location(int atom_idx, Point target, int iterations = 50, float optimal_distance = 0);
-    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 20, float optimal_distance = 0);
-    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 50, float optimal_distance = 0);
+    void conform_atom_to_location(int atom_idx, Point target, int iterations = 5, float optimal_distance = 0);
+    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 5, float optimal_distance = 0);
+    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 5, float optimal_distance = 0);
 
     // Bond functions.
     bool disulfide_bond(const AminoAcid* bond_to);

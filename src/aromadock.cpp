@@ -744,7 +744,7 @@ void iteration_callback(int iter, Molecule** mols)
                 Pose hbwas(mols[l]);
                 hbwas.copy_state(mols[l]);
                 Interaction before = ligand->get_intermol_binding(mols, true, true);
-                hbaa->conform_atom_to_location(reach->name, pttgt, 10, 2);
+                hbaa->conform_atom_to_location(reach->name, pttgt, 3, 2);
                 Interaction after = ligand->get_intermol_binding(mols, true, true);
                 if (!after.improved(before)) hbwas.restore_state(mols[l]);
                 else if (audit) fprintf(audit, "Iter %d accepted direction of %s:%s toward LIG:%s from %g (%g/%g) to %g (%g/%g).\n",
@@ -3833,7 +3833,7 @@ _try_again:
                     Atom* ra = g_bbr[0].pri_res->get_reach_atom(hbond);
                     if (ra)
                     {
-                        g_bbr[0].pri_res->conform_atom_to_location(ra->name, g_bbr[0].pri_tgt->barycenter(), 15, 2.5);
+                        g_bbr[0].pri_res->conform_atom_to_location(ra->name, g_bbr[0].pri_tgt->barycenter(), 3, 2.5);
                     }
                 }
             }

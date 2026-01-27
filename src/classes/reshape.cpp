@@ -498,10 +498,10 @@ void ReshapeMotion::apply(Protein *p)
             {
                 if (!aa1->mclashables) p->set_clashables(aa1->get_residue_no());
                 if (!aa2->mclashables) p->set_clashables(aa2->get_residue_no());
-                aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
-                aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
-                aa1->conform_atom_to_location(a1, a2, 20, tgtdist);
-                aa2->conform_atom_to_location(a2, a1, 20, tgtdist);
+                aa1->conform_atom_to_location(a1, a2, 5, tgtdist);
+                aa2->conform_atom_to_location(a2, a1, 5, tgtdist);
+                aa1->conform_atom_to_location(a1, a2, 5, tgtdist);
+                aa2->conform_atom_to_location(a2, a1, 5, tgtdist);
                 if (rshp_verbose) cout << "Pointing " << aa1->get_name() << ":" << a1->name
                     << " and " << aa2->get_name() << ":" << a2->name
                     << " toward each other." << endl;
@@ -1093,9 +1093,9 @@ Vector InternalContact::atom_distance(Protein *prot)
     a1 = aa1->get_reach_atom(hbond);
     a2 = aa2->get_reach_atom(hbond);
     if (!a1 || !a2) return Vector(0,0,0);
-    aa1->conform_atom_to_location(a1, a2, 5, r_optimal);
-    aa2->conform_atom_to_location(a2, a1, 5, r_optimal);
-    aa1->conform_atom_to_location(a1, a2, 5, r_optimal);
-    aa2->conform_atom_to_location(a2, a1, 5, r_optimal);
+    aa1->conform_atom_to_location(a1, a2, 3, r_optimal);
+    aa2->conform_atom_to_location(a2, a1, 3, r_optimal);
+    aa1->conform_atom_to_location(a1, a2, 3, r_optimal);
+    aa2->conform_atom_to_location(a2, a1, 3, r_optimal);
     return a2->loc.subtract(a1->loc);
 }

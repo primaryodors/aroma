@@ -283,9 +283,9 @@ public:
 
     void quick_conform(Molecule** background, int iterations = 25);
 
-    void conform_atom_to_location(int atom_idx, Point target, int iterations = 5, float optimal_distance = 0);
-    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 5, float optimal_distance = 0);
-    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 5, float optimal_distance = 0);
+    void conform_atom_to_location(int atom_idx, Point target, int iterations = 50, float optimal_distance = 0);
+    void conform_atom_to_location(const char* atom_name, Point target, int iterations = 20, float optimal_distance = 0);
+    void conform_atom_to_location(Atom* a, Atom* target, int iterations = 50, float optimal_distance = 0);
     Vector motion_to_optimal_contact(Molecule* ligand);
 
     // Returns the sum of all possible atom-molecule interactions if all distances and anisotropies were somehow optimal.

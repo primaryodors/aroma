@@ -2947,7 +2947,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
             aa->movability = MOV_FLEXONLY;
             r1 = coord_atoms[j]->distance_to(lmtl);
             if (!aa->mclashables) set_clashables(aa->get_residue_no());
-            aa->conform_atom_to_location(coord_atoms[j]->name, lmtl->loc, 20, optimal[j]);
+            aa->conform_atom_to_location(coord_atoms[j]->name, lmtl->loc, 5, optimal[j]);
             r1 = coord_atoms[j]->distance_to(lmtl);
             aa->movability = MOV_PINNED;
         }
@@ -3733,8 +3733,8 @@ bool Protein::disulfide_bond(int resno1, int resno2)
                         {
                             if (!res1->mclashables) set_clashables(res1->get_residue_no());
                             if (!res2->mclashables) set_clashables(res2->get_residue_no());
-                            res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
-                            res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
+                            res1->conform_atom_to_location(S1->name, S2->loc, 5, 2.07);
+                            res2->conform_atom_to_location(S2->name, S1->loc, 5, 2.07);
 
                             float r = S1->loc.get_3d_distance(S2->loc);
                             if (fabs(r - 2.07) < 0.25)
@@ -4346,13 +4346,13 @@ void Protein::bridge(int resno1, int resno2)
         if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
         if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close_mine && aa1->stay_close_other)
-            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 3, aa1->stay_close_optimal);
         if (aa2->stay_close_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 3, aa2->stay_close_optimal);
         if (aa1->stay_close_mine && aa1->stay_close_other) 
-            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 3, aa1->stay_close_optimal);
         if (aa2->stay_close_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 3, aa2->stay_close_optimal);
     }
     r = (aa1->stay_close2_mine && aa1->stay_close_other) ? aa1->stay_close2_mine->distance_to(aa1->stay_close_other) : -1;
     if (r>0 && r > aa1->stay_close_optimal)
@@ -4360,13 +4360,13 @@ void Protein::bridge(int resno1, int resno2)
         if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
         if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close2_mine && aa1->stay_close_other)
-            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 3, aa1->stay_close_optimal);
         if (aa2->stay_close2_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 3, aa2->stay_close_optimal);
         if (aa1->stay_close2_mine && aa1->stay_close_other) 
-            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 3, aa1->stay_close_optimal);
         if (aa2->stay_close2_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 3, aa2->stay_close_optimal);
     }
     Molecule::conform_molecules(mols, 20);
 
