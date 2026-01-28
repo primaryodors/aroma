@@ -557,6 +557,8 @@ AminoAcid::AminoAcid(const char letter, AminoAcid* prevaa, bool minintc, Protein
             atoms[i]->clear_all_moves_cache();
 
             float r = atoms[i]->distance_to(CA);
+            float rG = reach_per_carbon * (atoms[i]->get_Greek() - 1);
+            if (rG > r) r = rG;
             if (r > aa_defs[idx].reach) aa_defs[idx].reach = r;
         }
 
@@ -3715,6 +3717,9 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 if (b[j]->can_flip) circdiv = 2;
                 else continue;
             }
+            #if 1
+            best_downstream_conformer(b[j], mclashables, a, target, od);
+            #else
             float step = M_PI*2.0/circdiv;
             for (l=0; l<=circdiv; l++)
             {
@@ -3734,6 +3739,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 }
             }
             best.restore_state(this);
+            #endif
 
             #if _dbg_atom_pointing
             cout << endl << name << "." << iter << ": " << circdiv << "|" << bestr << endl;
@@ -3772,6 +3778,9 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 if (b[j]->can_flip) circdiv = 2;
                 else continue;
             }
+            #if 1
+            best_downstream_conformer(b[j], mclashables, a, t, od);
+            #else
             float step = M_PI*2.0/circdiv;
             for (l=0; l<=circdiv; l++)
             {
@@ -3791,6 +3800,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 }
             }
             best.restore_state(this);
+            #endif
 
             #if _dbg_atom_pointing
             cout << endl << name << "." << iter << ": " << circdiv << "|" << bestr << endl;

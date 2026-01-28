@@ -897,7 +897,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
     #endif
 
     _has_ionic_already:
-    
+
     if (r < 0.5) forces[0] = NULL;
     if (!forces || !forces[0])
     {
@@ -941,7 +941,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
         #endif
 
         // if (current_type == covalent) continue;
-        
+
         float rdecayed;
         float asum=0, bsum=0, aniso=1;
 
@@ -997,7 +997,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
             if (current_type == ionic)
                 dpa = dpb = 0;
-            
+
             else if (current_type == hbond)
             {
                 if (a->is_polar() < 0 && b->is_polar() >= 0)
@@ -1455,6 +1455,8 @@ Interaction InteratomicForce::add_clashes(Atom *a, Atom *b, Interaction kJmol, f
 
     _finished_clashing:
     kJmol.worst_atom_clash = kJmol.clash;
+    a->last_clash += kJmol.clash;
+    b->last_clash += kJmol.clash;
     return kJmol;
 }
 

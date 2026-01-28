@@ -11,30 +11,49 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+    int i, j;
     Molecule m("TheLigand");
     Protein p("TheProtein");
     FILE* fp;
-    std::string pdbfn = "testdata/OR12D2.propionic_acid.tester.pdb";
+    std::string pdbfn = "pdbs/OR51/OR51E2.8f76.pdb";
 
     fp = fopen(pdbfn.c_str(), "rb");
     p.load_pdb(fp);
-
+    p.hydrogenate();
     fseek(fp, 0, SEEK_SET);
     m.from_pdb(fp, true);
+    fclose(fp);
+    Pose m8f76(&m);
+    m.delete_all_atoms();
+    fp = fopen("sdf/propionic_acid.sdf", "r");
+    char buffer[65536];
+    i = fread(buffer, 1, 65534, fp);
+    fclose(fp);
+    m.from_sdf(buffer);
+    m.dehydrogenate();
+    m8f76.restore_state(&m);
+    m.hydrogenate();
+    cout << "Ligand has " << m.get_atom_count() << " atoms." << endl;
 
-    AminoAcid* aa = p.get_residue(107);
+    AminoAcid* aa = p.get_residue(262);
     float before = m.get_intermol_binding(aa).summed();
     cout << "Initial energy: " << before << endl;
 
-    Atom* a = aa->get_atom("CB");
-    Atom* b = aa->get_atom("OG");
+    Atom* a = aa->get_atom("CA");
+    Atom* b = aa->get_atom("CB");
     Bond* bt = a->get_bond_between(b);
-    float theta=0, during, step = hexagonal/3;
+    float theta=0, during, step = hexagonal/10;
+
+    j=0;
+    Molecule* neighbors[256];
+    neighbors[j++] = &m;
+    for (i=0; aa->mclashables[i]; i++) neighbors[j++] = aa->mclashables[i];
+    neighbors[j] = nullptr;
 
     for (theta=step; theta<M_PI*2; theta += step)
     {
         bt->rotate(step);
-        during = m.get_intermol_binding(aa).summed();
+        during = m.get_intermol_binding(aa).summed() + aa->get_intermol_binding((AminoAcid**)neighbors).summed();
         cout << (theta*fiftyseven) << "deg: " << during << endl;
     }
 
@@ -48,5 +67,18 @@ int main(int argc, char** argv)
 
     Molecule::conform_molecules(mols);
     float after = m.get_intermol_binding(aa).summed();
-    cout << "Final energy: " << after << endl;
+    cout << "Post-rotation energy: " << after << endl;
+
+    Atom *CA = aa->get_atom("CA"), *CB = aa->get_atom("CB");
+    Bond* B = CA->get_bond_between(CB);
+    aa->best_downstream_conformer(B, neighbors);
+    after = aa->Molecule::get_intermol_binding(neighbors).summed();
+    cout << "Post-conformation energy: " << after << endl;
+
+    fp = fopen("tmp/flexed.pdb", "w");
+    p.save_pdb(fp, &m);
+    p.end_pdb(fp);
+    fclose(fp);
+
+    cout << "Wrote output file." << endl;
 }

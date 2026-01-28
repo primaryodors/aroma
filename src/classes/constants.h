@@ -27,6 +27,7 @@
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8
+const float reach_per_carbon = 1.54 * sin(tetrahedral);
 
 // Warning - increasing these constants significantly above the maximal 35.0, 60.0 values
 // will cause docking fails in the unit tests.
@@ -195,14 +196,18 @@
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
+#define dockiters_divisor 3
+#define downstream_dock_probability 0.03
 #define flexion_maxangle hexagonal
 #define flexion_probability_multiplier 1
-#define flexion_sub_iterations_ligand 15
+#define flexion_sub_iterations_ligand 1
 #define flexion_sub_iterations_sidechain 1
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
-#define fullrot_forbid_residues 1
+#define fullrot_forbid_residues 0
+const int recursrot_depth = 4;
+const float recursrot_step = M_PI/5;
 #define sidechain_flexion_frequency 0.333
 #define stochastic_flexion_of_clashing_residues 1
 
@@ -248,7 +253,7 @@
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.3
 #define bb_realign_iters 1
-#define bb_realign_only_hydro 1
+#define bb_realign_only_hydro 0
 #define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333
 #define bb_stochastic_A 1.5
@@ -356,6 +361,7 @@
 #define _dbg_chirality_detection 0
 #define _dbg_cond_basic 0
 #define _dbg_cond_basic_acd_lig 0
+#define _dbg_conects 0
 #define _dbg_conj_chg 0
 #define _dbg_conjugation 0
 #define _dbg_contact_anomaly 0

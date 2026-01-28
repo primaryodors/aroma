@@ -374,9 +374,9 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 						} );
 						h2otmp = "";
 					}
-                    
+
                 }
-                
+
                 if (fext == 'sdf')
                 {
                 	$('#posey').show();
@@ -4746,9 +4746,19 @@ $("body").on("keyup", function(e, obj)
 
     if (e.keyCode >= 37 && e.keyCode <= 40)
     {
-        if (e.keyCode == 37) showNode(gnode-1);
+        if (e.keyCode == 37)
+		{
+			var n = gnode-1;
+			while (mnod.indexOf(n) < 0 && n > 0) n--;
+			showNode(n);
+		}
         if (e.keyCode == 38) showPose(gpose-1);
-        if (e.keyCode == 39) showNode(gnode+1);
+        if (e.keyCode == 39)
+		{
+			var n = gnode+1;
+			while (mnod.indexOf(n) < 0 && n < mnod[mnod.length-1]) n++;
+			showNode(n);
+		}
         if (e.keyCode == 40) showPose(gpose+1);
         e.preventDefault();
         return;

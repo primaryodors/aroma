@@ -165,7 +165,7 @@ int main(int argc, char** argv)
             if (aa && pointing && target)
             {
                 if (!aa->mclashables) p.set_clashables(aa->get_residue_no());
-                aa->conform_atom_to_location(pointing->name, tatom->loc, 20, InteratomicForce::optimal_distance(pointing, tatom));
+                aa->conform_atom_to_location(pointing->name, tatom->loc, 5, InteratomicForce::optimal_distance(pointing, tatom));
             }
         }
         else if ((buffer[0] == '-' && buffer[1] == 'm') || !strcmp(buffer, "--metal"))

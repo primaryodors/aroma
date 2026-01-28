@@ -405,7 +405,7 @@ REMARK   1  TITL 4 Modeling of loops in protein structures.
 REMARK   1  REF  4 Protein Science 9. 1753-1773, 2000.
 REMARK   1  DOI  4 10.1110/ps.9.9.1753
 REMARK   1  
-REMARK 265 HM_TEMPLATES: custom
+REMARK   6 HM_TEMPLATES: custom
 
 UNCHAIN I
 UNCHAIN O

@@ -71,6 +71,7 @@ public:
     int count_moves_with_atom2();
     int count_heavy_moves_with_atom();
     int count_heavy_moves_with_atom2();
+    bool atom_in_moves_with(Atom* a);
     Bond* get_reversed();
     void compute_flip_capability();
     void swing(Vector newdir);		// Rotate atom2, and all its moves_with atoms, about atom1 so that the bond points to newdir.
@@ -313,6 +314,7 @@ public:
         swapped_chirality = !swapped_chirality;
         chirality_unspecified = false;
     }
+    float are_bonds_coplanar();
 
     void print_bond_angles();                   // For unit tests.
 
@@ -351,6 +353,7 @@ public:
     void* mol = nullptr;
     bool vanished = false;
     float molsurf_area = 0;         // Contribution of atom to its molecule's surface area.
+    float last_clash = 0;
 
     #if debug_break_on_move
     bool break_on_move = false;		// debugging feature.
