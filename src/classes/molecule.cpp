@@ -5353,7 +5353,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
         br = Avogadro;
     }
 
-    for (theta=0; theta<M_PI*2; theta += step)
+    for (theta=0; theta<M_PI*2; theta += fabs(step))
     {
         // If bond is rotatable, rotate bond one unit step.
         if (step) b->rotate(step);
@@ -5390,7 +5390,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
             br = r;
         }
 
-        if (!step) break;
+        if (step <= 0) break;
     }
 
     best.restore_state(this);
