@@ -5460,6 +5460,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (i=0; mm[i]; i++) if (mm[i]->coordmtl) { cfmols_have_metals = true; break;}
 
+    iters /= 5;
     for (iter=0; iter<iters; iter++)
     {
         if (frand(0,1) < best_pose_reset_frequency) for (abc=0; mm[abc]; abc++) absolute_best[abc].restore_state(mm[abc]);
@@ -5873,111 +5874,120 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 }
                             }
                             else
-                        {
-                            theta = frand(-flexion_maxangle, flexion_maxangle);
-                            if (ares) wfal = a->faces_any_ligand(mm);
-
-                            if (!bb[q]->can_rotate)
                             {
-                                bb[q]->compute_flip_capability();
-                                if (!bb[q]->flip_angle) bb[q]->flip_angle = M_PI;
-                            }
+                                theta = frand(-flexion_maxangle, flexion_maxangle);
+                                if (ares) wfal = a->faces_any_ligand(mm);
 
-                            benerg = cfmol_multibind(a, nearby);
-                            benerg.clash += a->total_eclipses();
-                            benerg.clash += a->get_internal_clashes();
-                            benerg.clash += a->get_intermol_clashes(nearby);
+                                if (!bb[q]->can_rotate)
+                                {
+                                    bb[q]->compute_flip_capability();
+                                    if (!bb[q]->flip_angle) bb[q]->flip_angle = M_PI;
+                                }
 
-                            Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
-                            if (isra)
-                            {
-                                if (rang) continue;
-                                #if _dbg_atom_mov_to_clash
-                                movclash_justtesting = true;
-                                #endif
-                                isra->flip_atom(bb[q]->atom1);
-                                rang++;
-                                flipped_rings = true;
-                                if (audit) sprintf(triedchange, "ring flip of %s", bb[q]->atom1->name);
-                            }
-                            else
-                            {
-                                #if _dbg_atom_mov_to_clash
-                                movclash_justtesting = true;
-                                #endif
-                                bb[q]->rotate(theta, false);
-                                if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
-                            }
+                                benerg = cfmol_multibind(a, nearby);
+                                benerg.clash += a->total_eclipses();
+                                benerg.clash += a->get_internal_clashes();
+                                benerg.clash += a->get_intermol_clashes(nearby);
 
-                            tryenerg = cfmol_multibind(a, nearby);
-                            tryenerg.clash += a->total_eclipses();
-                            tryenerg.clash += a->get_internal_clashes();
-                            tryenerg.clash += a->get_intermol_clashes(nearby);
-                            fal = ares ? mm[i]->faces_any_ligand(mm) : true;
+                                Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
+                                if (isra)
+                                {
+                                    if (rang) continue;
+                                    #if _dbg_atom_mov_to_clash
+                                    movclash_justtesting = true;
+                                    #endif
+                                    isra->flip_atom(bb[q]->atom1);
+                                    rang++;
+                                    flipped_rings = true;
+                                    if (audit) sprintf(triedchange, "ring flip of %s", bb[q]->atom1->name);
+                                }
+                                else
+                                {
+                                    #if _dbg_atom_mov_to_clash
+                                    movclash_justtesting = true;
+                                    #endif
+                                    bb[q]->rotate(theta, false);
+                                    if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
+                                }
 
-                            #if _dbg_mol_flexion
-                            if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
-                            #endif
+                                if (frand(0,1) < 0.1)
+                                {
+                                    bool bcr = bb[q]->can_rotate, bcf = bb[q]->can_flip;
+                                    bb[q]->can_rotate = bb[q]->can_flip = false;    // prevent 360deg on the current bond
+                                    a->best_downstream_conformer(bb[q], nearby);
+                                    bb[q]->can_rotate = bcr;
+                                    bb[q]->can_flip = bcf;
+                                }
 
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                // && a->get_internal_clashes() <= self_clash
-                                // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
-                               )
-                            {
-                                benerg = tryenerg;
-                                pib.copy_state(a);
-                                a->been_flexed = true;
-                                test_and_update_absolute_best_poses
+                                tryenerg = cfmol_multibind(a, nearby);
+                                tryenerg.clash += a->total_eclipses();
+                                tryenerg.clash += a->get_internal_clashes();
+                                tryenerg.clash += a->get_intermol_clashes(nearby);
+                                fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
                                 #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
+                                if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                                 #endif
-                            }
-                            else
-                            {
-                                pib.restore_state(a);
+
+                                if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                    // && a->get_internal_clashes() <= self_clash
+                                    // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                )
+                                {
+                                    benerg = tryenerg;
+                                    pib.copy_state(a);
+                                    a->been_flexed = true;
+                                    test_and_update_absolute_best_poses
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
+                                    #endif
+                                }
+                                else
+                                {
+                                    pib.restore_state(a);
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                    #endif
+                                }
+
+                                a->enforce_stays(multimol_stays_enforcement);
+                                tryenerg = cfmol_multibind(a, nearby);
+                                tryenerg.clash += a->total_eclipses();
+                                tryenerg.clash += a->get_internal_clashes();
+                                tryenerg.clash += a->get_intermol_clashes(nearby);
+                                fal = ares ? mm[i]->faces_any_ligand(mm) : true;
 
                                 #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                                 #endif
+
+                                if ((fal || !wfal) && tryenerg.accept_change(benerg)
+                                    // && a->get_internal_clashes() <= self_clash
+                                    // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
+                                )
+                                {
+                                    benerg = tryenerg;
+                                    pib.copy_state(a);
+                                    a->been_flexed = true;
+                                    test_and_update_absolute_best_poses
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
+                                    #endif
+                                }
+                                else
+                                {
+                                    #if multimol_stays_allow_revert_worsening
+                                    pib.restore_state(a);
+
+                                    #if _dbg_mol_flexion
+                                    if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
+                                    #endif
+                                    #endif
+                                }
                             }
-
-                            a->enforce_stays(multimol_stays_enforcement);
-                            tryenerg = cfmol_multibind(a, nearby);
-                            tryenerg.clash += a->total_eclipses();
-                            tryenerg.clash += a->get_internal_clashes();
-                            tryenerg.clash += a->get_intermol_clashes(nearby);
-                            fal = ares ? mm[i]->faces_any_ligand(mm) : true;
-
-                            #if _dbg_mol_flexion
-                            if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
-                            #endif
-
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                // && a->get_internal_clashes() <= self_clash
-                                // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
-                               )
-                            {
-                                benerg = tryenerg;
-                                pib.copy_state(a);
-                                a->been_flexed = true;
-                                test_and_update_absolute_best_poses
-
-                                #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << " energy now " << -tryenerg << ", keeping." << endl << endl;
-                                #endif
-                            }
-                            else
-                            {
-                                #if multimol_stays_allow_revert_worsening
-                                pib.restore_state(a);
-
-                                #if _dbg_mol_flexion
-                                if (is_flexion_dbg_mol_bond) cout << " energy from " << -benerg << " to " << -tryenerg << ", reverting." << endl << endl;
-                                #endif
-                                #endif
-                            }
-                        }
                         }
                     }
                 }       // Rotatable bonds.
