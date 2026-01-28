@@ -775,7 +775,7 @@ void iteration_callback(int iter, Molecule** mols)
         Interaction before = llig->get_intermol_binding(mols);
         Pose was(llig);
         #if bb_realign_only_hydro
-        Search::align_targets(llig, loneliest, &g_bbr[l], bb_realign_amount);
+        Search::align_targets(llig, loneliest, &g_bbr[l], bb_realign_amount, true);
         #else
         Search::align_targets(llig, loneliest, &g_bbr[l], bb_realign_amount);
         #endif
@@ -3983,7 +3983,10 @@ _try_again:
                     if (f > clash_limit_per_aa*10)
                     {
                         dr[drcount][nodeno].disqualified = true;
-                        std::string reason = (std::string)"Side chain clash " + std::to_string(f) + (std::string)". ";
+                        std::string reason = (std::string)"Side chain clash "
+                            + (std::string)aa1->get_name() + (std::string)"-"
+                            + (std::string)aa2->get_name() + (std::string)" "
+                            + std::to_string(f) + (std::string)". ";
                         dr[drcount][nodeno].disqualify_reason += reason;
                         i=j=n+2;
                         break;

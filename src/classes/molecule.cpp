@@ -5461,7 +5461,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (i=0; mm[i]; i++) if (mm[i]->coordmtl) { cfmols_have_metals = true; break;}
 
-    iters /= 5;
+    iters /= dockiters_divisor;
     for (iter=0; iter<iters; iter++)
     {
         if (frand(0,1) < best_pose_reset_frequency) for (abc=0; mm[abc]; abc++) absolute_best[abc].restore_state(mm[abc]);
@@ -6048,13 +6048,13 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!(i%8) && progress)
             {
                 float f = (float)i / n;
-                float fiter = (f + iter) / iters * 100;
+                float fiter = (f + (iter*dockiters_divisor)) / iters * 100;
                 progress(fiter);
             }
         }       // for i
 
         #if allow_iter_cb
-        if (cb) cb((iter*10)+1, mm);
+        if (cb) cb((iter*dockiters_divisor)+1, mm);
         #endif
 
         minimum_searching_aniso *= 0.99;
@@ -7857,7 +7857,7 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
             energy.clash += bond_strain_for_structure_refinement();
             energy.clash += get_internal_clashes();
             energy.clash += total_eclipses();
-            energy.clash += sum_interatomic_distances()*1e-6;
+            energy.clash -= sum_interatomic_distances();
             float anomaly = energy.summed();
             anomalies[i] = anomaly;
 

@@ -196,6 +196,7 @@ const float reach_per_carbon = 1.54 * sin(tetrahedral);
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
+#define dockiters_divisor 3
 #define downstream_dock_probability 0.03
 #define flexion_maxangle hexagonal
 #define flexion_probability_multiplier 1
@@ -252,7 +253,7 @@ const float recursrot_step = M_PI/5;
 #define bb_pullaway_allowance 1.0
 #define bb_realign_amount 0.3
 #define bb_realign_iters 1
-#define bb_realign_only_hydro 1
+#define bb_realign_only_hydro 0
 #define bb_secondary_must_be_farthest_from_primary 1
 #define bb_stochastic 0.333
 #define bb_stochastic_A 1.5
