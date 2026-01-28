@@ -4486,6 +4486,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
     }
 
     clash_worst = 0;
+    for (i=0; atoms[i]; i++) atoms[i]->last_clash = 0;
+    for (l=0; ligands[l]; l++) for (j=0; j<ligands[l]->atcount; j++) ligands[l]->atoms[j]->last_clash = 0;
     for (i=0; atoms[i]; i++)
     {
         Point aloc = atoms[i]->loc;
@@ -4687,6 +4689,8 @@ Interaction Molecule::get_atom_binding(Atom *a)
     Interaction kJmol;
     if (!atoms) return 0;
     int i;
+    for (i=0; atoms[i]; i++) atoms[i]->last_clash = 0;
+    a->last_clash = 0;
     for (i=0; atoms[i]; i++)
     {
         Point iloc = atoms[i]->loc;
@@ -5328,7 +5332,10 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
     int depth, Atom *stop_at,
     Atom* am, Atom* ao, Point at, float ar)
 {
+    if (!b || !b->atom2) return get_intermol_binding(neighbors);
+    b->atom2->last_clash = 0;
     Interaction result = get_intermol_binding(neighbors), test = 0;
+    if (b->atom2->last_clash >= 1000) return result;       // if you bump your knee, don't try to fix it by wiggling your foot.
     if (depth > recursrot_depth) return result;
     Pose best(this);
     int i, resno = b->atom1->residue, Grk1 = b->atom1->get_Greek(), Grk2 = b->atom2->get_Greek();

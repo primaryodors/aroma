@@ -353,6 +353,7 @@ public:
     void* mol = nullptr;
     bool vanished = false;
     float molsurf_area = 0;         // Contribution of atom to its molecule's surface area.
+    float last_clash = 0;
 
     #if debug_break_on_move
     bool break_on_move = false;		// debugging feature.
