@@ -6053,7 +6053,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         }       // for i
 
         #if allow_iter_cb
-        if (cb) cb(iter+1, mm);
+        if (cb) cb((iter*10)+1, mm);
         #endif
 
         minimum_searching_aniso *= 0.99;
