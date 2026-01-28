@@ -5381,6 +5381,7 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
 
         // Continue rotating, then revert to the best energy pose and return interaction.
         test = get_intermol_binding(neighbors);
+        test.attractive += sum_interatomic_distances();
         if (am)
         {
             if (ao) r = am->distance_to(ao);
@@ -6948,7 +6949,7 @@ float Molecule::sum_interatomic_distances()
             }
 
             float r = atoms[i]->distance_to(atoms[j]);
-            result += r + atoms[i]->vdW_radius + atoms[j]->vdW_radius;
+            result += r - (atoms[i]->vdW_radius + atoms[j]->vdW_radius);
         }
     }
     return result;
