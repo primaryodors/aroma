@@ -204,7 +204,7 @@ const float reach_per_carbon = 1.54 * sin(tetrahedral);
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
-#define fullrot_forbid_residues 1
+#define fullrot_forbid_residues 0
 const int recursrot_depth = 4;
 const float recursrot_step = M_PI/5;
 #define sidechain_flexion_frequency 0.333

@@ -5375,8 +5375,8 @@ Interaction Molecule::best_downstream_conformer(Bond *b, Molecule **neighbors,
                 && b2[i]->atom2 != stop_at
                 && b2[i]->atom2->get_bonded_atoms_count() > 1
                 && (!resno || b2[i]->atom2->get_Greek() > Grk2))
-                test = best_downstream_conformer(b2[i], neighbors, depth+1, stop_at,
-                    am, ao, at, ar);       // DANGER!
+                test = best_downstream_conformer(b2[i], neighbors, depth+(b->can_rotate?1:0), stop_at,
+                    am, ao, at, ar);       // DANGER! Recursion!
         }
 
         // Continue rotating, then revert to the best energy pose and return interaction.
