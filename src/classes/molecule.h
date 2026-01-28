@@ -284,7 +284,7 @@ public:
 
     // Returns the sum of all possible atom-molecule interactions if all distances and anisotropies were somehow optimal.
     float get_atom_mol_bind_potential(Atom* a);
-    float find_mutual_max_bind_potential(Molecule* other);
+    float find_mutual_max_bind_potential(Molecule* other, Atom** result_mine = nullptr, Atom** result_other = nullptr);
     bool check_stays();
     bool check_stays_dry();
     void enforce_stays(float amount=1, void (*stepscb)(std::string mesg) = nullptr);

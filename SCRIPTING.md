@@ -91,8 +91,8 @@ There are also "magic" variables to access residues by Ballesteros-Weinstein num
 - The string formats e.g. `$6.48`, `$A.6.48` obtain the residue letter at the indicated BW position;
 - The Cartesian formats e.g. `@6.48`, `@A.6.48` obtain the location of the residue's CA atom.
 
-In all cases, the magic variable without a strand prefix, e.g. `$6.48`, refers to the current working strand, while the variable with a prefix,
-e.g. `$A.6.48`, refers to the indicated strand, in this example strand A.
+In all cases, the magic variable without a strand prefix, e.g. `$6.48`, refers to the current working strand,
+while the variable with a prefix, e.g. `$A.6.48`, refers to the indicated strand, in this example strand A.
 
 
 # Commands
@@ -569,6 +569,14 @@ MEASURE %5.58 "OH" %7.53 "OH" &distance     # Specify atoms whose locations to m
 ```
 
 Computes the distance in Angstroms between any two residues, or any two atoms of the current working protein, and stores the result in an output variable.
+
+Optionally, a special keyword can be used in place of one or both atom names:
+
+    `EXTENT`            The residue's "reach" atom, the farthest atom in 3D space from C alpha;
+    `EXTHVY`            The farthest heavy atom from C alpha;
+    `EXTH`              The farthest heavy atom, capable of hydrogen bonding, from C alpha;
+    `NEAREST`           The nearest residue atom to the other residue;
+    `NEARESV`           The nearest residue heavy atom (i.e. not hydrogen) to the other residue;
 
 
 # MOVE
