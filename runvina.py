@@ -250,16 +250,21 @@ for rcpid in data.protutils.prots.keys():
         subprocess.run(cmdl)
 
         # Call Vina
+        outfile = f"output/{fam}/{rcpid}/{rcpid}.{lignu}.active.pdbqt"
         cmd = ["../AutoDock-Vina/build/linux/release/vina", "--receptor", f"tmp/{rcpid}.rigid.pdbqt",
             "--flex", f"tmp/{rcpid}.flex.pdbqt",
             "--ligand", f"tmp/{lignu}.pdbqt",
             "--center_x", "0", "--center_y", "15", "--center_z", "0",
             "--size_x", "20", "--size_y", "20", "--size_z", "20",
-            "--exhaustiveness", "20", "--cpu", "1"]
+            "--exhaustiveness", "20", "--cpu", "1",
+            "--out", outfile]
         print(" ".join(cmd))
         subprocess.run(cmd)
 
         # TODO: interpret output
+        cmdo = ["obabel", "-i", "pdbqt", outfile, "-o", "pdb", "-O", outfile[0:-2]]
+        print(" ".join(cmdo))
+        subprocess.run(cmdo)
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config file because you have the debug \"nodelete\" option selected.")
