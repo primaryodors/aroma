@@ -193,19 +193,20 @@ window.setTimeout( function()
 </div>
 
 <p class="aromainfo">
+	<strong>Names:</strong><br>
     <?php
+    echo $odor["full_name"];
     for ($i=1; isset($odor["name$i"]); $i++)
     {
-        if ($i > 1) echo ", ";
+        echo ", ";
         echo $odor["name$i"];
     }
     if (isset($odor["iupac"]))
     {
-        if ($i > 1) echo ", ";
+        echo ", ";
         echo $odor["iupac"];
-        if ($i == 1) echo "<br><br>";
     }
-    if ($i > 1) echo "<br><br>";
+    echo "<br><br>";
     ?>
 	<strong>SMILES:</strong><br>
 	<?php echo $odor['smiles']; ?><br>
