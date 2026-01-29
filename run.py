@@ -166,6 +166,7 @@ for rcpid in data.protutils.prots.keys():
         # newcfg.append("OUTMC 1")
         newcfg.append("NORESWARN")
         newcfg.append("NOFAIL")
+        newcfg.append("MOVIE")          # just until shit working
 
         cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-3.0", "nooil"]
         print(" ".join(cmd))
@@ -249,7 +250,7 @@ for rcpid in data.protutils.prots.keys():
         subprocess.run(cmd)
         cmd = ["bin/aromadock", "tmp/" + conffni]
         print(" ".join(cmd))
-        subprocess.run(cmd)
+        # subprocess.run(cmd)               # just until shit working
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config file because you have the debug \"nodelete\" option selected.")
