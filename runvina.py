@@ -101,7 +101,37 @@ for rcpid in data.protutils.prots.keys():
         data.odorutils.ensure_sdf_exists(o["full_name"])
 
         pocket = data.dyncenter.get_pocket(rcpid, o["full_name"])
+
+        if "odorophores" in pocket:
+            for odorophore in pocket["odorophores"].keys():
+                cmd = ["test/moiety_test", f"sdf/{lignu}.sdf", "odorophore"]
+                print(" ".join(cmd))
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                for ln in proc.stdout.decode().split('\n'):
+                    if re.match(" occurs [1-9][0-9]* times", ln):
+                        for key in pocket["odorophores"][odorophore]:
+                            pocket[key] = pocket["odorophores"][odorophore][key]
+
+        flxr = []
+        stcr = []
+        atomto = []
+        if "flxr" in pocket:
+            flxr = pocket["flxr"]
+            if isinstance(flxr, str):
+                flxr = [flxr]
+        if "stcr" in pocket:
+            stcr = pocket["stcr"]
+            if isinstance(stcr, str):
+                stcr = [stcr]
+        if "atomto" in pocket:
+            atomto = pocket["atomto"]
+            if isinstance(atomto, str):
+                atomto = [atomto]
+        if "pocket" in pocket:
+            pocket = pocket["pocket"]
+        # print(atomto)
         # print(pocket)
+        # exit()
 
         conffna = rcpid + "~" + lignu + ".active.config"
         conffni = rcpid + "~" + lignu + ".inactive.config"
@@ -122,6 +152,73 @@ for rcpid in data.protutils.prots.keys():
 
         print(f"Beginning {rcpid} ~ "+o["full_name"]+"...")
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+        # TODO: Apply atomto directives
+
+        # Determine which residues will be flexible and which will be rigid
+        resflexy = [False] * len(data.protutils.prots[rcpid]["sequence"])
+        for pkt in pocket.split(' '):
+            aminos = re.search("^[A-Z]+", pkt)
+            if aminos: aminos = aminos.group()
+            bw = re.search("[0-9]{1,2}[.][0-9]{2}", pkt)
+            if not bw: bw = re.search("[0-9]+", pkt)
+            if bw: bw = bw.group()
+            else:
+                print(f"Bad pocket residue: {pkt}")
+                exit()
+            bang = re.match("[!]", pkt)
+            resno = data.protutils.resno_from_bw(rcpid, bw)
+            if not resno: continue
+            if aminos:
+                lett = data.protutils.aalet_at_resno(rcpid, resno)
+                if not lett in aminos:
+                    if bang: bang = False
+                    else: continue
+            resflexy[resno-1] = True
+            # print(f"{resno} is bsr")
+
+        for flx in flxr:
+            for flxres in flx.split(' '):
+                aminos = re.search("^[A-Z]+", flxres)
+                if aminos: aminos = aminos.group()
+                bw = re.search("[0-9]{1,2}[.][0-9]{2}", flxres)
+                if not bw: bw = re.search("[0-9]+", flxres)
+                if bw: bw = bw.group()
+                else:
+                    print(f"Bad flex residue: {flxres}")
+                    exit()
+                resno = data.protutils.resno_from_bw(rcpid, bw)
+                if not resno: continue
+                if aminos:
+                    lett = data.protutils.aalet_at_resno(rcpid, resno)
+                    if not lett in aminos: continue
+                resflexy[resno-1] = True
+                print(f"{resno} is flexy")
+
+        for stc in stcr:
+            for stcres in stc.split(' '):
+                aminos = re.search("^[A-Z]+", stcres)
+                if aminos: aminos = aminos.group()
+                bw = re.search("[0-9]{1,2}[.][0-9]{2}", stcres)
+                if not bw: bw = re.search("[0-9]+", stcres)
+                if bw: bw = bw.group()
+                else:
+                    print(f"Bad flex residue: {stcres}")
+                    exit()
+                resno = data.protutils.resno_from_bw(rcpid, bw)
+                if not resno: continue
+                if aminos:
+                    lett = data.protutils.aalet_at_resno(rcpid, resno)
+                    if not lett in aminos: continue
+                resflexy[resno-1] = False
+                print(f"{resno} is sticky")
+
+        rcpfn = f"pdbs/{fam}/{rcpid}.active.pdb"
+        with open(rcpfn, 'r') as f:
+            pdb = f.read()
+            lines = pdb.split("\n")
+            for ln in lines:
+                #
 
         # Convert receptor to PDBQT
         rigidfn = f"pdbs/{fam}/{rcpid}.active.pdb"
