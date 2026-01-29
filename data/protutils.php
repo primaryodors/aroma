@@ -408,7 +408,7 @@ function similar_receptors($rcpid, $lbsr = [])
 		}
 	}
 
-	$results = [$rcpid => $pbsr];
+	$results = [$rcpid => [$pbsr, 1]];
 	$sortable = [];
 	$tmp = [];
 	foreach ($prots as $id => $p)
@@ -429,7 +429,7 @@ function similar_receptors($rcpid, $lbsr = [])
 			$score += amino_similarity(@$pbsr[$bw], $tbsr[$bw]);
 		}
 		$score /= count($lbsr);
-		echo "<!-- $id score $score -->\n";
+		// echo "<!-- $id score $score -->\n";
 
 		if ($score >= 0.8)
 		{
@@ -439,7 +439,7 @@ function similar_receptors($rcpid, $lbsr = [])
 	}
 
 	arsort($sortable);
-	foreach ($sortable as $id => $v) $results[$id] = $tmp[$id];
+	foreach ($sortable as $id => $v) $results[$id] = [$tmp[$id], $sortable[$id]];
 
 	return $results;
 }
