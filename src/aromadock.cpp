@@ -2841,7 +2841,7 @@ _try_again:
                 AminoAcid* aa = protein->get_residue(vestibule_holder[i].resno);
                 if (aa)
                 {
-                    aa->movability = MOV_FORCEFLEX;
+                    aa->movability = MOV_PINNED;
                     vestcen = vestcen.add(aa->get_reach_atom_location());
                     vestdiv++;
 

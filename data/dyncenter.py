@@ -26,6 +26,7 @@ def get_pocket(protid, lig):
     for patt in bsrdat.keys():
         if patt == protid:
             matched = bsrdat[patt]
+            print("Matched " + patt)
             break
         elif patt[-1:] == '*':
             pat = patt[0:-1]
@@ -33,10 +34,14 @@ def get_pocket(protid, lig):
             proti = protid[0:pl]
             if proti == pat:
                 matched = bsrdat[patt]
+                print("Matched " + patt)
                 break
+            # else: print(f"Protid {protid} didn't match {patt}")
         elif re.search(patt, protid):
             matched = bsrdat[patt]
+            print("Matched " + patt)
             break
+        # else: print(f"Protid {protid} didn't match {patt}")
 
     if matched:
         if "odorophores" in matched:
