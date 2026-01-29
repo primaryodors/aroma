@@ -482,4 +482,3 @@ function find_odorant($aroma)
 	}
 	return false;
 }
-
