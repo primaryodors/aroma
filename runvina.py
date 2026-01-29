@@ -217,15 +217,32 @@ for rcpid in data.protutils.prots.keys():
         with open(rcpfn, 'r') as f:
             pdb = f.read()
             lines = pdb.split("\n")
+            rigidpdb = ""
+            flexpdb = ""
             for ln in lines:
-                #
+                if ln[0:6] == "ATOM  ":
+                    resno = re.sub("[^0-9]", "", ln[22:27])
+                    if not resno: continue
+                    resno = int(resno)
+                    if not resno: continue
+                    if resflexy[resno-1]:
+                        flexpdb += ln + "\n"
+                    else:
+                        rigidpdb += ln + "\n"
+        rigidfn = f"tmp/{rcpid}.rigid.pdb"
+        flexfn = f"tmp/{rcpid}.flex.pdb"
+        with open(rigidfn, 'w') as f:
+            f.write(rigidpdb)
+        with open(flexfn, 'w') as f:
+            f.write(flexpdb)
 
         # Convert receptor to PDBQT
-        rigidfn = f"pdbs/{fam}/{rcpid}.active.pdb"
         cmdr = ["obabel", "-i", "pdb", rigidfn, "-xr", "-o", "pdbqt", "-O", f"tmp/{rcpid}.rigid.pdbqt"]
-        # cmdf = ["obabel", "-i", "pdb", flexfn, "-xs", "-o", "pdbqt", "-O", f"tmp/{rcpid}.flex.pdbqt"]
+        cmdf = ["obabel", "-i", "pdb", flexfn, "-xs", "-o", "pdbqt", "-O", f"tmp/{rcpid}.flex.pdbqt"]
         print(" ".join(cmdr))
         subprocess.run(cmdr)
+        print(" ".join(cmdf))
+        subprocess.run(cmdf)
 
         # Convert ligand to PDBQT
         cmdl = ["obabel", "-i", "sdf", f"sdf/{lignu}.sdf", "-o", "pdbqt", "-O", f"tmp/{lignu}.pdbqt"]
@@ -234,7 +251,7 @@ for rcpid in data.protutils.prots.keys():
 
         # Call Vina
         cmd = ["../AutoDock-Vina/build/linux/release/vina", "--receptor", f"tmp/{rcpid}.rigid.pdbqt",
-            # "--flex" f"tmp/{rcpid}.flex.pdbqt",
+            "--flex", f"tmp/{rcpid}.flex.pdbqt",
             "--ligand", f"tmp/{lignu}.pdbqt",
             "--center_x", "0", "--center_y", "15", "--center_z", "0",
             "--size_x", "20", "--size_y", "20", "--size_z", "20",
@@ -242,7 +259,7 @@ for rcpid in data.protutils.prots.keys():
         print(" ".join(cmd))
         subprocess.run(cmd)
 
-        # 
+        # TODO: interpret output
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config file because you have the debug \"nodelete\" option selected.")
