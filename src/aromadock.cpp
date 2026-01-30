@@ -120,10 +120,12 @@ Point ligcen_target;
 Vector path[256];
 int pathnodes = 0;				// The pocketcen is the initial node.
 int nodeoff = 0;
+#if enable_vestibules
 ResiduePlaceholder vestibule_holder[MAX_VESTIBULE];
 ResiduePlaceholder vestibule_grabber[MAX_VESTIBULE];
 int nvestibule_holder = 0, nvestibule_grabber = 0;
 Point vestcen(0,0,0);
+#endif
 int poses = 10;
 int iters = 50;
 int maxh2o = 0;
@@ -940,12 +942,14 @@ void iteration_callback(int iter, Molecule** mols)
     if (output_each_iter) output_iter(iter+nodeoff, mols, "dock iteration");
 }
 
+#if enable_vestibules
 void vestibule_callback(int iter, Molecule** mols)
 {
     Vector movamt = vestcen.subtract(mols[0]->get_barycenter());
     movamt.r *= 0.666;
     mols[0]->move(movamt);
 }
+#endif
 
 void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
 {
@@ -1684,6 +1688,7 @@ int interpret_config_line(char** words)
         strcpy(cvtyfname, words[1]);
         return 1;
     }
+    #if enable_vestibules
     else if (!strcmp(words[0], "VESTIBULE"))
     {
         j = 1;
@@ -1704,6 +1709,7 @@ int interpret_config_line(char** words)
         }
         return j;
     }
+    #endif
 
     return 0;
 }
@@ -2828,6 +2834,7 @@ _try_again:
 
         freeze_bridged_residues();
 
+        #if enable_vestibules
         if (nvestibule_holder)
         {
             vestcen.scale(0);
@@ -2948,9 +2955,12 @@ _try_again:
             }
             else cerr << "Warning: vestibule holder specified but residues aren't present." << endl << endl;
         }
+        #endif
 
         ligand->recenter(pocketcen);
         // cout << "Centered ligand at " << pocketcen << endl << endl << flush;
+
+        #if enable_vestibules
         if (nvestibule_grabber)
         {
             for (i=0; i<nvestibule_grabber; i++)
@@ -2975,6 +2985,7 @@ _try_again:
                 }
             }
         }
+        #endif
 
         if (pdpst == pst_tumble_spheres)
         {
@@ -3669,16 +3680,20 @@ _try_again:
                             }
 
                             // ligand->propagate_stays();
+                            #if enable_vestibules
                             if (nvestibule_holder)
                             {
                                 ligand->recenter(searchcen);
                             }
                             else
                             {
+                            #endif
                                 g_bbr[l].protein = protein;
                                 Search::align_targets(llig, searchcen, &g_bbr[l]);
                                 searchcen = searchcen.add(searchcen.subtract(llig->get_barycenter()));
+                            #if enable_vestibules
                             }
+                            #endif
                         }
                     }
                     else ligand->recenter(nodecen);

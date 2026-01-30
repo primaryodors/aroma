@@ -44,7 +44,6 @@
 #define PROT_MAX_RGN 40
 #define SPHREACH_MAX 256
 #define VALENCE_EXCEEDS_GEOMETRY 22
-#define MAX_VESTIBULE 10
 
 #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
     #define CMD_CHECK_INSTALLED_3P_SMILES_PARSER "which obabel"
@@ -273,6 +272,10 @@
 #define soft_contact_elasticity_progress 0.01
 #define soft_iter_min 10
 #define soft_push_multiplier 0.01
+
+// Vestibule feature (non-functional)
+#define enable_vestibules 0
+#define MAX_VESTIBULE 10
 
 // Optimization constants.
 #define contact_energy_allowance_for_optimization 0.3
