@@ -467,6 +467,8 @@ structure:9lkb:17   :R:305  :R:Olfr110 Olfactory receptor family 5 subfamily V n
 ------------------------------------------------------------------------------------------------NKDIKEAVKAIG*
 ---------------------------------------------------------------------------------------------------*
 
+<<<<<<< HEAD
+=======
 >P1;9wpm
 structure:9wpm:9    :A:304  :A:Consensus olfactory receptor consOR5:Homo sapiens: 2.60: 0.20
 -------------------------------------------------------------------TEFILLGLTDDPELQVPLFLVFLAIYLITLVGNLGMIVLI-----------------------
@@ -478,6 +480,7 @@ structure:9wpm:9    :A:304  :A:Consensus olfactory receptor consOR5:Homo sapiens
 --------------------------------------------------------------------------------------ASVFYTVVIPMLNPLIYSLR------------------------
 ------------------------------------------------------------------------------------------------NKDVKEALKKVL*
 ---------------------------------------------------------------------------------------------------*
+>>>>>>> main
 
 >P1;5cxv
 structure:5cxv:20   :A:439  :A:Human M1 muscarinic acetylcholine receptor (inactive):Homo sapiens: 2.70: 0.234

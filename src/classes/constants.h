@@ -273,6 +273,10 @@
 #define soft_iter_min 10
 #define soft_push_multiplier 0.01
 
+// Vestibule feature (non-functional)
+#define enable_vestibules 0
+#define MAX_VESTIBULE 10
+
 // Optimization constants.
 #define contact_energy_allowance_for_optimization 0.3
 #define optimize_energies_in_contact_anomaly_check 0

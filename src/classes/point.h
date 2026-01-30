@@ -68,6 +68,7 @@ struct Box
     float height() const { return fabs(y2-y1); }
     float depth() const { return fabs(z2-z1); }
     Box outer(Box other);
+    void accommodate(Point p);
 
     double volume();
     bool contains(Point pt);

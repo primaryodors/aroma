@@ -169,7 +169,8 @@ function svg_from_smiles(smiles, w, h)
 </script>
 <?php
     echo "<h1>$protid ~ $odor</h1>";
-    $bsr4sim = array_values(similar_receptors($protid))[0];
+    $bsr4sim = array_values(similar_receptors($protid))[0][0];
+    // print_r($bsr4sim);
 
     $dockfname = "../output/$fam/$protid/$protid~$odor.$mode.dock";
     $lbsr = [];
@@ -206,11 +207,13 @@ function svg_from_smiles(smiles, w, h)
     }
 
     ksort($bsr4sim);
+    // print_r($bsr4sim);
 
     $sim = similar_receptors($protid, array_keys($bsr4sim));
     $lbsrn = [];
     echo "<p>Toggle:";
-    foreach (array_keys($sim[$protid]) as $bw)
+    // print_r($sim);
+    foreach (array_keys($sim[$protid][0]) as $bw)
     {
         echo " &nbsp; ";
         $lbsrn[$bw] = resno_from_bw($protid, $bw);
@@ -225,12 +228,14 @@ function svg_from_smiles(smiles, w, h)
         $frist = true;
         $lataa = [];
         $o = find_odorant($odor);
-        foreach ($sim as $id => $lb)
+        foreach ($sim as $id => list($lb, $simpcnt))
         {
             if ($fam != family_from_protid($id)) continue;
             if ($frist)
             {
                 echo "<tr>\n";
+                echo "<th>&nbsp;</th>";
+                echo "<th>&nbsp;</th>";
                 echo "<th>&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
@@ -241,7 +246,9 @@ function svg_from_smiles(smiles, w, h)
                 }
                 echo "</tr>\n";
                 echo "<tr>\n";
-                echo "<th>&nbsp;</th>";
+                echo "<th>Prot.</th>";
+                echo "<th>Sim.</th>";
+                echo "<th>Expr.</th>";
                 foreach (array_keys($lb) as $bw)
                 {
                     $display = isset($lbsr[$bw]) ? "" : "display: none;";
@@ -253,6 +260,12 @@ function svg_from_smiles(smiles, w, h)
             echo "<tr onclicqk=\"$('.skeltr').hide(); $('#skeltr$id').show();\">\n";
             echo "<td style=\"text-align: left;\">";
             echo "<b><a href=\"receptor.php?r=$id\">$id</a></b>";
+            echo "</td>";
+            echo "<td style=\"text-align: left;\">";
+            $simpcnt = intval($simpcnt*100);
+            echo "$simpcnt%";
+            echo "</td>";
+            echo "<td style=\"text-align: left;\">";
             if (isset($prots[$id]['expression'])) echo " {$prots[$id]['expression']}%";
             echo "</td>";
             foreach ($lb as $bw => $aa)
@@ -339,7 +352,7 @@ function svg_from_smiles(smiles, w, h)
             if ($frist)
             {
                 echo "<tr>\n";
-                echo "<th>&nbsp;</th>";
+                echo "<th colspan=\"3\">&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
                     $display = isset($lbsr[$bw]) ? "" : "display: none;";

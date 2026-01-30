@@ -4044,7 +4044,7 @@ float Molecule::get_atom_mol_bind_potential(Atom* a)
     return retval;
 }
 
-float Molecule::find_mutual_max_bind_potential(Molecule* other)
+float Molecule::find_mutual_max_bind_potential(Molecule* other, Atom** rm, Atom** ro)
 {
     int i, j, m = get_atom_count(), n = other->get_atom_count();
     if (!m || !n) return 0;
@@ -4066,37 +4066,48 @@ float Molecule::find_mutual_max_bind_potential(Molecule* other)
             if (b > best_potential)
             {
                 best_potential = b;
-                stay_close2_mol = stay_close_mol;
-                stay_close2_mine = stay_close_mine;
-                stay_close2_other = stay_close_other;
-                stay_close2_optimal = stay_close_optimal;
-                stay_close_mol = other;
-                stay_close_mine = atoms[i];
-                stay_close_other = other->atoms[j];
-                stay_close_optimal = InteratomicForce::optimal_distance(stay_close_mine, stay_close_other);
-                stay_close_tolerance = stay_close_optimal*stays_tolerance_factor;
+                if (rm && ro)
+                {
+                    *rm = atoms[i];
+                    *ro = other->atoms[j];
+                }
+                else
+                {
+                    stay_close2_mol = stay_close_mol;
+                    stay_close2_mine = stay_close_mine;
+                    stay_close2_other = stay_close_other;
+                    stay_close2_optimal = stay_close_optimal;
+                    stay_close_mol = other;
+                    stay_close_mine = atoms[i];
+                    stay_close_other = other->atoms[j];
+                    stay_close_optimal = InteratomicForce::optimal_distance(stay_close_mine, stay_close_other);
+                    stay_close_tolerance = stay_close_optimal*stays_tolerance_factor;
 
-                // cout << " *";
-                #if _dbg_cs_pairing || _dbg_stays_assignment
-                cout << "Stay-close atoms ";
-                if (stay_close_mine->residue)
-                    cout << stay_close_mine->aa3let << stay_close_mine->residue << ":";
-                else cout << "LIG:";
-                cout << stay_close_mine->name << " (polarity " << stay_close_mine->is_polar() << ") and ";
-                if (stay_close_other->residue)
-                    cout << stay_close_other->aa3let << stay_close_other->residue << ":";
-                else cout << "LIG:";
-                cout << stay_close_other->name << " (polarity " << stay_close_other->is_polar() << ")"
-                    << " have potential binding energy of " << -b << " kJ/mol at " << stay_close_optimal << "Å."
-                    << endl;
-                #endif
+                    // cout << " *";
+                    #if _dbg_cs_pairing || _dbg_stays_assignment
+                    cout << "Stay-close atoms ";
+                    if (stay_close_mine->residue)
+                        cout << stay_close_mine->aa3let << stay_close_mine->residue << ":";
+                    else cout << "LIG:";
+                    cout << stay_close_mine->name << " (polarity " << stay_close_mine->is_polar() << ") and ";
+                    if (stay_close_other->residue)
+                        cout << stay_close_other->aa3let << stay_close_other->residue << ":";
+                    else cout << "LIG:";
+                    cout << stay_close_other->name << " (polarity " << stay_close_other->is_polar() << ")"
+                        << " have potential binding energy of " << -b << " kJ/mol at " << stay_close_optimal << "Å."
+                        << endl;
+                    #endif
+                }
             }
             else if (b > nextbest_potential)
             {
-                stay_close2_mol = other;
-                stay_close2_mine = atoms[i];
-                stay_close2_other = other->atoms[j];
-                stay_close2_optimal = InteratomicForce::optimal_distance(stay_close2_mine, stay_close2_other);
+                if (!rm || !ro)
+                {
+                    stay_close2_mol = other;
+                    stay_close2_mine = atoms[i];
+                    stay_close2_other = other->atoms[j];
+                    stay_close2_optimal = InteratomicForce::optimal_distance(stay_close2_mine, stay_close2_other);
+                }
             }
             // cout << endl;
         }
@@ -5127,7 +5138,7 @@ void Molecule::conform_molecules(Molecule** mm, Molecule** bkg, int iters, void 
         if (duplicate) continue;
 
         all[l++] = mm[i];
-        mm[i]->movability = static_cast<MovabilityType>(static_cast<int>(mm[i]->movability & !MOV_BKGRND));
+        mm[i]->movability = static_cast<MovabilityType>(static_cast<int>(mm[i]->movability & (0xffffffff ^ MOV_BKGRND)));
     }
 
     for (i=0; i<n; i++)
@@ -5149,7 +5160,7 @@ void Molecule::conform_molecules(Molecule** mm, Molecule** bkg, int iters, void 
 
     for (i=0; i<n; i++)
     {
-        bkg[i]->movability = static_cast<MovabilityType>(static_cast<int>(bkg[i]->movability & !MOV_BKGRND));
+        bkg[i]->movability = static_cast<MovabilityType>(static_cast<int>(bkg[i]->movability & (0xffffffff ^ MOV_BKGRND)));
     }
 }
 

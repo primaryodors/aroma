@@ -1080,12 +1080,14 @@ foreach ($lrefs as $idx => $refurl)
     <table class="simr">
         <?php
         $frist = true;
-        foreach ($sim as $id => $lbsr)
+        foreach ($sim as $id => list($lbsr, $simpcnt))
         {
             if ($frist)
             {
                 echo "<tr>\n";
-                echo "<th>&nbsp;</th>";
+                echo "<th>Prot.</th>";
+                echo "<th>Sim.</th>";
+                echo "<th>Expr.</th>";
                 foreach (array_keys($lbsr) as $bw)
                 {
                     echo "<th>$bw</th>\n";
@@ -1095,6 +1097,11 @@ foreach ($lrefs as $idx => $refurl)
             }
             echo "<tr>\n";
             echo "<th><a href=\"receptor.php?r=$id\">$id</a></th>";
+            $simpcnt = intval($simpcnt*100);
+            echo "<td>$simpcnt</td>";
+            echo "<td style=\"text-align: left;\">";
+            if (isset($prots[$id]['expression'])) echo " {$prots[$id]['expression']}%";
+            echo "</td>";
             foreach ($lbsr as $aa)
             {
                 echo "<td class=\"aacolor$aa\">$aa</td>\n";

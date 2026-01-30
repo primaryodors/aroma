@@ -1,0 +1,10 @@
+
+LET $pdbfn = $arg2
+LET %res1 = $arg3
+LET %res2 = $arg4
+
+LOAD $pdbfn
+
+MEASURE %res1 NEARESV %res2 NEARESV &distance
+
+ECHO &distance
