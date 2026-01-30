@@ -1904,7 +1904,12 @@ void apply_protein_specific_settings(Protein* p)
         }
 
         Atom* a = aa->get_atom(aname);
-        if (!strcmp("EXTENT", aname)) a = aa->get_reach_atom();
+        if (!strcmp("EXTENT", aname))
+        {
+            a = aa->get_reach_atom(hbond);
+            if (!a) a = aa->get_reach_atom(pi);
+            if (!a) a = aa->get_reach_atom();
+        }
         if (!a)
         {
             if (!strstr(nfwarned.c_str(), aname))
