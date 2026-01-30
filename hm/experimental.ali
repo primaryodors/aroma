@@ -371,6 +371,89 @@ structure:8uyq:5    :A:310  :A:Consensus olfactory receptor consOR4:Homo sapiens
 ------------------------------------------------------------------------------------------------NKEMKAAMRKLWSRKVISSRK*
 ---------------------------------------------------------------------------------------------------*
 
+>P1;9ldv
+structure:9ldv:4    :R:306  :R:Consensus olfactory receptor consOR6:Homo sapiens: 2.78: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFIFLGCTEFFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLIILPPLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDISPLLQLACTDTSLLELVDFLLAVVTLLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSCIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKI*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9ldw
+structure:9ldw:4    :R:306  :R:Consensus olfactory receptor consOR6:Homo sapiens: 2.62: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFIFLGCTEFFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLIILPPLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDISPLLQLACTDTSLLELVDFLLAVVTLLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSCIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKI*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9ldx
+structure:9ldx:4    :R:306  :R:Consensus olfactory receptor consOR6:Homo sapiens: 2.83: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFIFLGCTEFFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLIILPPLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDISPLLQLACTDTSLLELVDFLLAVVTLLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSCIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKI*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9ldz
+structure:9ldz:4    :R:306  :R:Consensus olfactory receptor consOR6:Homo sapiens: 3.17: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFIFLGCTEFFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLIILPPLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDISPLLQLACTDTSLLELVDFLLAVVTLLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSCIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKI*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9le0
+structure:9le0:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 2.54: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLISLPKLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDVSPLLQLACTDTSLLELTDFLLAVVILLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSSIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKIKF*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9le1
+structure:9le1:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 3.30: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLISLPKLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDVSPLLQLACTDTSLLELTDFLLAVVILLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSSIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKIKF*
+---------------------------------------------------------------------------------------------------*
+
+>P1;9le2
+structure:9le2:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 3.33: 0.20
+---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
+--------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
+---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
+-------------------------------------------------------------------------------PLHYPTIMSSRLCTQLVLGSWVAGFLISLPKLILIS---------------
+------------------------------------------------------QLPFCGSNVINHFFCDVSPLLQLACTDTSLLELTDFLLAVVILLVTLLLVILSYTYIIRTILRI------------
+--------------------------------------------------------------------------PSAQGRKKAFSTCASHLTVVSIFYGSSIFMYVRPSA--------------------
+-----------------------------------------------------------------------------KESVNLNKGVAVLYTVVTPLLNPFIYTLR------------------------
+------------------------------------------------------------------------------------------------NKEVKQALKKTLKKIKF*
+---------------------------------------------------------------------------------------------------*
 
 >P1;9lkb
 structure:9lkb:17   :R:305  :R:Olfr110 Olfactory receptor family 5 subfamily V number 1:Mus musculus: 3.70: 0.20
@@ -384,6 +467,20 @@ structure:9lkb:17   :R:305  :R:Olfr110 Olfactory receptor family 5 subfamily V n
 ------------------------------------------------------------------------------------------------NKDIKEAVKAIG*
 ---------------------------------------------------------------------------------------------------*
 
+<<<<<<< HEAD
+=======
+>P1;9wpm
+structure:9wpm:9    :A:304  :A:Consensus olfactory receptor consOR5:Homo sapiens: 2.60: 0.20
+-------------------------------------------------------------------TEFILLGLTDDPELQVPLFLVFLAIYLITLVGNLGMIVLI-----------------------
+-------------------------------------------------------------------------------RIDSHLHTPMYFFLSNLSFVDACYSSAVTPKMLVNF---------------
+---------------------------------------------------------------LSEDKTISFSGCAVQFFFFCTFVTTECFLLAAMAYDRYVAICN------------------------
+-------------------------------------------------------------------------------PLLYTVIMSKRVCIRLVTGSYVAGFLNALIHTGLTF---------------
+------------------------------------------------------RLSF----EINHFFCDIPPLLKLSCSDTSINELLLFIFAGFIQIFTILIILISYLFILITILKMR-----------
+---------------------------------------------------------------------------SAEGRRKAFSTCASHLTAVTLFYGTLLFMYLRPSSSYSLDQDKV-----------
+--------------------------------------------------------------------------------------ASVFYTVVIPMLNPLIYSLR------------------------
+------------------------------------------------------------------------------------------------NKDVKEALKKVL*
+---------------------------------------------------------------------------------------------------*
+>>>>>>> main
 
 >P1;5cxv
 structure:5cxv:20   :A:439  :A:Human M1 muscarinic acetylcholine receptor (inactive):Homo sapiens: 2.70: 0.234

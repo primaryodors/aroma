@@ -1773,6 +1773,7 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->is_backbone) continue;
         if (atoms[i]->get_heavy_atom()->is_backbone)
         {
             atoms[i]->is_backbone = true;

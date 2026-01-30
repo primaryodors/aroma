@@ -31,6 +31,7 @@ hm/allgpcr.*
 *.gcno
 *.gcda
 *.old
+*.cif
 bin/
 obj/
 *.dSYM/

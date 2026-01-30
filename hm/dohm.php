@@ -80,8 +80,11 @@ $consOR1 = "'8uxy'";
 $consOR2 = "'8uy0'";
 $consOR2b = "'8uy0b'";
 $consOR4 = "'8uyq'";
-$Olfr110 = "'9lkb'";              // Equivalent to OR5V1.
-$CLASSII = "$consOR1, $consOR2, $consOR4";
+$consOR5 = "'9wpm'";
+$OR5V1 = "'9lkb'";
+$consOR6 = "'9ldv', '9ldw', '9ldx', '9ldz'";
+$bmOR6A2 = "'9le0', '9le1', '9le2'";
+$CLASSII = "$consOR1, $consOR2, $consOR4, $consOR5, $consOR6";
 $TAAR1 = "'8jln', '8jlo', '8jlp', '8jlq', '8jlr', '8jso'";
 $mTAAR = "'8iwe', '8iwm', '8itf', '8iw4', '8iw9', '8pm2'";
 $ADORA2A = "'6gdg'";
@@ -147,13 +150,17 @@ switch ($fam)
     break;
 
     case 'OR5':
-    $knowns = "$Olfr110";
+    if ($rcpid == "OR5V1") $knowns = "$OR5V1";
+    else $knowns = "$consOR5";
     break;
 
     case 'OR6':
-    $knowns = "$consOR1, $consOR4, $Olfr110";
     if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
+    {
+        $knowns = "$bmOR6A2";
         $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
+    }
+    else $knowns = "$consOR6";
     break;
 
     case 'OR7':
@@ -161,24 +168,26 @@ switch ($fam)
     break;
 
     case 'OR8':
-    $knowns = "$Olfr110";
+    if ($rcpid == "OR8S1") $knowns = "$consOR4";
+    else $knowns = "$consOR5";
     break;
 
     case 'OR9':
-    $knowns = "$Olfr110";
+    $knowns = "$consOR5";
     break;
 
     case 'OR10':
     if ($rcpid == "OR10AD1") $knowns = "$consOR2";
-    else $knowns = "$consOR4";
+    else if ($famsub == "OR10D" || $famsub == "OR10G" || $famsub == "OR10S") $knowns = "$consOR4, $consOR6";
+    else $knowns = "$consOR6";
     break;
 
     case 'OR11':
-    $knowns = "$consOR4";
+    $knowns = "$consOR6";
     break;
 
     case 'OR12':
-    $knowns = "$consOR4";
+    $knowns = "$consOR4, $consOR6";
     break;
 
     case 'OR13':
@@ -187,7 +196,7 @@ switch ($fam)
     break;
 
     case 'OR14':
-    $knowns = "$consOR2";
+    $knowns = "$CLASSII";
     break;
 
     case 'OR51':
@@ -209,7 +218,7 @@ switch ($fam)
     break;
 
     default:
-    $knowns = "$consOR1, $consOR2, $consOR4, $consOR51, $consOR52, $mTAAR, $TAAR1";
+    $knowns = "$CLASSI, $CLASSII, $mTAAR, $TAAR1";
 }
 
 if ($knowns)
