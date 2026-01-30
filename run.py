@@ -84,6 +84,10 @@ for rcpid in data.protutils.prots.keys():
                     elif "ec50" in acv[rcpid]:
                         isago = True
             if not isago: continue
+        elif lopt == "top":
+            p = data.protutils.prots[rcpid]
+            if not "best_agonist" in p: continue
+            if ligid != p["best_agonist"]: continue
         elif not oid:
             isnote = False
             if "aroma" in o:
