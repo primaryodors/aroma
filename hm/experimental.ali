@@ -419,8 +419,8 @@ structure:9ldz:4    :R:306  :R:Consensus olfactory receptor consOR6:Homo sapiens
 ------------------------------------------------------------------------------------------------NKEVKQALKKTLKKI*
 ---------------------------------------------------------------------------------------------------*
 
->P1:9le0
-structure:9le0:4    :R:308  :R:Synthetic consensus olfactory receptor consOR6 with binding pocket from OR6A2:Homo sapiens: 2.54: 0.20
+>P1;9le0
+structure:9le0:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 2.54: 0.20
 ---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
 --------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
 ---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
@@ -431,8 +431,8 @@ structure:9le0:4    :R:308  :R:Synthetic consensus olfactory receptor consOR6 wi
 ------------------------------------------------------------------------------------------------NKEVKQALKKTLKKIKF*
 ---------------------------------------------------------------------------------------------------*
 
->P1:9le1
-structure:9le1:4    :R:308  :R:Synthetic consensus olfactory receptor consOR6 with binding pocket from OR6A2:Homo sapiens: 3.30: 0.20
+>P1;9le1
+structure:9le1:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 3.30: 0.20
 ---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
 --------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
 ---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
@@ -443,8 +443,8 @@ structure:9le1:4    :R:308  :R:Synthetic consensus olfactory receptor consOR6 wi
 ------------------------------------------------------------------------------------------------NKEVKQALKKTLKKIKF*
 ---------------------------------------------------------------------------------------------------*
 
->P1:9le2
-structure:9le2:4    :R:308  :R:Synthetic consensus olfactory receptor consOR6 with binding pocket from OR6A2:Homo sapiens: 3.33: 0.20
+>P1;9le2
+structure:9le2:4    :R:308  :R:Synthetic olfactory receptor bmOR6A2:Homo sapiens: 3.33: 0.20
 ---------------------------------------------------------------HTRVTEFILLGFPDDPELQVLLFLLLLLTYLLTLTGNLLIITLVL----------------------
 --------------------------------------------------------------------------------LDSHLHTPMYFFLRNLSFLEIWYTTVTIPKMLANI---------------
 ---------------------------------------------------------------LTGDKTISFNGCMTQLYFFLFLGCTECFLLAAMSYDRYVAICK------------------------
