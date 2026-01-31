@@ -847,6 +847,17 @@ Atom* Atom::is_bonded_to(const char* element)
     return 0;
 }
 
+Atom* Atom::is_bonded_to_charged_H()
+{
+    if (!bonded_to) return 0;
+    int i;
+    for (i=0; i<geometry; i++)
+        if (bonded_to[i].atom2)
+            if (bonded_to[i].atom2->Z == 1 && bonded_to[i].atom2->origchg)
+                return bonded_to[i].atom2;
+    return nullptr;
+}
+
 int Atom::num_bonded_to(const char* element)
 {
     if (!bonded_to) return 0;
