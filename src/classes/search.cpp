@@ -422,77 +422,36 @@ void Search::copy_ligand_position_from_file(Protein* protein, Molecule* ligand, 
 int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *results, int max_results)
 {
     int found = 0, i, j, n = ligand->get_heavy_atom_count();
-    Atom* reserve[64];
-    int nreserve = 0;
     for (i=0; i<n; i++)
     {
         Atom* a = ligand->get_atom(i);
         if (a->Z < 2) continue;
-        if (!a->conjugation
-            || (a->conjugation->num_heavy_atoms > 6)
-            || (fabs(a->is_polar()) > hydrophilicity_cutoff)
-            || (a->get_family() == PNICTOGEN)
-            || (a->get_family() == CHALCOGEN)
-           )
-        {
-            if (a->get_family() == TETREL)
-            {
-                if (a->conjugation) continue;
-                int nhb = a->get_bonded_heavy_atoms_count();
-                if (nhb > 1)
-                {
-                    if (!a->num_rings()) continue;
-                    Ring** rr = a->get_rings();
-                    int ringsz = rr[0]->get_atom_count();
-                    delete[] rr;
-                    if (ringsz > 6 && frand(0, 1) > 0.25) continue;
-                    reserve[nreserve++] = a;
-                    continue;
-                }
-            }
 
-            results[found].single_atom = a;
-            results[found].conjgrp = nullptr;
-            found++;
-        }
         if (a->conjugation)
         {
-            bool already = false;
-            if (a->conjugation->num_heavy_atoms < 0.666*n)
-            {
-                for (j=0; j<found; j++) if (results[j].conjgrp == a->conjugation) already = true;
-                if (!already)
-                {
-                    results[found].conjgrp = a->conjugation;
-                    results[found].single_atom = nullptr;
-                    found++;
-                }
-            }
             if (a->num_rings())
             {
-                Ring** r = a->get_rings();
-                if (r[0]->get_atom_count() <= 6)
+                Ring** rr = a->get_rings();
+                for (j=0; rr[j]; j++)
                 {
-                    Conjugation* rc = new Conjugation(r[0]);
-                    already = false;
-                    for (j=0; j<found; j++) if (results[j].conjgrp && rc->contains(results[j].conjgrp)) already = true;
-                    if (!already)
+                    if (rr[j]->is_conjugated() && rr[j]->get_atom_count() <= 6
+                        && rr[j]->get_atom(0) == a)
                     {
-                        results[found].conjgrp = rc;
                         results[found].single_atom = nullptr;
+                        results[found].conjgrp = new Conjugation(rr[j]);
                         found++;
                     }
-                    else delete rc;
                 }
             }
         }
-    }
 
-    if (found < 5)
-    {
-        for (i=0; i<nreserve; i++)
+        int afam = a->get_family();
+        if (a->get_orig_charge() || a->is_bonded_to_charged_H()
+            || fabs(a->is_polar()) >= hydrophilicity_cutoff
+            || afam == HALOGEN || afam == CHALCOGEN || afam == PNICTOGEN
+            || a->get_bonded_heavy_atoms_count() < 2)
         {
-            results[found].single_atom = reserve[i];
+            results[found].single_atom = a;
             results[found].conjgrp = nullptr;
             found++;
         }

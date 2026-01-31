@@ -178,6 +178,7 @@ public:
     float get_charge();
     float get_orig_charge() { return origchg; }
     float get_max_conj_charge() { return max_localized_charge; }
+    Atom* is_bonded_to_charged_H();
     float is_polar();						// -1 if atom is H-bond acceptor; +1 if donor.
     bool is_metal();
     int is_thio();							// -1 if atom is S; +1 if atom is H of a sulfhydryl.
