@@ -457,6 +457,37 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
         }
     }
 
+    if (!found)
+    {
+        // TODO:
+        std::vector<Atom*> endatoms = ligand->longest_dimension();
+        if (endatoms.size() < 2)
+        {
+            cout << "Ligand too small." << endl << flush;
+            throw 0xbadc0de;
+        }
+        results[found].single_atom = endatoms[0];
+        results[found].conjgrp = nullptr;
+        found++;
+        results[found].single_atom = endatoms[1];
+        results[found].conjgrp = nullptr;
+        found++;
+    }
+    if (found)
+    {
+        Atom* a = ligand->get_farthest_atom(results[0].barycenter());
+
+        bool already = false;
+        for (j=0; j<found; j++) if (results[j].single_atom == a) already = true;
+
+        if (!already)
+        {
+            results[found].single_atom = a;
+            results[found].conjgrp = nullptr;
+            found++;
+        }
+    }
+
     return found;
 }
 
@@ -535,6 +566,17 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
     {
         pbr->minimum = 0;
         pbr->maximum = ntarg*npr;
+    }
+
+    if (ntarg < 2)
+    {
+        cout << "Not enough ligand targets." << endl << flush;
+        throw 0xbadc0de;                // bad code monkey
+    }
+    if (npr < 2)
+    {
+        cout << "Not enough pocket residues." << endl << flush;
+        throw 0xbadc0de;                // no 
     }
 
     #if _dbg_bb_scoring
