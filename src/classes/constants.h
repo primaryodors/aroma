@@ -250,6 +250,8 @@
 #define bb_realign_iters 1
 #define bb_realign_only_hydro 1
 #define bb_secondary_must_be_farthest_from_primary 1
+#define bb_secondary_must_be_at_least_threshold_distance_from_primary 0
+#define bb_secondary_threshold_distance_times_farthest 0.8
 #define bb_stochastic 0.333
 #define bb_stochastic_A 1.5
 #define bb_stochastic_ligflex 0

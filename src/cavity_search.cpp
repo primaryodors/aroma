@@ -79,6 +79,7 @@ int main(int argc, char** argv)
     protein = &p;
     outfile[0] = 0;
     bool condense = false;
+    ResiduePlaceholder sr, er;
 
     protfname = nullptr;
 
@@ -245,8 +246,8 @@ int main(int argc, char** argv)
         else if (!strcmp(buffer, "--xyrlim")) cav_xyrlim = atof(argv[++i]);
         else if (!strcmp(buffer, "--xzrlim")) cav_xzrlim = atof(argv[++i]);
         else if (!strcmp(buffer, "--yzrlim")) cav_yzrlim = atof(argv[++i]);
-        else if (!strcmp(buffer, "--sr")) cav_resmin = atoi(argv[++i]);
-        else if (!strcmp(buffer, "--er")) cav_resmax = atoi(argv[++i]);
+        else if (!strcmp(buffer, "--sr")) sr.set(argv[++i]); // cav_resmin = atoi(argv[++i]);
+        else if (!strcmp(buffer, "--er")) er.set(argv[++i]); // cav_resmax = atoi(argv[++i]);
         else if ((buffer[0] == '-' && buffer[1] == 'c') || !strcmp(buffer, "--condense")) condense = true;
         else if ((buffer[0] == '-' && buffer[1] == 'h') || !strcmp(buffer, "--help"))
         {
@@ -302,6 +303,11 @@ int main(int argc, char** argv)
         return -1;
     }
     int seqlen = p.get_end_resno();
+
+    if (sr.bw.length()) sr.resolve_resno(&p);
+    if (sr.resno) cav_resmin = sr.resno;
+    if (er.bw.length()) er.resolve_resno(&p);
+    if (er.resno) cav_resmax = er.resno;
 
     cout << "PDB file: " << protfname << endl;
 

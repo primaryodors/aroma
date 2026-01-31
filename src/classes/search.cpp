@@ -641,7 +641,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 continue;
             }
 
-            #if bb_secondary_must_be_farthest_from_primary
+            #if bb_secondary_must_be_farthest_from_primary || bb_secondary_must_be_at_least_threshold_distance_from_primary
             int kfar = -1;
             float kfarthest = 0;
             for (k=0; k<ntarg; k++)
@@ -653,14 +653,17 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     kfar = k;
                 }
             }
+            #endif
 
+            #if bb_secondary_must_be_farthest_from_primary || bb_secondary_must_be_at_least_threshold_distance_from_primary
             if (kfar >= 0)
             #else
             for (k=0; k<ntarg; k++)
             #endif
             {
+                #if bb_secondary_must_be_farthest_from_primary || bb_secondary_must_be_at_least_threshold_distance_from_primary
                 k = kfar;
-                #if !bb_secondary_must_be_farthest_from_primary
+                #else
                 if (ntarg>=2 && k<=i) continue;
                 #endif
                 if (targets[k].contains(&targets[i])) continue;
@@ -680,7 +683,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 kimp = targets[k].importance(ligand);
                 if (kimp > iimp) continue;
 
-                #if bb_secondary_must_be_farthest_from_primary
+                #if bb_secondary_must_be_farthest_from_primary || bb_secondary_must_be_at_least_threshold_distance_from_primary
                 int lfar = -1;
                 float lfarthest = 0;
                 for (l=0; pocketres[l]; l++)
@@ -691,7 +694,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     if (!pocketres[l]->coordmtl)
                         if ((kpol && !lpol) || (!kpol && lpol)) continue;
 
-                    float r = pocketres[l]->get_barycenter().get_3d_distance(pocketres[j]->get_barycenter());
+                    float r = pocketres[l]->get_nearest_atom(loneliest)
+                        ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
                     r += prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(),
                         pocketres[l]->get_residue_no());
                     if (r > lfarthest)
@@ -720,7 +724,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 {
                     for (l=0; pocketres[l]; l++)
                     {
-                        float r = pocketres[l]->get_barycenter().get_3d_distance(pocketres[j]->get_barycenter());
+                        float r = pocketres[l]->get_nearest_atom(loneliest)
+                            ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
                         r += prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(),
                             pocketres[l]->get_residue_no());
                         if (r > lfarthest)
@@ -730,7 +735,14 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                         }
                     }
                 }
+                #endif
 
+                #if bb_secondary_must_be_at_least_threshold_distance_from_primary
+                lfarthest = pocketres[lfar]->get_nearest_atom(loneliest)
+                    ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
+                #endif
+
+                #if bb_secondary_must_be_farthest_from_primary
                 if (lfar >= 0)
                 {
                     l = lfar;
@@ -754,6 +766,19 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 #endif
 
                     if (l==j) continue;
+
+                    #if bb_secondary_must_be_at_least_threshold_distance_from_primary
+                    float rl = pocketres[l]->get_nearest_atom(loneliest)
+                        ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
+                    if (rl < lfarthest * bb_secondary_threshold_distance_times_farthest)
+                    {
+                        if (pocketres[j]->get_residue_no() == 264)
+                            cout << pocketres[l]->get_name() << " is " << rl << " from " << pocketres[j]->get_name()
+                                << " too close" << endl;
+                        continue;
+                    }
+                    #endif
+
                     float lchg, lpol, lcba;
                     int lpi;
                     bool lhba, lhbd, klmc;

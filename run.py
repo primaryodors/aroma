@@ -172,7 +172,7 @@ for rcpid in data.protutils.prots.keys():
         newcfg.append("NOFAIL")
         # newcfg.append("MOVIE")
 
-        cmd = ["bin/ic", "pdbs/" + fam + "/" + rcpid + ".active.pdb", "-3.0", "nooil"]
+        cmd = ["bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "-3.0", "nooil"]
         print(" ".join(cmd))
         proc = subprocess.run(cmd, stdout=subprocess.PIPE)
         for ln in proc.stdout.decode().split('\n'):
@@ -184,6 +184,20 @@ for rcpid in data.protutils.prots.keys():
             if not "-" in ln: continue
             ln = re.sub("-", " ", ln).strip()
             if ln: newcfg.append("CNTCT "+ln)
+
+        cavfna = f"pdbs/{fam}/{rcpid}.active.cvty"
+        cavfni = cavfna.replace(".active.", ".inactive.")
+        if not os.path.exists(cavfna):
+            cmd = ["bin/cavity_search", "-p", f"pdbs/{fam}/{rcpid}.active.pdb", "-o", cavfna,
+                "--ymin", "2", "--ymax", "20", "--xzrlim", "10", "--sr", "3.28", "--er", "7.50"]
+            print(" ".join(cmd))
+            subprocess.run(cmd)
+        if not os.path.exists(cavfni):
+            cmd = ["bin/cavity_search", "-p", f"pdbs/{fam}/{rcpid}.inactive.pdb", "-o", cavfni,
+                "--ymin", "2", "--ymax", "20", "--xzrlim", "10", "--sr", "3.28", "--er", "7.50"]
+            print(" ".join(cmd))
+            subprocess.run(cmd)
+        newcfg.append(f"VCVTY {cavfna}")
 
         if fam[0:2] == "OR":
             sub = int(re.sub("[^0-9]", "", fam))

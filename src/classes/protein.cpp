@@ -2789,14 +2789,17 @@ float Protein::get_empty_space_between_residues(int resno1, int resno2)
     AminoAcid *aa1 = get_residue(resno1), *aa2 = get_residue(resno2);
     if (!aa1 || !aa2) return 0;
 
-    Point loc1 = aa1->get_CA_location();
-    v = aa2->get_CA_location().subtract(loc1);
+    Atom *mca1, *mca2;
+    aa1->mutual_closest_atoms(aa2, &mca1, &mca2);
+    if (!mca1 || !mca2) return 0;
+
+    v = mca2->loc.subtract(mca1->loc);
     float r = v.r;
     v.r = 0.1;
 
     Point cursor;
     Sphere s;
-    for (cursor=loc1; cursor.get_3d_distance(loc1) < r; cursor = cursor.add(v))
+    for (cursor=mca1->loc; cursor.get_3d_distance(mca1->loc) < r; cursor = cursor.add(v))
     {
         Atom* a = get_nearest_atom(cursor);
         s.radius = fmax(0, a->loc.get_3d_distance(cursor) - a->vdW_radius);
