@@ -134,6 +134,7 @@
 #define iteration_internal_clash_coefficient 0.25
 #define Lennard_Jones_epsilon 1.0
 #define Lennard_Jones_epsilon_x4 Lennard_Jones_epsilon*4
+#define linear_motion_probability 0.1
 #define lmpull 0.1
 #define lmpush 0.3
 #define lmsteps 5

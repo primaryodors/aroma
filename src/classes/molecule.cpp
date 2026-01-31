@@ -5436,10 +5436,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if ((a->movability & MOV_CAN_RECEN) && !(a->movability & MOV_FORBIDDEN))
             {
                 Point motion(a->lmx, a->lmy, a->lmz);
-                if (motion.magnitude() > speed_limit) motion.scale(speed_limit);
+                float mmgn = motion.magnitude();
+                if (mmgn > speed_limit) motion.scale(speed_limit);
 
                 benerg = cfmol_multibind(a, nearby);
-                if (motion.magnitude() > 0.01*speed_limit)
+                if (motion.magnitude() > 0.01*speed_limit && frand(0,1) < linear_motion_probability / mmgn)
                 {
                     pib.copy_state(a);
                     motion.scale(motion.magnitude()/lmsteps);
