@@ -1943,6 +1943,144 @@ bool Molecule::check_Greek_continuity()
     return true;
 }
 
+bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == PNICTOGEN && atoms[i]->num_bonded_to("H") >= 2)
+        {
+            *N = atoms[i];
+            *H1 = atoms[i]->is_bonded_to("H");
+            *H2 = atoms[i]->is_bonded_to("H", *H1);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
+        {
+            *C = atoms[i]->is_bonded_to("C", 2);
+            if (*C && ((*C)->is_bonded_to(TETREL) || (*C)->is_bonded_to("H"))
+                )
+            {
+                *O = atoms[i];
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+Molecule* Molecule::create_Schiff_base(Molecule *other)
+{
+    int i, j;
+    if (!atoms || !other->atoms) return nullptr;
+    Atom *N = nullptr, *H1 = nullptr, *H2 = nullptr, *C = nullptr, *O = nullptr;
+
+    // Identify atoms for Schiff linkage
+    if (!identify_Schiff_amine(&N, &H1, &H2) || !other->identify_Schiff_ketald(&C, &O))
+    {
+        N=H1=H2=C=O=nullptr;
+        if (!other->identify_Schiff_amine(&N, &H1, &H2) || !identify_Schiff_ketald(&C, &O))
+        {
+            N=H1=H2=C=O=nullptr;
+            return nullptr;                     // no suitable atoms to form a Schiff base with.
+        }
+    }
+
+    // Break bonds
+    ((Molecule*)H1->mol)->delete_atom(H1);      // removes atom from original molecule but doesn't delete it from memory.
+    ((Molecule*)H2->mol)->delete_atom(H2);
+    ((Molecule*)O->mol)->delete_atom(O);
+
+    // Create water molecule
+    Molecule* result = new Molecule("HOH");
+    result->add_existing_atom(O);
+    result->add_existing_atom(H1);
+    result->add_existing_atom(H2);
+    O->bond_to(H1, 1);
+    O->bond_to(H2, 1);
+
+    Vector v(4, frand(0, M_PI*2), frand(0, M_PI*2));
+    result->movability = MOV_ALL;
+    result->move(v);
+
+    // Rotate so new bond will be coplanar
+    Atom* H3;
+    if (H3 = N->is_bonded_to("H"))  // ANC
+    {
+        Bond* b = N->get_bond_by_idx(0);
+        float step = 1.5 * fiftyseventh;
+        float theta, bt = 0, r, br = 0;
+        for (theta=0; theta<M_PI*2; theta += step)
+        {
+            r = H3->distance_to(C);
+            if (r > br)
+            {
+                br = r;
+                bt = theta;
+            }
+            b->rotate(step);
+        }
+        b->rotate(bt);
+    }
+
+    Atom* CA;
+    if (CA = C->is_bonded_to(TETREL)) // ANC
+    {
+        v = C->loc.subtract(CA->loc);
+        Bond* b = C->get_bond_between(CA);
+        float step = 1.5 * fiftyseventh;
+        float theta, bt = 0, r, br = 0;
+        for (theta=0; theta<M_PI*2; theta += step)
+        {
+            r = CA->distance_to(N);
+            if (r > br)
+            {
+                br = r;
+                bt = theta;
+            }
+            b->rotate(step);
+        }
+        b->rotate(bt);
+    }
+
+    // Rotate so new bonds will be at 120deg angles
+    if (!is_residue())
+    {
+        // TODO:
+    }
+    if (!other->is_residue())
+    {
+        // TODO:
+    }
+
+    // Bond atoms
+    N->bond_to(C, 2);
+
+    // Refresh "moves-with" cache for all bonds of both molecules
+    for (i=0; atoms[i]; i++)
+    {
+        atoms[i]->clear_all_moves_cache();
+    }
+    for (i=0; other->atoms[i]; i++)
+    {
+        other->atoms[i]->clear_all_moves_cache();
+    }
+
+    _is_Schiff = true;
+    return result;
+}
+
 int Molecule::from_pdb(FILE* is, bool het_only)
 {
     /*
@@ -4669,6 +4807,14 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                     else lastshielded -= InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]).summed();
                 }
             }
+        }
+    }
+
+    for (l=0; ligands[l]; l++)
+    {
+        if (is_Schiff && ligands[l]->is_Schiff)
+        {
+            kJmol.attractive -= Schiff_enthalpy;
         }
     }
 

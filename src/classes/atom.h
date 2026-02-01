@@ -216,6 +216,7 @@ public:
 
     float is_bonded_to(Atom* atom2);			// If yes, return the cardinality.
     Atom* is_bonded_to(const char* element);
+    Atom* is_bonded_to(const char* element, Atom* that_isnt);
     Atom* is_bonded_to(const char* element, const int cardinality);
     Atom* is_bonded_to(const int family);
     Atom* is_bonded_to(const int family, const int cardinality);

@@ -27,6 +27,7 @@
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8
+const float Schiff_enthalpy = (2.0*435) + 732.f - 644.f - (2.0*498.7);
 
 // Warning - increasing these constants significantly above the maximal 35.0, 60.0 values
 // will cause docking fails in the unit tests.

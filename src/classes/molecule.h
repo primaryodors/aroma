@@ -220,6 +220,7 @@ public:
     void do_histidine_flip(HistidineFlip* hf);
     void identify_conjugations();
     bool check_Greek_continuity();
+    Molecule* create_Schiff_base(Molecule* other);  // Return the newly formed water molecule.
 
     // Ring functions.
     int identify_rings();
@@ -368,6 +369,7 @@ protected:
     Atom** most_bindable = nullptr;
     Pose* iterbegan = nullptr;
     int iters_without_change = 0;
+    bool _is_Schiff = false;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
@@ -398,9 +400,12 @@ protected:
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols);
     bool faces_any_ligand(Molecule** ligands);
+    bool identify_Schiff_amine(Atom** N, Atom** H1, Atom** H2);
+    bool identify_Schiff_ketald(Atom** C, Atom** O);
 
     public:
     const int& num_monomers = nmonomers;
+    const bool& is_Schiff = _is_Schiff;
 };
 
 float g_total_mclash(void* mol);

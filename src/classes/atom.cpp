@@ -835,10 +835,15 @@ bool Atom::check_Greek_continuity()
 
 Atom* Atom::is_bonded_to(const char* element)
 {
+    return is_bonded_to(element, nullptr);
+}
+
+Atom *Atom::is_bonded_to(const char *element, Atom *that_isnt)
+{
     if (!bonded_to) return 0;
     int i;
     for (i=0; i<geometry; i++)
-        if (bonded_to[i].atom2)
+        if (bonded_to[i].atom2 && (bonded_to[i].atom2 != that_isnt))
             if (!strcmp(element, "*")
                 ||
                 !strcmp(bonded_to[i].atom2->get_elem_sym(), element)
@@ -919,7 +924,7 @@ int Atom::get_idx_bond_between(Atom* atom2)
 
 Atom* Atom::is_bonded_to(const char* element, const int lcardinality)
 {
-    if (!bonded_to) return 0;
+    if (!bonded_to) return nullptr;
     int i;
     for (i=0; i<geometry; i++)
         if (bonded_to[i].atom2)
@@ -928,7 +933,7 @@ Atom* Atom::is_bonded_to(const char* element, const int lcardinality)
                     fabs(bonded_to[i].cardinality - lcardinality) <= 0.25
                )
                 return bonded_to[i].atom2;
-    return 0;
+    return nullptr;
 }
 
 Atom* Atom::is_bonded_to(const int family)
@@ -1437,7 +1442,18 @@ void Bond::fill_moves_with_cache()
                 for (i=0; b[i]; i++)
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
-                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1 && b[i]->atom2->residue == atom2->residue)
+                    if (b[i]->atom2->residue && !atom2->residue)
+                    {
+                        can_rotate = can_flip = false;                  // Schiff bases is one example of when we want this.
+                        flip_angle = 0;
+                    }
+                    if (b[i]->atom2 && b[i]->atom2->used != lused
+                        && b[i]->atom2 != atom1
+                        && (b[i]->atom2->residue == atom2->residue          // Residues can't move other residues,
+                            || (atom2->residue && !b[i]->atom2->residue)    // but residues can move ligands.
+                            )
+                        && !b[i]->atom2->is_metal()                         // so we don't break mcoords
+                        )
                     {
                         if (b[i]->atom2->in_same_ring_as(atom1))
                         {
