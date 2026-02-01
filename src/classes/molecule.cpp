@@ -2097,27 +2097,75 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         v.r -= NC;
         if (N->mol == whomoves) v.r *= -1;
         whomoves->move(v);
-
-        if (0)
-        {
         // Rotate so new bonds will be at 120deg angles
-        Rotation ENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
-        ENC.a -= hexagonal;
-        Rotation NCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
-        NCA.a -= hexagonal;
+        float ENC = find_3d_angle(CE->loc, C->loc, N->loc);
+        float NCA = find_3d_angle(N->loc, CA->loc, C->loc);
+        Rotation rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+        rotENC.a = triangular - ENC;
+        Rotation rotNCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
+        rotNCA.a = triangular - NCA;
+        Rotation rottry;
+        float tried;
+
+        cout << "CE must rotate " << (rotENC.a*fiftyseven) << " degrees, and CA must rotate " << (rotNCA.a*fiftyseven) << " degrees." << endl;
+
         if (C->mol == whomoves)
         {
-            whomoves->rotate(ENC, N->loc);
-            NCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
-            NCA.a -= hexagonal;
-            whomoves->rotate(NCA, C->loc);
+            cout << "aldehyde moves" << endl;
+            whomoves->rotate(rotENC, N->loc);
+            // rotNCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
+            // rotNCA.a -= hexagonal;
+            // whomoves->rotate(rotNCA, C->loc);
         }
         else
         {
-            whomoves->rotate(NCA, C->loc);
-            ENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
-            ENC.a -= hexagonal;
-            whomoves->rotate(ENC, N->loc);
+            cout << "amine moves" << endl;
+            // whomoves->rotate(rotNCA, C->loc);
+
+            rottry = rotNCA;
+            rottry.a = 0.1*fiftyseventh;
+            whomoves->rotate(rottry, C->loc);
+            tried = find_3d_angle(N->loc, CA->loc, C->loc);
+            rottry.a *= -1;
+            whomoves->rotate(rottry, C->loc);
+            if (sgn(tried-NCA) == -sgn(triangular-NCA)) rotNCA.a *= -1;
+            whomoves->rotate(rotNCA, C->loc);
+
+            rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+            ENC = find_3d_angle(CE->loc, C->loc, N->loc);
+            rotENC.a = triangular - ENC;
+
+            rottry = rotENC;
+            rottry.a = 0.1*fiftyseventh;
+            whomoves->rotate(rottry, N->loc);
+            tried = find_3d_angle(CE->loc, C->loc, N->loc);
+            rottry.a *= -1;
+            whomoves->rotate(rottry, N->loc);
+            if (sgn(tried-ENC) == -sgn(triangular-ENC)) rotENC.a *= -1;
+            whomoves->rotate(rotENC, N->loc);
+        }
+
+        N->aromatize();
+        C->aromatize();
+
+        // Enforce coplanarity about the CA axis
+        LocatedVector lv = (Vector)(CA->loc.subtract(C->loc));
+        lv.origin = C->loc;
+        float banom = C->get_bond_angle_anomaly(N->loc.subtract(C->loc)), newanom, step = hexagonal/2;
+        while (fabs(banom) > 1e-3 && fabs(step) > (1e-3)*fiftyseventh)
+        {
+            whomoves->rotate(lv, step);
+            newanom = C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
+            if (newanom > banom)
+            {
+                whomoves->rotate(lv, -step);
+                step *= -0.98;
+            }
+            else
+            {
+                // cout << newanom << endl;
+                banom = newanom;
+            }
         }
 
         // Enforce coplanarity about the CN axis
@@ -2125,7 +2173,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         float theta = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
         if (C->mol == whomoves)
         {
-            LocatedVector lv = v;
+            lv = v;
             lv.origin = C->loc;
             whomoves->rotate(lv, theta);
             float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
@@ -2138,7 +2186,55 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             whomoves->rotate(lv, theta);
             float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
             if (th > theta) rotate(lv, -theta*2);
-        }}
+        }
+
+        // Further refine coplanarity
+        float stepEN = fiftyseventh, stepNC = fiftyseventh, stepCA = fiftyseventh,
+            bestpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc), newpl;
+        LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc)),
+            lvNC = (Vector)(N->loc.subtract(C->loc)),
+            lvCA = (Vector)(C->loc.subtract(CA->loc));
+        lvEN.origin = N->loc;
+        lvNC.origin = C->loc;
+        lvCA.origin = CA->loc;
+        while (fabs(stepEN) >= 1e-3 && fabs(stepNC) >= 1e-3 && fabs(stepCA) >= 1e-3)
+        {
+            whomoves->rotate(lvEN, stepEN);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            if (newpl < bestpl)
+            {
+                bestpl = newpl;
+            }
+            else
+            {
+                whomoves->rotate(lvEN, -stepEN);
+                stepEN *= -.9;
+            }
+
+            whomoves->rotate(lvNC, stepNC);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            if (newpl < bestpl)
+            {
+                bestpl = newpl;
+            }
+            else
+            {
+                whomoves->rotate(lvNC, -stepNC);
+                stepNC *= -.9;
+            }
+
+            whomoves->rotate(lvCA, stepCA);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            if (newpl < bestpl)
+            {
+                bestpl = newpl;
+            }
+            else
+            {
+                whomoves->rotate(lvCA, -stepCA);
+                stepCA *= -.9;
+            }
+        }
     }
 
     // Bond atoms
@@ -2158,7 +2254,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     other->_is_Schiff = this;
     Schiff_atoms = nullptr;
     other->Schiff_atoms = nullptr;
-    result->correct_structure();
+    result->refine_structure();
     return result;
 }
 

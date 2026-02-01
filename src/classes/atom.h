@@ -57,6 +57,62 @@ public:
     #endif
 
     Bond();
+    Bond(const Bond& other) noexcept
+    {
+        cardinality = other.cardinality;
+        can_rotate = other.can_rotate;
+        can_flip = other.can_flip;
+        caged = other.caged;
+        flip_angle = other.flip_angle;
+        angular_momentum = other.angular_momentum;
+        total_rotations = other.total_rotations;
+        type = other.type;
+        optimal_radius = other.optimal_radius;
+        last_fail = other.last_fail;
+        atom1 = other.atom1;
+        atom2 = other.atom2;
+        eclipse_partial = other.eclipse_partial;
+        eclipse_hash = other.eclipse_hash;
+        mw_atom_count = other.mw_atom_count;
+        mw_Zsum = other.mw_Zsum;
+        mw_cardsum = other.mw_cardsum;
+        reversed = other.reversed;
+
+        moves_with_atom2 = new Atom*[mw_atom_count+2];
+        int i;
+        for (i=0; i<mw_atom_count; i++) moves_with_atom2[i] = other.moves_with_atom2[i];
+        moves_with_atom2[i] = nullptr;
+    }
+    Bond& operator=(const Bond &other)
+    {
+        if (this != &other)
+        { 
+            cardinality = other.cardinality;
+            can_rotate = other.can_rotate;
+            can_flip = other.can_flip;
+            caged = other.caged;
+            flip_angle = other.flip_angle;
+            angular_momentum = other.angular_momentum;
+            total_rotations = other.total_rotations;
+            type = other.type;
+            optimal_radius = other.optimal_radius;
+            last_fail = other.last_fail;
+            atom1 = other.atom1;
+            atom2 = other.atom2;
+            eclipse_partial = other.eclipse_partial;
+            eclipse_hash = other.eclipse_hash;
+            mw_atom_count = other.mw_atom_count;
+            mw_Zsum = other.mw_Zsum;
+            mw_cardsum = other.mw_cardsum;
+            reversed = other.reversed;
+
+            moves_with_atom2 = new Atom*[mw_atom_count+2];
+            int i;
+            for (i=0; i<mw_atom_count; i++) moves_with_atom2[i] = other.moves_with_atom2[i];
+            moves_with_atom2[i] = nullptr;
+        }
+        return *this;
+    }
     Bond(Atom* a, Atom* b, int card);
     ~Bond();
 
@@ -250,8 +306,10 @@ public:
     bool is_in_ring(Ring* ring);
     Ring* closest_arom_ring_to(Point target);
     Ring* in_same_ring_as(Atom* b, Ring* ignore = nullptr);
+    void condense_bondedtos();
     void aromatize()
     {
+        condense_bondedtos();
         int i;
         geometry = 3;
         // if (valence>3) valence--;

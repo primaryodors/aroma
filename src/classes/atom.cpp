@@ -498,6 +498,7 @@ void Atom::unbond(Atom* atom2)
             }
         }
     }
+    condense_bondedtos();
 }
 
 void Atom::unbond_all()
@@ -2147,7 +2148,8 @@ float Atom::get_geometric_bond_angle()
     int i, bonded_atoms = 0;
     for (i=0; i<lgeo; i++) if (bonded_to[i].atom2) bonded_atoms++;
 
-    for (i=0; i<lgeo; i++)
+    if (is_pi()) lgeo = 3;
+    else for (i=0; i<lgeo; i++)
     {
         float bcard = bonded_to[i].cardinality;
         if (bonded_to[i].atom2 && bcard > 1)
@@ -2616,6 +2618,22 @@ Ring* Atom::in_same_ring_as(Atom* b, Ring* ignore)
     }
 
     return nullptr;
+}
+
+void Atom::condense_bondedtos()
+{
+    int i, l;
+    Bond tmp[geometry*2+2];
+    for (i=0; i<geometry; i++)
+    {
+        tmp[i] = bonded_to[i];
+    }
+    for (i=0; i<geometry; i++) bonded_to[i].atom1 = bonded_to[i].atom2 = nullptr;
+    for (i=l=0; i<geometry; i++)
+    {
+        if (tmp[i].atom2)
+            bonded_to[l++] = tmp[i];
+    }
 }
 
 bool Atom::is_in_ring(Ring* ring)
