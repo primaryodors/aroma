@@ -2089,6 +2089,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         conform_atom_to_location(C, N, 50, NC);
     }
 
+    // Bond atoms
+    N->bond_to(C, 2);
+
     // Move into position
     Molecule* whomoves = (!is_residue()) ? this : ((!other->is_residue()) ? other : nullptr);
     if (whomoves)
@@ -2189,8 +2192,13 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         }
 
         // Further refine coplanarity
+        #if 0
+        thish shit is cishet
         float stepEN = fiftyseventh, stepNC = fiftyseventh, stepCA = fiftyseventh,
-            bestpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc), newpl;
+            bestpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
+                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc))
+                , newpl;
         LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc)),
             lvNC = (Vector)(N->loc.subtract(C->loc)),
             lvCA = (Vector)(C->loc.subtract(CA->loc));
@@ -2200,7 +2208,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         while (fabs(stepEN) >= 1e-3 && fabs(stepNC) >= 1e-3 && fabs(stepCA) >= 1e-3)
         {
             whomoves->rotate(lvEN, stepEN);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
+                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
                 bestpl = newpl;
@@ -2212,7 +2222,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             }
 
             whomoves->rotate(lvNC, stepNC);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
+                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
                 bestpl = newpl;
@@ -2224,7 +2236,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             }
 
             whomoves->rotate(lvCA, stepCA);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc);
+            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
+                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
                 bestpl = newpl;
@@ -2235,10 +2249,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
                 stepCA *= -.9;
             }
         }
+        #endif
     }
-
-    // Bond atoms
-    N->bond_to(C, 2);
 
     // Refresh "moves-with" cache for all bonds of both molecules
     for (i=0; atoms[i]; i++)
