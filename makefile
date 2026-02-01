@@ -12,7 +12,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
-	  test/conj_test test/probability_test
+	  test/conj_test test/probability_test test/schiff_test
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit
 all: $(DIRS) \
@@ -32,10 +32,10 @@ CPL=g++
 CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # Release mode CFLAGS
-CFLAGS+=-O3
+# CFLAGS+=-O3
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # For gprof
 # example command line:
@@ -200,6 +200,9 @@ test/eclipse: src/test/eclipse.cpp $(OBJS) $(DOBJ)
 
 test/probability_test: src/test/probability_test.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/test/probability_test.cpp $(OBJS) -o test/probability_test $(CFLAGS)
+
+test/schiff_test: src/test/schiff_test.cpp $(OBJS) $(DOBJ)
+	$(CPL) src/test/schiff_test.cpp $(OBJS) -o test/schiff_test $(CFLAGS)
 
 
 # Apps

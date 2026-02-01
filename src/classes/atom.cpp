@@ -491,6 +491,7 @@ void Atom::unbond(Atom* atom2)
                     bonded_to[i].atom2->unbond(this);		// RECURSION!
                     bonded_to[i].atom2->reciprocity = false;
                 }
+                bonded_to[i].atom1 = nullptr;
                 bonded_to[i].atom2 = nullptr;
                 bonded_to[i].cardinality=0;
                 bonded_to[i].can_rotate=0;
@@ -510,6 +511,7 @@ void Atom::unbond_all()
             bonded_to[i].atom2->unbond(this);		// Potential for recursion!
             bonded_to[i].atom2->reciprocity = false;
 
+            bonded_to[i].atom1 = nullptr;
             bonded_to[i].atom2 = nullptr;
             bonded_to[i].cardinality=0;
             bonded_to[i].can_rotate=0;

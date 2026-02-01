@@ -1848,6 +1848,7 @@ int Molecule::from_sdf(char const *sdf_dat)
             Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
             if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
             Atom* a = new Atom(words[3], loc);
+            a->mol = reinterpret_cast<void*>(this);
             delete loc;
             a->name = new char[16];
             sprintf(a->name, "%s%d", words[3], added+1);
@@ -2097,6 +2098,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         if (N->mol == whomoves) v.r *= -1;
         whomoves->move(v);
 
+        if (0)
+        {
         // Rotate so new bonds will be at 120deg angles
         Rotation ENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
         ENC.a -= hexagonal;
@@ -2135,7 +2138,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             whomoves->rotate(lv, theta);
             float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
             if (th > theta) rotate(lv, -theta*2);
-        }
+        }}
     }
 
     // Bond atoms
@@ -2155,6 +2158,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     other->_is_Schiff = this;
     Schiff_atoms = nullptr;
     other->Schiff_atoms = nullptr;
+    result->correct_structure();
     return result;
 }
 
