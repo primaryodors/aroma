@@ -1458,7 +1458,7 @@ Interaction InteratomicForce::add_clashes(Atom *a, Atom *b, Interaction kJmol, f
     return kJmol;
 }
 
-float InteratomicForce::Lennard_Jones(Atom* atom1, Atom* atom2, float sigma)
+float InteratomicForce::Lennard_Jones(Atom *atom1, Atom *atom2, float sigma)
 {
     float local_clash_allowance = global_clash_allowance;
     if (atom1->Z == 1 && atom2->Z == 1) local_clash_allowance *= double_hydrogen_clash_allowance_multiplier;

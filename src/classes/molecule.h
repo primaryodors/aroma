@@ -369,7 +369,8 @@ protected:
     Atom** most_bindable = nullptr;
     Pose* iterbegan = nullptr;
     int iters_without_change = 0;
-    bool _is_Schiff = false;
+    Molecule* _is_Schiff = nullptr;     // Pointer to the molecule's Schiff-bonded "partner".
+    Atom** Schiff_atoms = nullptr;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
@@ -402,6 +403,7 @@ protected:
     bool faces_any_ligand(Molecule** ligands);
     bool identify_Schiff_amine(Atom** N, Atom** H1, Atom** H2);
     bool identify_Schiff_ketald(Atom** C, Atom** O);
+    void enumerate_Schiff_atoms();
 
     public:
     const int& num_monomers = nmonomers;

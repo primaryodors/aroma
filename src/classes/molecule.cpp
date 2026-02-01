@@ -1949,7 +1949,9 @@ bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
     for (i=0; atoms[i]; i++)
     {
         if (atoms[i]->is_backbone) continue;
-        if (atoms[i]->get_family() == PNICTOGEN && atoms[i]->num_bonded_to("H") >= 2)
+        if (atoms[i]->get_family() == PNICTOGEN
+            && atoms[i]->num_bonded_to("H") >= 2
+            && atoms[i]->is_bonded_to(TETREL))
         {
             *N = atoms[i];
             *H1 = atoms[i]->is_bonded_to("H");
@@ -1980,6 +1982,24 @@ bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
     return false;
 }
 
+void Molecule::enumerate_Schiff_atoms()
+{
+    int i, l;
+
+    if (!Schiff_atoms)
+    {
+        if (_is_Schiff)
+        {
+            Schiff_atoms = new Atom*[atcount + _is_Schiff->atcount + 5];
+            l=0;
+            for (i=0; atoms[i]; i++) Schiff_atoms[l++] = atoms[i];
+            for (i=0; _is_Schiff->atoms[i]; i++) Schiff_atoms[l++] = _is_Schiff->atoms[i];
+            Schiff_atoms[l] = nullptr;
+        }
+        else Schiff_atoms = atoms;
+    }
+}
+
 Molecule* Molecule::create_Schiff_base(Molecule *other)
 {
     int i, j;
@@ -1996,6 +2016,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             return nullptr;                     // no suitable atoms to form a Schiff base with.
         }
     }
+    Atom* CE = N->is_bonded_to(TETREL);
 
     // Break bonds
     ((Molecule*)H1->mol)->delete_atom(H1);      // removes atom from original molecule but doesn't delete it from memory.
@@ -2054,14 +2075,67 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         b->rotate(bt);
     }
 
-    // Rotate so new bonds will be at 120deg angles
-    if (!is_residue())
+    // Preconform
+    float NC = InteratomicForce::covalent_bond_radius(C, N, 2);
+    if (N->mol == this)
     {
-        // TODO:
+        conform_atom_to_location(N, C, 50, NC);
+        other->conform_atom_to_location(C, N, 50, NC);
     }
-    if (!other->is_residue())
+    else
     {
-        // TODO:
+        other->conform_atom_to_location(N, C, 50, NC);
+        conform_atom_to_location(C, N, 50, NC);
+    }
+
+    // Move into position
+    Molecule* whomoves = (!is_residue()) ? this : ((!other->is_residue()) ? other : nullptr);
+    if (whomoves)
+    {
+        v = N->loc.subtract(C->loc);
+        v.r -= NC;
+        if (N->mol == whomoves) v.r *= -1;
+        whomoves->move(v);
+
+        // Rotate so new bonds will be at 120deg angles
+        Rotation ENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+        ENC.a -= hexagonal;
+        Rotation NCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
+        NCA.a -= hexagonal;
+        if (C->mol == whomoves)
+        {
+            whomoves->rotate(ENC, N->loc);
+            NCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
+            NCA.a -= hexagonal;
+            whomoves->rotate(NCA, C->loc);
+        }
+        else
+        {
+            whomoves->rotate(NCA, C->loc);
+            ENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+            ENC.a -= hexagonal;
+            whomoves->rotate(ENC, N->loc);
+        }
+
+        // Enforce coplanarity about the CN axis
+        v = C->loc.subtract(N->loc);
+        float theta = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
+        if (C->mol == whomoves)
+        {
+            LocatedVector lv = v;
+            lv.origin = C->loc;
+            whomoves->rotate(lv, theta);
+            float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
+            if (th > theta) rotate(lv, -theta*2);
+        }
+        else
+        {
+            LocatedVector lv = v;
+            lv.origin = N->loc;
+            whomoves->rotate(lv, theta);
+            float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
+            if (th > theta) rotate(lv, -theta*2);
+        }
     }
 
     // Bond atoms
@@ -2077,7 +2151,10 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         other->atoms[i]->clear_all_moves_cache();
     }
 
-    _is_Schiff = true;
+    _is_Schiff = other;
+    other->_is_Schiff = this;
+    Schiff_atoms = nullptr;
+    other->Schiff_atoms = nullptr;
     return result;
 }
 
@@ -3780,16 +3857,19 @@ void Molecule::mutual_closest_atoms(Molecule* mol, Atom** a1, Atom** a2)
     Atom *a, *b;
     float rbest = Avogadro;
 
+    enumerate_Schiff_atoms();
+    mol->enumerate_Schiff_atoms();
+
     m = get_atom_count();
     n = mol->get_atom_count();
     for (i=0; i<m; i++)
     {
-        a = get_atom(i);
+        a = Schiff_atoms[i];
         if (!a) break;
         int aZ = a->Z;
         for (j=0; j<n; j++)
         {
-            b = mol->get_atom(j);
+            b = mol->Schiff_atoms[j];
             if (!b) break;
             int bZ = b->Z;
             if (aZ == 1 && bZ == 1) continue;
@@ -4616,10 +4696,13 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         atoms[i]->strongest_bind_atom = nullptr;
     }
 
+    enumerate_Schiff_atoms();
+
     clash_worst = 0;
-    for (i=0; atoms[i]; i++)
+    for (i=0; Schiff_atoms[i]; i++)
     {
-        Point aloc = atoms[i]->loc;
+        Atom* a = Schiff_atoms[i];
+        Point aloc = a->loc;
         for (l=0; ligands[l]; l++)
         {
             bool skip = false;
@@ -4631,9 +4714,10 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 }
             }
             if (skip) continue;
+            if (ligands[l] == _is_Schiff) continue;
 
             #if _dbg_51e2_ionic
-            if (!is_residue() && atoms[i]->get_family() == CHALCOGEN && ligands[l]->is_residue() == 262)
+            if (!is_residue() && a->get_family() == CHALCOGEN && ligands[l]->is_residue() == 262)
             {
                 j = 0;
             }
@@ -4648,18 +4732,18 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                     ligands[l]->atcount = j;
                     break;
                 }
-                if (atoms[i]->is_backbone && ligands[l]->atoms[j]->is_backbone
+                if (a->is_backbone && ligands[l]->atoms[j]->is_backbone
                     &&
-                    (	(	atoms[i]->residue == ligands[l]->atoms[j]->residue - 1
+                    (	(	a->residue == ligands[l]->atoms[j]->residue - 1
                             &&
-                            !strcmp(atoms[i]->name, "C")
+                            !strcmp(a->name, "C")
                             &&
                             !strcmp(ligands[l]->atoms[j]->name, "N")
                         )
                         ||
-                        (	atoms[i]->residue == ligands[l]->atoms[j]->residue + 1
+                        (	a->residue == ligands[l]->atoms[j]->residue + 1
                             &&
-                            !strcmp(atoms[i]->name, "N")
+                            !strcmp(a->name, "N")
                             &&
                             !strcmp(ligands[l]->atoms[j]->name, "C")
                         )
@@ -4667,27 +4751,27 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 float r = ligands[l]->atoms[j]->loc.get_3d_distance(&aloc);
                 if (r < _INTERA_R_CUTOFF)
                 {
-                    if (	!shielded(atoms[i], ligands[l]->atoms[j])
+                    if (	!shielded(a, ligands[l]->atoms[j])
                             &&
-                            !ligands[l]->shielded(atoms[i], ligands[l]->atoms[j])
+                            !ligands[l]->shielded(a, ligands[l]->atoms[j])
                        )
                     {
                         missed_connection.r = -Avogadro;
                         mc_bpotential = 0;
 
-                        // cout << ligands[l]->atoms[j]->loc.subtract(atoms[i]->loc) << ": ";
+                        // cout << ligands[l]->atoms[j]->loc.subtract(a->loc) << ": ";
                         Interaction abind;
-                        if (atoms[i]->residue && atoms[i]->get_family() == CHALCOGEN && atoms[i]->Z > 10
+                        if (a->residue && a->get_family() == CHALCOGEN && a->Z > 10
                             && ligands[l]->atoms[j]->residue && ligands[l]->atoms[j]->get_family() == CHALCOGEN && ligands[l]->atoms[j]->Z > 10
-                            && atoms[i]->residue != ligands[l]->atoms[j]->residue
-                            && atoms[i]->is_bonded_to(ligands[l]->atoms[j]))
+                            && a->residue != ligands[l]->atoms[j]->residue
+                            && a->is_bonded_to(ligands[l]->atoms[j]))
                         {
                             abind.attractive = 251;     // Cystine kludge.
                             abind.clash = 0;
                         }
-                        else abind = InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]);
+                        else abind = InteratomicForce::total_binding(a, ligands[l]->atoms[j]);
 
-                        if (((atoms[i]->residue && !ligands[l]->atoms[j]->residue) || (!atoms[i]->residue && ligands[l]->atoms[j]->residue))
+                        if (((a->residue && !ligands[l]->atoms[j]->residue) || (!a->residue && ligands[l]->atoms[j]->residue))
                             && (coordmtl || ligands[l]->coordmtl)
                             )
                         {
@@ -4699,7 +4783,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                         #if _dbg_internal_energy
                         if (ligands[l] == this)
                         {
-                            cout << "Energy between " << atoms[i]->name << "..." << ligands[l]->atoms[j]->name
+                            cout << "Energy between " << a->name << "..." << ligands[l]->atoms[j]->name
                                 << " = " << abind << " kJ/mol." << endl;
                         }
                         #endif
@@ -4707,14 +4791,14 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                         if (compute_interall)
                         {
                             int h;
-                            Atom* heavy1 = atoms[i]->get_heavy_atom();
+                            Atom* heavy1 = a->get_heavy_atom();
                             Atom* heavy2 = ligands[l]->atoms[j]->get_heavy_atom();
 
                             if (!heavy1->residue && !heavy2->residue
                                 && heavy1->get_family() == TETREL && heavy2->get_family() == TETREL
                                 && asum < 0)
                             {
-                                cout << atoms[i]->name << " (" << heavy1->name << ") ~ "
+                                cout << a->name << " (" << heavy1->name << ") ~ "
                                     << ligands[l]->atoms[j]->name << " (" << heavy2->name << "): " << asum << endl;
                             }
 
@@ -4758,24 +4842,24 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             if (asum < best_atom_energy)
                             {
                                 best_atom_energy = asum;
-                                best_intera = atoms[i];
+                                best_intera = a;
                                 best_interactor = ligands[l];
                                 best_other_intera = ligands[l]->atoms[j];
                             }
 
-                            atoms[i]->last_bind_energy += asum;
-                            if (abind.attractive > atoms[i]->strongest_bind_energy)
+                            a->last_bind_energy += asum;
+                            if (abind.attractive > a->strongest_bind_energy)
                             {
-                                atoms[i]->strongest_bind_energy = abind.attractive;
-                                atoms[i]->strongest_bind_atom = ligands[l]->atoms[j];
+                                a->strongest_bind_energy = abind.attractive;
+                                a->strongest_bind_atom = ligands[l]->atoms[j];
                             }
 
                             if (asum > 0 && abind.clash > clash_worst)
                             {
                                 clash_worst = abind.clash;
-                                if (atoms[i]->residue != ligands[l]->atoms[j]->residue)
+                                if (a->residue != ligands[l]->atoms[j]->residue)
                                 {
-                                    clash1 = atoms[i];
+                                    clash1 = a;
                                     clash2 = ligands[l]->atoms[j];
                                 }
                             }
@@ -4797,14 +4881,14 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             // cout << mc << endl;
                             if (ligands[l]->priority) mc_bpotential *= 20;
                             float lc = ligands[l]->atoms[j]->get_charge();
-                            if (lc && sgn(lc) == -sgn(atoms[i]->get_charge())) mc_bpotential *= 3.333;
+                            if (lc && sgn(lc) == -sgn(a->get_charge())) mc_bpotential *= 3.333;
                             float mcrr = missed_connection.r * missed_connection.r;
                             lmx += lmpull * mc.x * mc_bpotential / mcrr;
                             lmy += lmpull * mc.y * mc_bpotential / mcrr;
                             lmz += lmpull * mc.z * mc_bpotential / mcrr;
                         }
                     }
-                    else lastshielded -= InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]).summed();
+                    else lastshielded -= InteratomicForce::total_binding(a, ligands[l]->atoms[j]).summed();
                 }
             }
         }
@@ -5539,19 +5623,18 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     Molecule* b = mm[j];
 
                     #if mclashables_as_residue_nearbys
-                    if (ares && b->is_residue()) continue;
+                    if (ares && !a->is_Schiff && b->is_residue()) continue;
                     #endif
 
-                    Point bloc = b->get_barycenter();
-
-                    Atom* na = a->get_nearest_atom(bloc);
-                    if (!na) continue;
-                    float r = na->distance_to(b->get_nearest_atom(aloc));
+                    Atom *na, *nb;
+                    a->mutual_closest_atoms(mm[j], &na, &nb);
+                    if (!na || !nb) continue;
+                    float r = na->distance_to(nb);
                     if (r > _INTERA_R_CUTOFF+2.5) continue;
                     nearby[l++] = b;
                 }
                 #if mclashables_as_residue_nearbys
-                if (ares)
+                if (ares && !a->is_Schiff)
                 {
                     for (j=0; a->mclashables[j]; j++) nearby[l++] = a->mclashables[j];
                 }
