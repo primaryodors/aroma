@@ -1485,6 +1485,7 @@ void Bond::fill_moves_with_cache()
     for (i=0; i<tmplen; i++)
     {
         moves_with_atom2[i] = attmp[i];
+        if (!atom1->residue && moves_with_atom2[i]->residue) _must_reverse = true;      // for Schiff.
         attmp[i]->used = 0;
     }
     moves_with_atom2[i] = 0;
@@ -1647,6 +1648,8 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
     rot.a = theta;
 
     Bond* inverse = atom2->get_bond_between(atom1);
+    if (_must_reverse && inverse->_must_reverse) throw 0xbadc0de;
+    if (_must_reverse) return inverse->rotate(theta, allow_backbone, skip_inverse_check);
     #if allow_tethered_rotations
     // Whichever side has the less favorable sum of Atom::last_bind_energy values, rotate that side.
     float mwb_total_binding=0, mwbi_total_binding=0;

@@ -147,6 +147,7 @@ protected:
     float mw_Zsum = 0;
     float mw_cardsum = 0;
     Bond* reversed = nullptr;
+    bool _must_reverse = false;
 };
 
 enum RING_TYPE

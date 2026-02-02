@@ -439,7 +439,7 @@ void reconnect_bridges()
 void do_pivotal_hbond_rot_and_scoot()
 {
     // Rotate ligand so atom faces side chain atom.
-    ligand->movability = MOV_ALL;
+    if (!ligand->is_Schiff) ligand->movability = MOV_ALL;
     float r = pivotal_hbond_aaa->distance_to(pivotal_hbond_la);
     Point cen = ligand->get_barycenter();
     Rotation rot = align_points_3d(pivotal_hbond_la->loc, pivotal_hbond_aaa->loc, cen);
@@ -2765,7 +2765,7 @@ _try_again:
         nodeoff = 0;        // "
         soft_contact_elasticity = initial_soft_contact_elasticity;
         ligand = &pose_ligands[pose];
-        ligand->movability = MOV_ALL;
+        if (!ligand->is_Schiff) ligand->movability = MOV_ALL;
         ligand->minimize_internal_clashes();
         if (!ligand->is_chiral() && frand(0,1) < 0.5) ligand->mirror();
 
@@ -2871,7 +2871,7 @@ _try_again:
 
             if (vestdiv)
             {
-                ligand->movability = MOV_ALL;
+                if (!ligand->is_Schiff) ligand->movability = MOV_ALL;
                 ligand->stay_close_mine = vstayl;
                 ligand->stay_close_other = vstayr;
                 vestcen.multiply(1.0/vestdiv);
@@ -2894,7 +2894,7 @@ _try_again:
                     vb.size(), nullptr, false, nullptr);
 
                 mols[nmols] = nullptr;
-                ligand->movability = MOV_NORECEN;
+                if (!ligand->is_Schiff) ligand->movability = MOV_NORECEN;
                 // if (output_each_iter) output_iter(nodeoff++, mols, "vestibular center", true);
                 Molecule::conform_molecules(mols, nullptr, 200, &vestibule_callback);
                 // if (output_each_iter) output_iter(nodeoff++, mols, "vestibular fit", true);
@@ -2936,7 +2936,7 @@ _try_again:
                 }
 
                 mols[nmols] = nullptr;
-                ligand->movability = MOV_NORECEN;
+                if (!ligand->is_Schiff) ligand->movability = MOV_NORECEN;
                 Molecule::conform_molecules(mols, nullptr, 50, &vestibule_callback);
 
                 dr[drcount][nodeno+nodeoff] = DockResult(protein, ligand, nmols-1, (AminoAcid**)&mols[1], nullptr, drcount, waters);
@@ -3424,7 +3424,7 @@ _try_again:
             for (i=0; i<=SPHREACH_MAX; i++) cfmols[i] = nullptr;
             gcfmols = cfmols;
             i=0;
-            ligand->movability = MOV_ALL;
+            if (!ligand->is_Schiff) ligand->movability = MOV_ALL;
             cfmols[i++] = ligand;
             if (met)
             {
@@ -3802,14 +3802,15 @@ _try_again:
             check_ligand = ligand;
             #endif
 
-            ligand->movability = MOV_ALL;
+            if (!ligand->is_Schiff) ligand->movability = MOV_ALL;
             if (!flex) for (j=0; j<sphres; j++)
             {
                 if (!(reaches_spheroid[nodeno][j]->movability & MOV_PINNED)) reaches_spheroid[nodeno][j]->movability = MOV_FLXDESEL;
             }
             freeze_bridged_residues();
             if (output_each_iter) output_iter(nodeoff, cfmols, "initial placement");
-            if (pdpst == pst_best_binding) ligand->movability = (MovabilityType)(MOV_CAN_AXIAL | MOV_CAN_RECEN | MOV_CAN_FLEX);
+            if (pdpst == pst_best_binding && !ligand->is_Schiff)
+                ligand->movability = (MovabilityType)(MOV_CAN_AXIAL | MOV_CAN_RECEN | MOV_CAN_FLEX);
 
             freeze_bridged_residues();
             if (auditfn.length())
@@ -3881,6 +3882,18 @@ _try_again:
             #if _dbg_atom_mov_to_clash
             movclash_prot = protein;
             movclash_cb = &check_moved_atom_for_clashes;
+            #endif
+
+            #if _allow_Schiff_base_formation
+            if (g_bbr->pri_res->is_amine() && g_bbr->pri_tgt->single_atom
+                && g_bbr->pri_tgt->single_atom->get_family() == CHALCOGEN
+                && g_bbr->pri_tgt->single_atom->is_bonded_to(TETREL, 2))
+            {
+                g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
+                ligand->create_Schiff_base(g_bbr->pri_res);
+                g_bbr->pri_res->movability = MOV_ALL;
+                ligand->movability = MOV_FLEXONLY;
+            }
             #endif
 
             /////////////////////////////////////////////////////////////////////////////////

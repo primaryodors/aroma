@@ -2110,43 +2110,29 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         Rotation rottry;
         float tried;
 
-        cout << "CE must rotate " << (rotENC.a*fiftyseven) << " degrees, and CA must rotate " << (rotNCA.a*fiftyseven) << " degrees." << endl;
+        // cout << "CE must rotate " << (rotENC.a*fiftyseven) << " degrees, and CA must rotate " << (rotNCA.a*fiftyseven) << " degrees." << endl;
 
-        if (C->mol == whomoves)
-        {
-            cout << "aldehyde moves" << endl;
-            whomoves->rotate(rotENC, N->loc);
-            // rotNCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
-            // rotNCA.a -= hexagonal;
-            // whomoves->rotate(rotNCA, C->loc);
-        }
-        else
-        {
-            cout << "amine moves" << endl;
-            // whomoves->rotate(rotNCA, C->loc);
+        rottry = rotNCA;
+        rottry.a = 0.1*fiftyseventh;
+        whomoves->rotate(rottry, C->loc);
+        tried = find_3d_angle(N->loc, CA->loc, C->loc);
+        rottry.a *= -1;
+        whomoves->rotate(rottry, C->loc);
+        if (sgn(tried-NCA) == -sgn(triangular-NCA)) rotNCA.a *= -1;
+        whomoves->rotate(rotNCA, C->loc);
 
-            rottry = rotNCA;
-            rottry.a = 0.1*fiftyseventh;
-            whomoves->rotate(rottry, C->loc);
-            tried = find_3d_angle(N->loc, CA->loc, C->loc);
-            rottry.a *= -1;
-            whomoves->rotate(rottry, C->loc);
-            if (sgn(tried-NCA) == -sgn(triangular-NCA)) rotNCA.a *= -1;
-            whomoves->rotate(rotNCA, C->loc);
+        rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+        ENC = find_3d_angle(CE->loc, C->loc, N->loc);
+        rotENC.a = triangular - ENC;
 
-            rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
-            ENC = find_3d_angle(CE->loc, C->loc, N->loc);
-            rotENC.a = triangular - ENC;
-
-            rottry = rotENC;
-            rottry.a = 0.1*fiftyseventh;
-            whomoves->rotate(rottry, N->loc);
-            tried = find_3d_angle(CE->loc, C->loc, N->loc);
-            rottry.a *= -1;
-            whomoves->rotate(rottry, N->loc);
-            if (sgn(tried-ENC) == -sgn(triangular-ENC)) rotENC.a *= -1;
-            whomoves->rotate(rotENC, N->loc);
-        }
+        rottry = rotENC;
+        rottry.a = 0.1*fiftyseventh;
+        whomoves->rotate(rottry, N->loc);
+        tried = find_3d_angle(CE->loc, C->loc, N->loc);
+        rottry.a *= -1;
+        whomoves->rotate(rottry, N->loc);
+        if (sgn(tried-ENC) == -sgn(triangular-ENC)) rotENC.a *= -1;
+        whomoves->rotate(rotENC, N->loc);
 
         N->aromatize();
         C->aromatize();
@@ -2192,11 +2178,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         }
 
         // Further refine coplanarity
-        #if 0
-        thish shit is cishet
         float stepEN = fiftyseventh, stepNC = fiftyseventh, stepCA = fiftyseventh,
-            bestpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
-                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+            bestpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
                 + C->get_bond_angle_anomaly(N->loc.subtract(C->loc))
                 , newpl;
         LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc)),
@@ -2208,8 +2191,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         while (fabs(stepEN) >= 1e-3 && fabs(stepNC) >= 1e-3 && fabs(stepCA) >= 1e-3)
         {
             whomoves->rotate(lvEN, stepEN);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
-                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
                 + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
@@ -2222,8 +2204,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             }
 
             whomoves->rotate(lvNC, stepNC);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
-                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
                 + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
@@ -2236,8 +2217,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             }
 
             whomoves->rotate(lvCA, stepCA);
-            newpl = are_points_planar(CE->loc, N->loc, C->loc, CA->loc)
-                + N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
+            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
                 + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
             if (newpl < bestpl)
             {
@@ -2249,7 +2229,6 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
                 stepCA *= -.9;
             }
         }
-        #endif
     }
 
     // Refresh "moves-with" cache for all bonds of both molecules
@@ -4038,6 +4017,7 @@ void Molecule::mutual_closest_hbond_pair(Molecule *mol, Atom **a1, Atom **a2)
 void Molecule::move(Vector move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
+    if (_is_Schiff)
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;

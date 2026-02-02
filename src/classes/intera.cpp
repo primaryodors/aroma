@@ -118,12 +118,12 @@ void InteratomicForce::read_all_forces()
     FILE* pf = fopen("data/bindings.dat", "rb");
     if (!pf)
     {
-        chdir("..");
+        int idgaf = chdir("..");
         pf = fopen("data/bindings.dat", "rb");
     }
     if (!pf)
     {
-        chdir("..");
+        int gfys = chdir("..");
         pf = fopen("data/bindings.dat", "rb");
     }
     if (!pf)

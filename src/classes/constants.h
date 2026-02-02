@@ -146,6 +146,7 @@ const float Schiff_enthalpy = (2.0*435) + 732.f - 644.f - (2.0*498.7);
 #define _allow_conditional_basicity 1
 #define _allow_conditional_basicity_with_acid_ligand 1
 #define _ALLOW_PROTONATE_PNICTOGENS 0
+#define _allow_Schiff_base_formation 1
 #define _dock_result_in_iter 1
 #define _teleport_dissatisfied_waters 0
 #define allow_abhor_vacuum 1
