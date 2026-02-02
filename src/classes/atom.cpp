@@ -2111,6 +2111,35 @@ void Atom::swing_all(int startat)
     }
 }
 
+float Atom::get_bond_angle_anomaly(Atom *ignore)
+{
+    if (!bonded_to) return 0;
+    int i, j;
+    float anomaly = 0;
+    float lga = get_geometric_bond_angle();
+
+    for (i=0; i<geometry; i++)
+    {
+        if (bonded_to[i].atom2)
+        {
+            if (bonded_to[i].atom2 == ignore) continue;
+            Vector va = bonded_to[i].atom2->location.subtract(location);
+            for (j=0; j<geometry; j++)
+            {
+                if (bonded_to[j].atom2)
+                {
+                    if (bonded_to[j].atom2 == ignore) continue;
+
+                    Vector vb = bonded_to[j].atom2->location.subtract(location);
+                    float theta = find_3d_angle(va, vb, Point(0,0,0));
+                    anomaly += fabs(theta-lga);
+                }
+            }
+        }
+    }
+    return anomaly;
+}
+
 float Atom::get_bond_angle_anomaly(Vector v, Atom* ignore)
 {
     if (!bonded_to) return 0;

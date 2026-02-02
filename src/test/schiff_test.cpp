@@ -29,6 +29,21 @@ int main(int argc, char** argv)
     ligs[2] = nullptr;
     amine.save_sdf(fp, ligs);
     fclose(fp);
-    cout << "Wrote output file." << endl;
+    cout << "Wrote output SDF file." << endl;
+
+    Protein p("peptide");
+    Molecule ligand("ligand");
+
+    p.add_sequence("LLILFKNLQLVLIST");
+    p.make_helix(1, p.get_end_resno(), ALPHA_PHI, ALPHA_PSI);
+    AminoAcid* aaK = p.get_residue(6);
+    ligand.from_smiles("c1ccccc1C=O");
+    ligand.create_Schiff_base(aaK);
+
+    fp = fopen("tmp/schiff.pdb", "w");
+    p.save_pdb(fp, &ligand);
+    fclose(fp);
+    cout << "Wrote output PDB file." << endl;
+
     return 0;
 }

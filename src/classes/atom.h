@@ -354,6 +354,7 @@ public:
     Vector* get_basic_geometry();
     Vector* get_geometry_aligned_to_bonds(bool prevent_infinite_loop = false);
     float get_geometric_bond_angle();
+    float get_bond_angle_anomaly(Atom* ignore = nullptr);
     float get_bond_angle_anomaly(Vector v, Atom* ignore = nullptr);	// Assume v is centered on current atom.
     float distance_to(Atom* atom2)
     {

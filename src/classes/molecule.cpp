@@ -2018,6 +2018,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         }
     }
     Atom* CE = N->is_bonded_to(TETREL);
+    Atom* CA = C->is_bonded_to(TETREL);
+    if (!CA) CA = C->is_bonded_to("H");
+    Point Owas = O->loc;
 
     // Break bonds
     ((Molecule*)H1->mol)->delete_atom(H1);      // removes atom from original molecule but doesn't delete it from memory.
@@ -2032,203 +2035,96 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     O->bond_to(H1, 1);
     O->bond_to(H2, 1);
 
-    Vector v(4, frand(0, M_PI*2), frand(0, M_PI*2));
+    Vector v(frand(7, 13), frand(0, M_PI*2), frand(0, M_PI*2));
     result->movability = MOV_ALL;
     result->move(v);
 
-    // Rotate so new bond will be coplanar
-    Atom* H3;
-    if (H3 = N->is_bonded_to("H"))  // ANC
-    {
-        Bond* b = N->get_bond_by_idx(0);
-        float step = 1.5 * fiftyseventh;
-        float theta, bt = 0, r, br = 0;
-        for (theta=0; theta<M_PI*2; theta += step)
-        {
-            r = H3->distance_to(C);
-            if (r > br)
-            {
-                br = r;
-                bt = theta;
-            }
-            b->rotate(step);
-        }
-        b->rotate(bt);
-    }
-
-    Atom* CA;
-    if (CA = C->is_bonded_to(TETREL)) // ANC
-    {
-        v = C->loc.subtract(CA->loc);
-        Bond* b = C->get_bond_between(CA);
-        float step = 1.5 * fiftyseventh;
-        float theta, bt = 0, r, br = 0;
-        for (theta=0; theta<M_PI*2; theta += step)
-        {
-            r = CA->distance_to(N);
-            if (r > br)
-            {
-                br = r;
-                bt = theta;
-            }
-            b->rotate(step);
-        }
-        b->rotate(bt);
-    }
-
-    // Preconform
-    float NC = InteratomicForce::covalent_bond_radius(C, N, 2);
-    if (N->mol == this)
-    {
-        conform_atom_to_location(N, C, 50, NC);
-        other->conform_atom_to_location(C, N, 50, NC);
-    }
-    else
-    {
-        other->conform_atom_to_location(N, C, 50, NC);
-        conform_atom_to_location(C, N, 50, NC);
-    }
-
-    // Bond atoms
-    N->bond_to(C, 2);
-
-    // Move into position
+    v = Owas.subtract(N->loc);
     Molecule* whomoves = (!is_residue()) ? this : ((!other->is_residue()) ? other : nullptr);
-    if (whomoves)
+    whomoves->movability = MOV_ALL;
+    if (whomoves == C->mol) v.r *= -1;
+    whomoves->move(v);
+
+    N->bond_to(C, 2);
+    N->aromatize();
+    C->aromatize();
+
+    cout << "C geometry = " << C->get_geometry() << " geometric bond angle " << (C->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
+    cout << "N geometry = " << N->get_geometry() << " geometric bond angle " << (N->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
+
+    Rotation rot;
+    if (whomoves == CE->mol) rot = align_points_3d(CE->loc, N->loc.add(N->loc.subtract(C->loc)), N->loc);
+    else rot = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
+    rot.a -= hexagonal;
+    LocatedVector lv = rot.v;
+    lv.origin = N->loc;
+    whomoves->rotate(lv, rot.a);
+
+    LocatedVector lvCN = (Vector)(C->loc.subtract(N->loc));
+    LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc));
+    LocatedVector norm;
+    lvCN.origin = lvEN.origin = N->loc;
+    float step = 0.5*fiftyseventh, stepCN = step/2, stepEN = step/2,
+        banom = N->get_bond_angle_anomaly(),
+        newanom, theta, bthet = 0;
+
+    for (i=0; i<250; i++)
     {
-        v = N->loc.subtract(C->loc);
-        v.r -= NC;
-        if (N->mol == whomoves) v.r *= -1;
-        whomoves->move(v);
-        // Rotate so new bonds will be at 120deg angles
-        float ENC = find_3d_angle(CE->loc, C->loc, N->loc);
-        float NCA = find_3d_angle(N->loc, CA->loc, C->loc);
-        Rotation rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
-        rotENC.a = triangular - ENC;
-        Rotation rotNCA = align_points_3d(N->loc, C->loc.add(C->loc.subtract(CA->loc)), C->loc);
-        rotNCA.a = triangular - NCA;
-        Rotation rottry;
-        float tried;
-
-        // cout << "CE must rotate " << (rotENC.a*fiftyseven) << " degrees, and CA must rotate " << (rotNCA.a*fiftyseven) << " degrees." << endl;
-
-        rottry = rotNCA;
-        rottry.a = 0.1*fiftyseventh;
-        whomoves->rotate(rottry, C->loc);
-        tried = find_3d_angle(N->loc, CA->loc, C->loc);
-        rottry.a *= -1;
-        whomoves->rotate(rottry, C->loc);
-        if (sgn(tried-NCA) == -sgn(triangular-NCA)) rotNCA.a *= -1;
-        whomoves->rotate(rotNCA, C->loc);
-
-        rotENC = align_points_3d(C->loc, N->loc.add(N->loc.subtract(CE->loc)), N->loc);
-        ENC = find_3d_angle(CE->loc, C->loc, N->loc);
-        rotENC.a = triangular - ENC;
-
-        rottry = rotENC;
-        rottry.a = 0.1*fiftyseventh;
-        whomoves->rotate(rottry, N->loc);
-        tried = find_3d_angle(CE->loc, C->loc, N->loc);
-        rottry.a *= -1;
-        whomoves->rotate(rottry, N->loc);
-        if (sgn(tried-ENC) == -sgn(triangular-ENC)) rotENC.a *= -1;
-        whomoves->rotate(rotENC, N->loc);
-
-        N->aromatize();
-        C->aromatize();
-
-        // Enforce coplanarity about the CA axis
-        LocatedVector lv = (Vector)(CA->loc.subtract(C->loc));
-        lv.origin = C->loc;
-        float banom = C->get_bond_angle_anomaly(N->loc.subtract(C->loc)), newanom, step = hexagonal/2;
-        while (fabs(banom) > 1e-3 && fabs(step) > (1e-3)*fiftyseventh)
+        lvCN = (Vector)(C->loc.subtract(N->loc));
+        lvCN.origin = N->loc;
+        bthet = 0;
+        for (theta=0; theta<M_PI*2; theta += step)
         {
-            whomoves->rotate(lv, step);
-            newanom = C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
-            if (newanom > banom)
+            whomoves->rotate(lvCN, step);
+            lvEN = (Vector)(CE->loc.subtract(N->loc));
+            newanom = N->get_bond_angle_anomaly();
+            if (newanom < banom)
             {
-                whomoves->rotate(lv, -step);
-                step *= -0.98;
-            }
-            else
-            {
-                // cout << newanom << endl;
                 banom = newanom;
+                bthet = theta;
+                cout << newanom << endl;
             }
         }
-
-        // Enforce coplanarity about the CN axis
-        v = C->loc.subtract(N->loc);
-        float theta = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
-        if (C->mol == whomoves)
-        {
-            lv = v;
-            lv.origin = C->loc;
-            whomoves->rotate(lv, theta);
-            float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
-            if (th > theta) rotate(lv, -theta*2);
-        }
-        else
-        {
-            LocatedVector lv = v;
-            lv.origin = N->loc;
-            whomoves->rotate(lv, theta);
-            float th = M_PI - find_angle_along_vector(CA->loc, CE->loc, C->loc, v);
-            if (th > theta) rotate(lv, -theta*2);
-        }
-
-        // Further refine coplanarity
-        float stepEN = fiftyseventh, stepNC = fiftyseventh, stepCA = fiftyseventh,
-            bestpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
-                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc))
-                , newpl;
-        LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc)),
-            lvNC = (Vector)(N->loc.subtract(C->loc)),
-            lvCA = (Vector)(C->loc.subtract(CA->loc));
+        whomoves->rotate(lvCN, bthet);
+        lvEN = (Vector)(CE->loc.subtract(N->loc));
         lvEN.origin = N->loc;
-        lvNC.origin = C->loc;
-        lvCA.origin = CA->loc;
-        while (fabs(stepEN) >= 1e-3 && fabs(stepNC) >= 1e-3 && fabs(stepCA) >= 1e-3)
+        bthet = 0;
+        for (theta=0; theta<M_PI*2; theta += step)
         {
-            whomoves->rotate(lvEN, stepEN);
-            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
-                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
-            if (newpl < bestpl)
+            whomoves->rotate(lvEN, step);
+            lvCN = (Vector)(C->loc.subtract(N->loc));
+            newanom = N->get_bond_angle_anomaly();
+            if (newanom < banom)
             {
-                bestpl = newpl;
-            }
-            else
-            {
-                whomoves->rotate(lvEN, -stepEN);
-                stepEN *= -.9;
-            }
-
-            whomoves->rotate(lvNC, stepNC);
-            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
-                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
-            if (newpl < bestpl)
-            {
-                bestpl = newpl;
-            }
-            else
-            {
-                whomoves->rotate(lvNC, -stepNC);
-                stepNC *= -.9;
-            }
-
-            whomoves->rotate(lvCA, stepCA);
-            newpl = N->get_bond_angle_anomaly(C->loc.subtract(N->loc))
-                + C->get_bond_angle_anomaly(N->loc.subtract(C->loc));
-            if (newpl < bestpl)
-            {
-                bestpl = newpl;
-            }
-            else
-            {
-                whomoves->rotate(lvCA, -stepCA);
-                stepCA *= -.9;
+                banom = newanom;
+                bthet = theta;
+                cout << newanom << endl;
             }
         }
+        whomoves->rotate(lvEN, bthet);
+
+        lvCN = (Vector)(C->loc.subtract(N->loc));
+        lvCN.origin = N->loc;
+        lvEN = (Vector)(CE->loc.subtract(N->loc));
+        lvEN.origin = N->loc;
+        norm = compute_normal(CA->loc, C->loc, N->loc);
+        norm.origin = N->loc;
+        bthet = 0;
+        for (theta=0; theta<M_PI*2; theta += step)
+        {
+            whomoves->rotate(norm, step);
+            lvCN = (Vector)(C->loc.subtract(N->loc));
+            lvEN = (Vector)(CE->loc.subtract(N->loc));
+            lvCN.origin = lvEN.origin = N->loc;
+            newanom = N->get_bond_angle_anomaly();
+            if (newanom < banom)
+            {
+                banom = newanom;
+                bthet = theta;
+                cout << newanom << endl;
+            }
+        }
+        whomoves->rotate(lvEN, bthet);
     }
 
     // Refresh "moves-with" cache for all bonds of both molecules

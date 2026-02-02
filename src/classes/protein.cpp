@@ -500,6 +500,7 @@ bool Protein::add_sequence(const char* lsequence)
         aas[i-1]->clear_all_bond_caches();
         aas[i] = 0;
     }
+    set_clashables();
     Molecule::conform_molecules(aas, 25);
     for (i=1; i<=seql; i++)
     {
