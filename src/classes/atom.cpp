@@ -533,20 +533,6 @@ Sphere Atom::get_sphere()
     return s;
 }
 
-void Bond::dump_moves_with_cache()
-{
-    int i;
-    cout << atom1->residue << ":" << atom1->name;
-    cout << "-";
-    cout << atom2->residue << ":" << atom2->name;
-    cout << " has moves with:";
-    for (i=0; moves_with_atom2[i]; i++)
-    {
-        cout << " " << moves_with_atom2[i]->residue << ":" << moves_with_atom2[i]->name;
-    }
-    cout << endl << flush;
-}
-
 void Bond::fetch_moves_with_atom2(Atom **result)
 {
     int i;
@@ -1464,10 +1450,6 @@ void Bond::fill_moves_with_cache()
                         can_rotate = can_flip = false;                  // Schiff bases is one example of when we want this.
                         flip_angle = 0;
                     }
-                    if (atom2->residue && !b[i]->atom2->residue)
-                    {
-                        if (k==i) k=i;             // When K uses a KI, then I think it's a really messed up thing to say.
-                    }
                     if (b[i]->atom2 && b[i]->atom2->used != lused
                         && b[i]->atom2 != atom1
                         && (b[i]->atom2->residue == atom2->residue          // Residues can't move other residues,
@@ -1512,6 +1494,20 @@ void Bond::fill_moves_with_cache()
     if (_DBGMOVES) cout << endl << endl;
 
     enforce_moves_with_uniqueness();
+}
+
+void Bond::dump_moves_with_cache()
+{
+    int i;
+    cout << atom1->residue << ":" << atom1->name;
+    cout << "-";
+    cout << atom2->residue << ":" << atom2->name;
+    cout << " has moves with:";
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        cout << " " << moves_with_atom2[i]->residue << ":" << moves_with_atom2[i]->name;
+    }
+    cout << endl << flush;
 }
 
 void Bond::enforce_moves_with_uniqueness()
@@ -1574,7 +1570,8 @@ void Bond::enforce_moves_with_uniqueness()
         {
             if (moves_with_atom2[j] == moves_with_atom2[i]
                     // || moves_with_atom2[j]->is_backbone
-                    || moves_with_atom2[j]->residue != atom2->residue
+                    || (moves_with_atom2[j]->residue != atom2->residue
+                        && moves_with_atom2[j]->residue && atom2->residue)
                )
             {
                 moves_with_atom2[j] = 0;
@@ -1715,10 +1712,6 @@ _cannot_reverse_bondrot:
         if (!allow_backbone)
         {
             if (moves_with_atom2[i]->is_backbone) continue;
-        }
-        if (atom2->residue && !moves_with_atom2[i]->residue)
-        {
-            cen.x += 1e-6;
         }
         if (moves_with_atom2[i]->residue != atom2->residue)
         {
