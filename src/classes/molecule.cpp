@@ -2065,10 +2065,10 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     LocatedVector norm;
     lvCN.origin = lvEN.origin = N->loc;
     float step = 0.5*fiftyseventh, stepCN = step/2, stepEN = step/2,
-        banom = N->get_bond_angle_anomaly(),
+        banom = N->get_bond_angle_anomaly() - CA->distance_to(CE),
         newanom, theta, bthet = 0;
 
-    for (i=0; i<250; i++)
+    for (i=0; i<25; i++)
     {
         lvCN = (Vector)(C->loc.subtract(N->loc));
         lvCN.origin = N->loc;
@@ -2077,7 +2077,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         {
             whomoves->rotate(lvCN, step);
             lvEN = (Vector)(CE->loc.subtract(N->loc));
-            newanom = N->get_bond_angle_anomaly();
+            newanom = N->get_bond_angle_anomaly() - CA->distance_to(CE);
             if (newanom < banom)
             {
                 banom = newanom;
@@ -2093,7 +2093,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         {
             whomoves->rotate(lvEN, step);
             lvCN = (Vector)(C->loc.subtract(N->loc));
-            newanom = N->get_bond_angle_anomaly();
+            newanom = N->get_bond_angle_anomaly() - CA->distance_to(CE);
             if (newanom < banom)
             {
                 banom = newanom;
@@ -2116,7 +2116,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             lvCN = (Vector)(C->loc.subtract(N->loc));
             lvEN = (Vector)(CE->loc.subtract(N->loc));
             lvCN.origin = lvEN.origin = N->loc;
-            newanom = N->get_bond_angle_anomaly();
+            newanom = N->get_bond_angle_anomaly() - CA->distance_to(CE);
             if (newanom < banom)
             {
                 banom = newanom;
@@ -2126,6 +2126,23 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         }
         whomoves->rotate(lvEN, bthet);
     }
+
+    lvCN = (Vector)(C->loc.subtract(N->loc));
+    lvCN.origin = N->loc;
+    bthet = 0;
+    banom = CA->distance_to(CE);
+    for (theta=0; theta<M_PI*2; theta += step)
+    {
+        whomoves->rotate(lvCN, step);
+        newanom = CA->distance_to(CE);
+        if (newanom > banom)
+        {
+            banom = newanom;
+            bthet = theta;
+            // cout << newanom << endl;
+        }
+    }
+    whomoves->rotate(lvCN, bthet);
 
     // Refresh "moves-with" cache for all bonds of both molecules
     for (i=0; atoms[i]; i++)

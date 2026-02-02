@@ -2192,7 +2192,7 @@ float Atom::get_geometric_bond_angle()
     }
     if (lgeo < bonded_atoms) lgeo = bonded_atoms;
 
-    //cout << lgeo << " ";
+    // cout << lgeo << " ";
 
     switch (lgeo)
     {
