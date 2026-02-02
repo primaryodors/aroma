@@ -407,7 +407,7 @@ protected:
 
     public:
     const int& num_monomers = nmonomers;
-    const bool& is_Schiff = _is_Schiff;
+    const bool is_Schiff() {return _is_Schiff != nullptr;}
 };
 
 float g_total_mclash(void* mol);
