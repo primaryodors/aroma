@@ -2049,8 +2049,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     N->aromatize();
     C->aromatize();
 
-    cout << "C geometry = " << C->get_geometry() << " geometric bond angle " << (C->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
-    cout << "N geometry = " << N->get_geometry() << " geometric bond angle " << (N->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
+    // cout << "C geometry = " << C->get_geometry() << " geometric bond angle " << (C->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
+    // cout << "N geometry = " << N->get_geometry() << " geometric bond angle " << (N->get_geometric_bond_angle()*fiftyseven) << "deg." << endl;
 
     Rotation rot;
     if (whomoves == CE->mol) rot = align_points_3d(CE->loc, N->loc.add(N->loc.subtract(C->loc)), N->loc);
@@ -2064,7 +2064,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     LocatedVector lvEN = (Vector)(CE->loc.subtract(N->loc));
     LocatedVector norm;
     lvCN.origin = lvEN.origin = N->loc;
-    float step = 0.5*fiftyseventh, stepCN = step/2, stepEN = step/2,
+    float step = 0.1*fiftyseventh, stepCN = step/2, stepEN = step/2,
         banom = N->get_bond_angle_anomaly() - CA->distance_to(CE),
         newanom, theta, bthet = 0;
 
@@ -2082,7 +2082,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             {
                 banom = newanom;
                 bthet = theta;
-                cout << newanom << endl;
+                // cout << newanom << endl;
             }
         }
         whomoves->rotate(lvCN, bthet);
@@ -2098,7 +2098,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             {
                 banom = newanom;
                 bthet = theta;
-                cout << newanom << endl;
+                // cout << newanom << endl;
             }
         }
         whomoves->rotate(lvEN, bthet);
@@ -2121,7 +2121,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             {
                 banom = newanom;
                 bthet = theta;
-                cout << newanom << endl;
+                // cout << newanom << endl;
             }
         }
         whomoves->rotate(lvEN, bthet);
@@ -2139,7 +2139,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         {
             banom = newanom;
             bthet = theta;
-            // cout << newanom << endl;
+            // // cout << newanom << endl;
         }
     }
     whomoves->rotate(lvCN, bthet);
