@@ -4017,6 +4017,7 @@ void Molecule::mutual_closest_hbond_pair(Molecule *mol, Atom **a1, Atom **a2)
 void Molecule::move(Vector move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
+    if (is_Schiff) return;
     if (_is_Schiff)
     if (immobile)
     {
@@ -4051,6 +4052,7 @@ void Molecule::move(Vector move_amt, bool override_residue)
 void Molecule::move(Point move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
+    if (is_Schiff) return;
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;
@@ -4126,6 +4128,7 @@ float Molecule::get_charge() const
 void Molecule::recenter(Point nl)
 {
     if (movability <= MOV_NORECEN) return;
+    if (is_Schiff) return;
     Point loc = get_barycenter();
     Point rel = nl.subtract(&loc);
     Vector v(&rel);
@@ -4146,6 +4149,7 @@ void Molecule::recenter(Point nl)
 void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 {
     if (noAtoms(atoms)) return;
+    if (is_Schiff) return;
     // cout << name << " Molecule::rotate()" << endl;
 
     if (movability <= MOV_FLEXONLY) return;
@@ -4161,6 +4165,7 @@ void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 void Molecule::rotate(LocatedVector lv, float theta)
 {
     if (noAtoms(atoms)) return;
+    if (is_Schiff) return;
 
     if (movability <= MOV_FLEXONLY) return;
     if (movability <= MOV_NORECEN) lv.origin = get_barycenter();
@@ -4205,6 +4210,7 @@ void Molecule::rotate(LocatedVector lv, float theta)
 
 void Molecule::rotate(Rotation rot)
 {
+    if (is_Schiff) return;
     LocatedVector lv = rot.v;
     lv.origin = get_barycenter(true);
     rotate(lv, rot.a);
@@ -4212,6 +4218,7 @@ void Molecule::rotate(Rotation rot)
 
 void Molecule::rotate(Rotation rot, Point origin)
 {
+    if (is_Schiff) return;
     LocatedVector lv = rot.v;
     lv.origin = origin;
     rotate(lv, rot.a);
@@ -7502,6 +7509,7 @@ int Molecule::get_ring_num_atoms(int ringid)
 void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 {
     if (!rings) return;
+    if (is_Schiff) return;
     Point old_ring_cen = get_ring_center(ringid);
     Vector motion = new_ring_cen.subtract(old_ring_cen);
     int i;
@@ -7515,6 +7523,7 @@ void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 void Molecule::rotate_ring(int ringid, Rotation rot)
 {
     if (!rings) return;
+    if (is_Schiff) return;
     Point origin = get_ring_center(ringid);
     int i;
     Atom** ring_atoms = rings[ringid]->get_atoms();
