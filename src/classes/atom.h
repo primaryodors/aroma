@@ -123,6 +123,7 @@ public:
     {
         moves_with_atom2 = 0;
     }
+    void dump_moves_with_cache();
     void fetch_moves_with_atom2(Atom** result);
     int count_moves_with_atom2();
     int count_heavy_moves_with_atom();

@@ -533,7 +533,21 @@ Sphere Atom::get_sphere()
     return s;
 }
 
-void Bond::fetch_moves_with_atom2(Atom** result)
+void Bond::dump_moves_with_cache()
+{
+    int i;
+    cout << atom1->residue << ":" << atom1->name;
+    cout << "-";
+    cout << atom2->residue << ":" << atom2->name;
+    cout << " has moves with:";
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        cout << " " << moves_with_atom2[i]->residue << ":" << moves_with_atom2[i]->name;
+    }
+    cout << endl << flush;
+}
+
+void Bond::fetch_moves_with_atom2(Atom **result)
 {
     int i;
     if (!moves_with_atom2)
@@ -1450,6 +1464,10 @@ void Bond::fill_moves_with_cache()
                         can_rotate = can_flip = false;                  // Schiff bases is one example of when we want this.
                         flip_angle = 0;
                     }
+                    if (atom2->residue && !b[i]->atom2->residue)
+                    {
+                        if (k==i) k=i;             // When K uses a KI, then I think it's a really messed up thing to say.
+                    }
                     if (b[i]->atom2 && b[i]->atom2->used != lused
                         && b[i]->atom2 != atom1
                         && (b[i]->atom2->residue == atom2->residue          // Residues can't move other residues,
@@ -1698,7 +1716,14 @@ _cannot_reverse_bondrot:
         {
             if (moves_with_atom2[i]->is_backbone) continue;
         }
-        if (moves_with_atom2[i]->residue != atom2->residue) continue;
+        if (atom2->residue && !moves_with_atom2[i]->residue)
+        {
+            cen.x += 1e-6;
+        }
+        if (moves_with_atom2[i]->residue != atom2->residue)
+        {
+            if (moves_with_atom2[i]->residue) continue;
+        }
 
         Point loc = moves_with_atom2[i]->loc;
         Point nl  = rotate3D(&loc, &cen, &v, theta);

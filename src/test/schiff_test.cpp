@@ -69,6 +69,8 @@ int main(int argc, char** argv)
         if (r < 1.2 || r > 1.35) cout << "ERROR! NZ AND ALDEHYDE C ARE " << r << "A APART! SHOULD BE 1.28!" << endl;
     }
 
+    b->dump_moves_with_cache();
+
     fp = fopen("tmp/schiff.pdb", "w");
     p.save_pdb(fp, &ligand);
     fclose(fp);
