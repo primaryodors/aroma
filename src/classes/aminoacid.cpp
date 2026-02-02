@@ -2880,11 +2880,13 @@ void AminoAcid::aamove(Vector move_amt)
     if (!atoms) return;
     int i;
 
-    for (i=0; atoms[i]; i++)
+    enumerate_Schiff_atoms();
+
+    for (i=0; Schiff_atoms[i]; i++)
     {
-        Point loc = atoms[i]->loc;
+        Point loc = Schiff_atoms[i]->loc;
         loc = loc.add(&move_amt);
-        atoms[i]->move(&loc);
+        Schiff_atoms[i]->move(&loc);
     }
 
     // If you have a metal coordination, AND YOU ARE THE FIRST COORDINATING RESIDUE OF THE METAL, move the metal with you.

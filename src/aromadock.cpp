@@ -3893,6 +3893,7 @@ _try_again:
                 g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
                 ligand->create_Schiff_base(g_bbr->pri_res);
                 ligand->movability = MOV_FLEXONLY;
+                g_bbr->pri_res->movability = MOV_FORCEFLEX;
             }
             #endif
 
