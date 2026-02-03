@@ -3304,6 +3304,7 @@ void AminoAcid::ensure_pi_atoms_coplanar()
             dirty[j] = true;
         }
 
+        #if 0
         if (n < 4) continue;
 
         for (j = 3; j < n; j++)
@@ -3317,6 +3318,7 @@ void AminoAcid::ensure_pi_atoms_coplanar()
                     << endl;
             }
         }
+        #endif
     }
 }
 
