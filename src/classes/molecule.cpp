@@ -759,7 +759,9 @@ int Molecule::is_residue()
 
     for (i=0; atoms[i]; i++)
     {
-        if (atoms[i]->Z < 9 && atoms[i]->get_family() >= TETREL && atoms[i]->residue) return atoms[i]->residue;     // Rule out metals.
+        if (atoms[i]->Z < 9 && atoms[i]->get_family() >= TETREL 
+            && atoms[i]->mol == this && atoms[i]->residue)
+                return atoms[i]->residue;     // Rule out metals and Schiff partners.
     }
     return 0;
 }
@@ -2008,6 +2010,7 @@ void Molecule::enumerate_Schiff_atoms()
         for (i=0; Schiff_atoms[i]; i++)
         {
             atoms[i] = Schiff_atoms[i];
+            // cout << name << " has atom " << atoms[i]->residue << ":" << atoms[i]->name << endl;
             // atoms[i]->residue = resno;
         }
         atoms[atcount=i] = nullptr;

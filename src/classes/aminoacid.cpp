@@ -1073,6 +1073,7 @@ void AminoAcid::save_pdb(FILE* os, int atomno_offset)
     {
         if (atoms[i]->mol == _Schiff_joined_mol) continue;
         atoms[i]->pdbchain = pdbchain;
+        atoms[i]->residue = residue_no;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
 
         if (!atoms[i]->is_backbone)
