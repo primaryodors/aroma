@@ -2008,7 +2008,7 @@ void Molecule::enumerate_Schiff_atoms()
         for (i=0; Schiff_atoms[i]; i++)
         {
             atoms[i] = Schiff_atoms[i];
-            atoms[i]->residue = resno;
+            // atoms[i]->residue = resno;
         }
         atoms[atcount=i] = nullptr;
         delete[] Schiff_atoms;
