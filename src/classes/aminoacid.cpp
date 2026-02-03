@@ -1071,6 +1071,7 @@ void AminoAcid::save_pdb(FILE* os, int atomno_offset)
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->mol == _Schiff_joined_mol) continue;
         atoms[i]->pdbchain = pdbchain;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
 
@@ -2880,13 +2881,11 @@ void AminoAcid::aamove(Vector move_amt)
     if (!atoms) return;
     int i;
 
-    enumerate_Schiff_atoms();
-
-    for (i=0; Schiff_atoms[i]; i++)
+    for (i=0; atoms[i]; i++)
     {
-        Point loc = Schiff_atoms[i]->loc;
+        Point loc = atoms[i]->loc;
         loc = loc.add(&move_amt);
-        Schiff_atoms[i]->move(&loc);
+        atoms[i]->move(&loc);
     }
 
     // If you have a metal coordination, AND YOU ARE THE FIRST COORDINATING RESIDUE OF THE METAL, move the metal with you.

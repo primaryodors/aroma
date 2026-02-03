@@ -1985,19 +1985,33 @@ bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
 
 void Molecule::enumerate_Schiff_atoms()
 {
-    int i, l;
+    int i, l, resno;
 
-    if (!Schiff_atoms)
+    if (_Schiff_joined_mol && atoms && idx_of_first_Schiff_atom < 0)
     {
-        if (_is_Schiff)
+        resno = is_residue();
+        if (!resno) resno = _Schiff_joined_mol->is_residue();
+
+        int other_atcount = _Schiff_joined_mol->idx_of_first_Schiff_atom;
+        if (other_atcount < 0) other_atcount = _Schiff_joined_mol->atcount;
+        for (atcount=0; atoms[atcount]; atcount++);
+
+        Atom** Schiff_atoms = new Atom*[atcount + other_atcount + 5];
+        l=0;
+        for (i=0; atoms[i]; i++) Schiff_atoms[l++] = atoms[i];
+        idx_of_first_Schiff_atom = i;
+        for (i=0; i<other_atcount; i++) Schiff_atoms[l++] = _Schiff_joined_mol->atoms[i];
+        Schiff_atoms[l] = nullptr;
+
+        delete[] atoms;
+        atoms = new Atom*[atcount + other_atcount + 5];
+        for (i=0; Schiff_atoms[i]; i++)
         {
-            Schiff_atoms = new Atom*[atcount + _is_Schiff->atcount + 5];
-            l=0;
-            for (i=0; atoms[i]; i++) Schiff_atoms[l++] = atoms[i];
-            for (i=0; _is_Schiff->atoms[i]; i++) Schiff_atoms[l++] = _is_Schiff->atoms[i];
-            Schiff_atoms[l] = nullptr;
+            atoms[i] = Schiff_atoms[i];
+            atoms[i]->residue = resno;
         }
-        else Schiff_atoms = atoms;
+        atoms[atcount=i] = nullptr;
+        delete[] Schiff_atoms;
     }
 }
 
@@ -2154,10 +2168,11 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         other->atoms[i]->clear_all_moves_cache();
     }
 
-    _is_Schiff = other;
-    other->_is_Schiff = this;
-    Schiff_atoms = other->Schiff_atoms = nullptr;
+    _Schiff_joined_mol = other;
+    other->_Schiff_joined_mol = this;
     rotatable_bonds = other->rotatable_bonds = nullptr;
+    enumerate_Schiff_atoms();
+    other->enumerate_Schiff_atoms();
     result->refine_structure();
     return result;
 }
@@ -2402,6 +2417,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
     for (i=0; i<ac; i++)
     {
+        if (latoms[i]->mol == _Schiff_joined_mol) continue;
         Point p = latoms[i]->loc;
         char const* esym = latoms[i]->get_elem_sym();
         if (!esym) continue;
@@ -2498,6 +2514,7 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
     nconects = 0;
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->mol == _Schiff_joined_mol) continue;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
         l = atoms[i]->get_bonded_atoms_count();
         // cout << "Save " << atoms[i]->name << " as pdbidx " << atoms[i]->pdbidx << " bonded to " << l << " atoms" << endl;
@@ -3090,14 +3107,13 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
 
     Bond* btemp[65536];
 
-    enumerate_Schiff_atoms();
     int i,j, bonds=0;
     if (!immobile)
-        for (i=0; Schiff_atoms[i]; i++)
+        for (i=0; atoms[i]; i++)
         {
             Bond* lb[32];
-            Schiff_atoms[i]->fetch_bonds(lb);
-            int g = Schiff_atoms[i]->get_geometry();
+            atoms[i]->fetch_bonds(lb);
+            int g = atoms[i]->get_geometry();
             for (j=0; j<g && lb[j]; j++)
             {
                 if (!lb[j]->atom1 || !lb[j]->atom2) continue;
@@ -3152,11 +3168,11 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
             }
         }
     else
-        for (i=0; Schiff_atoms[i]; i++)
+        for (i=0; atoms[i]; i++)
         {
             Bond* lb[16];
-            Schiff_atoms[i]->fetch_bonds(lb);
-            int g = Schiff_atoms[i]->get_geometry();
+            atoms[i]->fetch_bonds(lb);
+            int g = atoms[i]->get_geometry();
             for (j=0; j<g; j++)
             {
                 // Generally, a single bond between pi atoms cannot rotate.
@@ -3862,19 +3878,16 @@ void Molecule::mutual_closest_atoms(Molecule* mol, Atom** a1, Atom** a2)
     Atom *a, *b;
     float rbest = Avogadro;
 
-    enumerate_Schiff_atoms();
-    mol->enumerate_Schiff_atoms();
-
     m = get_atom_count();
     n = mol->get_atom_count();
     for (i=0; i<m; i++)
     {
-        a = Schiff_atoms[i];
+        a = atoms[i];
         if (!a) break;
         int aZ = a->Z;
         for (j=0; j<n; j++)
         {
-            b = mol->Schiff_atoms[j];
+            b = mol->atoms[j];
             if (!b) break;
             int bZ = b->Z;
             if (aZ == 1 && bZ == 1) continue;
@@ -3931,7 +3944,7 @@ void Molecule::mutual_closest_hbond_pair(Molecule *mol, Atom **a1, Atom **a2)
 void Molecule::move(Vector move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;
@@ -3965,7 +3978,7 @@ void Molecule::move(Vector move_amt, bool override_residue)
 void Molecule::move(Point move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;
@@ -4041,7 +4054,7 @@ float Molecule::get_charge() const
 void Molecule::recenter(Point nl)
 {
     if (movability <= MOV_NORECEN) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     Point loc = get_barycenter();
     Point rel = nl.subtract(&loc);
     Vector v(&rel);
@@ -4062,7 +4075,7 @@ void Molecule::recenter(Point nl)
 void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 {
     if (noAtoms(atoms)) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     // cout << name << " Molecule::rotate()" << endl;
 
     if (movability <= MOV_FLEXONLY) return;
@@ -4078,7 +4091,7 @@ void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 void Molecule::rotate(LocatedVector lv, float theta)
 {
     if (noAtoms(atoms)) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
 
     if (movability <= MOV_FLEXONLY) return;
     if (movability <= MOV_NORECEN) lv.origin = get_barycenter();
@@ -4123,7 +4136,7 @@ void Molecule::rotate(LocatedVector lv, float theta)
 
 void Molecule::rotate(Rotation rot)
 {
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     LocatedVector lv = rot.v;
     lv.origin = get_barycenter(true);
     rotate(lv, rot.a);
@@ -4131,7 +4144,7 @@ void Molecule::rotate(Rotation rot)
 
 void Molecule::rotate(Rotation rot, Point origin)
 {
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     LocatedVector lv = rot.v;
     lv.origin = origin;
     rotate(lv, rot.a);
@@ -4708,12 +4721,10 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         atoms[i]->strongest_bind_atom = nullptr;
     }
 
-    enumerate_Schiff_atoms();
-
     clash_worst = 0;
-    for (i=0; Schiff_atoms[i]; i++)
+    for (i=0; atoms[i]; i++)
     {
-        Atom* a = Schiff_atoms[i];
+        Atom* a = atoms[i];
         Point aloc = a->loc;
         for (l=0; ligands[l]; l++)
         {
@@ -4726,7 +4737,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 }
             }
             if (skip) continue;
-            if (ligands[l] == _is_Schiff) continue;
+            if (ligands[l] == _Schiff_joined_mol) continue;
             int lres = ligands[l]->is_residue();
             if (lres && a->residue && abs(lres - a->residue) < 2) continue;
 
@@ -4910,7 +4921,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
 
     for (l=0; ligands[l]; l++)
     {
-        if (_is_Schiff && ligands[l]->_is_Schiff)
+        if (_Schiff_joined_mol && ligands[l]->_Schiff_joined_mol)
         {
             kJmol.attractive -= Schiff_enthalpy;
         }
@@ -5612,15 +5623,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         for (i=0; mm[i]; i++)
         {
             Molecule* a = mm[i];
-            if (a->is_Schiff() && !a->is_residue()) a = a->_is_Schiff;
+            if (a->is_Schiff() && !a->is_residue()) a = a->_Schiff_joined_mol;
             if (a->movability & MOV_PINNED) continue;
             bool flipped_rings = false;
             int ares = a->is_residue();
-
-            if (ares == 159)
-            {
-                cout << "";
-            }
 
             if (a->movability & MOV_BKGRND) continue;
 
@@ -5643,7 +5649,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     Molecule* b = mm[j];
 
                     #if mclashables_as_residue_nearbys
-                    if (ares && !a->_is_Schiff && b->is_residue()) continue;
+                    if (ares && !a->_Schiff_joined_mol && b->is_residue()) continue;
                     #endif
 
                     Atom *na, *nb;
@@ -5654,7 +5660,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     nearby[l++] = b;
                 }
                 #if mclashables_as_residue_nearbys
-                if (ares && !a->_is_Schiff)
+                if (ares && !a->_Schiff_joined_mol)
                 {
                     for (j=0; a->mclashables[j]; j++) nearby[l++] = a->mclashables[j];
                 }
@@ -5914,11 +5920,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
 
-            if (ares == 159)
-            {
-                cout << "";
-            }
-
             #if allow_bond_rots
             #if _dbg_mol_flexion
             bool is_flexion_dbg_mol = (ares == 107);
@@ -5943,12 +5944,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     for (qiter=0; qiter<flexion_sub_iterations; qiter++) for (q=0; bb[q]; q++)
                     {
                         if (!bb[q]->atom1 || !bb[q]->atom2) continue;         // Sanity check, otherwise we're sure to get random foolish segfaults.
-                        if (bb[q]->atom1->get_Greek() > bb[q]->atom2->get_Greek()) bb[q] = bb[q]->get_reversed();
+                        if (bb[q]->atom2->residue && bb[q]->atom1->get_Greek() > bb[q]->atom2->get_Greek()) bb[q] = bb[q]->get_reversed();
                         if (!bb[q]->count_moves_with_atom2()) continue;
                         if (bb[q]->atom1->is_backbone && strcmp(bb[q]->atom1->name, "CA")) continue;
                         if (bb[q]->atom2->is_backbone) continue;
-                        bbodds *= 0.85;
-                        if (frand(0,1) > bbodds) continue;
+
                         float theta;
                         int heavy_atoms = bb[q]->count_heavy_moves_with_atom2();
                         if (heavy_atoms && (!(a->movability & MOV_CAN_FLEX) || (a->movability & MOV_FORBIDDEN))) continue;
@@ -5964,7 +5964,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             #endif
 
                             #if fullrot_forbid_residues
-                            && !ares
+                            && (!ares || a->is_Schiff())
                             #elif fullrot_flex_residues_only
                             && ares
                             #endif
@@ -5984,6 +5984,12 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #if _dbg_atom_mov_to_clash
                                 movclash_justtesting = true;
                                 #endif
+
+                                if (ares == 159 && a->is_Schiff())
+                                {
+                                    cout << "";
+                                }
+
                                 bb[q]->rotate(theta, false);
                                 a->enforce_stays(multimol_stays_enforcement);
                                 tryenerg = cfmol_multibind(a, nearby);
@@ -7435,7 +7441,7 @@ int Molecule::get_ring_num_atoms(int ringid)
 void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 {
     if (!rings) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     Point old_ring_cen = get_ring_center(ringid);
     Vector motion = new_ring_cen.subtract(old_ring_cen);
     int i;
@@ -7449,7 +7455,7 @@ void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 void Molecule::rotate_ring(int ringid, Rotation rot)
 {
     if (!rings) return;
-    if (_is_Schiff) return;
+    if (_Schiff_joined_mol) return;
     Point origin = get_ring_center(ringid);
     int i;
     Atom** ring_atoms = rings[ringid]->get_atoms();

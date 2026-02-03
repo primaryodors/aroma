@@ -369,8 +369,8 @@ protected:
     Atom** most_bindable = nullptr;
     Pose* iterbegan = nullptr;
     int iters_without_change = 0;
-    Molecule* _is_Schiff = nullptr;     // Pointer to the molecule's Schiff-bonded "partner".
-    Atom** Schiff_atoms = nullptr;
+    Molecule* _Schiff_joined_mol = nullptr;     // Pointer to the molecule's Schiff-bonded "partner".
+    int idx_of_first_Schiff_atom = -1;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
@@ -407,7 +407,7 @@ protected:
 
     public:
     const int& num_monomers = nmonomers;
-    const bool is_Schiff() {return _is_Schiff != nullptr;}
+    const bool is_Schiff() {return _Schiff_joined_mol != nullptr;}
 };
 
 float g_total_mclash(void* mol);

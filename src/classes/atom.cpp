@@ -553,7 +553,7 @@ void Bond::fetch_moves_with_atom2(Atom **result)
     result[i] = nullptr;
 }
 
-bool Atom::move(Point* pt)
+bool Atom::move(Point* pt, bool delgeo)
 {
     #if debug_break_on_move
     if (break_on_move) throw 0xb16fa7012a96eca7;
@@ -568,9 +568,12 @@ bool Atom::move(Point* pt)
 
     location = *pt;
     location.weight = at_wt;
-    if (geov) delete[] geov;
-    geov = NULL;
-    geometry_dirty = true;
+    if (delgeo)
+    {
+        if (geov) delete[] geov;
+        geov = NULL;
+        geometry_dirty = true;
+    }
 
     #if _dbg_atom_mov_to_clash
     // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
@@ -1645,7 +1648,7 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
         }
     }
 
-    if (atom1->residue && !atom1->is_backbone && greek_from_aname(atom1->name) > greek_from_aname(atom2->name))
+    if (atom1->residue && !atom1->is_backbone && atom2->residue && greek_from_aname(atom1->name) > greek_from_aname(atom2->name))
     {
         can_rotate = false;
         last_fail = bf_sidechain_hierarchy;
@@ -1713,7 +1716,7 @@ _cannot_reverse_bondrot:
         {
             if (moves_with_atom2[i]->is_backbone) continue;
         }
-        if (moves_with_atom2[i]->residue != atom2->residue)
+        if (moves_with_atom2[i]->residue && (moves_with_atom2[i]->residue != atom2->residue))
         {
             if (moves_with_atom2[i]->residue) continue;
         }
@@ -1721,7 +1724,7 @@ _cannot_reverse_bondrot:
         Point loc = moves_with_atom2[i]->loc;
         Point nl  = rotate3D(&loc, &cen, &v, theta);
 
-        moves_with_atom2[i]->move(&nl);
+        moves_with_atom2[i]->move(&nl, false);
         moves_with_atom2[i]->rotate_geometry(rot);
     }
     // cout << endl;

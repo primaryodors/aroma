@@ -344,7 +344,7 @@ public:
     void stream_pdb_line(ostream& os, unsigned int atomno, bool force_hetatm = false);              // Atoms can be forced het, unlike humans.
 
     // Spatial functions.
-    bool move(Point* pt);
+    bool move(Point* pt, bool delete_geometry = true);
     bool move(Point pt)
     {
         return move(&pt);
