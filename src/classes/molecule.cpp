@@ -1987,13 +1987,10 @@ bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
 
 void Molecule::enumerate_Schiff_atoms()
 {
-    int i, l, resno;
+    int i, l;
 
     if (_Schiff_joined_mol && atoms && idx_of_first_Schiff_atom < 0)
     {
-        resno = is_residue();
-        if (!resno) resno = _Schiff_joined_mol->is_residue();
-
         int other_atcount = _Schiff_joined_mol->idx_of_first_Schiff_atom;
         if (other_atcount < 0) other_atcount = _Schiff_joined_mol->atcount;
         for (atcount=0; atoms[atcount]; atcount++);
