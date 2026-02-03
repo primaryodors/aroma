@@ -2156,8 +2156,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     _is_Schiff = other;
     other->_is_Schiff = this;
-    Schiff_atoms = nullptr;
-    other->Schiff_atoms = nullptr;
+    Schiff_atoms = other->Schiff_atoms = nullptr;
+    rotatable_bonds = other->rotatable_bonds = nullptr;
     result->refine_structure();
     return result;
 }
@@ -3090,13 +3090,14 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
 
     Bond* btemp[65536];
 
+    enumerate_Schiff_atoms();
     int i,j, bonds=0;
     if (!immobile)
-        for (i=0; atoms[i]; i++)
+        for (i=0; Schiff_atoms[i]; i++)
         {
             Bond* lb[32];
-            atoms[i]->fetch_bonds(lb);
-            int g = atoms[i]->get_geometry();
+            Schiff_atoms[i]->fetch_bonds(lb);
+            int g = Schiff_atoms[i]->get_geometry();
             for (j=0; j<g && lb[j]; j++)
             {
                 if (!lb[j]->atom1 || !lb[j]->atom2) continue;
@@ -3151,11 +3152,11 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
             }
         }
     else
-        for (i=0; atoms[i]; i++)
+        for (i=0; Schiff_atoms[i]; i++)
         {
             Bond* lb[16];
-            atoms[i]->fetch_bonds(lb);
-            int g = atoms[i]->get_geometry();
+            Schiff_atoms[i]->fetch_bonds(lb);
+            int g = Schiff_atoms[i]->get_geometry();
             for (j=0; j<g; j++)
             {
                 // Generally, a single bond between pi atoms cannot rotate.
@@ -4726,6 +4727,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
             }
             if (skip) continue;
             if (ligands[l] == _is_Schiff) continue;
+            int lres = ligands[l]->is_residue();
+            if (lres && a->residue && abs(lres - a->residue) < 2) continue;
 
             #if _dbg_51e2_ionic
             if (!is_residue() && a->get_family() == CHALCOGEN && ligands[l]->is_residue() == 262)
@@ -5609,6 +5612,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         for (i=0; mm[i]; i++)
         {
             Molecule* a = mm[i];
+            if (a->is_Schiff() && !a->is_residue()) a = a->_is_Schiff;
             if (a->movability & MOV_PINNED) continue;
             bool flipped_rings = false;
             int ares = a->is_residue();
