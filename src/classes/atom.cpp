@@ -791,7 +791,7 @@ int Atom::get_bonded_heavy_atoms_count()
 float Atom::is_bonded_to(Atom* latom2)
 {
     if (!bonded_to) return 0;
-    if (abs(residue - latom2->residue) > 1)
+    if (residue && latom2->residue && abs(residue - latom2->residue) > 1)
     {
         // If not same or adjacent residues and not disulfide bond, atoms are almost surely not bonded.
         if (family != CHALCOGEN || latom2->family != CHALCOGEN) return 0;
@@ -809,8 +809,9 @@ bool Atom::shares_bonded_with(Atom* atom2)
     if (!bonded_to) return false;
     int i;
     for (i=0; i<geometry; i++)
-        if (bonded_to[i].atom2 && abs(reinterpret_cast<long>(bonded_to[i].atom2) - reinterpret_cast<long>(this)) < memsanity)
-            if (bonded_to[i].atom2->is_bonded_to(atom2)) return true;
+        if (bonded_to[i].atom2
+            && abs(reinterpret_cast<long>(bonded_to[i].atom2) - reinterpret_cast<long>(this)) < memsanity)
+                if (bonded_to[i].atom2->is_bonded_to(atom2)) return true;
     return false;
 }
 

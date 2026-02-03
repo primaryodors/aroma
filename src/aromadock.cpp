@@ -3895,6 +3895,7 @@ _try_again:
                 ligand->movability = MOV_FLEXONLY;
                 g_bbr->pri_res->movability = MOV_FORCEFLEX;
                 cfmols[cfmolqty++] = (Molecule*)g_bbr->pri_res;
+                g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
             }
             #endif
 
@@ -4308,6 +4309,11 @@ _try_again:
                 }
                 if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*10)
                 {
+                    if (!i)
+                    {
+                        float fku = cfmols[i]->get_internal_clashes();
+                        cout << fku << endl;
+                    }
                     dr[drcount][nodeno+nodeoff].disqualified = true;
                     dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
                 }

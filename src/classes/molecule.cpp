@@ -3596,7 +3596,8 @@ float Molecule::get_internal_clashes(bool sb)
                                 << " adding " << cpartial << " kJ/mol."
                                 << endl;
                         #endif
-                        clash += cpartial;
+                        if (cpartial)
+                            clash += cpartial;
                     }
                 }
                 continue;
@@ -3612,7 +3613,8 @@ float Molecule::get_internal_clashes(bool sb)
             if (r < avdW + bvdW)
             {
                 float lclash = fmax(InteratomicForce::Lennard_Jones(atoms[i], atoms[j]), 0); // sphere_intersection(avdW, bvdW, r);
-                clash += lclash;
+                if (lclash)
+                    clash += lclash;
 
                 if (false && lclash > 3)
                 {
