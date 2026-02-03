@@ -485,6 +485,7 @@ void Atom::unbond(Atom* atom2)
         {
             if (bonded_to[i].atom2 == atom2)
             {
+                if (bonded_to[i].cardinality >= 2) geometry += (int)(bonded_to[i].cardinality - 1);
                 if (!reciprocity)
                 {
                     bonded_to[i].atom2->reciprocity = true;
