@@ -5617,6 +5617,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             bool flipped_rings = false;
             int ares = a->is_residue();
 
+            if (ares == 159)
+            {
+                cout << "";
+            }
+
             if (a->movability & MOV_BKGRND) continue;
 
             #if _dbg_asunder_atoms
@@ -5909,13 +5914,18 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
 
+            if (ares == 159)
+            {
+                cout << "";
+            }
+
             #if allow_bond_rots
             #if _dbg_mol_flexion
             bool is_flexion_dbg_mol = (ares == 107);
             if (is_flexion_dbg_mol) cout << a->name << " movability " << hex << a->movability << dec << endl << flush;
             #endif
             if (((a->movability & MOV_CAN_FLEX) && !(a->movability & MOV_FORBIDDEN) && a->movability != MOV_PINNED)
-                && (!ares || frand(0,1) < sidechain_flexion_frequency)
+                && (!ares || frand(0,1) < sidechain_flexion_frequency || a->is_Schiff())
                 )
             {
                 pib.copy_state(a);

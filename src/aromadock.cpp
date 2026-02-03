@@ -3894,6 +3894,7 @@ _try_again:
                 ligand->create_Schiff_base(g_bbr->pri_res);
                 ligand->movability = MOV_FLEXONLY;
                 g_bbr->pri_res->movability = MOV_FORCEFLEX;
+                cfmols[cfmolqty++] = (Molecule*)g_bbr->pri_res;
             }
             #endif
 
