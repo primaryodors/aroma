@@ -540,6 +540,7 @@ void output_iter(int iter, Molecule** mols)
 
 void abhor_vacuum(int iter, Molecule** mols)
 {
+    if (ligand->is_Schiff()) return;
     #if allow_abhor_vacuum
     int i, n = ligand->get_atom_count();
     Point rel(0,0,0);
