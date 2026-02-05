@@ -89,6 +89,7 @@ class Molecule
 public:
     Molecule();
     Molecule(const char* name);
+    Molecule(const char* name, const char* smiles_string);
     Molecule(const char* name, Atom** collection);
     Molecule(const Molecule& copyfrom);
     Molecule(Molecule** monomers);

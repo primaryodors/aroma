@@ -57,6 +57,24 @@ Molecule::Molecule(char const* lname)
     for (j=0; j<10; j++) lastbind_history[j] = 0;
 }
 
+Molecule::Molecule(const char *lname, const char *smiles_string)
+{
+    name = new char[strlen(lname)+1];
+    strcpy(name, lname);
+
+    atoms = nullptr;
+    smiles = nullptr;
+    rings = nullptr;
+    atcount = 0;
+    reset_conformer_momenta();
+    rotatable_bonds = nullptr;
+
+    int j;
+    for (j=0; j<10; j++) lastbind_history[j] = 0;
+
+    from_smiles(smiles_string);
+}
+
 Molecule::Molecule()
 {
     atoms = nullptr;
