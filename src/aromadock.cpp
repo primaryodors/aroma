@@ -3530,7 +3530,7 @@ _try_again:
                         {
                             j = cv->resnos(protein, lrs);
                             lrs[j] = nullptr;
-                            lrs[SPHREACH_MAX] = nullptr;
+                            lrs[SPHREACH_MAX-1] = nullptr;
                         }
                         else
                         {

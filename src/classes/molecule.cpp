@@ -4143,9 +4143,11 @@ bool Molecule::check_stays()
 
 bool Molecule::check_stays_dry()
 {
+    if (!stay_close_mine || !stay_close_other) return true;
     float r = stay_close_other->distance_to(stay_close_mine);
     bool result = (r <= stay_close_optimal+stay_close_tolerance);
     if (!result) return result;
+    if (!stay_close2_mine || !stay_close2_other) return true;
     r = stay_close2_other->distance_to(stay_close2_mine);
     return (r <= stay_close2_optimal+stay_close_tolerance);
 }
