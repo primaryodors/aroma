@@ -187,7 +187,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
     AminoAcid* allres[protein->get_end_resno()+16]; 
     int qpr = protein->fetch_residues_near(ligand->get_barycenter(), 100000, allres, false);
-    Molecule* postaa[qpr];
+    Molecule* postaa[qpr+16];
     postaa[0] = ligand;
     for (i=0; i<qpr; i++)
     {

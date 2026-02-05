@@ -35,7 +35,7 @@ CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 CFLAGS+=-O3
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # Development CFLAGS for tracking down memory problems
 CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
