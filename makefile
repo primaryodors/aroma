@@ -37,6 +37,9 @@ CFLAGS+=-O3
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g
 
+# Development CFLAGS for tracking down memory problems
+CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
+
 # For gprof
 # example command line:
 # gprof bin/aromadock gmon.out > aromadock.output

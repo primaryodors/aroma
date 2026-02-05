@@ -3525,16 +3525,18 @@ _try_again:
                         }
 
                         Molecule* llig;
-                        j = 0;
                         AminoAcid** lrs = new AminoAcid*[SPHREACH_MAX];
                         if (cv)
                         {
-                            cv->resnos(protein, lrs);
+                            j = cv->resnos(protein, lrs);
+                            lrs[j] = nullptr;
+                            lrs[SPHREACH_MAX] = nullptr;
                         }
                         else
                         {
                             memcpy(lrs, reaches_spheroid[nodeno], sizeof(AminoAcid**)*SPHREACH_MAX);
                         }
+                        j = 0;
                         #if _dbg_bb_scoring
                         cout << "Node " << nodeno << "; sphres = " << sphres << endl;
                         #endif
