@@ -485,18 +485,21 @@ void Atom::unbond(Atom* atom2)
         {
             if (bonded_to[i].atom2 == atom2)
             {
+                if (bonded_to[i].cardinality >= 2) geometry += (int)(bonded_to[i].cardinality - 1);
                 if (!reciprocity)
                 {
                     bonded_to[i].atom2->reciprocity = true;
                     bonded_to[i].atom2->unbond(this);		// RECURSION!
                     bonded_to[i].atom2->reciprocity = false;
                 }
-                bonded_to[i].atom2 = nullptr;
+                bonded_to[i].atom1 = bonded_to[i].atom2 = nullptr;
                 bonded_to[i].cardinality=0;
                 bonded_to[i].can_rotate=0;
             }
         }
     }
+
+    condense_bondedtos();
 }
 
 void Atom::unbond_all()
@@ -550,7 +553,7 @@ void Bond::fetch_moves_with_atom2(Atom** result)
     result[i] = nullptr;
 }
 
-bool Atom::move(Point* pt)
+bool Atom::move(Point* pt, bool delgeo)
 {
     #if debug_break_on_move
     if (break_on_move) throw 0xb16fa7012a96eca7;
@@ -565,15 +568,34 @@ bool Atom::move(Point* pt)
 
     location = *pt;
     location.weight = at_wt;
-    if (geov) delete[] geov;
-    geov = NULL;
-    geometry_dirty = true;
+    if (delgeo)
+    {
+        if (geov) delete[] geov;
+        geov = NULL;
+        geometry_dirty = true;
+    }
 
     #if _dbg_atom_mov_to_clash
     // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
     #endif
 
     return true;
+}
+
+void Atom::condense_bondedtos()
+{
+    int i, l;
+    Bond tmp[geometry*2+2];
+    for (i=0; i<geometry; i++)
+    {
+        tmp[i] = bonded_to[i];
+    }
+    for (i=0; i<geometry; i++) bonded_to[i].atom1 = bonded_to[i].atom2 = nullptr;
+    for (i=l=0; i<geometry; i++)
+    {
+        if (tmp[i].atom2)
+            bonded_to[l++] = tmp[i];
+    }
 }
 
 bool Atom::move_rel(Vector* v)

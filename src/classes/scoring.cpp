@@ -187,7 +187,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
     AminoAcid* allres[protein->get_end_resno()+16]; 
     int qpr = protein->fetch_residues_near(ligand->get_barycenter(), 100000, allres, false);
-    Molecule* postaa[qpr];
+    Molecule* postaa[qpr+16];
     postaa[0] = ligand;
     for (i=0; i<qpr; i++)
     {
@@ -665,7 +665,9 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         n = laa->get_atom_count();
         for (l=0; l<n; l++)
         {
-            laa->get_atom(l)->stream_pdb_line(
+            Atom* a = laa->get_atom(l);
+            if (a->mol == laa) a->residue = laa->get_residue_no();
+            a->stream_pdb_line(
                 lpdbdat,
                 laa->atno_offset+l
             );

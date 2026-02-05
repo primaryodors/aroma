@@ -249,6 +249,7 @@ public:
     bool is_in_ring(Ring* ring);
     Ring* closest_arom_ring_to(Point target);
     Ring* in_same_ring_as(Atom* b, Ring* ignore = nullptr);
+    void condense_bondedtos();
     void aromatize()
     {
         int i;
@@ -283,7 +284,7 @@ public:
     void stream_pdb_line(ostream& os, unsigned int atomno, bool force_hetatm = false);              // Atoms can be forced het, unlike humans.
 
     // Spatial functions.
-    bool move(Point* pt);
+    bool move(Point* pt, bool delete_geometry = true);
     bool move(Point pt)
     {
         return move(&pt);
