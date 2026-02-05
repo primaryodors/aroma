@@ -1848,6 +1848,7 @@ int Molecule::from_sdf(char const *sdf_dat)
             Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
             if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
             Atom* a = new Atom(words[3], loc);
+            a->mol = reinterpret_cast<void*>(this);
             delete loc;
             a->name = new char[16];
             sprintf(a->name, "%s%d", words[3], added+1);
@@ -4142,9 +4143,11 @@ bool Molecule::check_stays()
 
 bool Molecule::check_stays_dry()
 {
+    if (!stay_close_mine || !stay_close_other) return true;
     float r = stay_close_other->distance_to(stay_close_mine);
     bool result = (r <= stay_close_optimal+stay_close_tolerance);
     if (!result) return result;
+    if (!stay_close2_mine || !stay_close2_other) return true;
     r = stay_close2_other->distance_to(stay_close2_mine);
     return (r <= stay_close2_optimal+stay_close_tolerance);
 }
@@ -5398,9 +5401,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                     Point bloc = b->get_barycenter();
 
-                    Atom* na = a->get_nearest_atom(bloc);
-                    if (!na) continue;
-                    float r = na->distance_to(b->get_nearest_atom(aloc));
+                    Atom *na, *nb;
+                    a->mutual_closest_atoms(mm[j], &na, &nb);
+                    if (!na || !nb) continue;
+                    float r = na->distance_to(nb);
                     if (r > _INTERA_R_CUTOFF+2.5) continue;
                     nearby[l++] = b;
                 }
