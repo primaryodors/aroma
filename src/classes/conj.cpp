@@ -132,7 +132,7 @@ bool Conjugation::contains(Atom *a)
 bool Conjugation::contains(Conjugation *c)
 {
     if (!c->atoms) return false;
-    int i, j=0;
+    int i;
     for (i=0; c->atoms[i]; i++)
     {
         if (!contains(c->atoms[i])) return false;

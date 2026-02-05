@@ -874,7 +874,6 @@ void Molecule::hydrogenate(bool steric_only)
 
             if (atoms[i]->get_geometry() == 3)
             {
-                Bond* aib = atoms[i]->get_bond_by_idx(1);
                 int k=0;
                 Bond* b0 = atoms[i]->get_bond_by_idx(k++);
                 if (!b0->atom2 || b0->atom2 == H) b0 = atoms[i]->get_bond_by_idx(k++);
@@ -1037,6 +1036,19 @@ Atom* Molecule::get_atom(char const* aname) const
         if (!strcmp(atoms[i]->name, aname)) return atoms[i];
 
     return 0;
+}
+
+Atom *Molecule::get_atom(const int a_idx) const
+{
+    if (!atoms) return nullptr;
+    if (a_idx >= atcount)
+    {
+        int i;
+        for (i=0; atoms[atcount]; i++);
+        if (a_idx > i) return nullptr;
+    }
+    if (!atoms[0]->residue && atoms[a_idx]->residue) return nullptr;
+    return atoms[a_idx];
 }
 
 int Molecule::atom_idx_from_ptr(Atom* a)
@@ -1219,7 +1231,7 @@ float Molecule::total_eclipses()
 {
     if (!atoms) return 0;
     float result = 0;
-    int i, j, k, l, m, n;
+    int i, j, l, m, n;
     if (!rotatable_bonds) get_rotatable_bonds();
     if (!rotatable_bonds) return 0;
     while (!eclipse_hash) eclipse_hash = rand();
@@ -1754,7 +1766,6 @@ void Molecule::make_multimer(int n)
 
         for (j=0; source->atoms[j]; j++)
         {
-            Bond* b = source->atoms[j]->get_bond_by_idx(0);
             char esym[5];
             strcpy(esym, Atom::esym_from_Z(source->atoms[j]->Z));
             monomers[i]->add_atom(esym, source->atoms[j]->name, &source->atoms[j]->loc,
@@ -3884,12 +3895,12 @@ void Molecule::mutual_closest_atoms(Molecule* mol, Atom** a1, Atom** a2)
     n = mol->get_atom_count();
     for (i=0; i<m; i++)
     {
-        a = atoms[i];
+        a = get_atom(i);
         if (!a) break;
         int aZ = a->Z;
         for (j=0; j<n; j++)
         {
-            b = mol->atoms[j];
+            b = mol->get_atom(j);
             if (!b) break;
             int bZ = b->Z;
             if (aZ == 1 && bZ == 1) continue;
@@ -4390,6 +4401,7 @@ bool Molecule::check_stays_dry()
     float r = stay_close_other->distance_to(stay_close_mine);
     bool result = (r <= stay_close_optimal+stay_close_tolerance);
     if (!result) return result;
+    if (!stay_close2_mine || !stay_close2_other) return true;
     r = stay_close2_other->distance_to(stay_close2_mine);
     return (r <= stay_close2_optimal+stay_close_tolerance);
 }
@@ -4798,6 +4810,12 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                         }
                         else abind = InteratomicForce::total_binding(a, ligands[l]->atoms[j]);
 
+                        if (abind.clash > 70 && a->residue > 31 && ligands[l]->is_residue())
+                        {
+                            cout << "";
+                            abind = InteratomicForce::total_binding(a, ligands[l]->atoms[j]);
+                        }
+
                         if (((a->residue && !ligands[l]->atoms[j]->residue) || (!a->residue && ligands[l]->atoms[j]->residue))
                             && (coordmtl || ligands[l]->coordmtl)
                             )
@@ -4850,6 +4868,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             interall_a1[ninterall] = heavy1;
                             interall_a2[ninterall] = heavy2;
                             interall[ninterall++] = asum;
+                            if (ninterall >= MAX_INTERALL) break;
 
                             if (ninterall >= MAX_INTERALL-1)
                             {

@@ -757,7 +757,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
     Atom* aheavy = a->get_heavy_atom();
     Atom* bheavy = b->get_heavy_atom();
-    float l_heavy_atom_mindist = aheavy->vdW_radius + bheavy->vdW_radius;
 
     float ahcg = aheavy->is_conjugated_to_charge(), bhcg = bheavy->is_conjugated_to_charge();
     if (ahcg>0 && fabs(ahcg) > fabs(achg))
@@ -826,7 +825,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
     float apol = a->is_polar(), bpol = b->is_polar();
     int aZ = a->Z, bZ = b->Z;
     bool api = a->is_pi(), bpi = b->is_pi();
-    bool amet = a->is_metal(), bmet = b->is_metal();
 
     float dp = 2;			// Directional propensity. The anisotropic component from each single vertex
                             // is calculated as a cosine and then raised to this exponent.
@@ -907,10 +905,8 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
     }
     #endif
 
-    _has_ionic_already:
-    
     if (r < 0.5) forces[0] = NULL;
-    if (!forces || !forces[0])
+    if (!forces[0])
     {
         if (!atoms_are_bonded) kJmol = add_clashes(a, b, kJmol, r, rbind);
         return kJmol;
@@ -939,6 +935,9 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                  || (bZ == 1 && achg > hydrophilicity_cutoff)
                 )
                 skip = true;
+
+            default:
+            ;
         }
 
         if (skip) continue;
@@ -972,8 +971,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             bool del_ageo=false, del_bgeo=false;
             int ag = a->get_geometry();
             int bg = b->get_geometry();
-            int abc = a->get_bonded_atoms_count();
-            int bbc = b->get_bonded_atoms_count();
 
             if (current_type == pi && ag >= 3 && bg >= 3)
             {
@@ -1008,7 +1005,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
             if (current_type == ionic)
                 dpa = dpb = 0;
-            
+
             else if (current_type == hbond)
             {
                 if (a->is_polar() < 0 && b->is_polar() >= 0)
@@ -1031,9 +1028,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
             Point aloc = a->loc;
             Point bloc = b->loc;
-
-            int anx = a->get_idx_next_free_geometry();
-            int bnx = b->get_idx_next_free_geometry();
 
             ag = abs(ag);
             bg = abs(bg);
@@ -1387,7 +1381,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
         k = (current_type - covalent) % _INTER_TYPES_LIMIT;
         if (!isinf(partial)) total_binding_by_type[k] -= partial;
 
-        next_binding_loop:
         if (current_type == ionic && achg && bchg)
         {
             break;
@@ -1464,7 +1457,6 @@ Interaction InteratomicForce::add_clashes(Atom *a, Atom *b, Interaction kJmol, f
         #endif
     }
 
-    _finished_clashing:
     kJmol.worst_atom_clash = kJmol.clash;
     return kJmol;
 }
@@ -1531,7 +1523,7 @@ float InteratomicForce::covalent_bond_radius(Atom* a, Atom* b, float cardinality
     if (!read_forces_dat && !reading_forces) read_all_forces();
     if (!a || !b || !a->Z || !b->Z) return 0;
 
-    int i, j=0;
+    int i;
     for (i=0; all_forces[i]; i++)
     {
         if (all_forces[i]->type == covalent && fabs(all_forces[i]->arity - cardinality) < 0.1)
@@ -1588,7 +1580,7 @@ float InteratomicForce::coordinate_bond_radius(Atom* a, Atom* b, intera_type bty
 {
     if (!read_forces_dat && !reading_forces) read_all_forces();
 
-    int i, j=0;
+    int i;
     for (i=0; all_forces[i]; i++)
     {
         if (all_forces[i]->type == btype)

@@ -807,7 +807,9 @@ void iteration_callback(int iter, Molecule** mols)
 
     for (i=0; i < ac; i++)
     {
-        if (ligand->get_atom(i)->strongest_bind_energy > bbest)
+        Atom* a = ligand->get_atom(i);
+        if (!a) continue;
+        if (a->strongest_bind_energy > bbest)
         {
             atom1 = ligand->get_atom(i);
             bbest = atom1->strongest_bind_energy;
@@ -3531,6 +3533,7 @@ _try_again:
                         if (cv)
                         {
                             cv->resnos(protein, lrs);
+                            lrs[SPHREACH_MAX-1] = nullptr;
                         }
                         else
                         {

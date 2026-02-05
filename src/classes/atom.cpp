@@ -1445,7 +1445,7 @@ void Bond::fill_moves_with_cache()
         for (j=0; j<tmplen; j++)
         {
             attmp[j]->fetch_bonds(b);
-            if (b)
+            if (b[0])
             {
                 for (i=0; b[i]; i++)
                 {
@@ -2010,8 +2010,7 @@ Vector* Atom::get_basic_geometry()
 {
     Vector* retval = new Vector[abs(geometry)+8];
 
-    int i, j;
-    float x, y, z;
+    int i;
 
     if (geometry < 0)
     {
@@ -2300,7 +2299,7 @@ Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
     geov = get_basic_geometry();
 
     Point center(0,0,0);
-    int i, j, k, l;
+    int i, j, k;
 
     if (bonded_to && bonded_to[0].atom2)
     {
@@ -2317,17 +2316,14 @@ Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
             Vector B1 = bonded_to[j].atom2->location.subtract(this->location);
             float theta = find_angle_along_vector(geov[j], B1, center, B0);
 
-            Point old = geov[j];
             for (i=1; i<=geometry; i++)
             {
                 geov[i] = rotate3D(geov[i], center, B0, theta);
             }
-            Point nouiion = geov[j];
             break;
         }
     }
 
-    _exit_search:
     geometry_dirty = false;
     if (prevent_infinite_loop) return geov;
 
@@ -2911,7 +2907,6 @@ std::vector<Atom*> Atom::get_conjugated_atoms(Atom* bir, Atom* c)
             bonded_to[i].atom2->is_pi()
             )
         {
-            int n = casf.size();
             casf.push_back(bonded_to[i].atom2);
 
             // DANGER: RECURSION.
@@ -3038,7 +3033,7 @@ Atom** Ring::get_atoms() const
 {
     if (!atcount) return nullptr;
     Atom** retval = new Atom*[atcount+2];
-    int i, i1=0, j, dir=1, first;
+    int i, i1=0, j, dir=1, first=0;
 
     for (i=0; i<atcount; i++)
     {
@@ -3161,7 +3156,7 @@ Vector Ring::get_normal()
 
 bool Ring::is_conjugated()
 {
-    if (!atoms) return false;
+    if (!atcount) return false;
     return atoms_are_conjugated(atoms);
 }
 
@@ -3173,7 +3168,6 @@ bool Ring::is_coplanar()
     }
     else
     {
-        if (!atoms) return false;
         if (!atcount) return false;
         if (atcount < 4) return true;
 
@@ -3314,7 +3308,7 @@ void Ring::determine_type()
 {
     // imidazole-like functionality.
     int i;
-    if (atoms)
+    if (atcount)
     {
         int numC = 0, numN = 0, numhCC = 0;             // Later, we'll add more atoms.
         for (i=0; atoms[i]; i++)

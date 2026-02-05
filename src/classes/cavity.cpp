@@ -925,7 +925,8 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
                     f = 0;
                     for (i=0; i<n; i++)
                     {
-                        f += sphere_inside_pocket(ligand->get_atom(i)->get_sphere());
+                        Atom* a = ligand->get_atom(i);
+                        if (a) f += sphere_inside_pocket(a->get_sphere());
                     }
 
                     if (prot)
@@ -983,7 +984,8 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
             f = 0;
             for (i=0; i<n; i++)
             {
-                f += sphere_inside_pocket(ligand->get_atom(i)->get_sphere());
+                Atom* a = ligand->get_atom(i);
+                if (a) f += sphere_inside_pocket(a->get_sphere());
             }
 
             if (f > bestc)
@@ -1040,7 +1042,7 @@ int Cavity::resnos(Protein* p, AminoAcid** result)
             if (j >= SPHREACH_MAX-1) break;
         }
     }
-
+    result[j] = nullptr;
     return j;
 }
 

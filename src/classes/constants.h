@@ -43,7 +43,7 @@ const float Schiff_enthalpy = (2.0*435) + 732.f - 644.f - (2.0*498.7);
 #define memsanity 0x10000000
 #define NOT_ATOM_RECORD 0xb1207e19
 #define PROT_MAX_RGN 40
-#define SPHREACH_MAX 256
+#define SPHREACH_MAX 512
 #define VALENCE_EXCEEDS_GEOMETRY 22
 
 #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)

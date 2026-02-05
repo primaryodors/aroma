@@ -190,10 +190,7 @@ public:
     void add_existing_atom(Atom* to_add);
     char** get_atom_names() const;
     Atom* get_atom(const char* aname) const;
-    Atom* get_atom(const int a_idx) const
-    {
-        return atoms[a_idx];
-    }
+    Atom* get_atom(const int a_idx) const;
     Atom* get_atom_by_pdbidx(const int pdbidx) const;
     int count_atoms_by_element(const char* esym);
     Point get_atom_location(const char* aname);
@@ -407,7 +404,7 @@ protected:
 
     public:
     const int& num_monomers = nmonomers;
-    const bool is_Schiff() {return _Schiff_joined_mol != nullptr;}
+    bool is_Schiff() const {return _Schiff_joined_mol != nullptr;}
 };
 
 float g_total_mclash(void* mol);

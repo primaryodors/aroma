@@ -267,7 +267,7 @@ Point average_of_points(Point* points, int count)
 Point size_of_point_space(Point* points, int count)
 {
     int i;
-    float x0, y0, z0, x1, y1, z1;
+    float x0=0, y0=0, z0=0, x1=0, y1=0, z1=0;
 
     for (i=0; i<count; i++)
     {
@@ -286,7 +286,7 @@ Point size_of_point_space(Point* points, int count)
 float equidistance_anomaly(Point point, Point* refs, int count)
 {
     int i;
-    float max, min;
+    float max=0, min=0;
     for (i=0; i<count; i++)
     {
         float r = point.get_3d_distance(refs[i]);
@@ -320,7 +320,7 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
             default: bd = lbias.z;
         }
 
-        float f;
+        float f=0;
         if (bd < 0) f = frand(-anom, anom/3);
         else if (bd > 0) f = frand(-anom/3, anom);
         else bd = frand(-anom, anom);
