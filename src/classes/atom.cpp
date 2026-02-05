@@ -2394,6 +2394,62 @@ Vector Atom::get_next_free_geometry(float lcard)
     return retval;
 }
 
+Vector Atom::get_nearest_free_geometry(float lcard, Point pt)
+{
+    TODO: fix this fuction
+    int lgeo = geometry;
+    if (lcard > 1)
+    {
+        geometry -= ceil(lcard-1);
+        if (geov) delete[] geov;
+        geov = 0;
+    }
+    Vector* v = get_geometry_aligned_to_bonds();
+    Vector retval;
+    float rbest = Avogadro;
+    if (!bonded_to) retval = v[0];
+    else
+    {
+        int i;
+        for (i=0; bonded_to[i].atom2; i++);	// Get count.
+
+        if (i >= geometry) i=0;
+
+        int j=i;
+        if (geometry == 4 && swapped_chirality && i >= 2) i ^= 1;
+        if (geometry == 3 && EZ_flip && i >= 1) i = 3-i;
+        // if (bonded_to[i].atom2) i=j;			// For some reason, this line makes everything go very wrong.
+        if (geometry == 4 && chirality_unspecified)
+        {
+            for (i=0; i<geometry; i++)
+            {
+                Point pt = v[i];
+                pt.scale(1);
+
+                float closest = 81;
+                if (!strcmp(name, "Tumbolia")) cout << i << "*: " << (Point)v[i] << endl;
+                for (j=0; j<geometry; j++)
+                {
+                    if (!bonded_to[j].atom2) continue;
+                    Point pt1 = bonded_to[j].atom2->location.subtract(location);
+                    pt1.scale(1);
+                    float r = pt1.get_3d_distance(pt);
+                    if (!strcmp(name, "Tumbolia")) cout << j << ":: " << pt1 << " " << r << endl;
+                    if (r < closest) closest = r;
+                }
+                if (!strcmp(name, "Tumbolia")) cout << endl;
+                if (closest > 0.7 && closest < rbest)				// Slightly less than 1/sqrt(2).
+                {
+                    retval = v[i];
+                    rbest = closest;
+                }
+            }
+        }
+    }
+    geometry = lgeo;
+    return retval;
+}
+
 int Atom::get_idx_next_free_geometry()
 {
     if (!bonded_to) return 0;

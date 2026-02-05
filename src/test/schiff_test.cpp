@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
-#include "../classes/molecule.h"
+#include "../classes/protein.h"
 
 using namespace std;
 
@@ -20,7 +20,14 @@ int main(int argc, char** argv)
     Atom *H1 = N->is_bonded_to("H");
     H1->unbond_all();
     Atom *H2 = N->is_bonded_to("H");
-    H1->bond_to(N, 1);
+    O->increment_charge(1);
+    Vector v = O->get_next_free_geometry(1);
+    H1->bond_to(O, 1);
+    H1->move(O->loc.add(v));
+
+    FILE* fp = fopen("oh_schiff.sdf", "w");
+    mols[0]->save_sdf(fp, &mols[1]);
+    fclose(fp);
 
     return 0;
 }

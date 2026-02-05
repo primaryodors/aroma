@@ -303,6 +303,7 @@ public:
     };
     float similarity_to(Atom* atom2);
     Vector get_next_free_geometry(float lcard);
+    Vector get_nearest_free_geometry(float lcard, Point pt);
     int get_idx_next_free_geometry();
     void rotate_geometry(Rotation rot);			// Necessary for bond rotation.
     void clear_geometry_cache()
