@@ -84,7 +84,7 @@ $(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp $(OBJ)/atom.o
 $(OBJ)/intera.o: src/classes/intera.h src/classes/intera.cpp $(OBJ)/conj.o
 	$(CPL) -c src/classes/intera.cpp -o $(OBJ)/intera.o $(CFLAGS)
 
-$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp $(OBJ)/intera.o
+$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp
 	$(CPL) -c src/classes/molecule.cpp -o $(OBJ)/molecule.o $(CFLAGS)
 
 $(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/molecule.o

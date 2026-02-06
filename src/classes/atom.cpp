@@ -2396,7 +2396,6 @@ Vector Atom::get_next_free_geometry(float lcard)
 
 Vector Atom::get_nearest_free_geometry(float lcard, Point pt)
 {
-    TODO: fix this fuction
     int lgeo = geometry;
     if (lcard > 1)
     {
@@ -2404,49 +2403,62 @@ Vector Atom::get_nearest_free_geometry(float lcard, Point pt)
         if (geov) delete[] geov;
         geov = 0;
     }
+
+    Point center(0,0,0);
     Vector* v = get_geometry_aligned_to_bonds();
+    Vector ranked[lgeo];
     Vector retval;
-    float rbest = Avogadro;
+    int i, j, l, n;
     if (!bonded_to) retval = v[0];
     else
     {
-        int i;
-        for (i=0; bonded_to[i].atom2; i++);	// Get count.
-
-        if (i >= geometry) i=0;
-
-        int j=i;
-        if (geometry == 4 && swapped_chirality && i >= 2) i ^= 1;
-        if (geometry == 3 && EZ_flip && i >= 1) i = 3-i;
-        // if (bonded_to[i].atom2) i=j;			// For some reason, this line makes everything go very wrong.
-        if (geometry == 4 && chirality_unspecified)
+        float g = get_geometric_bond_angle();
+        for (l=0; l<lgeo; l++) ranked[l] = center;
+        for (i=0; i<lgeo; i++)
         {
-            for (i=0; i<geometry; i++)
+            Vector vi = v[i];
+            bool available = true;
+            for (j=0; available && j<geometry && bonded_to[j].atom2; j++)
             {
-                Point pt = v[i];
-                pt.scale(1);
+                Vector vj = bonded_to[j].atom2->loc.subtract(loc);
+                float theta = find_3d_angle(vi, vj, center);
+                if (theta < 0.5*g) available = false;                    // too close to an existing atom; vertex is not available.
+            }
+            if (!available) continue;
 
-                float closest = 81;
-                if (!strcmp(name, "Tumbolia")) cout << i << "*: " << (Point)v[i] << endl;
-                for (j=0; j<geometry; j++)
+            Point vertex = loc.add(v[i]);
+            float r = vertex.get_3d_distance(pt);
+            for (l=0; l<lgeo; l++)
+            {
+                bool insert = false;
+                if (!ranked[l].r) insert = true;
+                else
                 {
-                    if (!bonded_to[j].atom2) continue;
-                    Point pt1 = bonded_to[j].atom2->location.subtract(location);
-                    pt1.scale(1);
-                    float r = pt1.get_3d_distance(pt);
-                    if (!strcmp(name, "Tumbolia")) cout << j << ":: " << pt1 << " " << r << endl;
-                    if (r < closest) closest = r;
+                    Point vertexl = loc.add(ranked[l]);
+                    float rl = vertexl.get_3d_distance(pt);
+
+                    if (r < rl) insert = true;
                 }
-                if (!strcmp(name, "Tumbolia")) cout << endl;
-                if (closest > 0.7 && closest < rbest)				// Slightly less than 1/sqrt(2).
+                if (insert)
                 {
-                    retval = v[i];
-                    rbest = closest;
+                    for (n=l+1; n<lgeo; n++) ranked[n] = ranked[n-1];
+                    ranked[l] = vi;
+                    break;
                 }
             }
         }
     }
-    geometry = lgeo;
+
+    // for (i=0; i<geometry; i++) cout << ranked[i] << endl;
+
+    retval = center;
+    for (i=0; i<lcard; i++)
+    {
+        retval = retval.add(ranked[i]);
+    }
+    // cout << retval << endl;
+    retval.r = 1;
+
     return retval;
 }
 

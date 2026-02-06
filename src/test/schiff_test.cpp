@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     H1->unbond_all();
     Atom *H2 = N->is_bonded_to("H");
     O->increment_charge(1);
-    Vector v = O->get_next_free_geometry(1);
+    Vector v = O->get_nearest_free_geometry(1, N->loc);
     H1->bond_to(O, 1);
     H1->move(O->loc.add(v));
 
