@@ -1993,10 +1993,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     O->increment_charge(1);
     H1->unbond_all();
-    Vector v = O->get_nearest_free_geometry(1, N->loc);
-    v.r = InteratomicForce::covalent_bond_radius(N, C, 2);
-    H1->bond_to(O, 1);
-    H1->move(O->loc.add(v));
+    Vector v;
 
     Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
     if (!who_moves) return nullptr;                             // cannot be two residues.
@@ -2008,8 +2005,12 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Vector mv = O->loc.subtract(N->loc);
     if (O->mol == this) mv = mv.negate();
     Point ptmp = H1->loc;
+    v = O->get_nearest_free_geometry(1, N->loc);
     who_moves->move(mv);
-    H1->move(ptmp);
+
+    v.r = InteratomicForce::covalent_bond_radius(N, C, 2);
+    H1->bond_to(O, 1);
+    H1->move(O->loc.add(v));
 
     LocRotation rot;
     if (CE)
@@ -2031,7 +2032,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     {
         LocatedVector lv = (Vector)CE->loc.subtract(N->loc);
         lv.origin = N->loc;
-        float step = 10.0*fiftyseventh, rbest = 0, thbest = 0, theta;
+        float step = 0.1*fiftyseventh, rbest = 0, thbest = 0, theta;
         for (theta=0; theta<M_PI*2; theta+=step)
         {
             float r = H3->distance_to(CA);
@@ -2055,14 +2056,12 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     H2O->move(v);
     H2O->refine_structure();
 
-    // Refresh "moves-with" cache for all bonds of both molecules
     int i;
-
     who_moves->glued_to = (who_moves == this) ? other : this;
-
     if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
     else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
 
+    // Refresh "moves-with" cache for all bonds of both molecules
     for (i=0; atoms[i]; i++) atoms[i]->clear_all_moves_cache();
     for (i=0; other->atoms[i]; i++) other->atoms[i]->clear_all_moves_cache();
 
