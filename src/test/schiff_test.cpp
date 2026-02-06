@@ -39,9 +39,34 @@ int main(int argc, char** argv)
     Protein p("test");
     p.add_sequence("TIVKTCALTILTA");
     p.make_helix(1, p.get_end_resno(), ALPHA_PHI, ALPHA_PSI);
-    mols[2] = new Molecule("cinnamaldehyde", "c1ccccc1C=CC=O");
+    mols[2] = new Molecule("aldehydeMNA", "O=CC(C)CCCCCCCCC");
     AminoAcid* aa = p.get_residue(4);
     aa->create_Schiff_base(mols[2]);
+
+    Atom *NZ = aa->get_atom("NZ");
+    Bond *b = NZ->get_bond_by_idx(2);
+    if (!b)
+    {
+        cerr << "Schiff bond is missing." << endl;
+        return 2;
+    }
+    Atom *C = b->atom2;
+
+    cout << "Schiff atoms are: " << NZ->residue << ":" << NZ->name << ", " << C->residue << ":" << C->name << endl;
+    cout << "Bond distance: " << NZ->distance_to(C) << endl;
+
+    Bond **bb = ((Molecule*)aa)->get_rotatable_bonds();
+    int i;
+    if (!bb)
+    {
+        cerr << "No rotatable bonds." << endl;
+        return 2;
+    }
+    for (i=0; bb[i]; i++)
+    {
+        cout << "Rotable: " << bb[i]->atom1->name << "-" << bb[i]->atom2->name << endl;
+    }
+
     fp = fopen("well_schiff.pdb", "w");
     if (!fp)
     {

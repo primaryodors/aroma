@@ -2003,8 +2003,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     // Put N where O was
     Molecule* H2O = new Molecule("water");
     Vector mv = O->loc.subtract(N->loc);
-    if (O->mol == this) mv = mv.negate();
-    Point ptmp = H1->loc;
+    if (O->mol == who_moves) mv = mv.negate();
     v = O->get_nearest_free_geometry(1, N->loc);
     who_moves->move(mv);
 
@@ -2017,9 +2016,10 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     {
         rot = align_points_3d(CE->loc, H1->loc, N->loc);
         rot.origin = N->loc;
-        if (O->mol == this) rot.a *= -1;
+        if (O->mol == who_moves) rot.a *= -1;
         who_moves->rotate(rot, rot.origin);
     }
+    // return nullptr;
 
     O->unbond(C);
     H2->unbond(N);
@@ -2050,11 +2050,19 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     C->bond_to(N, 2);
 
+    // TODO: fix water when protein linkage
     v.phi = frand(-M_PI, M_PI);
     v.theta = frand(-M_PI, M_PI);
-    v.r = frand(4, _INTERA_R_CUTOFF);
-    H2O->move(v);
+    v.r = _INTERA_R_CUTOFF;
+    O->move_rel(v);
     H2O->refine_structure();
+
+    v = H1->loc.subtract(O->loc);
+    v.r = InteratomicForce::covalent_bond_radius(H1, O, 1);
+    H1->move(O->loc.add(v));
+    v = H2->loc.subtract(O->loc);
+    v.r = InteratomicForce::covalent_bond_radius(H2, O, 1);
+    H2->move(O->loc.add(v));
 
     int i;
     who_moves->glued_to = (who_moves == this) ? other : this;
