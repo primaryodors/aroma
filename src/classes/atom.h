@@ -68,6 +68,7 @@ public:
         moves_with_atom2 = 0;
     }
     void fetch_moves_with_atom2(Atom** result);
+    bool ensure_moves_with_no_backbone();
     int count_moves_with_atom2();
     int count_heavy_moves_with_atom();
     int count_heavy_moves_with_atom2();
@@ -76,6 +77,8 @@ public:
     void swing(Vector newdir);		// Rotate atom2, and all its moves_with atoms, about atom1 so that the bond points to newdir.
 
     bool is_equivalent(Bond* cmp_to);
+
+    const char* str_moves_with();
 
     Atom* atom1 = nullptr;
     Atom* atom2 = nullptr;

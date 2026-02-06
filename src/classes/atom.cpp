@@ -553,6 +553,24 @@ void Bond::fetch_moves_with_atom2(Atom** result)
     result[i] = nullptr;
 }
 
+bool Bond::ensure_moves_with_no_backbone()
+{
+    int i;
+    if (!moves_with_atom2)
+    {
+        fill_moves_with_cache();
+        enforce_moves_with_uniqueness();
+    }
+    if (!moves_with_atom2) return true;
+
+    // Not calling init_nulls() for performance reasons.
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        if (moves_with_atom2[i]->is_backbone) return false;
+    }
+    return true;
+}
+
 bool Atom::move(Point* pt, bool delgeo)
 {
     #if debug_break_on_move
@@ -1435,7 +1453,9 @@ void Bond::fill_moves_with_cache()
     if (!b[0]) return;
     for (i=0; b[i]; i++)
     {
-        if (b[i]->atom2 && b[i]->atom2 != atom1 && b[i]->atom2->residue == atom2->residue)
+        if (b[i]->atom2 && b[i]->atom2 != atom1
+            && (!atom2->residue || !b[i]->atom2->residue || (b[i]->atom2->residue == atom2->residue))
+           )
         {
             mw_cardsum += b[i]->cardinality*proximity;
             mw_atom_count++;
@@ -1459,7 +1479,9 @@ void Bond::fill_moves_with_cache()
                 for (i=0; b[i]; i++)
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
-                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1 && b[i]->atom2->residue == atom2->residue)
+                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
+                        && (!atom2->residue || !b[i]->atom2->residue
+                            || (b[i]->atom2->residue == atom2->residue)))
                     {
                         if (b[i]->atom2->in_same_ring_as(atom1))
                         {
@@ -1557,8 +1579,8 @@ void Bond::enforce_moves_with_uniqueness()
         for (j=i+1; moves_with_atom2[j]; j++)
         {
             if (moves_with_atom2[j] == moves_with_atom2[i]
-                    // || moves_with_atom2[j]->is_backbone
-                    || moves_with_atom2[j]->residue != atom2->residue
+                // || moves_with_atom2[j]->is_backbone
+                // || moves_with_atom2[j]->residue != atom2->residue
                )
             {
                 moves_with_atom2[j] = 0;
@@ -1957,6 +1979,19 @@ bool Bond::is_equivalent(Bond* cmp_to)
     return mw_atom_count == cmp_to->mw_atom_count &&
         fabs(mw_Zsum - cmp_to->mw_Zsum) < 0.001 &&
         fabs(mw_cardsum - cmp_to->mw_cardsum) < 0.001;
+}
+
+const char *Bond::str_moves_with()
+{
+    if (!moves_with_atom2) return nullptr;
+    int i, j=0;
+    char* retval = new char[65536];     // this is going to leak memory, but we're only using it for debugging.
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        sprintf(&retval[j], "%s ", moves_with_atom2[i]->name);
+        j = strlen(retval);
+    }
+    return retval;
 }
 
 void Bond::swing(Vector newdir)

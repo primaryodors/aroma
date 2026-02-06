@@ -1982,7 +1982,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     {
         identify_Schiff_amine(&N, &H1, &H2);
         other->identify_Schiff_ketald(&C, &O);
-        
+
         if (!C || !O || !N || !H1 || !H2) return nullptr;       // nothing to form a Schiff base with.
     }
 
@@ -2024,9 +2024,10 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     O->unbond(C);
     H2->unbond(N);
     H2->bond_to(O, 1);
-    H2O->append_existing_atom(O);
-    H2O->append_existing_atom(H1);
-    H2O->append_existing_atom(H2);
+    H2O->add_existing_atom(O);
+    H2O->add_existing_atom(H1);
+    H2O->add_existing_atom(H2);
+    H2O->mol_typ = MOLTYP_WATER;
 
     if (CA && CE && (H3 = N->is_bonded_to("H")))      // ANC
     {
@@ -2417,6 +2418,7 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
     nconects = 0;
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->mol != this) continue;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
         l = atoms[i]->get_bonded_atoms_count();
         // cout << "Save " << atoms[i]->name << " as pdbidx " << atoms[i]->pdbidx << " bonded to " << l << " atoms" << endl;
@@ -3210,8 +3212,13 @@ Bond** AminoAcid::get_rotatable_bonds()
     Bond* btemp[65536];
 
     int i,j, bonds=0;
-    for (i=0; i<65536; i++) btemp[i] = nullptr;
-    if (aadef && aadef->aabonds)
+    memset(btemp, 0, 65536*sizeof(Bond*));
+
+    // If there are any atoms not part of this molecule, then the side chain is joined to a ligand and we must skip the aadef.
+    bool skip_aadef = false;
+    for (i=0; !skip_aadef && atoms[i]; i++) if (atoms[i]->mol != this) skip_aadef = true;
+
+    if (!skip_aadef && aadef && aadef->aabonds)
     {
         for (i=0; aadef->aabonds[i] && aadef->aabonds[i]->Za && aadef->aabonds[i]->Zb; i++)
         {
@@ -3331,9 +3338,15 @@ Bond** AminoAcid::get_rotatable_bonds()
                     &&
                     !lb[j]->atom2->is_backbone
                     &&
-                    greek_from_aname(lb[j]->atom1->name) == (greek_from_aname(lb[j]->atom2->name)-1)
+                    (
+                        greek_from_aname(lb[j]->atom1->name) == (greek_from_aname(lb[j]->atom2->name)-1)
+                        || !lb[j]->atom1->residue
+                        || !lb[j]->atom2->residue
+                    )
                     &&
                     lb[j]->atom2->Z > 1
+                    &&
+                    lb[j]->ensure_moves_with_no_backbone()
                )
             {
                 // cout << *lb[j] << " ";
