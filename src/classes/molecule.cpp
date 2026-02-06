@@ -4737,14 +4737,6 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             Atom* heavy1 = atoms[i]->get_heavy_atom();
                             Atom* heavy2 = ligands[l]->atoms[j]->get_heavy_atom();
 
-                            if (!heavy1->residue && !heavy2->residue
-                                && heavy1->get_family() == TETREL && heavy2->get_family() == TETREL
-                                && asum < 0)
-                            {
-                                cout << atoms[i]->name << " (" << heavy1->name << ") ~ "
-                                    << ligands[l]->atoms[j]->name << " (" << heavy2->name << "): " << asum << endl;
-                            }
-
                             for (h=0; h<ninterall; h++)
                             {
                                 if ((heavy1 == interall_a1[h] && heavy2 == interall_a2[h])
