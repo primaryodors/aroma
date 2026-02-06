@@ -782,7 +782,11 @@ int Molecule::is_residue()
 
     for (i=0; atoms[i]; i++)
     {
-        if (atoms[i]->Z < 9 && atoms[i]->get_family() >= TETREL && atoms[i]->residue) return atoms[i]->residue;     // Rule out metals.
+        if (atoms[i]->Z < 9
+            && atoms[i]->mol == this
+            && atoms[i]->get_family() >= TETREL
+            && atoms[i]->residue)
+            return atoms[i]->residue;     // Rule out metals.
     }
     return 0;
 }
@@ -1969,7 +1973,7 @@ bool Molecule::check_Greek_continuity()
 
 Molecule* Molecule::create_Schiff_base(Molecule *other)
 {
-    Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CE=nullptr;
+    Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CA=nullptr, *CE=nullptr;
 
     identify_Schiff_ketald(&C, &O);
     other->identify_Schiff_amine(&N, &H1, &H2);
@@ -1982,7 +1986,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         if (!C || !O || !N || !H1 || !H2) return nullptr;       // nothing to form a Schiff base with.
     }
 
-    Bond *b = N->get_bond_by_idx(0);
+    Bond *b = C->get_bond_by_idx(0);
+    CA = b->atom2;
+    b = N->get_bond_by_idx(0);
     CE = b->atom2;
 
     O->increment_charge(1);
@@ -1994,6 +2000,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
     if (!who_moves) return nullptr;                             // cannot be two residues.
     who_moves->movability = MOV_ALL;
+    cout << "Who moves: " << who_moves->name << endl;
 
     // Put N where O was
     Molecule* H2O = new Molecule("water");
@@ -2025,7 +2032,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         float step = 0.1*fiftyseventh, rbest = 0, thbest = 0, theta;
         for (theta=0; theta<M_PI*2; theta+=step)
         {
-            float r = H3->distance_to(C);
+            float r = H3->distance_to(CA);
             if (r > rbest)
             {
                 rbest = r;
@@ -2044,6 +2051,19 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     v.r = frand(4, _INTERA_R_CUTOFF);
     H2O->move(v);
     H2O->refine_structure();
+
+    // Refresh "moves-with" cache for all bonds of both molecules
+    int i;
+
+    who_moves->glued_to = (who_moves == this) ? other : this;
+
+    if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
+    else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
+
+    for (i=0; atoms[i]; i++) atoms[i]->clear_all_moves_cache();
+    for (i=0; other->atoms[i]; i++) other->atoms[i]->clear_all_moves_cache();
+
+    rotatable_bonds = other->rotatable_bonds = nullptr;
 
     return H2O;
 }
@@ -2247,8 +2267,8 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
     }
 
     int ac, bc, chargeds=0;
-    ac = get_atom_count();
-    bc = get_bond_count(true);
+    ac = 0;
+    bc = 0;
 
     int i, j, k, l;
     Atom* latoms[65536];
@@ -2256,29 +2276,32 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
     if (hasAtoms(atoms))
         for (j=0; atoms[j]; j++)
-            latoms[j] = atoms[j];
+            if (atoms[j]->mol == this) latoms[ac++] = atoms[j];
+    latoms[ac] = nullptr;
 
     Bond** b = get_all_bonds(true);
     if (b)
+    {
         for (l=0; b[l]; l++)
-            lbonds[l] = b[l];
+            if (b[l]->atom1->mol == this) lbonds[bc++] = b[l];
+    }
     if (b) delete[] b;
+    lbonds[bc] = nullptr;
 
     if (lig)
     {
         for (i=0; lig[i] && lig[i]->atoms; i++)
         {
             if (lig[i] == this) continue;
-            ac += lig[i]->get_atom_count();
-            bc += lig[i]->get_bond_count(true);
 
             for (k=0; lig[i]->atoms[k]; k++)
-                latoms[j++] = lig[i]->atoms[k];
+                if (lig[i]->atoms[k]->mol == lig[i]) latoms[ac++] = lig[i]->atoms[k];
 
             b = lig[i]->get_all_bonds(true);
 
             for (k=0; b[k]; k++)
-                lbonds[l++] = b[k];
+                if (b[k]->atom1->mol == lig[i] && b[k]->atom2->mol == lig[i])
+                    lbonds[bc++] = b[k];
 
             if (b) delete[] b;
         }
@@ -2286,7 +2309,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
     fprintf(os, " %d %d  0     0  0  0  0  0  0999 V2000\n", ac, bc );
 
-    for (i=0; i<ac; i++)
+    for (i=0; i<ac && latoms[i]; i++)
     {
         Point p = latoms[i]->loc;
         char const* esym = latoms[i]->get_elem_sym();
@@ -2319,9 +2342,9 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         fprintf(os, " %s%s  0  0  0  0  0  0  0  0  0  0  0  0\n", esym, esym[1]?"":" ");
     }
 
-
     for (i=0; i<bc; i++)
     {
+        if (!lbonds[i]->atom1) break;
         int laidx=0, lbidx=0;
 
         for (j=0; j<ac; j++)
@@ -2353,7 +2376,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         int thisline = min(chargeds, 8);
         fprintf(os, "M  CHG  %d  ", thisline);		// TODO: Multiline if chargeds>8.
         k = 0;
-        for (i=0; i<ac; i++)
+        for (i=0; i<ac && latoms[i]; i++)
         {
             float chg = latoms[i]->get_charge();
             if (!chg) continue;
@@ -5485,10 +5508,19 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
 
-            Point aloc = a->get_barycenter();
             int flexion_sub_iterations = ares
                 ? flexion_sub_iterations_sidechain
                 : flexion_sub_iterations_ligand;
+
+            // Keep ligand-like flexion sub-iters and do_full_rotation for glued side chains.
+            if (a->glued_to)
+            {
+                a = a->glued_to;
+                ares = a->is_residue();
+                a->movability = MOV_FORCEFLEX;
+            }
+
+            Point aloc = a->get_barycenter();
 
             Interaction benerg = 0;
             if (1) // !ares)

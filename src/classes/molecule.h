@@ -373,6 +373,7 @@ protected:
     Atom** most_bindable = nullptr;
     Pose* iterbegan = nullptr;
     int iters_without_change = 0;
+    Molecule* glued_to = nullptr;                       // For Schiff bases and the like.
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
