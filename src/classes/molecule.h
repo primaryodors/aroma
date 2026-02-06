@@ -189,6 +189,7 @@ public:
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
     Atom* add_atom(const char* elemsym, const char* aname, const Point* location, Atom* bond_to, const float bcard, const int charge = 0);
     void add_existing_atom(Atom* to_add);
+    void append_existing_atom(Atom* to_add);            // similar to add_existing_atom() but does not change molecule pointer or residue number
     char** get_atom_names() const;
     Atom* get_atom(const char* aname) const;
     Atom* get_atom(const int a_idx) const
@@ -212,6 +213,8 @@ public:
     bool protonate();
     bool deprotonate();
     void propagate_stays();
+    bool identify_Schiff_amine(Atom** N, Atom** H1, Atom** H2);
+    bool identify_Schiff_ketald(Atom** C, Atom** O);
 
     // Bond functions.
     Bond** get_rotatable_bonds(bool include_can_flip = true);
@@ -221,6 +224,7 @@ public:
     void do_histidine_flip(HistidineFlip* hf);
     void identify_conjugations();
     bool check_Greek_continuity();
+    Molecule* create_Schiff_base(Molecule* other);      // Return a water molecule.
 
     // Ring functions.
     int identify_rings();

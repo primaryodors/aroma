@@ -731,6 +731,12 @@ LocRotation::LocRotation()
     ;
 }
 
+LocRotation::LocRotation(Rotation rot)
+{
+    v = rot.v;
+    a = rot.a;
+}
+
 LocRotation::LocRotation(LocatedVector lv)
 {
     v.r = lv.r;

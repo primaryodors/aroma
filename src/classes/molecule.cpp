@@ -656,12 +656,7 @@ void Molecule::atoms_from_multimers()
 
 void Molecule::add_existing_atom(Atom* a)
 {
-    if (!atoms) atcount = 0;
-    else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
-
-    reallocate();
-    atoms[atcount++] = a;
-    atoms[atcount] = nullptr;
+    append_existing_atom(a);
 
     a->mol = reinterpret_cast<void*>(this);
     preflex_cb = &g_total_mclash;
@@ -672,6 +667,16 @@ void Molecule::add_existing_atom(Atom* a)
         a->residue = atoms[0]->residue;
         a->aaletter = atoms[0]->aaletter;
     }
+}
+
+void Molecule::append_existing_atom(Atom *a)
+{
+    if (!atoms) atcount = 0;
+    else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
+
+    reallocate();
+    atoms[atcount++] = a;
+    atoms[atcount] = nullptr;
 
     clear_all_bond_caches();
 }
@@ -1960,6 +1965,87 @@ bool Molecule::check_Greek_continuity()
     }
 
     return true;
+}
+
+Molecule* Molecule::create_Schiff_base(Molecule *other)
+{
+    Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CE=nullptr;
+
+    identify_Schiff_ketald(&C, &O);
+    other->identify_Schiff_amine(&N, &H1, &H2);
+
+    if (!C || !O || !N || !H1 || !H2)
+    {
+        identify_Schiff_amine(&N, &H1, &H2);
+        other->identify_Schiff_ketald(&C, &O);
+        
+        if (!C || !O || !N || !H1 || !H2) return nullptr;       // nothing to form a Schiff base with.
+    }
+
+    Bond *b = N->get_bond_by_idx(0);
+    CE = b->atom2;
+
+    O->increment_charge(1);
+    H1->unbond_all();
+    Vector v = O->get_nearest_free_geometry(1, N->loc);
+    H1->bond_to(O, 1);
+    H1->move(O->loc.add(v));
+
+    Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
+    if (!who_moves) return nullptr;                             // cannot be two residues.
+    who_moves->movability = MOV_ALL;
+
+    // Put N where O was
+    Molecule* H2O = new Molecule("water");
+    Vector mv = O->loc.subtract(N->loc);
+    if (O->mol == this) mv = mv.negate();
+    who_moves->move(mv);
+    H1->move_rel(mv);
+
+    LocRotation rot;
+    if (CE)
+    {
+        rot = align_points_3d(CE->loc, H1->loc, N->loc);
+        rot.origin = N->loc;
+        if (O->mol == this) rot.a *= -1;
+        who_moves->rotate(rot, rot.origin);
+    }
+
+    O->unbond(C);
+    H2->unbond(N);
+    H2->bond_to(O, 1);
+    H2O->append_existing_atom(O);
+    H2O->append_existing_atom(H1);
+    H2O->append_existing_atom(H2);
+
+    if (CE && (H3 = N->is_bonded_to("H")))      // ANC
+    {
+        LocatedVector lv = (Vector)CE->loc.subtract(N->loc);
+        lv.origin = N->loc;
+        float step = 0.1*fiftyseventh, rbest = 0, thbest = 0, theta;
+        for (theta=0; theta<M_PI*2; theta+=step)
+        {
+            float r = H3->distance_to(C);
+            if (r > rbest)
+            {
+                rbest = r;
+                thbest = theta;
+            }
+            who_moves->rotate(lv, step);
+        }
+
+        who_moves->rotate(lv, thbest);
+    }
+
+    C->bond_to(N, 2);
+
+    v.phi = frand(-M_PI, M_PI);
+    v.theta = frand(-M_PI, M_PI);
+    v.r = frand(4, _INTERA_R_CUTOFF);
+    H2O->move(v);
+    H2O->refine_structure();
+
+    return H2O;
 }
 
 int Molecule::from_pdb(FILE* is, bool het_only)
@@ -7901,6 +7987,44 @@ float g_total_mclash(void* mol)
 bool mclash_delta(void* mol, float previous_mclashes)
 {
     return reinterpret_cast<Molecule*>(mol)->get_total_mclashes() <= previous_mclashes;
+}
+bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == PNICTOGEN
+            && atoms[i]->num_bonded_to("H") >= 2
+            && atoms[i]->is_bonded_to(TETREL))
+        {
+            *N = atoms[i];
+            *H1 = atoms[i]->is_bonded_to("H");
+            *H2 = atoms[i]->is_bonded_to("H", *H1);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
+        {
+            *C = atoms[i]->is_bonded_to("C", 2);
+            if (*C && ((*C)->is_bonded_to(TETREL) || (*C)->is_bonded_to("H"))
+                )
+            {
+                *O = atoms[i];
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 

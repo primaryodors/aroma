@@ -855,12 +855,12 @@ bool Atom::check_Greek_continuity()
     return false;
 }
 
-Atom* Atom::is_bonded_to(const char* element)
+Atom* Atom::is_bonded_to(const char* element, const Atom* ti)
 {
     if (!bonded_to) return 0;
     int i;
     for (i=0; i<geometry; i++)
-        if (bonded_to[i].atom2)
+        if (bonded_to[i].atom2 && ti != bonded_to[i].atom2)
             if (!strcmp(element, "*")
                 ||
                 !strcmp(bonded_to[i].atom2->get_elem_sym(), element)
