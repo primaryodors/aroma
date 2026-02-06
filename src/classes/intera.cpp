@@ -1563,6 +1563,43 @@ float InteratomicForce::covalent_bond_radius(Atom* a, Atom* b, float cardinality
     throw BOND_DEF_NOT_FOUND;
 }
 
+float InteratomicForce::covalent_bond_energy(Atom *a, Atom *b, float cardinality)
+{
+    if (!read_forces_dat && !reading_forces) read_all_forces();
+    if (!a || !b || !a->Z || !b->Z) return 0;
+
+    int i, j=0;
+    for (i=0; all_forces[i]; i++)
+    {
+        if (all_forces[i]->type == covalent && fabs(all_forces[i]->arity - cardinality) < 0.1)
+            if (	(	all_forces[i]->Za == a->Z
+                        &&
+                        (	!all_forces[i]->bZa || a->is_bonded_to(Atom::esym_from_Z(all_forces[i]->bZa)))
+                        &&
+                        all_forces[i]->Zb == b->Z
+                        &&
+                        (	!all_forces[i]->bZb || b->is_bonded_to(Atom::esym_from_Z(all_forces[i]->bZb)))
+                 )
+                    ||
+                    (	all_forces[i]->Za == b->Z
+                        &&
+                        (	!all_forces[i]->bZa || b->is_bonded_to(Atom::esym_from_Z(all_forces[i]->bZa)))
+                        &&
+                        all_forces[i]->Zb == a->Z
+                        &&
+                        (	!all_forces[i]->bZb || a->is_bonded_to(Atom::esym_from_Z(all_forces[i]->bZb)))
+                    )
+               )
+            {
+                return all_forces[i]->kJ_mol;
+            }
+    }
+
+    cout << "Error: Not found covalent bond definition " << a->get_elem_sym() << cardinality_printable(cardinality)
+         << b->get_elem_sym() << " cardinality " << cardinality << "; please check bindings.dat." << endl;
+    throw BOND_DEF_NOT_FOUND;
+}
+
 float InteratomicForce::optimal_distance(Atom* a, Atom* b)
 {
     InteratomicForce* forces[32];

@@ -2052,7 +2052,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         who_moves->rotate(lv, thbest);
     }
 
-    Bond* b = C->bond_to(N, 2);
+    b = C->bond_to(N, 2);
     b->can_flip = true;
     b->flip_angle = M_PI;
 
@@ -2072,6 +2072,13 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     int i;
     who_moves->glued_to = (who_moves == this) ? other : this;
+    glued_energy.attractive = InteratomicForce::covalent_bond_energy(C, N, 2)
+        - InteratomicForce::covalent_bond_energy(C, O, 2)
+        - InteratomicForce::covalent_bond_energy(H1, N, 1)
+        - InteratomicForce::covalent_bond_energy(H2, N, 1)
+        + InteratomicForce::covalent_bond_energy(H1, O, 1)
+        + InteratomicForce::covalent_bond_energy(H2, O, 1);
+    cout << "Schiff enthalpy of formation: " << glued_energy.summed() << endl;
     if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
     else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
 
@@ -4649,6 +4656,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         Point aloc = atoms[i]->loc;
         for (l=0; ligands[l]; l++)
         {
+            if (glued_to && ligands[l] == glued_to) return glued_energy;
+            if (ligands[l]->glued_to && ligands[l]->glued_to == this) return ligands[l]->glued_energy;
             bool skip = false;
             if (ligands[l]->nmonomers)
             {
