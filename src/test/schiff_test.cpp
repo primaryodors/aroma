@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     mols[1]->create_Schiff_base(mols[0]);
 
-    FILE* fp = fopen("oh_schiff.sdf", "w");
+    FILE* fp = fopen("schiff_test.sdf", "w");
     if (!fp)
     {
         cerr << "FAILED to open SDF output file for writing." << endl;
@@ -25,16 +25,7 @@ int main(int argc, char** argv)
     }
     mols[0]->save_sdf(fp, &mols[1]);
     fclose(fp);
-    fp = fopen("oh_schiff.pdb", "w");
-    if (!fp)
-    {
-        cerr << "FAILED to open PDB output file for writing." << endl;
-        return 1;
-    }
-    mols[0]->save_pdb(fp, 0, false);
-    mols[1]->save_pdb(fp, mols[0]->get_atom_count(), true);
-    fclose(fp);
-    cout << "Wrote output files." << endl;
+    cout << "Wrote output SDF." << endl;
 
     Protein p("test");
     p.add_sequence("TIVKTCALTILTA");
@@ -64,10 +55,18 @@ int main(int argc, char** argv)
     }
     for (i=0; bb[i]; i++)
     {
-        cout << "Rotable: " << bb[i]->atom1->name << "-" << bb[i]->atom2->name << endl;
+        cout << "Rotatable: " << bb[i]->atom1->name << "-" << bb[i]->atom2->name << endl;
     }
 
-    fp = fopen("well_schiff.pdb", "w");
+    for (i=0; bb[i]; i++)
+    {
+        bb[i]->rotate(M_PI);
+        cout << "Rotated " << bb[i]->atom1->name << "-" << bb[i]->atom2->name
+            << " Schiff bond distance: " << NZ->distance_to(C) << endl;
+        bb[i]->rotate(M_PI);
+    }
+
+    fp = fopen("schiff_test.pdb", "w");
     if (!fp)
     {
         cerr << "FAILED to open PDB output file for writing." << endl;
@@ -76,7 +75,7 @@ int main(int argc, char** argv)
     p.save_pdb(fp, mols[2]);
     p.end_pdb(fp);
     fclose(fp);
-    cout << "Wrote output file." << endl;
+    cout << "Wrote output PDB." << endl;
 
     return 0;
 }

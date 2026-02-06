@@ -92,6 +92,8 @@ double DeltaG(double K);
 double K(double DeltaG);
 double equilibrium(double kJmol1, double kJmol2);
 
+bool equal_or_zero(int a, int b);           // True if ints are the same or either int is zero.
+
 // From here: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
 template <typename T> int sgn(T val)
 {

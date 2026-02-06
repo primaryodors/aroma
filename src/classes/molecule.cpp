@@ -2666,7 +2666,7 @@ void Molecule::find_paths()
     {
         if (!b[i]->atom2) continue;
         if (b[i]->atom2->Z < 2) continue;
-        if (b[i]->atom2->residue && b[i]->atom2->residue != a->residue) continue;
+        if (!equal_or_zero(b[i]->atom2->residue, a->residue)) continue;
         paths[n] = new Atom*[atcount];
         for (q=0; q<atcount; q++) paths[n][q] = nullptr;
         paths[n][0] = a;
@@ -2700,7 +2700,7 @@ void Molecule::find_paths()
                 if (!b[j]->atom2) continue;
                 if (b[j]->atom2->Z < 2) continue;
                 if (b[j]->atom2->get_bonded_heavy_atoms_count() < 2) continue;
-                if (b[j]->atom2->residue && b[j]->atom2->residue != a->residue) continue;
+                if (!equal_or_zero(b[j]->atom2->residue, a->residue)) continue;
 
                 #if _dbg_path_search
                 cout << "Trying " << b[j]->atom2->name << "... ";
@@ -3640,7 +3640,7 @@ float Molecule::get_intermol_clashes(Molecule** ligands)
 
                 float f = fmax(InteratomicForce::Lennard_Jones(a, b), 0);
 
-                if (a->residue != b->residue)
+                if (!equal_or_zero(a->residue, b->residue))
                 {
                     if (f > worst)
                     {
@@ -6846,7 +6846,7 @@ float Molecule::fsb_lsb_anomaly(Atom* first, Atom* last, float lcard, float bond
 
 float Molecule::close_loop(Atom** path, float lcard)
 {
-    Bond* rotables[65536];
+    Bond* rotatables[65536];
 
     if (!path) return 0;
 
@@ -6874,13 +6874,13 @@ float Molecule::close_loop(Atom** path, float lcard)
                     )
                     &&
                     strcmp(b[j]->atom2->name, "N")
-               ) rotables[k++] = b[j];
+               ) rotatables[k++] = b[j];
         }
 
         last = path[i];
     }
-    rotables[k] = 0;
-    if (_DBGCLSLOOP) cout << "Close Loop: found " << k << " rotables." << endl;
+    rotatables[k] = 0;
+    if (_DBGCLSLOOP) cout << "Close Loop: found " << k << " rotatables." << endl;
 
     if (last == first) return 0;
     last->mirror_geo = -1;
@@ -6906,30 +6906,30 @@ float Molecule::close_loop(Atom** path, float lcard)
 
     for (iter=0; iter<250+(20*ringsize); iter++)
     {
-        for (i=0; rotables[i]; i++)
+        for (i=0; rotatables[i]; i++)
         {
-            float rr = rotables[i]->atom1->loc.get_3d_distance(rotables[i]->atom2->loc);
+            float rr = rotatables[i]->atom1->loc.get_3d_distance(rotatables[i]->atom2->loc);
 
             if (fabs(rr-bond_length) > 0.01)
             {
-                Point aloc = rotables[i]->atom1->loc;
-                Point bloc = rotables[i]->atom1->loc;
+                Point aloc = rotatables[i]->atom1->loc;
+                Point bloc = rotatables[i]->atom1->loc;
 
                 bloc = bloc.subtract(aloc);
                 bloc.scale(bond_length);
                 bloc = bloc.add(aloc);
 
-                rotables[i]->atom2->move(bloc);
+                rotatables[i]->atom2->move(bloc);
             }
 
             // issue_5
-            if (rotables[i]->rotate(bondrot[i], true))
+            if (rotatables[i]->rotate(bondrot[i], true))
             {
                 float newanom = fsb_lsb_anomaly(first, last, lcard, bond_length);
                 float nclash = get_internal_clashes();
                 if ((	newanom <= anomaly
                         ||
-                        (rotables[i]->can_flip && (rand()%100) < 22)
+                        (rotatables[i]->can_flip && (rand()%100) < 22)
                     )
                         &&
                         nclash <= allowance * iclash
@@ -6942,7 +6942,7 @@ float Molecule::close_loop(Atom** path, float lcard)
                 else
                 {
                     if (_DBGCLSLOOP) cout << "Anomaly was " << anomaly << " now " << newanom << ", reverting." << endl;
-                    rotables[i]->rotate(-bondrot[i]);
+                    rotatables[i]->rotate(-bondrot[i]);
                     bondrot[i] *= -0.6;
                 }
             }
@@ -6961,8 +6961,8 @@ float Molecule::close_loop(Atom** path, float lcard)
         if (_DBGCLSLOOP) cout << "Reset " << path[i]->name << " geometry." << endl;
     }
 
-    for (i=0; rotables[i]; i++)
-        rotables[i]->can_rotate = false;
+    for (i=0; rotatables[i]; i++)
+        rotatables[i]->can_rotate = false;
 
     return anomaly;
 }

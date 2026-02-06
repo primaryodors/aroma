@@ -1454,7 +1454,7 @@ void Bond::fill_moves_with_cache()
     for (i=0; b[i]; i++)
     {
         if (b[i]->atom2 && b[i]->atom2 != atom1
-            && (!atom2->residue || !b[i]->atom2->residue || (b[i]->atom2->residue == atom2->residue))
+            && equal_or_zero(atom2->residue, !b[i]->atom2->residue)
            )
         {
             mw_cardsum += b[i]->cardinality*proximity;
@@ -1480,8 +1480,7 @@ void Bond::fill_moves_with_cache()
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
                     if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
-                        && (!atom2->residue || !b[i]->atom2->residue
-                            || (b[i]->atom2->residue == atom2->residue)))
+                        && equal_or_zero(!atom2->residue, !b[i]->atom2->residue))
                     {
                         if (b[i]->atom2->in_same_ring_as(atom1))
                         {
@@ -1580,7 +1579,7 @@ void Bond::enforce_moves_with_uniqueness()
         {
             if (moves_with_atom2[j] == moves_with_atom2[i]
                 // || moves_with_atom2[j]->is_backbone
-                // || moves_with_atom2[j]->residue != atom2->residue
+                || !equal_or_zero(moves_with_atom2[j]->residue, atom2->residue)
                )
             {
                 moves_with_atom2[j] = 0;
@@ -1720,7 +1719,7 @@ _cannot_reverse_bondrot:
         {
             if (moves_with_atom2[i]->is_backbone) continue;
         }
-        if (moves_with_atom2[i]->residue != atom2->residue) continue;
+        if (!equal_or_zero(moves_with_atom2[i]->residue, atom2->residue)) continue;
 
         Point loc = moves_with_atom2[i]->loc;
         Point nl  = rotate3D(&loc, &cen, &v, theta);
@@ -1744,7 +1743,7 @@ _cannot_reverse_bondrot:
             {
                 if (moves_with_atom2[i]->is_backbone) continue;
             }
-            if (moves_with_atom2[i]->residue != atom2->residue) continue;
+            if (!equal_or_zero(moves_with_atom2[i]->residue, atom2->residue)) continue;
 
             Point loc = moves_with_atom2[i]->loc;
             Point nl  = rotate3D(&loc, &cen, &v, -theta);
