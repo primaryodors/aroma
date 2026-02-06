@@ -142,28 +142,26 @@
 #define speed_limit 1.5
 
 // Docking features.
-#define _allow_conditional_basicity 1
-#define _allow_conditional_basicity_with_acid_ligand 1
-#define _ALLOW_PROTONATE_PNICTOGENS 0
-#define _dock_result_in_iter 1
-#define _teleport_dissatisfied_waters 0
 #define allow_abhor_vacuum 1
 #define allow_axial_tumble 1
 #define allow_bond_rots 1
+#define _allow_conditional_basicity 1
+#define _allow_conditional_basicity_with_acid_ligand 1
 #define allow_iter_cb 1
 #define allow_linear_motion 1
+#define _ALLOW_PROTONATE_PNICTOGENS 0
+#define _allow_Schiff_base_formation 1
 #define allow_stay_close_flexions 0
 #define allow_tethered_rotations 0
 #define auto_pK_protonation 0
 #define conj_charge_as_polarity 0
+#define _dock_result_in_iter 1
 #define flexion_selection 1
 #define include_eclipses 0
 #define include_residue_eclipses 0
 #define limit_flexions_by_mclash 0
 #define make_thiolates_in_scoring 0
 #define mclashables_as_residue_nearbys 1
-#define monte_carlo_axial 0
-#define monte_carlo_flex 0
 #define no_zero_flexions 1
 #define nodes_no_ligand_360_flex 1
 #define nodes_no_ligand_360_tumble 1
@@ -177,6 +175,7 @@
 #define stays_rotation 1
 #define stays_rotation_verbose 0
 #define summed_missed_connections 1
+#define _teleport_dissatisfied_waters 0
 #define use_exclusions 1
 #define warn_orphan_atoms 0
 // Auto hydroxy makes geraniol fail in OR1A1. So does pre-rotate side chains.

@@ -3679,6 +3679,25 @@ bool AminoAcid::is_amide()
     return false;
 }
 
+bool AminoAcid::is_amine()
+{
+    if (!atoms) return false;
+    if (is_amide()) return false;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == TETREL
+            && !atoms[i]->is_pi()
+            && !atoms[i]->is_bonded_to(CHALCOGEN)
+            && atoms[i]->is_bonded_to(PNICTOGEN)
+            )
+            return true;
+    }
+
+    return false;
+}
+
 void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od)
 {
     if (!atoms) return;
