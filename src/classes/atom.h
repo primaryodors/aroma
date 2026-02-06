@@ -212,7 +212,7 @@ public:
     float get_bond_card_sum();
     int get_num_lone_pairs();
 
-    bool bond_to(Atom* atom2, float cardinality);
+    Bond* bond_to(Atom* atom2, float cardinality);
     void unbond(Atom* atom2);
     void unbond_all();
     void consolidate_bonds();

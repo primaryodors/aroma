@@ -1043,9 +1043,9 @@ bool Atom::is_nearest_hydrogen(Atom *to)
     return true;
 }
 
-bool Atom::bond_to(Atom* latom2, float lcard)
+Bond* Atom::bond_to(Atom* latom2, float lcard)
 {
-    if (!latom2) return false;
+    if (!latom2) return nullptr;
     int i;
 
     geometry_dirty = true;
@@ -1097,11 +1097,11 @@ bool Atom::bond_to(Atom* latom2, float lcard)
                 geo_rot_1.v.r = geo_rot_2.v.r = 0;
             }
 
-            return true;
+            return &bonded_to[i];
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 Point average_of_atom_locs(Atom** atoms)

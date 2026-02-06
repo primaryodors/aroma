@@ -2052,9 +2052,11 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         who_moves->rotate(lv, thbest);
     }
 
-    C->bond_to(N, 2);
+    Bond* b = C->bond_to(N, 2);
+    b->can_flip = true;
+    b->flip_angle = M_PI;
 
-    // TODO: fix water when protein linkage
+    // TODO: fix water in Schiff test when protein linkage
     v.phi = frand(-M_PI, M_PI);
     v.theta = frand(-M_PI, M_PI);
     v.r = _INTERA_R_CUTOFF;
