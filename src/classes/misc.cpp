@@ -13,6 +13,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "point.h"
+#include "misc.h"
 
 using namespace std;
 
@@ -182,7 +183,12 @@ double equilibrium(double kJmol1, double kJmol2)
     return lK/(lK+1);
 }
 
-int greek_from_aname(const char* aname)
+bool equal_or_zero(int a, int b)
+{
+    return (!a || !b || (a==b));
+}
+
+int greek_from_aname(const char *aname)
 {
     int i, j;
     if (!aname) return -1;

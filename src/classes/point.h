@@ -162,6 +162,7 @@ struct LocRotation : public Rotation
     Point origin;
 
     LocRotation();
+    LocRotation(Rotation rot);
     LocRotation(LocatedVector lv);
     LocatedVector get_lv();
 };

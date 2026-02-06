@@ -485,18 +485,21 @@ void Atom::unbond(Atom* atom2)
         {
             if (bonded_to[i].atom2 == atom2)
             {
+                if (bonded_to[i].cardinality >= 2) geometry += (int)(bonded_to[i].cardinality - 1);
                 if (!reciprocity)
                 {
                     bonded_to[i].atom2->reciprocity = true;
                     bonded_to[i].atom2->unbond(this);		// RECURSION!
                     bonded_to[i].atom2->reciprocity = false;
                 }
-                bonded_to[i].atom2 = nullptr;
+                bonded_to[i].atom1 = bonded_to[i].atom2 = nullptr;
                 bonded_to[i].cardinality=0;
                 bonded_to[i].can_rotate=0;
             }
         }
     }
+
+    condense_bondedtos();
 }
 
 void Atom::unbond_all()
@@ -550,7 +553,25 @@ void Bond::fetch_moves_with_atom2(Atom** result)
     result[i] = nullptr;
 }
 
-bool Atom::move(Point* pt)
+bool Bond::ensure_moves_with_no_backbone()
+{
+    int i;
+    if (!moves_with_atom2)
+    {
+        fill_moves_with_cache();
+        enforce_moves_with_uniqueness();
+    }
+    if (!moves_with_atom2) return true;
+
+    // Not calling init_nulls() for performance reasons.
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        if (moves_with_atom2[i]->is_backbone) return false;
+    }
+    return true;
+}
+
+bool Atom::move(Point* pt, bool delgeo)
 {
     #if debug_break_on_move
     if (break_on_move) throw 0xb16fa7012a96eca7;
@@ -565,15 +586,34 @@ bool Atom::move(Point* pt)
 
     location = *pt;
     location.weight = at_wt;
-    if (geov) delete[] geov;
-    geov = NULL;
-    geometry_dirty = true;
+    if (delgeo)
+    {
+        if (geov) delete[] geov;
+        geov = NULL;
+        geometry_dirty = true;
+    }
 
     #if _dbg_atom_mov_to_clash
     // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
     #endif
 
     return true;
+}
+
+void Atom::condense_bondedtos()
+{
+    int i, l;
+    Bond tmp[geometry*2+2];
+    for (i=0; i<geometry; i++)
+    {
+        tmp[i] = bonded_to[i];
+    }
+    for (i=0; i<geometry; i++) bonded_to[i].atom1 = bonded_to[i].atom2 = nullptr;
+    for (i=l=0; i<geometry; i++)
+    {
+        if (tmp[i].atom2)
+            bonded_to[l++] = tmp[i];
+    }
 }
 
 bool Atom::move_rel(Vector* v)
@@ -833,12 +873,12 @@ bool Atom::check_Greek_continuity()
     return false;
 }
 
-Atom* Atom::is_bonded_to(const char* element)
+Atom* Atom::is_bonded_to(const char* element, const Atom* ti)
 {
     if (!bonded_to) return 0;
     int i;
     for (i=0; i<geometry; i++)
-        if (bonded_to[i].atom2)
+        if (bonded_to[i].atom2 && ti != bonded_to[i].atom2)
             if (!strcmp(element, "*")
                 ||
                 !strcmp(bonded_to[i].atom2->get_elem_sym(), element)
@@ -1003,9 +1043,9 @@ bool Atom::is_nearest_hydrogen(Atom *to)
     return true;
 }
 
-bool Atom::bond_to(Atom* latom2, float lcard)
+Bond* Atom::bond_to(Atom* latom2, float lcard)
 {
-    if (!latom2) return false;
+    if (!latom2) return nullptr;
     int i;
 
     geometry_dirty = true;
@@ -1057,11 +1097,11 @@ bool Atom::bond_to(Atom* latom2, float lcard)
                 geo_rot_1.v.r = geo_rot_2.v.r = 0;
             }
 
-            return true;
+            return &bonded_to[i];
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 Point average_of_atom_locs(Atom** atoms)
@@ -1413,7 +1453,9 @@ void Bond::fill_moves_with_cache()
     if (!b[0]) return;
     for (i=0; b[i]; i++)
     {
-        if (b[i]->atom2 && b[i]->atom2 != atom1 && b[i]->atom2->residue == atom2->residue)
+        if (b[i]->atom2 && b[i]->atom2 != atom1
+            && equal_or_zero(atom2->residue, !b[i]->atom2->residue)
+           )
         {
             mw_cardsum += b[i]->cardinality*proximity;
             mw_atom_count++;
@@ -1437,7 +1479,8 @@ void Bond::fill_moves_with_cache()
                 for (i=0; b[i]; i++)
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
-                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1 && b[i]->atom2->residue == atom2->residue)
+                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
+                        && equal_or_zero(!atom2->residue, !b[i]->atom2->residue))
                     {
                         if (b[i]->atom2->in_same_ring_as(atom1))
                         {
@@ -1535,8 +1578,8 @@ void Bond::enforce_moves_with_uniqueness()
         for (j=i+1; moves_with_atom2[j]; j++)
         {
             if (moves_with_atom2[j] == moves_with_atom2[i]
-                    // || moves_with_atom2[j]->is_backbone
-                    || moves_with_atom2[j]->residue != atom2->residue
+                // || moves_with_atom2[j]->is_backbone
+                || !equal_or_zero(moves_with_atom2[j]->residue, atom2->residue)
                )
             {
                 moves_with_atom2[j] = 0;
@@ -1676,7 +1719,7 @@ _cannot_reverse_bondrot:
         {
             if (moves_with_atom2[i]->is_backbone) continue;
         }
-        if (moves_with_atom2[i]->residue != atom2->residue) continue;
+        if (!equal_or_zero(moves_with_atom2[i]->residue, atom2->residue)) continue;
 
         Point loc = moves_with_atom2[i]->loc;
         Point nl  = rotate3D(&loc, &cen, &v, theta);
@@ -1700,7 +1743,7 @@ _cannot_reverse_bondrot:
             {
                 if (moves_with_atom2[i]->is_backbone) continue;
             }
-            if (moves_with_atom2[i]->residue != atom2->residue) continue;
+            if (!equal_or_zero(moves_with_atom2[i]->residue, atom2->residue)) continue;
 
             Point loc = moves_with_atom2[i]->loc;
             Point nl  = rotate3D(&loc, &cen, &v, -theta);
@@ -1935,6 +1978,19 @@ bool Bond::is_equivalent(Bond* cmp_to)
     return mw_atom_count == cmp_to->mw_atom_count &&
         fabs(mw_Zsum - cmp_to->mw_Zsum) < 0.001 &&
         fabs(mw_cardsum - cmp_to->mw_cardsum) < 0.001;
+}
+
+const char *Bond::str_moves_with()
+{
+    if (!moves_with_atom2) return nullptr;
+    int i, j=0;
+    char* retval = new char[65536];     // this is going to leak memory, but we're only using it for debugging.
+    for (i=0; moves_with_atom2[i]; i++)
+    {
+        sprintf(&retval[j], "%s ", moves_with_atom2[i]->name);
+        j = strlen(retval);
+    }
+    return retval;
 }
 
 void Bond::swing(Vector newdir)
@@ -2369,6 +2425,74 @@ Vector Atom::get_next_free_geometry(float lcard)
 
     }
     geometry = lgeo;
+    return retval;
+}
+
+Vector Atom::get_nearest_free_geometry(float lcard, Point pt)
+{
+    int lgeo = geometry;
+    if (lcard > 1)
+    {
+        geometry -= ceil(lcard-1);
+        if (geov) delete[] geov;
+        geov = 0;
+    }
+
+    Point center(0,0,0);
+    Vector* v = get_geometry_aligned_to_bonds();
+    Vector ranked[lgeo];
+    Vector retval;
+    int i, j, l, n;
+    if (!bonded_to) retval = v[0];
+    else
+    {
+        float g = get_geometric_bond_angle();
+        for (l=0; l<lgeo; l++) ranked[l] = center;
+        for (i=0; i<lgeo; i++)
+        {
+            Vector vi = v[i];
+            bool available = true;
+            for (j=0; available && j<geometry && bonded_to[j].atom2; j++)
+            {
+                Vector vj = bonded_to[j].atom2->loc.subtract(loc);
+                float theta = find_3d_angle(vi, vj, center);
+                if (theta < 0.5*g) available = false;                    // too close to an existing atom; vertex is not available.
+            }
+            if (!available) continue;
+
+            Point vertex = loc.add(v[i]);
+            float r = vertex.get_3d_distance(pt);
+            for (l=0; l<lgeo; l++)
+            {
+                bool insert = false;
+                if (!ranked[l].r) insert = true;
+                else
+                {
+                    Point vertexl = loc.add(ranked[l]);
+                    float rl = vertexl.get_3d_distance(pt);
+
+                    if (r < rl) insert = true;
+                }
+                if (insert)
+                {
+                    for (n=l+1; n<lgeo; n++) ranked[n] = ranked[n-1];
+                    ranked[l] = vi;
+                    break;
+                }
+            }
+        }
+    }
+
+    // for (i=0; i<geometry; i++) cout << ranked[i] << endl;
+
+    retval = center;
+    for (i=0; i<lcard; i++)
+    {
+        retval = retval.add(ranked[i]);
+    }
+    // cout << retval << endl;
+    retval.r = 1;
+
     return retval;
 }
 

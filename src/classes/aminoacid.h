@@ -104,6 +104,7 @@ public:
     bool is_histidine_like();       // Histidine-like in this context means nonpolar at biological pH but capable of hydrogen bonding.
     bool is_glycine();              // Glycine is a special case where there are no non-backbone heavy atoms.
     bool is_amide();
+    bool is_amine();
     bool conditionally_basic() const;
     float sc_pKa() const;
     float sc_hfe() const;

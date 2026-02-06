@@ -3525,16 +3525,18 @@ _try_again:
                         }
 
                         Molecule* llig;
-                        j = 0;
                         AminoAcid** lrs = new AminoAcid*[SPHREACH_MAX];
                         if (cv)
                         {
-                            cv->resnos(protein, lrs);
+                            j = cv->resnos(protein, lrs);
+                            lrs[j] = nullptr;
+                            lrs[SPHREACH_MAX-1] = nullptr;
                         }
                         else
                         {
                             memcpy(lrs, reaches_spheroid[nodeno], sizeof(AminoAcid**)*SPHREACH_MAX);
                         }
+                        j = 0;
                         #if _dbg_bb_scoring
                         cout << "Node " << nodeno << "; sphres = " << sphres << endl;
                         #endif
@@ -3881,6 +3883,25 @@ _try_again:
             #if _dbg_atom_mov_to_clash
             movclash_prot = protein;
             movclash_cb = &check_moved_atom_for_clashes;
+            #endif
+
+            #if _allow_Schiff_base_formation
+            if (g_bbr->pri_res->is_amine() && g_bbr->pri_tgt->single_atom
+                && g_bbr->pri_tgt->single_atom->get_family() == CHALCOGEN
+                && g_bbr->pri_tgt->single_atom->is_bonded_to(TETREL, 2))
+            {
+                g_bbr->pri_res->movability = MOV_FORCEFLEX;
+                g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
+                Molecule* water = ligand->create_Schiff_base(g_bbr->pri_res);
+                ligand->movability = MOV_FLEXONLY;
+                g_bbr->pri_res->movability = MOV_FORCEFLEX;
+                cfmols[cfmolqty++] = (Molecule*)g_bbr->pri_res;
+                g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
+                if (pose == 1)
+                {
+                    cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl;
+                }
+            }
             #endif
 
             /////////////////////////////////////////////////////////////////////////////////

@@ -22,73 +22,74 @@
 # Some data from:
 # https://hydra.pharm.monash.edu/modules/mod2/bondlen.html
 # https://www2.chemistry.msu.edu/faculty/reusch/virttxtjml/questions/bndenrgy.htm
+# https://labs.chem.ucsb.edu/zakarian/armen/11---bonddissociationenergy.pdf
 
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
-H       H      coval    1     0.74       436.0
+H       H      coval    1     0.74       436.002
 Be      C      coval    1     1.93
-B       C      coval    1     1.56
-C       H      coval    1     1.09
-C       C      coval    1     1.54
+B       C      coval    1     1.56       448
+C       H      coval    1     1.09       337.2
+C       C      coval    1     1.54       368
 C       C      coval    1.5   1.40
-C       C      coval    2     1.34
-C       C      coval    3     1.20
-C       N      coval    1     1.47
+C       C      coval    2     1.34       682
+C       C      coval    3     1.20       962
+C       N      coval    1     1.47       331
 C       N      coval    1.5   1.34
-C       N      coval    2     1.28
-C       N      coval    3     1.16
-C       O      coval    1     1.43
+C       N      coval    2     1.28       644
+C       N      coval    3     1.16       937
+C       O      coval    1     1.43       335
 C       O      coval    1.5   1.29
-C       O      coval    2     1.20
-C       O      coval    3     1.13
-C       F      coval    1     1.34
+C       O      coval    2     1.20       732
+C       O      coval    3     1.13      1075
+C       F      coval    1     1.34       536
 
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
 C       Mg     coval    1     2.07
 C       Al     coval    1     2.24
 C       Si     coval    1     1.86
-C       P      coval    1     1.84
+C       P      coval    1     1.84       
 C       P      coval    1.5   1.72?
 C       P      coval    2     1.66?
 C       P      coval    3     1.55
-C       S      coval    1     1.82
+C       S      coval    1     1.82       305
 C       S      coval    2     1.538
-C       Cl     coval    1     1.76
+C       Cl     coval    1     1.76       397
 C       Cr     coval    1     1.92
 C       As     coval    1     1.98
-C       Se     coval    1     1.98
-C       Br     coval    1     1.93
+C       Se     coval    1     1.98       
+C       Br     coval    1     1.93       280
 C       Mo     coval    1     2.08
 C       In     coval    1     2.16
 C       Sn     coval    1     2.14
 C       Sb     coval    1     2.20
 C       Te     coval    1     2.05
-C       I      coval    1     2.13
+C       I      coval    1     2.13       209
 
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
 C       W      coval    1     2.06
-C       Pb     coval    1     2.29
+C       Pb     coval    1     2.29       207
 C       Bi     coval    1     2.30
-N       H      coval    1     1.00
-N       N      coval    1     1.45
+N       H      coval    1     1.00       435
+N       N      coval    1     1.45       297
 N       N      coval    1.5   1.35
-N       N      coval    2     1.23
-N       N      coval    3     1.10
+N       N      coval    2     1.23       456
+N       N      coval    3     1.10       946
 N       O      coval    1     1.24
 N       O      coval    2     1.24
-O       H      coval    1     0.97
-O       O      coval    1     1.45
+O       H      coval    1     0.97       498.7
+O       O      coval    1     1.45       213.8
 O       O      coval    2     1.21
 F       H      coval    1     0.92
-F       F      coval    1     1.42
-Cl      Cl     coval    1     1.99
-Br      Br     coval    1     2.28
-I       I      coval    1     2.67
-Si      H      coval    1     1.514     384
-P       H      coval    1     1.411
-S       H      coval    1     1.34
-S       O      coval    1     1.525
+F       F      coval    1     1.42       156.9
+Cl      Cl     coval    1     1.99       242.580
+Br      Br     coval    1     2.28       193.870
+I       I      coval    1     2.67       152.549
+Si      H      coval    1     1.514      384
+P       H      coval    1     1.411      343
+S       H      coval    1     1.34       340
+S       O      coval    1     1.525      348.1
 S       O      coval    2     1.404
-S       S      coval    1     2.07      251
+S       S      coval    1     2.07       272
 Ga      As     coval    4     2.45
 Se      H	   coval	1	  1.488
 

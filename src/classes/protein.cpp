@@ -500,6 +500,7 @@ bool Protein::add_sequence(const char* lsequence)
         aas[i-1]->clear_all_bond_caches();
         aas[i] = 0;
     }
+    set_clashables();
     Molecule::conform_molecules(aas, 25);
     for (i=1; i<=seql; i++)
     {
@@ -3439,6 +3440,7 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
             AminoAcid* ab = get_residue(j);
             if (!ab) continue;
             aa->mutual_closest_atoms(ab, a, b);
+            if (!*a || !*b) continue;
 
             if ((*a)->Z == 1 && (*a)->is_bonded_to("S")) *a = (*a)->get_bond_by_idx(0)->atom2;
             if ((*b)->Z == 1 && (*b)->is_bonded_to("S")) *b = (*b)->get_bond_by_idx(0)->atom2;

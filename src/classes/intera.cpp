@@ -7,6 +7,7 @@
 #include <ctime>
 #include <cmath>
 #include <stdint.h>
+#include <unistd.h>
 #include "intera.h"
 
 using namespace std;
@@ -115,6 +116,16 @@ void InteratomicForce::read_all_forces()
     init_nulls(all_forces, _MAX_NUM_FORCES);
 
     FILE* pf = fopen("data/bindings.dat", "rb");
+    if (!pf)
+    {
+        int idgaf = chdir("..");
+        pf = fopen("data/bindings.dat", "rb");
+    }
+    if (!pf)
+    {
+        int gfys = chdir("..");
+        pf = fopen("data/bindings.dat", "rb");
+    }
     if (!pf)
     {
         cout << "ERROR failed to open bindings.dat, please verify file exists and you have permissions." << endl;
