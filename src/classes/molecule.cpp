@@ -1994,6 +1994,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     O->increment_charge(1);
     H1->unbond_all();
     Vector v = O->get_nearest_free_geometry(1, N->loc);
+    v.r = InteratomicForce::covalent_bond_radius(N, C, 2);
     H1->bond_to(O, 1);
     H1->move(O->loc.add(v));
 
@@ -2006,8 +2007,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Molecule* H2O = new Molecule("water");
     Vector mv = O->loc.subtract(N->loc);
     if (O->mol == this) mv = mv.negate();
+    Point ptmp = H1->loc;
     who_moves->move(mv);
-    H1->move_rel(mv);
+    H1->move(ptmp);
 
     LocRotation rot;
     if (CE)
@@ -2025,11 +2027,11 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     H2O->append_existing_atom(H1);
     H2O->append_existing_atom(H2);
 
-    if (CE && (H3 = N->is_bonded_to("H")))      // ANC
+    if (CA && CE && (H3 = N->is_bonded_to("H")))      // ANC
     {
         LocatedVector lv = (Vector)CE->loc.subtract(N->loc);
         lv.origin = N->loc;
-        float step = 0.1*fiftyseventh, rbest = 0, thbest = 0, theta;
+        float step = 10.0*fiftyseventh, rbest = 0, thbest = 0, theta;
         for (theta=0; theta<M_PI*2; theta+=step)
         {
             float r = H3->distance_to(CA);
@@ -2038,6 +2040,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
                 rbest = r;
                 thbest = theta;
             }
+            // cout << (theta*fiftyseven) << "deg: " << r << endl;
             who_moves->rotate(lv, step);
         }
 
