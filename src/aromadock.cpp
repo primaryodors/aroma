@@ -541,6 +541,7 @@ void output_iter(int iter, Molecule** mols)
 void abhor_vacuum(int iter, Molecule** mols)
 {
     #if allow_abhor_vacuum
+    if (ligand->glued_to_mol()) return;
     int i, n = ligand->get_atom_count();
     Point rel(0,0,0);
     LocatedVector lv;
@@ -818,7 +819,7 @@ void iteration_callback(int iter, Molecule** mols)
     {
         bary = ligand->get_barycenter();
     }
-    else
+    else if (!ligand->glued_to_mol())
     {
         #if allow_drift
 

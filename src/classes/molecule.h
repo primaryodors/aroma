@@ -408,6 +408,7 @@ protected:
 
     public:
     const int& num_monomers = nmonomers;
+    const Molecule* glued_to_mol() { return glued_to; }
 };
 
 float g_total_mclash(void* mol);
