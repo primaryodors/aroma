@@ -2546,7 +2546,10 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
         || location.y < -9999.999 || location.y > 9999.999
         || location.z < -9999.999 || location.z > 9999.999
         )
+    {
+        cerr << "Atom " << name << " location out of range: " << location << endl;
         return;
+    }
 
     /*
     ATOM   2039  CA  ALA   128      -6.065 -24.834  -5.744  1.00001.00           C
