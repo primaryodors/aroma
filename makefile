@@ -38,7 +38,7 @@ CFLAGS+=-O3
 # CFLAGS+=-g
 
 # Development CFLAGS for tracking down memory problems
-CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
+# CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
 
 # For gprof
 # example command line:

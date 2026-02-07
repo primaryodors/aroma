@@ -1999,7 +1999,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
     if (!who_moves) return nullptr;                             // cannot be two residues.
     who_moves->movability = MOV_ALL;
-    cout << "Who moves: " << who_moves->name << endl;
+    // cout << "Who moves: " << who_moves->name << endl;
 
     // Put N where O was
     Molecule* H2O = new Molecule("water");
