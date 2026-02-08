@@ -3909,11 +3909,29 @@ _try_again:
                 ligand->movability = MOV_FLEXONLY;
                 g_bbr->pri_res->movability = MOV_FORCEFLEX;
                 cfmols[cfmolqty++] = (Molecule*)g_bbr->pri_res;
-                g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
+                Atom *sa = nullptr, *sb = nullptr;
+                if (g_bbr->sec_res && g_bbr->sec_tgt)
+                {
+                    sa = ligand->get_farthest_atom(g_bbr->pri_res->get_reach_atom()->loc);
+                    sb = g_bbr->sec_res->get_reach_atom();
+                }
+                if (sa && sb)
+                {
+                    g_bbr->pri_res->conform_atom_to_location(sa, sb);
+                    cout << "Pointed " << sa->name << " at " << sb->residue << ":" << sb->name << endl << endl;
+                }
+                else
+                {
+                    sa = g_bbr->pri_res->get_reach_atom(hbond);
+                    cout << "Pointed " << sa->residue << ":" << sa->name << " at " << nodecen << endl << endl;
+                    g_bbr->pri_res->conform_atom_to_location(sa->name, nodecen);
+                }
                 if (pose == 1)
                 {
                     cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl;
                 }
+                ligand->stay_close_mine = ligand->stay_close2_mine = nullptr;
+                ligand->stay_close_other = ligand->stay_close2_other = nullptr;
             }
             #endif
 

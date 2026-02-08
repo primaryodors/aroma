@@ -2026,6 +2026,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     ((Molecule*)(O->mol))->delete_atom(O);              // also unbonds
     ((Molecule*)(H1->mol))->delete_atom(H1);
     ((Molecule*)(H2->mol))->delete_atom(H2);
+    ((Molecule*)O->mol)->delete_atom(O);
+    ((Molecule*)H1->mol)->delete_atom(H1);
+    ((Molecule*)H2->mol)->delete_atom(H2);
     H1->bond_to(O, 1);
     H2->bond_to(O, 1);
     H2O->add_existing_atom(O);
@@ -3501,6 +3504,10 @@ float Molecule::get_internal_clashes(bool sb)
         float avdW = atoms[i]->vdW_radius;
         for (j=i+1; atoms[j]; j++)
         {
+            if (atoms[i]->residue != atoms[j]->residue && atoms[i]->distance_to(atoms[j]) < 1.3)
+            {
+                cout << "";
+            }
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
             if (atoms[i]->is_bonded_to(atoms[j]) /* || atoms[j]->is_bonded_to(atoms[i]) */)
             {

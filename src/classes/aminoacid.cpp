@@ -3710,6 +3710,8 @@ void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, flo
             return;
         }
     }
+    cerr << "Atom " << an << " not found in residue " << this->name << endl << flush;
+    throw 0xbadc0de;
 }
 
 void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float od)
@@ -3717,7 +3719,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (!(movability & MOV_CAN_FLEX)) return;
     if (!a) return;
 
-    int iter, j, l, circdiv = 144;
+    int iter, i, j, l, circdiv = 144;
     Bond** b = get_rotatable_bonds();
     if (!b) return;
 
@@ -3754,6 +3756,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
+                    // if (residue_no == 159 && !a->residue) cout << bestr << endl;
                     best.copy_state(this);
                 }
             }
