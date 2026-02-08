@@ -4325,10 +4325,15 @@ _try_again:
                     AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
                     if (aacfmolsi->get_letter() == 'P') continue;
                 }
-                if (cfmols[i]->get_internal_clashes() > clash_limit_per_aa*10)
+                float cfmi = cfmols[i]->get_internal_clashes();
+                if (cfmi > clash_limit_per_aa*10)
                 {
                     dr[drcount][nodeno+nodeoff].disqualified = true;
-                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)cfmols[i]->get_name() + (std::string)" internal clashes too great. ";
+                    dr[drcount][nodeno+nodeoff].disqualify_reason
+                        += (std::string)cfmols[i]->get_name()
+                        + (std::string)" internal clashes too great "
+                        + std::to_string(cfmi)
+                        + (std::string)".";
                 }
             }
 
