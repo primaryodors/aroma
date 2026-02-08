@@ -1997,17 +1997,17 @@ std::ostream &operator<<(std::ostream &os, const BestBindingResult &bbr)
 float BestBindingResult::score(Point ligcen, Cavity *container)
 {
     float lchg=0, lpol=0, lcba;
-    int lpi;
-    bool lhba, lhbd, klmc;
-    Atom* lmtl;
-    float mchg, mpol;
-    int mfam, mZ, mpi;
+    int lpi=0;
+    bool lhba=false, lhbd=false, klmc=false;
+    Atom* lmtl=nullptr;
+    float mchg=0, mpol=0;
+    int mfam=0, mZ=0, mpi=0;
     Point mcen;
-    bool mhba, mhbd;
-    float nchg, npol, ncba;
-    int npi;
-    bool nhba, nhbd, mnmc;
-    Atom* nmtl;
+    bool mhba=false, mhbd=false;
+    float nchg=0, npol=0, ncba=0;
+    int npi=0;
+    bool nhba=false, nhbd=false, mnmc=false;
+    Atom* nmtl=nullptr;
 
     float ichg = pri_tgt->charge();
     float ipol = pri_tgt->polarity();

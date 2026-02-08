@@ -597,6 +597,7 @@ bool Atom::move(Point* pt, bool delgeo)
     // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
     #endif
 
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
     return true;
 }
 
@@ -742,6 +743,7 @@ Bond::~Bond()
 
 void Atom::fetch_bonds(Bond** result)
 {
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
     if (!bonded_to)
     {
         result[0] = nullptr;
@@ -875,6 +877,7 @@ bool Atom::check_Greek_continuity()
 
 Atom* Atom::is_bonded_to(const char* element, const Atom* ti)
 {
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
     if (!bonded_to) return 0;
     int i;
     for (i=0; i<geometry; i++)
@@ -2176,6 +2179,13 @@ float Atom::get_bond_angle_anomaly(Vector v, Atom* ignore)
     return anomaly;
 }
 
+float Atom::distance_to(Atom *atom2)
+{
+    if (!atom2) return -1;
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
+    else return location.get_3d_distance(&atom2->location);
+}
+
 float Atom::get_geometric_bond_angle()
 {
     int lgeo = origgeo;
@@ -2246,6 +2256,7 @@ Bond* Atom::get_bond_closest_to(Point pt)
 
 Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 {
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
     if (geov && !geometry_dirty) return geov;
 
     int bc = get_bonded_atoms_count();
@@ -2547,6 +2558,7 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
         || location.z < -9999.999 || location.z > 9999.999
         )
     {
+        // throw 0xbadc0de;
         cerr << "Atom " << name << " location out of range: " << location << endl;
         return;
     }

@@ -299,11 +299,7 @@ public:
     Vector* get_geometry_aligned_to_bonds(bool prevent_infinite_loop = false);
     float get_geometric_bond_angle();
     float get_bond_angle_anomaly(Vector v, Atom* ignore = nullptr);	// Assume v is centered on current atom.
-    float distance_to(Atom* atom2)
-    {
-        if (!atom2) return -1;
-        else return location.get_3d_distance(&atom2->location);
-    };
+    float distance_to(Atom* atom2);
     float similarity_to(Atom* atom2);
     Vector get_next_free_geometry(float lcard);
     Vector get_nearest_free_geometry(float lcard, Point pt);

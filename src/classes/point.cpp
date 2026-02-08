@@ -250,6 +250,12 @@ Point average_of_points(Point* points, int count)
         #endif
     }
 
+    if (!sum)
+    {
+        throw 0xbadc0de;
+        return Point(0,0,0);
+    }
+
     #if _dbg_point_avg
     cout << "Sum of weights: " << sum << "; return value = [";
     #endif
@@ -259,6 +265,8 @@ Point average_of_points(Point* points, int count)
     #if _dbg_point_avg
     cout << x << "," << y << "," << z << "]." << endl << endl;
     #endif
+
+    if (isnan(x) || isnan(y) || isnan(z)) throw 0xbadc0de;
 
     Point retval(x, y, z);
     return retval;

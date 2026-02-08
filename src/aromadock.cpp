@@ -631,6 +631,7 @@ void iteration_callback(int iter, Molecule** mols)
     int i, j, l, n, ac;
     float progress, bbest;
     Point bary;
+    bary = ligand->get_barycenter();
 
     float occl = ligand->surface_occlusion(mols);
     if (occl < frand(0.4, 0.7))
@@ -638,6 +639,7 @@ void iteration_callback(int iter, Molecule** mols)
         ligand->recenter(loneliest);
         Search::align_targets(ligand, loneliest, &g_bbr[0], 1);
     }
+    bary = ligand->get_barycenter();
 
     Interaction e = ligand->get_intermol_binding(mols);
     if (e.summed() >= 50*max(1, (int)fabs(ligand->get_charge()))
@@ -646,10 +648,13 @@ void iteration_callback(int iter, Molecule** mols)
         end_iterations = true;
         goto _oei;
     }
+    bary = ligand->get_barycenter();
 
     freeze_bridged_residues();
+    bary = ligand->get_barycenter();
 
     abhor_vacuum(iter, mols);
+    bary = ligand->get_barycenter();
 
     // Stochastically force flexion on some side chains that get clashes.
     #if stochastic_flexion_of_clashing_residues
@@ -690,6 +695,7 @@ void iteration_callback(int iter, Molecule** mols)
         }
     }
     #endif
+    bary = ligand->get_barycenter();
 
     // Attempt to connect hydrogen bonds to ligand.
     #if attempt_to_connect_hydrogen_bonds_to_ligand
@@ -775,6 +781,7 @@ void iteration_callback(int iter, Molecule** mols)
 
     // Soft docking.
     if (n && iter>soft_iter_min) soft_docking_iteration(protein, ligand, nsoftrgn, softrgns, softness);
+    bary = ligand->get_barycenter();
 
     #if bb_realign_iters
     for (l=0; g_bbr[l].pri_res && g_bbr[l].pri_tgt; l++)
@@ -792,6 +799,7 @@ void iteration_callback(int iter, Molecule** mols)
     }
     #endif
 
+    bary = ligand->get_barycenter();
     if (!iter) goto _oei;
     if (iter == (iters-1)) goto _oei;
 
@@ -885,6 +893,7 @@ void iteration_callback(int iter, Molecule** mols)
         }
     }
     #endif
+    bary = ligand->get_barycenter();
 
     if (waters)
     {
@@ -920,6 +929,7 @@ void iteration_callback(int iter, Molecule** mols)
             }
         }
     }
+    bary = ligand->get_barycenter();
 
     _oei:
     ;
@@ -930,6 +940,7 @@ void iteration_callback(int iter, Molecule** mols)
     float recapture_distance = size.magnitude() / 2;
     if (r >= recapture_distance) ligand->recenter(ligcen_target);
     #endif
+    bary = ligand->get_barycenter();
 
     for (i=0; i<nappears; i++)
     {
@@ -939,6 +950,7 @@ void iteration_callback(int iter, Molecule** mols)
             appears[i].update(protein, iter);
         }
     }
+    bary = ligand->get_barycenter();
 
     if (output_each_iter) output_iter(iter+nodeoff, mols, "dock iteration");
 }

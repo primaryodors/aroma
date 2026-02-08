@@ -426,6 +426,7 @@ extern float worst_mol_clash;
 extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
+extern float intermol_covalent_enthalpy;
 
 #if _dbg_improvements_only_rule
 extern Molecule** check_mols;

@@ -32,7 +32,26 @@ CPL=g++
 CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # Release mode CFLAGS
-CFLAGS+=-O3
+# CFLAGS+=-O3
+# TODO: -O3 breaks Schiff base docking. Something in the optimizations causes all the atoms of the ligand and its bound residue to spontaneously change their
+# locations' XYZ coordinates to -2.14748e6. No breakpoint or exception throwing has been able to find where it happens. The following is the list of
+# optimizations equivalent to -O3 according to gcc.gnu.org, less those flags which caused warnings or errors on my desktop. Each test takes half an hour and
+# I have to whore out most of my waking time to goddamn Uber, so I can't test 8564792876529087352374428394 flags individually in order to find one damn tainted
+# needle in a fkn haystack. So this CFLAGS, ugly mfkr as it is, is just going to have to do.
+CFLAGS+=-fauto-inc-dec -fbranch-count-reg -fcombine-stack-adjustments -fcompare-elim -fcprop-registers -fdce -fdefer-pop -fdse \
+	-fforward-propagate -fguess-branch-probability -fif-conversion -fif-conversion2 -finline-functions-called-once -fipa-modref -fipa-profile \
+	-fipa-pure-const -fipa-reference -fipa-reference-addressable -fivopts -fmerge-constants -fmove-loop-invariants -fmove-loop-stores -fomit-frame-pointer \
+	-freorder-blocks -fshrink-wrap -fshrink-wrap-separate -fsplit-wide-types -fssa-backprop -fssa-phiopt -ftree-bit-ccp -ftree-ccp -ftree-ch \
+	-ftree-coalesce-vars -ftree-copy-prop -ftree-dce -ftree-dominator-opts -ftree-dse -ftree-forwprop -ftree-fre -ftree-phiprop -ftree-pta -ftree-scev-cprop \
+	-ftree-sink -ftree-slsr -ftree-sra -ftree-ter -funit-at-a-time -falign-functions -falign-jumps -falign-labels -falign-loops -fcaller-saves \
+	-fcode-hoisting -fcrossjumping -fcse-follow-jumps -fcse-skip-blocks -fdelete-null-pointer-checks -fdevirtualize -fdevirtualize-speculatively \
+	-fexpensive-optimizations -ffinite-loops -fgcse -fgcse-lm -fhoist-adjacent-loads -finline-functions -finline-small-functions -findirect-inlining \
+	-fipa-bit-cp -fipa-cp -fipa-icf -fipa-ra -fipa-sra -fipa-vrp -fisolate-erroneous-paths-dereference -flra-remat -foptimize-sibling-calls \
+	-foptimize-strlen -fpartial-inlining -fpeephole2 -freorder-blocks-algorithm=stc -freorder-blocks-and-partition -freorder-functions -frerun-cse-after-loop \
+	-fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fstore-merging -fstrict-aliasing -fthread-jumps \
+	-ftree-builtin-call-dce -ftree-loop-vectorize -ftree-pre -ftree-slp-vectorize -ftree-switch-conversion -ftree-tail-merge -fgcse-after-reload \
+	-fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpeel-loops -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution \
+	-ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides -ftree-vrp -fvect-cost-model=very-cheap
 
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g
@@ -47,6 +66,7 @@ CFLAGS+=-O3
 
 # For code coverage instrumentation, switch to these CFLAGS (slower performance):
 # CFLAGS+=-g -fprofile-arcs -ftest-coverage
+
 
 clean:
 	rm -f $(OBJ)/*.o $(BIN)/*
@@ -69,69 +89,55 @@ $(TMP):
 
 # Classes
 
-# Keep these dependencies; slower build is better than being gaslit by the compiled executable.
-$(OBJ)/point.o: src/classes/point.h src/classes/point.cpp $(OBJ)/misc.o src/classes/constants.h
-$(OBJ)/point.o: src/classes/point.h src/classes/point.cpp src/classes/constants.h makefile
+$(OBJ)/misc.o: src/classes/misc.h src/classes/misc.cpp src/classes/constants.h makefile
+	$(CPL) -c src/classes/misc.cpp -o $(OBJ)/misc.o $(CFLAGS)
+
+$(OBJ)/point.o: src/classes/point.h src/classes/point.cpp $(OBJ)/misc.o src/classes/constants.h makefile
 	$(CPL) -c src/classes/point.cpp -o $(OBJ)/point.o $(CFLAGS)
 
-$(OBJ)/atom.o: src/classes/atom.h src/classes/atom.cpp $(OBJ)/point.o
-$(OBJ)/atom.o: src/classes/atom.h src/classes/atom.cpp src/classes/constants.h makefile
+$(OBJ)/atom.o: src/classes/atom.h src/classes/atom.cpp $(OBJ)/point.o makefile
 	$(CPL) -c src/classes/atom.cpp -o $(OBJ)/atom.o $(CFLAGS)
 
-$(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp $(OBJ)/atom.o
-$(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp src/classes/constants.h makefile
+$(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp $(OBJ)/atom.o makefile
 	$(CPL) -c src/classes/conj.cpp -o $(OBJ)/conj.o $(CFLAGS)
 
-$(OBJ)/intera.o: src/classes/intera.h src/classes/intera.cpp $(OBJ)/conj.o
-$(OBJ)/intera.o: src/classes/intera.h src/classes/intera.cpp src/classes/constants.h makefile
+$(OBJ)/intera.o: src/classes/intera.h src/classes/intera.cpp $(OBJ)/conj.o makefile
 	$(CPL) -c src/classes/intera.cpp -o $(OBJ)/intera.o $(CFLAGS)
 
-$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp $(OBJ)/intera.o
-$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp src/classes/constants.h makefile
+$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp $(OBJ)/intera.o makefile
 	$(CPL) -c src/classes/molecule.cpp -o $(OBJ)/molecule.o $(CFLAGS)
 
-$(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/molecule.o
-$(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp src/classes/constants.h makefile
+$(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/molecule.o makefile
 	$(CPL) -c src/classes/aminoacid.cpp -o $(OBJ)/aminoacid.o $(CFLAGS)
 
-$(OBJ)/protein.o: src/classes/protein.h src/classes/protein.cpp $(OBJ)/aminoacid.o
-$(OBJ)/protein.o: src/classes/protein.h src/classes/protein.cpp src/classes/constants.h makefile
+$(OBJ)/protein.o: src/classes/protein.h src/classes/protein.cpp $(OBJ)/aminoacid.o makefile
 	$(CPL) -c src/classes/protein.cpp -o $(OBJ)/protein.o $(CFLAGS)
 
-$(OBJ)/reshape.o: src/classes/reshape.h src/classes/reshape.cpp $(OBJ)/protein.o
-$(OBJ)/reshape.o: src/classes/reshape.h src/classes/reshape.cpp src/classes/constants.h makefile
+$(OBJ)/reshape.o: src/classes/reshape.h src/classes/reshape.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/reshape.cpp -o $(OBJ)/reshape.o $(CFLAGS)
 
-$(OBJ)/search.o: src/classes/search.h src/classes/search.cpp $(OBJ)/protein.o
-$(OBJ)/search.o: src/classes/search.h src/classes/search.cpp src/classes/constants.h makefile
+$(OBJ)/search.o: src/classes/search.h src/classes/search.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/search.cpp -o $(OBJ)/search.o $(CFLAGS)
 
-$(OBJ)/cavity.o: src/classes/cavity.h src/classes/cavity.cpp $(OBJ)/protein.o
-$(OBJ)/cavity.o: src/classes/cavity.h src/classes/cavity.cpp src/classes/constants.h makefile
+$(OBJ)/cavity.o: src/classes/cavity.h src/classes/cavity.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/cavity.cpp -o $(OBJ)/cavity.o $(CFLAGS)
 
-$(OBJ)/soft.o: src/classes/soft.h src/classes/soft.cpp $(OBJ)/protein.o
-$(OBJ)/soft.o: src/classes/soft.h src/classes/soft.cpp src/classes/constants.h makefile
+$(OBJ)/soft.o: src/classes/soft.h src/classes/soft.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/soft.cpp -o $(OBJ)/soft.o $(CFLAGS)
 
-$(OBJ)/appear.o: src/classes/appear.h src/classes/appear.cpp $(OBJ)/protein.o
-$(OBJ)/appear.o: src/classes/appear.h src/classes/appear.cpp src/classes/constants.h makefile
+$(OBJ)/appear.o: src/classes/appear.h src/classes/appear.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/appear.cpp -o $(OBJ)/appear.o $(CFLAGS)
 
-$(OBJ)/dynamic.o: src/classes/dynamic.h src/classes/dynamic.cpp $(OBJ)/protein.o
-$(OBJ)/dynamic.o: src/classes/dynamic.h src/classes/dynamic.cpp src/classes/constants.h makefile
+$(OBJ)/dynamic.o: src/classes/dynamic.h src/classes/dynamic.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/dynamic.cpp -o $(OBJ)/dynamic.o $(CFLAGS)
 
-$(OBJ)/moiety.o: src/classes/moiety.h src/classes/moiety.cpp $(OBJ)/molecule.o
-$(OBJ)/moiety.o: src/classes/moiety.h src/classes/moiety.cpp src/classes/constants.h makefile
+$(OBJ)/moiety.o: src/classes/moiety.h src/classes/moiety.cpp $(OBJ)/molecule.o makefile
 	$(CPL) -c src/classes/moiety.cpp -o $(OBJ)/moiety.o $(CFLAGS)
 
-$(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp $(OBJ)/search.o
-$(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp src/classes/constants.h makefile
+$(OBJ)/scoring.o: src/classes/scoring.h src/classes/scoring.cpp $(OBJ)/search.o makefile
 	$(CPL) -c src/classes/scoring.cpp -o $(OBJ)/scoring.o $(CFLAGS)
 
-$(OBJ)/progress.o: src/classes/progress.h src/classes/progress.cpp $(OBJ)/misc.o
-$(OBJ)/progress.o: src/classes/progress.h src/classes/progress.cpp src/classes/constants.h makefile
+$(OBJ)/progress.o: src/classes/progress.h src/classes/progress.cpp $(OBJ)/misc.o makefile
 	$(CPL) -c src/classes/progress.cpp -o $(OBJ)/progress.o $(CFLAGS)
 
 
@@ -220,7 +226,6 @@ test/probability_test: src/test/probability_test.cpp $(OBJS) $(DOBJ)
 
 test/schiff_test: src/test/schiff_test.cpp $(OBJS)
 	$(CPL) src/test/schiff_test.cpp $(OBJS) -o test/schiff_test $(CFLAGS)
-
 
 # Apps
 

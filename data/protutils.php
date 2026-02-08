@@ -216,7 +216,7 @@ function resno_from_bw($protid, $bw)
 	$insdel = bw_insdel($prots[$protid], $tmrno, $offset);
 	
 	$res50 = intval(@$prots[$protid]["bw"]["$tmrno.50"]);
-	if (!$res50) throw new Exception("Unknown Ballesteros-Weinstein number $bw");
+	if (!$res50) throw new Exception("Unknown Ballesteros-Weinstein number $bw for $protid");
 	
 	$retval = $res50 + $offset - 50 + $insdel;
 	if ($aminos)

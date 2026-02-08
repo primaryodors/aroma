@@ -26,6 +26,7 @@ bool allow_ligand_360_tumble = true;
 bool allow_ligand_360_flex = true;
 
 bool cfmols_have_metals = false;
+float intermol_covalent_enthalpy = 0;
 
 Molecule *worst_clash_1 = nullptr, *worst_clash_2 = nullptr;
 float worst_mol_clash = 0;
@@ -2078,7 +2079,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         - InteratomicForce::covalent_bond_energy(H2, N, 1)
         + InteratomicForce::covalent_bond_energy(H1, O, 1)
         + InteratomicForce::covalent_bond_energy(H2, O, 1);
-    cout << "Schiff enthalpy of formation: " << glued_energy.summed() << endl;
+    intermol_covalent_enthalpy = glued_energy.summed();
+    // cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
     if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
     else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
 
@@ -3953,6 +3955,7 @@ Point Molecule::get_barycenter(bool bond_weighted) const
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->loc.magnitude() > 1e5 || isnan(atoms[i]->loc.x)) throw 0xbadc0de;
         locs[i] = atoms[i]->loc;
         locs[i].weight = atoms[i]->get_atomic_weight();
         #if allow_tethered_rotations
@@ -3963,7 +3966,9 @@ Point Molecule::get_barycenter(bool bond_weighted) const
         #endif
     }
 
-    return average_of_points(locs, atcount);
+    Point mota_atespias = average_of_points(locs, atcount);
+    if (mota_atespias.magnitude() > 1e5 || isnan(mota_atespias.x) || isnan(mota_atespias.y) || isnan(mota_atespias.z)) throw 0xbadc0de;
+    return mota_atespias;
 }
 
 float Molecule::get_charge() const

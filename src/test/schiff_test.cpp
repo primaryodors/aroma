@@ -16,6 +16,7 @@ int main(int argc, char** argv)
     mols[2] = mols[3] = nullptr;
 
     mols[1]->create_Schiff_base(mols[0]);
+    cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
 
     FILE* fp = fopen("schiff_test.sdf", "w");
     if (!fp)
