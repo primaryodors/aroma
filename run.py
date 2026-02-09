@@ -170,7 +170,7 @@ for rcpid in data.protutils.prots.keys():
         # newcfg.append("OUTMC 1")
         newcfg.append("NORESWARN")
         newcfg.append("NOFAIL")
-        # newcfg.append("MOVIE")
+        newcfg.append("MOVIE")
 
         cmd = ["bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "-3.0", "nooil"]
         print(" ".join(cmd))

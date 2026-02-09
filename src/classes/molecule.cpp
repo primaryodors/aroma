@@ -5553,10 +5553,14 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         {
             Molecule* a = mm[i];
             if (a->movability & MOV_PINNED) continue;
-            bool flipped_rings = false;
+            bool flipped_rings = false, allmm_nearby = false;
             int ares = a->is_residue();
             float local_flexion_frequency = ares ? sidechain_flexion_frequency : 1;
-            if (mm[0]->glued_to == a) local_flexion_frequency = 1;
+            if (mm[0]->glued_to == a)
+            {
+                local_flexion_frequency = 1;
+                allmm_nearby = true;
+            }
 
             if (a->movability & MOV_BKGRND) continue;
 
@@ -5574,12 +5578,18 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 a = a->glued_to;
                 ares = a->is_residue();
                 a->movability = MOV_FORCEFLEX;
+                allmm_nearby = true;
             }
 
             Point aloc = a->get_barycenter();
 
             Interaction benerg = 0;
-            if (1) // !ares)
+            if (allmm_nearby)
+            {
+                l = 0;
+                for (j=1; mm[j]; j++) if (mm[j] != a) nearby[l++] = mm[j];
+            }
+            else
             {
                 l = 0;
                 for (j=0; mm[j]; j++)
