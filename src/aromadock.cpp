@@ -3918,12 +3918,12 @@ _try_again:
                 if (sa && sb)
                 {
                     g_bbr->pri_res->conform_atom_to_location(sa, sb);
-                    cout << "Pointed " << sa->name << " at " << sb->residue << ":" << sb->name << endl << endl;
+                    // cout << "Pointed " << sa->name << " at " << sb->residue << ":" << sb->name << endl << endl;
                 }
                 else
                 {
                     sa = g_bbr->pri_res->get_reach_atom(hbond);
-                    cout << "Pointed " << sa->residue << ":" << sa->name << " at " << nodecen << endl << endl;
+                    // cout << "Pointed " << sa->residue << ":" << sa->name << " at " << nodecen << endl << endl;
                     g_bbr->pri_res->conform_atom_to_location(sa->name, nodecen);
                 }
                 if (pose == 1)

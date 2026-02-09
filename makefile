@@ -31,31 +31,6 @@ CPL=g++
 # Common flags for all modes
 CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
-# Release mode CFLAGS
-# CFLAGS+=-O3
-# TODO: aromadock takes too long without -O3, but even -O breaks Schiff base docking. Something in the optimizations list causes all the atoms of the ligand
-# and its bound residue to suddenly and spontaneously change their locations' XYZ coordinates to -2.14748e6. No breakpoint or debug exception throwing has
-# revealed where it happens. The following is the list of optimizations equivalent to -O3 according to gcc.gnu.org, less those flags which caused compiler
-# warnings or errors on my desktop. Testing just the equivalent flags for -O did not reproduce the problem. Each test means waiting for 50 iterations of docking
-# and I have to whore out most of my waking time to goddamn Uber just to keep from starving to death, so I can't test 856479287652908735237442839401240982635075
-# flags individually in order to find one damn tainted needle (hopefully only one) in a fkn haystack. So this CFLAGS, ugly mfkr as it is, is just going to have
-# to do for the time being.
-CFLAGS+=-fauto-inc-dec -fbranch-count-reg -fcombine-stack-adjustments -fcompare-elim -fcprop-registers -fdce -fdefer-pop -fdse \
-	-fforward-propagate -fguess-branch-probability -fif-conversion -fif-conversion2 -finline-functions-called-once -fipa-modref -fipa-profile \
-	-fipa-pure-const -fipa-reference -fipa-reference-addressable -fivopts -fmerge-constants -fmove-loop-invariants -fmove-loop-stores -fomit-frame-pointer \
-	-freorder-blocks -fshrink-wrap -fshrink-wrap-separate -fsplit-wide-types -fssa-backprop -fssa-phiopt -ftree-bit-ccp -ftree-ccp -ftree-ch \
-	-ftree-coalesce-vars -ftree-copy-prop -ftree-dce -ftree-dominator-opts -ftree-dse -ftree-forwprop -ftree-fre -ftree-phiprop -ftree-pta -ftree-scev-cprop \
-	-ftree-sink -ftree-slsr -ftree-sra -ftree-ter -funit-at-a-time -falign-functions -falign-jumps -falign-labels -falign-loops -fcaller-saves \
-	-fcode-hoisting -fcrossjumping -fcse-follow-jumps -fcse-skip-blocks -fdelete-null-pointer-checks -fdevirtualize -fdevirtualize-speculatively \
-	-fexpensive-optimizations -ffinite-loops -fgcse -fgcse-lm -fhoist-adjacent-loads -finline-functions -finline-small-functions -findirect-inlining \
-	-fipa-bit-cp -fipa-cp -fipa-icf -fipa-ra -fipa-sra -fipa-vrp -fisolate-erroneous-paths-dereference -flra-remat -foptimize-sibling-calls \
-	-foptimize-strlen -fpartial-inlining -fpeephole2 -freorder-blocks-algorithm=stc -freorder-blocks-and-partition -freorder-functions -frerun-cse-after-loop \
-	-fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec -fstore-merging -fstrict-aliasing -fthread-jumps \
-	-ftree-builtin-call-dce -ftree-loop-vectorize -ftree-pre -ftree-slp-vectorize -ftree-switch-conversion -ftree-tail-merge -fgcse-after-reload \
-	-fipa-cp-clone -floop-interchange -floop-unroll-and-jam -fpeel-loops -fpredictive-commoning -fsplit-loops -fsplit-paths -ftree-loop-distribution \
-	-ftree-partial-pre -funswitch-loops -fvect-cost-model=dynamic -fversion-loops-for-strides -ftree-vrp -fvect-cost-model=very-cheap \
-	-fversion-loops-for-strides
-
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g
 
