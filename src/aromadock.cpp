@@ -3905,7 +3905,9 @@ _try_again:
             {
                 g_bbr->pri_res->movability = MOV_FORCEFLEX;
                 g_bbr->pri_res->conform_atom_to_location(g_bbr->pri_res->get_reach_atom(hbond)->name, nodecen);
+                if (output_each_iter) output_iter(++nodeoff, cfmols, "Schiff preparation");
                 Molecule* water = ligand->create_Schiff_base(g_bbr->pri_res);
+                if (output_each_iter) output_iter(++nodeoff, cfmols, "Schiff formation");
                 ligand->movability = MOV_FLEXONLY;
                 g_bbr->pri_res->movability = MOV_FORCEFLEX;
                 cfmols[cfmolqty++] = (Molecule*)g_bbr->pri_res;
@@ -3919,12 +3921,14 @@ _try_again:
                 {
                     g_bbr->pri_res->conform_atom_to_location(sa, sb);
                     // cout << "Pointed " << sa->name << " at " << sb->residue << ":" << sb->name << endl << endl;
+                    if (output_each_iter) output_iter(++nodeoff, cfmols, "ligand to secondary contact");
                 }
                 else
                 {
                     sa = g_bbr->pri_res->get_reach_atom(hbond);
                     // cout << "Pointed " << sa->residue << ":" << sa->name << " at " << nodecen << endl << endl;
                     g_bbr->pri_res->conform_atom_to_location(sa->name, nodecen);
+                    if (output_each_iter) output_iter(++nodeoff, cfmols, "ligand to pocket center");
                 }
                 if (pose == 1)
                 {
@@ -4234,6 +4238,7 @@ _try_again:
             dr[drcount][nodeno+nodeoff].mbbr = &g_bbr[0];
             dr[drcount][nodeno+nodeoff].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
 
+            #if occlusion_as_disqualify_reason
             if (dr[drcount][nodeno+nodeoff].ligand_pocket_occlusion < 0.65)
             {
                 dr[drcount][nodeno+nodeoff].disqualified = true;
@@ -4242,6 +4247,7 @@ _try_again:
                 reason += (std::string)". ";
                 dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
             }
+            #endif
 
             n = protein->get_end_resno();
             for (i=1; i<sphres; i++)

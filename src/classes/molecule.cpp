@@ -1976,6 +1976,7 @@ bool Molecule::check_Greek_continuity()
 Molecule* Molecule::create_Schiff_base(Molecule *other)
 {
     Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CA=nullptr, *CE=nullptr;
+    Atom *aaCA, *aaCB;
 
     identify_Schiff_ketald(&C, &O);
     other->identify_Schiff_amine(&N, &H1, &H2);
@@ -2000,7 +2001,11 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
     if (!who_moves) return nullptr;                             // cannot be two residues.
     who_moves->movability = MOV_ALL;
-    // cout << "Who moves: " << who_moves->name << endl;
+    // cout << "Who moves: " << who_moves->name << endl << endl;
+
+    aaCA = ((who_moves == this) ? other : this)->get_atom("CA");
+    aaCB = ((who_moves == this) ? other : this)->get_atom("CB");
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;           // *hits code with rolled up newspaper*
 
     // Put N where O was
     Molecule* H2O = new Molecule("water");
@@ -2008,10 +2013,12 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     if (O->mol == who_moves) mv = mv.negate();
     v = O->get_nearest_free_geometry(1, N->loc);
     who_moves->move(mv);
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     v.r = InteratomicForce::covalent_bond_radius(N, C, 2);
     H1->bond_to(O, 1);
     H1->move(O->loc.add(v));
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     LocRotation rot;
     if (CE)
@@ -2021,6 +2028,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         if (O->mol == who_moves) rot.a *= -1;
         who_moves->rotate(rot, rot.origin);
     }
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
     // return nullptr;
 
     ((Molecule*)(O->mol))->delete_atom(O);              // also unbonds
@@ -2032,6 +2040,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     H2O->add_existing_atom(H1);
     H2O->add_existing_atom(H2);
     H2O->mol_typ = MOLTYP_WATER;
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     if (CA && CE && (H3 = N->is_bonded_to("H")))      // ANC
     {
@@ -2048,14 +2057,17 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
             }
             // cout << (theta*fiftyseven) << "deg: " << r << endl;
             who_moves->rotate(lv, step);
+            if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
         }
 
         who_moves->rotate(lv, thbest);
+        if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
     }
 
     b = C->bond_to(N, 2);
     b->can_flip = true;
     b->flip_angle = M_PI;
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     // Default to trans configuration.
     if (CA && CE)
@@ -2065,6 +2077,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         float r2 = CA->distance_to(CE);
         if (r2 < r1) b->rotate(b->flip_angle);
     }
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     // TODO: fix water in Schiff test when protein linkage
     v.phi = frand(-M_PI, M_PI);
@@ -2072,6 +2085,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     v.r = _INTERA_R_CUTOFF;
     O->move_rel(v);
     H2O->refine_structure();
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     v = H1->loc.subtract(O->loc);
     v.r = InteratomicForce::covalent_bond_radius(H1, O, 1);
@@ -2079,6 +2093,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     v = H2->loc.subtract(O->loc);
     v.r = InteratomicForce::covalent_bond_radius(H2, O, 1);
     H2->move(O->loc.add(v));
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     int i;
     who_moves->glued_to = (who_moves == this) ? other : this;
@@ -2092,13 +2107,15 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     // cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
     if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
     else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     // Refresh "moves-with" cache for all bonds of both molecules
     for (i=0; atoms[i]; i++) atoms[i]->clear_all_moves_cache();
     for (i=0; other->atoms[i]; i++) other->atoms[i]->clear_all_moves_cache();
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     rotatable_bonds = other->rotatable_bonds = nullptr;
-
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
     return H2O;
 }
 
@@ -5540,13 +5557,13 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (i=0; mm[i]; i++) if (mm[i]->coordmtl) { cfmols_have_metals = true; break;}
 
+    Molecule* nearby[2048];
+    memset(nearby, 0, sizeof(Molecule*) * 2048);
     for (iter=0; iter<iters; iter++)
     {
         if (frand(0,1) < best_pose_reset_frequency) for (abc=0; mm[abc]; abc++) absolute_best[abc].restore_state(mm[abc]);
         for (i=0; mm[i]; i++) mm[i]->lastbind = 0;
 
-        Molecule* nearby[2048];
-        memset(nearby, 0, sizeof(Molecule*) * 2048);
         bool do_full_rotation = _allow_fullrot && ((iter % _fullrot_every) == 0);
 
         for (i=0; mm[i]; i++)
@@ -5588,6 +5605,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             {
                 l = 0;
                 for (j=1; mm[j]; j++) if (mm[j] != a) nearby[l++] = mm[j];
+                for (j=0; a->mclashables[j]; j++) nearby[l++] = a->mclashables[j];
+                nearby[l] = nullptr;
             }
             else
             {
@@ -5970,7 +5989,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         }
                         else
                         {
-                            theta = frand(-flexion_maxangle, flexion_maxangle);
+                            if (!qiter) theta = frand(-flexion_maxangle, flexion_maxangle);
+                            else theta *= 1.5;
                             if (ares) wfal = a->faces_any_ligand(mm);
 
                             if (!bb[q]->can_rotate)

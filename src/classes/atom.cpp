@@ -1633,6 +1633,12 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
         last_fail = bf_empty_atom;
         return false;
     }
+
+    if (!skip_inverse_check && ((!atom1->residue && atom2->residue) || (atom1->get_Greek() > atom2->get_Greek())))
+    {
+        return get_reversed()->rotate(theta, allow_backbone, true);
+    }
+
     if (!moves_with_atom2) fill_moves_with_cache();
     enforce_moves_with_uniqueness();
     if (!moves_with_atom2)
@@ -1654,13 +1660,6 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
             last_fail = bf_disallowed_rotation;
             return false;
         }
-    }
-
-    if (atom1->residue && !atom1->is_backbone && greek_from_aname(atom1->name) > greek_from_aname(atom2->name))
-    {
-        can_rotate = false;
-        last_fail = bf_sidechain_hierarchy;
-        return false;
     }
 
     int i;

@@ -196,7 +196,7 @@
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
-#define flexion_maxangle hexagonal
+#define flexion_maxangle hexagonal/2
 #define flexion_probability_multiplier 1
 #define flexion_sub_iterations_ligand 15
 #define flexion_sub_iterations_sidechain 1
@@ -260,11 +260,12 @@
 #define enable_bb_scooch 1
 #define enforce_no_bb_pullaway 0
 
-// Cavity constants.
+// Cavity and pocket-fitting constants.
+#define cavity_intersect_threshold 1e2
 #define default_cavity_stuffing 0.03
 #define min_cavmatch_ctainmt 0.6
-#define cavity_intersect_threshold 1e2
 #define min_cvty_ctnmt 0.25
+#define occlusion_as_disqualify_reason 0
 
 // Soft docking constants.
 #define initial_soft_contact_elasticity 0.1
