@@ -2800,11 +2800,14 @@ float Protein::get_empty_space_between_residues(int resno1, int resno2)
 
     Point cursor;
     Sphere s;
+    Atom *la = nullptr;
     for (cursor=mca1->loc; cursor.get_3d_distance(mca1->loc) < r; cursor = cursor.add(v))
     {
         Atom* a = get_nearest_atom(cursor);
-        s.radius = fmax(0, a->loc.get_3d_distance(cursor) - a->vdW_radius);
-        result += s.volume();
+        if (a == la) continue;
+        s.radius = fmax(0, a->loc.get_distance_to_line(mca1->loc, mca2->loc) - a->vdW_radius);
+        result += s.radius; // s.volume();
+        la = a;
     }
 
     return result;

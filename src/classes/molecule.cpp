@@ -2026,9 +2026,6 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     ((Molecule*)(O->mol))->delete_atom(O);              // also unbonds
     ((Molecule*)(H1->mol))->delete_atom(H1);
     ((Molecule*)(H2->mol))->delete_atom(H2);
-    ((Molecule*)O->mol)->delete_atom(O);
-    ((Molecule*)H1->mol)->delete_atom(H1);
-    ((Molecule*)H2->mol)->delete_atom(H2);
     H1->bond_to(O, 1);
     H2->bond_to(O, 1);
     H2O->add_existing_atom(O);
@@ -2059,6 +2056,15 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     b = C->bond_to(N, 2);
     b->can_flip = true;
     b->flip_angle = M_PI;
+
+    // Default to trans configuration.
+    if (CA && CE)
+    {
+        float r1 = CA->distance_to(CE);
+        b->rotate(b->flip_angle);
+        float r2 = CA->distance_to(CE);
+        if (r2 < r1) b->rotate(b->flip_angle);
+    }
 
     // TODO: fix water in Schiff test when protein linkage
     v.phi = frand(-M_PI, M_PI);
@@ -5549,6 +5555,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (a->movability & MOV_PINNED) continue;
             bool flipped_rings = false;
             int ares = a->is_residue();
+            float local_flexion_frequency = ares ? sidechain_flexion_frequency : 1;
+            if (mm[0]->glued_to == a) local_flexion_frequency = 1;
 
             if (a->movability & MOV_BKGRND) continue;
 
@@ -5859,7 +5867,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (is_flexion_dbg_mol) cout << a->name << " movability " << hex << a->movability << dec << endl << flush;
             #endif
             if (((a->movability & MOV_CAN_FLEX) && !(a->movability & MOV_FORBIDDEN) && a->movability != MOV_PINNED)
-                && (!ares || frand(0,1) < sidechain_flexion_frequency)
+                && (!ares || frand(0,1) < local_flexion_frequency)
                 )
             {
                 pib.copy_state(a);

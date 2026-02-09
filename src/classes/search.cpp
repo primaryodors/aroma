@@ -738,10 +738,10 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
 
                     float r = pocketres[l]->get_nearest_atom(loneliest)
                         ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
-                    r += prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(),
-                        pocketres[l]->get_residue_no());
+                    r = r * prot->get_empty_space_between_residues(pocketres[j]->get_residue_no(), pocketres[l]->get_residue_no());
                     if (r > lfarthest)
                     {
+                        if (pocketres[j]->get_residue_no() == 159) cout << pocketres[l]->get_name() << " is " << r << " from " << pocketres[j]->get_name() << endl;
                         lfarthest = r;
                         lfar = l;
                     }
