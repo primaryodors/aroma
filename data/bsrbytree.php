@@ -29,7 +29,10 @@ $partial_match =
 
 $bsrI = ["3.33", "4.57", "4.60", "45.52", "45.53", "5.39", "5.43", "6.55", "6.59"];
 $bsrII = ["2.53", "3.41", "3.40", "3.37", "3.36", "3.33", "3.32", "3.29", "4.53", "4.57", "4.60", "45.49", "45.51", "45.52", "5.47", "5.46", "5.43", "5.42", "5.39", "6.48", "6.51", "6.55", "7.42", "7.39", "7.38"];
-$bsrT = ["3.29", "3.32", "3.33", "3.36", "3.37", "4.56", "4.61", "45.64", "5.43", "6.48", "6.51", "7.39", "7.42", "7.43"];
+$bsrT = ["3.29", "3.32", "3.33", "3.36", "3.37", "4.56", "4.61", "45.64", "5.42", "5.43", "6.48", "6.51", "7.39", "7.42", "7.43"];
+
+$polonly = false;
+foreach ($argv as $arg) if ($arg == "pol") $polonly = true;
 
 function make_consensus($inarr)
 {
@@ -93,7 +96,7 @@ foreach ($treenodes as $node => $name)
         }
     }
     $nprots = count($protbsr);
-    if ($nprots < 2) continue;
+    if ($nprots < 3) continue;
 
     $bins = [];
     foreach ($bsr as $bw)
@@ -102,6 +105,7 @@ foreach ($treenodes as $node => $name)
         foreach ($protbsr as $rcpid => $letters)
         {
             $aa = $letters[$bw];
+            if ($polonly && false===strpos("SHTYNCKQERD", $aa)) continue;            // the most permissive definition of "polar".
             if (!isset($bins[$bw][$aa])) $bins[$bw][$aa] = 1.0;
             else $bins[$bw][$aa] += 1.0;
 
@@ -115,8 +119,10 @@ foreach ($treenodes as $node => $name)
     $top = "";
     $almost = "";
     $lhxm = $lhxa = 0;
+    $shown = [];
     foreach ($bsr as $bw)
     {
+        if (!isset($bins[$bw]) || !is_array($bins[$bw]) || !count($bins[$bw])) continue;
         $aa = array_keys($bins[$bw])[0];
         $pcnt = floor($bins[$bw][$aa] * 100/$nprots);
         $helix = intval(explode('.', $bw)[0]);
@@ -125,16 +131,37 @@ foreach ($treenodes as $node => $name)
             $space = ($lhxm && $lhxm!=$helix) ? "\n\t" : " ";
             $top .= ($top?",$space":"") . "$aa$bw ($pcnt%)";
             $lhxm = $helix;
+            $shown[] = $bw;
         }
         else if ($pcnt >= $more)
         {
             $space = ($lhxa && $lhxa!=$helix) ? "\n\t" : " ";
             $almost .= ($almost?",$space":"") . "$aa$bw ($pcnt%)";
             $lhxa = $helix;
+            $shown[] = $bw;
         }
     }
     echo "Group $name ($nprots proteins):\n";
     if ($most) echo "At least $most%:\n\t$top\n";
     if ($almost) echo "At least $more%:\n\t$almost\n";
     echo "\n";
+
+    if ($nprots <= 20 && count($shown) >= 2)
+    {
+        echo str_pad(" ", 10);
+        foreach ($shown as $bw) echo str_pad($bw, 6);
+        echo "\n";
+        foreach ($protbsr as $protid => $pb)
+        {
+            echo str_pad($protid, 10);
+            foreach ($shown as $bw)
+            {
+                $aa = letter_at_bw($protid, $bw);
+                echo str_pad($aa, 6);
+            }
+            echo "\n";
+        }
+        echo "\n";
+    }
+    echo "----------------------------------------\n\n";
 }
