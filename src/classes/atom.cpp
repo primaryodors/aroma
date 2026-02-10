@@ -1452,7 +1452,7 @@ void Bond::fill_moves_with_cache()
     for (i=0; b[i]; i++)
     {
         if (b[i]->atom2 && b[i]->atom2 != atom1
-            && equal_or_zero(atom2->residue, !b[i]->atom2->residue)
+            && equal_or_zero(atom2->residue, b[i]->atom2->residue)
            )
         {
             mw_cardsum += b[i]->cardinality*proximity;
@@ -1478,7 +1478,7 @@ void Bond::fill_moves_with_cache()
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
                     if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
-                        && equal_or_zero(!atom2->residue, !b[i]->atom2->residue))
+                        && equal_or_zero(atom2->residue, b[i]->atom2->residue))
                     {
                         if (b[i]->atom2->in_same_ring_as(atom1))
                         {

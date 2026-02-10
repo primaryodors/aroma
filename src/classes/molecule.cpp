@@ -3528,11 +3528,12 @@ float Molecule::get_internal_clashes(bool sb)
         for (j=i+1; atoms[j]; j++)
         {
             if (atoms[i]->residue != atoms[j]->residue
+                && (atoms[i]->residue == 159 || atoms[j]->residue == 159)
                 && atoms[i]->Z > 1 && atoms[j]->Z > 1
                 && !atoms[i]->is_bonded_to(atoms[j])
                 && atoms[i]->distance_to(atoms[j]) < 1.3)
             {
-                cout << "";
+                cout << "K159 internal clash between " << atoms[i]->name << " and " << atoms[j]->name << endl << endl;
             }
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
             if (atoms[i]->is_bonded_to(atoms[j]) /* || atoms[j]->is_bonded_to(atoms[i]) */)
