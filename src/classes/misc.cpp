@@ -188,6 +188,24 @@ bool equal_or_zero(int a, int b)
     return (!a || !b || (a==b));
 }
 
+#if _dbg_zero_contacts
+void begin_debug_file()
+{
+    FILE* igfksb = fopen("tmp/debug.out", "w");
+    time_t began = time(NULL);
+    struct tm *lbegan = localtime(&began);
+    fprintf(igfksb, "Debug begin: %04i-%02i-%02i %02i:%02i:%02i\n", lbegan->tm_year+1900,  lbegan->tm_mon+1, lbegan->tm_mday, lbegan->tm_hour, lbegan->tm_min, lbegan->tm_sec);
+    fclose(igfksb);
+}
+
+void append_debug_file(std::string message)
+{
+    FILE* igfksb = fopen("tmp/debug.out", "ab");
+    fprintf(igfksb, "%s\n", message.c_str());
+    fclose(igfksb);
+}
+#endif
+
 int greek_from_aname(const char *aname)
 {
     int i, j;

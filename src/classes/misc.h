@@ -106,6 +106,11 @@ template <typename T> void init_nulls(T* array, int length)
     for (i=0; i<length; i++) array[i] = 0;
 }
 
+#if _dbg_zero_contacts
+void begin_debug_file();
+void append_debug_file(std::string message);
+#endif
+
 extern bool end_program, end_iterations;
 
 extern float _INTERA_R_CUTOFF;

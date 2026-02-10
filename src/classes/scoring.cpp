@@ -311,6 +311,12 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mc_bpotential = 0;
         compute_interall = true;
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
+
+        #if _dbg_zero_contacts
+        append_debug_file((std::string)"Ligand binding to "+(std::string)reaches_spheroid[i]->get_name() + (std::string)": "
+            +std::to_string(lb.summed()));
+        #endif
+
         interpot -= ligand->get_intermol_potential(reaches_spheroid[i], false);
         compute_interall = false;
         float clash = lb.clash;

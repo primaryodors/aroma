@@ -2168,6 +2168,9 @@ int main(int argc, char** argv)
     time_t began = time(NULL);
     struct tm *lbegan = localtime(&began);
     if (lbegan->tm_mon == 3 && lbegan->tm_mday == lbegan->tm_mon-2) for (i=0; i<203; i+=102) for (j=69; j<78; j++) splash[i+j] = splash[i+j+408];
+    #if _dbg_zero_contacts
+    begin_debug_file();
+    #endif
 
     strcpy(configfname, "example.config");
 
@@ -2785,6 +2788,11 @@ _try_again:
         memset(g_bbr, 0, sizeof(BestBindingResult)*16);
 
         // TODO: Update atom & res pointers for global bb pairs.
+
+        #if _dbg_zero_contacts
+        append_debug_file((std::string)"Pose attempt "+std::to_string(pose)+(std::string)"/"+std::to_string(poses));
+        #endif
+
 
         last_ttl_bb_dist = 0;
         ligand->minimize_internal_clashes();
@@ -4246,6 +4254,10 @@ _try_again:
                 reason += std::to_string(dr[drcount][nodeno+nodeoff].ligand_pocket_occlusion);
                 reason += (std::string)". ";
                 dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
+
+                #if _dbg_zero_contacts
+                append_debug_file((std::string)"Disqualified because: "+reason);
+                #endif
             }
             #endif
 
@@ -4269,6 +4281,10 @@ _try_again:
                             + std::to_string(f) + (std::string)". ";
                         dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
                         i=j=n+2;
+
+                        #if _dbg_zero_contacts
+                        append_debug_file((std::string)"Disqualified because: "+reason);
+                        #endif
                         break;
                     }
                 }
@@ -4290,6 +4306,10 @@ _try_again:
                             + std::to_string(softrgns[i].nrgs) + (std::string)"="
                             + std::to_string(softrgns[i].prgd) + "A. ";
                         dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
+
+                        #if _dbg_zero_contacts
+                        append_debug_file((std::string)"Disqualified because: "+reason);
+                        #endif
                     }
                     if (!softrgns[i].num_contacts())
                     {
@@ -4331,13 +4351,23 @@ _try_again:
 
                 if (dr[drcount][nodeno+nodeoff].kJmol > 0 && !output_something_even_if_it_is_wrong)
                 {
+                    std::string reason = (std::string)"Unfavorable ligand binding energy. ";
                     dr[drcount][nodeno+nodeoff].disqualified = true;
-                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)"Unfavorable ligand binding energy. ";
+                    dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
+
+                    #if _dbg_zero_contacts
+                    append_debug_file((std::string)"Disqualified because: "+reason);
+                    #endif
                 }
                 else if ((anomaly + dr[drcount][nodeno+nodeoff].kJmol) > 0)
                 {
+                    std::string reason = (std::string)"Soft anomaly greater than ligand binding energy. ";
                     dr[drcount][nodeno+nodeoff].disqualified = true;
-                    dr[drcount][nodeno+nodeoff].disqualify_reason += (std::string)"Soft anomaly greater than ligand binding energy. ";
+                    dr[drcount][nodeno+nodeoff].disqualify_reason += reason;
+
+                    #if _dbg_zero_contacts
+                    append_debug_file((std::string)"Disqualified because: "+reason);
+                    #endif
                 }
                 else dr[drcount][nodeno+nodeoff].kJmol += anomaly;
             }
@@ -4353,12 +4383,17 @@ _try_again:
                 float cfmi = cfmols[i]->get_internal_clashes();
                 if (cfmi > clash_limit_per_aa*10)
                 {
-                    dr[drcount][nodeno+nodeoff].disqualified = true;
-                    dr[drcount][nodeno+nodeoff].disqualify_reason
-                        += (std::string)cfmols[i]->get_name()
+                    std::string reason = (std::string)cfmols[i]->get_name()
                         + (std::string)" internal clashes too great "
                         + std::to_string(cfmi)
                         + (std::string)".";
+                    dr[drcount][nodeno+nodeoff].disqualified = true;
+                    dr[drcount][nodeno+nodeoff].disqualify_reason
+                        += reason;
+
+                    #if _dbg_zero_contacts
+                    append_debug_file((std::string)"Disqualified because: "+reason);
+                    #endif
                 }
             }
 
@@ -4534,6 +4569,10 @@ _try_again:
             }
             else if (nodeno == pathnodes) drcount++;
         }	// nodeno loop.
+
+        #if _dbg_zero_contacts
+        append_debug_file((std::string)"\n");
+        #endif
     } // pose loop.
 
     /////////////////////////////////////////////////////////////////////////////////
