@@ -4348,6 +4348,7 @@ _try_again:
                 {
                     AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
                     if (aacfmolsi->get_letter() == 'P') continue;
+                    if (ligand->glued_to_mol() == cfmols[i]) continue;     // sad that it had to come to this.
                 }
                 float cfmi = cfmols[i]->get_internal_clashes();
                 if (cfmi > clash_limit_per_aa*10)

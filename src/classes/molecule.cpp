@@ -2105,8 +2105,16 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         + InteratomicForce::covalent_bond_energy(H2, O, 1);
     intermol_covalent_enthalpy = glued_energy.summed();
     // cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
-    if (who_moves == this) for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
-    else for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
+    if (who_moves == this)
+    {
+        for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
+        base_internal_clashes = get_internal_clashes();
+    }
+    else
+    {
+        for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
+        other->base_internal_clashes = other->get_internal_clashes();
+    }
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     // Refresh "moves-with" cache for all bonds of both molecules
@@ -3527,6 +3535,7 @@ float Molecule::get_internal_clashes(bool sb)
         float avdW = atoms[i]->vdW_radius;
         for (j=i+1; atoms[j]; j++)
         {
+            #if _dbg_Schiff_internal_clashes
             if (atoms[i]->residue != atoms[j]->residue
                 && (atoms[i]->residue == 159 || atoms[j]->residue == 159)
                 && atoms[i]->Z > 1 && atoms[j]->Z > 1
@@ -3535,6 +3544,7 @@ float Molecule::get_internal_clashes(bool sb)
             {
                 cout << "K159 internal clash between " << atoms[i]->name << " and " << atoms[j]->name << endl << endl;
             }
+            #endif
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
             if (atoms[i]->is_bonded_to(atoms[j]) /* || atoms[j]->is_bonded_to(atoms[i]) */)
             {
