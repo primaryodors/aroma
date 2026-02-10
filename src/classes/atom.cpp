@@ -827,11 +827,6 @@ int Atom::get_bonded_heavy_atoms_count()
 float Atom::is_bonded_to(Atom* latom2)
 {
     if (!bonded_to) return 0;
-    if (residue && latom2->residue && abs(residue - latom2->residue) > 1)
-    {
-        // If not same or adjacent residues and not disulfide bond, atoms are almost surely not bonded.
-        if (family != CHALCOGEN || latom2->family != CHALCOGEN) return 0;
-    }
     int i;
     for (i=0; i<geometry; i++)
     {

@@ -3527,7 +3527,10 @@ float Molecule::get_internal_clashes(bool sb)
         float avdW = atoms[i]->vdW_radius;
         for (j=i+1; atoms[j]; j++)
         {
-            if (atoms[i]->residue != atoms[j]->residue && atoms[i]->distance_to(atoms[j]) < 1.3)
+            if (atoms[i]->residue != atoms[j]->residue
+                && atoms[i]->Z > 1 && atoms[j]->Z > 1
+                && !atoms[i]->is_bonded_to(atoms[j])
+                && atoms[i]->distance_to(atoms[j]) < 1.3)
             {
                 cout << "";
             }
