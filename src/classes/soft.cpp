@@ -374,9 +374,9 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
 
                 // Perform soft motion
                 #if _dbg_soft_motions
-                int dbgi;
-                Point dbgaaloc[softrgns[i].rgn.end+2];
-                for (dbgi = softrgns[i].rgn.start; dbgi <= softrgns[i].rgn.end; dbgi++)
+                int dbgi, dbgn = protein->get_end_resno();
+                Point dbgaaloc[dbgn+2];
+                for (dbgi = 1; dbgi <= dbgn; dbgi++)
                 {
                     AminoAcid *dbgaa = protein->get_residue(dbgi);
                     if (dbgaa) dbgaaloc[dbgi] = dbgaa->get_CA_location();
@@ -385,7 +385,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 protein->move_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, ABx_step);
                 #if _dbg_soft_motions
                 cout << "Moved " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << endl;
-                for (dbgi = softrgns[i].rgn.start; dbgi <= softrgns[i].rgn.end; dbgi++)
+                for (dbgi = 1; dbgi <= dbgn; dbgi++)
                 {
                     AminoAcid *dbgaa = protein->get_residue(dbgi);
                     if (dbgaa) cout << dbgaa->get_name() << " moved "
