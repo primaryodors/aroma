@@ -388,7 +388,8 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 for (dbgi = softrgns[i].rgn.start; dbgi <= softrgns[i].rgn.end; dbgi++)
                 {
                     AminoAcid *dbgaa = protein->get_residue(dbgi);
-                    if (dbgaa) cout << dbgaa->get_name() << " moved " << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << endl;
+                    if (dbgaa) cout << dbgaa->get_name() << " moved "
+                        << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << "A." << endl;
                 }
                 cout << endl;
                 #endif
@@ -397,6 +398,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 #if move_ligand_with_soft_motion
                 Pose ligand_was(ligand);
                 if (ligand->stay_close_other 
+                    && !ligand->glued_to_mol()                                      // glued ligand will move with side chain already
                     && !ligand->stay_close_other->vanished
                     && ligand->stay_close_other->residue >= softrgns[i].rgn.start
                     && ligand->stay_close_other->residue <= softrgns[i].rgn.end
