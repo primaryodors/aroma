@@ -2072,6 +2072,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     }
 
     b = C->bond_to(N, 2);
+    if (C->mol == who_moves) b = b->get_reversed();
     b->can_flip = true;
     b->flip_angle = M_PI;
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
@@ -2082,6 +2083,11 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     {
         float r1 = CA->distance_to(CE);
         b->rotate(b->flip_angle);
+        if (b->last_fail)
+        {
+            cerr << "ISOMERIZATION FAIL " << b->last_fail << endl << flush;
+            throw 0xbadc0de;
+        }
         float r2 = CA->distance_to(CE);
         if (r2 < r1) b->rotate(b->flip_angle);
     }

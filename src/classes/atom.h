@@ -23,7 +23,7 @@ enum intera_type
 
 enum bond_rotation_fail_reason
 {
-    bf_none,
+    bf_none = 0,
     bf_empty_atom,
     bf_terminal_atom,
     bf_bond_not_found,
