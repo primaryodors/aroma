@@ -432,14 +432,14 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 {
                     protein->undo();
                     #if move_ligand_with_soft_motion
-                    ligand_was.restore_state(ligand);
+                    if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand);
                     #endif
                     cafter = cbefore;
                     clafter = clbefore;
                     break;
                 }
                 #if move_ligand_with_soft_motion
-                else ligand_was.copy_state(ligand);
+                else if (!ligand->glued_to_mol()) ligand_was.copy_state(ligand);
                 #endif
             }
             /*cout << "Moved residues " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << " "
