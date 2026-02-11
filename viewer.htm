@@ -979,7 +979,11 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
             window.setTimeout(function()
             {
             	$("#pleasewait").hide();
-                if (curr_ligand) curr_ligand.autoView();
+                if (curr_ligand)
+				{
+					curr_ligand.autoView();
+					stage.setScale(0.5);
+				}
             	$('#clip').trigger("input");
 				showPose(1);
         	}, 1536);

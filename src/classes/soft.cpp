@@ -372,6 +372,10 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                     + clbefore + softrgns[i].contact_distance_anomaly(protein, -1, false);
 
+                #if move_ligand_with_soft_motion
+                Pose ligand_was(ligand);
+                #endif
+
                 // Perform soft motion
                 #if _dbg_soft_motions
                 int dbgi, dbgn = protein->get_end_resno();
@@ -399,7 +403,6 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
 
                 // If the ligand is "staying" near any part of the soft region, move it too.
                 #if move_ligand_with_soft_motion
-                Pose ligand_was(ligand);
                 if (ligand->stay_close_other 
                     && !ligand->glued_to_mol()                                      // glued ligand will move with side chain already
                     && !ligand->stay_close_other->vanished
