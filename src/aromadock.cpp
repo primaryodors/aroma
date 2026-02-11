@@ -632,6 +632,8 @@ void iteration_callback(int iter, Molecule** mols)
     float progress, bbest;
     Point bary;
 
+    ligand->check_glued_bond();
+
     #if _dbg_soft_motions
     Point ligcaloc;
     Atom *ligca;
@@ -646,6 +648,7 @@ void iteration_callback(int iter, Molecule** mols)
         Search::align_targets(ligand, loneliest, &g_bbr[0], 1);
     }
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     Interaction e = ligand->get_intermol_binding(mols);
     if (e.summed() >= 50*max(1, (int)fabs(ligand->get_charge()))
@@ -655,12 +658,15 @@ void iteration_callback(int iter, Molecule** mols)
         goto _oei;
     }
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     freeze_bridged_residues();
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     abhor_vacuum(iter, mols);
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     // Stochastically force flexion on some side chains that get clashes.
     #if stochastic_flexion_of_clashing_residues
@@ -702,6 +708,7 @@ void iteration_callback(int iter, Molecule** mols)
     }
     #endif
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     // Attempt to connect hydrogen bonds to ligand.
     #if attempt_to_connect_hydrogen_bonds_to_ligand
@@ -779,6 +786,7 @@ void iteration_callback(int iter, Molecule** mols)
     if (pivotal_hbond_aaa && pivotal_hbond_la) do_pivotal_hbond_rot_and_scoot();
 
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     ac = ligand->get_atom_count();
     bbest = 0;
@@ -787,9 +795,9 @@ void iteration_callback(int iter, Molecule** mols)
     progress = (float)iter / iters;
 
     // Soft docking.
-    bary = ligand->get_barycenter();
     if (n && iter>soft_iter_min) soft_docking_iteration(protein, ligand, nsoftrgn, softrgns, softness);
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     #if bb_realign_iters
     if (!ligand->glued_to_mol()) for (l=0; g_bbr[l].pri_res && g_bbr[l].pri_tgt; l++)
@@ -808,6 +816,7 @@ void iteration_callback(int iter, Molecule** mols)
     #endif
 
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
     if (!iter) goto _oei;
     if (iter == (iters-1)) goto _oei;
 
@@ -820,6 +829,7 @@ void iteration_callback(int iter, Molecule** mols)
     #endif
 
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     for (i=0; i < ac; i++)
     {
@@ -880,6 +890,7 @@ void iteration_callback(int iter, Molecule** mols)
 
         #endif
     }
+    ligand->check_glued_bond();
 
     #if _teleport_dissatisfied_waters
     if (waters && (iter % 5) == 4)
@@ -902,6 +913,7 @@ void iteration_callback(int iter, Molecule** mols)
     }
     #endif
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     if (waters)
     {
@@ -938,6 +950,7 @@ void iteration_callback(int iter, Molecule** mols)
         }
     }
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     _oei:
     ;
@@ -947,8 +960,9 @@ void iteration_callback(int iter, Molecule** mols)
     float r = lig_center.get_3d_distance(ligcen_target);
     float recapture_distance = size.magnitude() / 2;
     if (r >= recapture_distance) ligand->recenter(ligcen_target);
-    #endif
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
+    #endif
 
     for (i=0; i<nappears; i++)
     {
@@ -959,6 +973,7 @@ void iteration_callback(int iter, Molecule** mols)
         }
     }
     bary = ligand->get_barycenter();
+    ligand->check_glued_bond();
 
     if (output_each_iter) output_iter(iter+nodeoff, mols, "dock iteration");
 }

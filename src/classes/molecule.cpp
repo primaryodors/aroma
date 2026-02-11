@@ -2104,6 +2104,9 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     int i;
     who_moves->glued_to = (who_moves == this) ? other : this;
+    who_moves->glued_atom_mine = (N->mol == who_moves) ? N : C;
+    who_moves->glued_atom_other = (C->mol == who_moves) ? N : C;
+    who_moves->glued_atoms_r = N->distance_to(C);
     glued_energy.attractive = InteratomicForce::covalent_bond_energy(C, N, 2)
         - InteratomicForce::covalent_bond_energy(C, O, 2)
         - InteratomicForce::covalent_bond_energy(H1, N, 1)
@@ -2132,6 +2135,14 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     rotatable_bonds = other->rotatable_bonds = nullptr;
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
     return H2O;
+}
+
+void Molecule::check_glued_bond()
+{
+    if (!glued_to) return;
+    float r = glued_atom_mine->distance_to(glued_atom_other);
+    r /= glued_atoms_r;
+    if (r < 0.9 || r > 1.1) throw 0xbadb0579;
 }
 
 int Molecule::from_pdb(FILE* is, bool het_only)
@@ -5679,6 +5690,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             Pose pib;
             // pib.copy_state(a);
 
+            a->check_glued_bond();
+
             /**** Linear Motion ****/
             #if allow_linear_motion
             if ((a->movability & MOV_CAN_RECEN) && !(a->movability & MOV_FORBIDDEN))
@@ -5817,6 +5830,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             #endif
             #endif
 
+            a->check_glued_bond();
+
             #if _dbg_fitness_plummet
             if (!i) cout << "linear " << -benerg << " ";
             #endif
@@ -5905,6 +5920,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             }       // If can axial rotate.
             #endif
 
+            a->check_glued_bond();
+
             #if _dbg_fitness_plummet
             if (!i) cout << "axial " << -benerg << " ";
             #endif
@@ -5992,7 +6009,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (mm[0]->glued_to == a)
                                 {
                                     float suhrokvie = mm[0]->get_barycenter().get_3d_distance(center);
-                                    if (suhrokvie >= _INTERA_R_CUTOFF) benerg.repulsive = Avogadro;
+                                    if (suhrokvie >= _INTERA_R_CUTOFF*0.8) benerg.repulsive = Avogadro;
                                 }
 
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
@@ -6129,6 +6146,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 #if _dbg_fitness_plummet
                 if (!i) cout << "flexion " << -benerg << " ";
                 #endif
+
+                a->check_glued_bond();
 
                 mm[i]->lastbind = benerg.summed();
 

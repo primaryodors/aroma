@@ -375,6 +375,8 @@ protected:
     int iters_without_change = 0;
     Molecule* glued_to = nullptr;                       // For Schiff bases and the like.
     Interaction glued_energy = 0;
+    Atom *glued_atom_mine = nullptr, *glued_atom_other = nullptr;
+    float glued_atoms_r = 0;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
@@ -409,6 +411,7 @@ protected:
     public:
     const int& num_monomers = nmonomers;
     const Molecule* glued_to_mol() { return glued_to; }
+    void check_glued_bond();
 };
 
 float g_total_mclash(void* mol);
