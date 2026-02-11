@@ -452,6 +452,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 if (ligand->glued_to_mol())
                 {
                     Atom *lca = ligand->glued_to_mol()->get_atom("CA");
+                    if (!lca) cerr << "SHIT!" << endl;
                     float lcam = 0;
                     if (lca) lcam = ligand_ca.get_3d_distance(lca->loc);
                     if (lcam)

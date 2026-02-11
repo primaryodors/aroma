@@ -631,6 +631,12 @@ void iteration_callback(int iter, Molecule** mols)
     int i, j, l, n, ac;
     float progress, bbest;
     Point bary;
+
+    #if _dbg_soft_motions
+    Point ligcaloc;
+    Atom *ligca;
+    #endif
+
     bary = ligand->get_barycenter();
 
     float occl = ligand->surface_occlusion(mols);
@@ -781,7 +787,21 @@ void iteration_callback(int iter, Molecule** mols)
     progress = (float)iter / iters;
 
     // Soft docking.
+    bary = ligand->get_barycenter();
+    #if _dbg_soft_motions
+    if (ligand->glued_to_mol()) ligca = ligand->glued_to_mol()->get_atom("CA");
+    if (ligand->glued_to_mol() && !ligca) cerr << "SHIT SHIT SHIT!!!!!" << endl;
+    if (ligca) ligcaloc = ligca->loc;
+    #endif
     if (n && iter>soft_iter_min) soft_docking_iteration(protein, ligand, nsoftrgn, softrgns, softness);
+
+    #if _dbg_soft_motions
+    if (ligca && ligca->loc.get_3d_distance(ligcaloc) > 0.00001)
+    {
+        cerr << "LIGAND MOVED!!!!!!11111one" << endl << flush;
+        throw 0xbadc0de;
+    }
+    #endif
     bary = ligand->get_barycenter();
 
     #if bb_realign_iters
