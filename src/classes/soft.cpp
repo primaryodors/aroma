@@ -420,7 +420,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 #if move_ligand_with_soft_motion
                 if (clafter > (1.0-contact_energy_allowance_for_optimization)*clbefore)
                 {
-                    ligand_was.restore_state(ligand);
+                    if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand);
                     clafter = protein->get_intermol_clashes(ligand);
                     cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                         + clafter + softrgns[i].contact_distance_anomaly(protein, -1, false);
