@@ -1632,7 +1632,9 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
     if (!skip_inverse_check && ((!atom1->residue && atom2->residue) || (atom1->get_Greek() > atom2->get_Greek())))
     {
         last_fail = bf_sidechain_hierarchy;
-        return get_reversed()->rotate(theta, allow_backbone, true);
+        bool result = get_reversed()->rotate(theta, allow_backbone, true);
+        last_fail = get_reversed()->last_fail;
+        return result;
     }
 
     if (!moves_with_atom2) fill_moves_with_cache();
