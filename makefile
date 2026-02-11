@@ -40,7 +40,7 @@ CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 # and I have to whore out most of my waking time to goddamn Uber just to keep from starving to death, so I can't test 856479287652908735237442839401240982635075
 # flags individually in order to find one damn tainted needle (hopefully only one) in a fkn haystack. So this CFLAGS, ugly mfkr as it is, is just going to have
 # to do for the time being.
-CFLAGS+=-fauto-inc-dec -fbranch-count-reg -fcombine-stack-adjustments -fcompare-elim -fcprop-registers -fdce -fdefer-pop -fdse \
+# CFLAGS+=-fauto-inc-dec -fbranch-count-reg -fcombine-stack-adjustments -fcompare-elim -fcprop-registers -fdce -fdefer-pop -fdse \
 	-fforward-propagate -fguess-branch-probability -fif-conversion -fif-conversion2 -finline-functions-called-once -fipa-modref -fipa-profile \
 	-fipa-pure-const -fipa-reference -fipa-reference-addressable -fivopts -fmerge-constants -fmove-loop-invariants -fmove-loop-stores -fomit-frame-pointer \
 	-freorder-blocks -fshrink-wrap -fshrink-wrap-separate -fsplit-wide-types -fssa-backprop -fssa-phiopt -ftree-bit-ccp -ftree-ccp -ftree-ch \
@@ -57,7 +57,7 @@ CFLAGS+=-fauto-inc-dec -fbranch-count-reg -fcombine-stack-adjustments -fcompare-
 	-fversion-loops-for-strides
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # Development CFLAGS for tracking down memory problems
 # CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
