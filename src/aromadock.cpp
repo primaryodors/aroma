@@ -707,6 +707,7 @@ void iteration_callback(int iter, Molecule** mols)
             if (mols[l]->movability & MOV_PINNED) continue;
             if (!mols[l]->is_residue()) continue;
             if (fabs(mols[l]->hydrophilicity()) < hydrophilicity_cutoff) continue;
+            if (mols[l] == ligand->glued_to_mol()) continue;
 
             AminoAcid* hbaa = reinterpret_cast<AminoAcid*>(mols[l]);
             Atom* reach = hbaa->get_reach_atom();
@@ -784,7 +785,7 @@ void iteration_callback(int iter, Molecule** mols)
     bary = ligand->get_barycenter();
 
     #if bb_realign_iters
-    for (l=0; g_bbr[l].pri_res && g_bbr[l].pri_tgt; l++)
+    if (!ligand->glued_to_mol()) for (l=0; g_bbr[l].pri_res && g_bbr[l].pri_tgt; l++)
     {
         Molecule* llig = ligand->get_monomer(l);
         Interaction before = llig->get_intermol_binding(mols);
@@ -3505,6 +3506,7 @@ _try_again:
                 if (aa_best_pose
                     && !pathnodes
                     && ligand_best_pose[isono].has_data()
+                    && !ligand->glued_to_mol()
                     && frand(0,1) <= reuse_pose_probability
                    )
                 {
