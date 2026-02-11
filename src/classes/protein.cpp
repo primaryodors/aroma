@@ -1257,7 +1257,7 @@ void Protein::undo()
         if (undo_poses[i])
         {
             AminoAcid* aa = get_residue(i);
-            if (aa) undo_poses[i]->restore_state(aa);
+            if (aa) undo_poses[i]->restore_state(aa, true);
         }
     }
 }

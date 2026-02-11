@@ -386,9 +386,15 @@ void Pose::copy_state(Molecule* m)
     sz = i;
 }
 
-void Pose::restore_state(Molecule* m)
+void Pose::restore_state(Molecule* m, bool ap)
 {
-    if (m->glued_to) return;
+    if (false && !m->is_residue() && m->glued_to)
+    {
+        #if _dbg_soft_motions
+        cout << "Not restoring " << m->name << endl;
+        #endif
+        return;
+    }
     if (!m || !m->atoms || !sz) return;
     int i, n;
     if (m != saved_from)
@@ -416,13 +422,14 @@ void Pose::restore_state(Molecule* m)
 
     for (i=0; i<sz && m->atoms[i]; i++)
     {
-        if (!(m->movability & MOV_PINNED))
+        if (ap || !(m->movability & MOV_PINNED))
             m->atoms[i]->move(saved_atom_locs[i]);
     }
 }
 
 void Pose::restore_state_relative(Molecule *m, const char *ran)
 {
+    if (!m->is_residue() && m->glued_to) return;
     if (!m || !m->atoms || !sz) return;
     int i, n;    
     if (m != saved_from)

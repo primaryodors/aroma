@@ -65,7 +65,7 @@ public:
     Pose& operator=(Pose&& p) noexcept;
     ~Pose();
     void copy_state(Molecule* from_mol);
-    void restore_state(Molecule* to_mol);
+    void restore_state(Molecule* to_mol, bool allow_pinned = false);
     void restore_state_relative(Molecule* to_mol, const char* rel_atom_name = "");
     float total_atom_motions();
     void reset();

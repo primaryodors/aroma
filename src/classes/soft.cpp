@@ -439,7 +439,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 {
                     protein->undo();
                     #if move_ligand_with_soft_motion
-                    if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand);
+                    ligand_was.restore_state(ligand, true);
                     #endif
                     cafter = cbefore;
                     clafter = clbefore;
