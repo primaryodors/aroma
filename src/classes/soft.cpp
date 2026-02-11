@@ -373,7 +373,25 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                     + clbefore + softrgns[i].contact_distance_anomaly(protein, -1, false);
 
                 // Perform soft motion
+                #if _dbg_soft_motions
+                int dbgi;
+                Point dbgaaloc[softrgns[i].rgn.end+2];
+                for (dbgi = softrgns[i].rgn.start; dbgi <= softrgns[i].rgn.end; dbgi++)
+                {
+                    AminoAcid *dbgaa = protein->get_residue(dbgi);
+                    if (dbgaa) dbgaaloc[dbgi] = dbgaa->get_CA_location();
+                }
+                #endif
                 protein->move_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, ABx_step);
+                #if _dbg_soft_motions
+                cout << "Moved " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << endl;
+                for (dbgi = softrgns[i].rgn.start; dbgi <= softrgns[i].rgn.end; dbgi++)
+                {
+                    AminoAcid *dbgaa = protein->get_residue(dbgi);
+                    if (dbgaa) cout << dbgaa->get_name() << " moved " << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << endl;
+                }
+                cout << endl;
+                #endif
 
                 // If the ligand is "staying" near any part of the soft region, move it too.
                 #if move_ligand_with_soft_motion
