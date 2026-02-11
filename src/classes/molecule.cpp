@@ -2082,6 +2082,8 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     if (CA && CE)
     {
         float r1 = CA->distance_to(CE);
+        b->can_flip = true;
+        b->flip_angle = M_PI;
         b->rotate(b->flip_angle);
         if (b->last_fail)
         {
