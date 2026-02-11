@@ -388,7 +388,7 @@ void Pose::copy_state(Molecule* m)
 
 void Pose::restore_state(Molecule* m, bool ap)
 {
-    if (false && !m->is_residue() && m->glued_to)
+    if (!ap && !m->is_residue() && m->glued_to)
     {
         #if _dbg_soft_motions
         cout << "Not restoring " << m->name << endl;
