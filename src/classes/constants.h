@@ -429,7 +429,7 @@
 #define _DBG_TUMBLE_SPHERES 0
 #define _dbg_unreciprocated_bonds 0
 #define _dbg_worst_energy 0
-#define _dbg_zero_contacts 1
+#define _dbg_zero_contacts 0
 #define _debug_active_bond_rot 0
 #define debug_stop_after_tumble_sphere 0
 #define _DORESPHRES 0
