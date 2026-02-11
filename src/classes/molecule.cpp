@@ -5550,8 +5550,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
     check_mols = mm;
     #endif
 
-    for (n=0; mm[n]; n++);
+    Point center;
+    for (n=0; mm[n]; n++) center = center.add(mm[n]->get_barycenter());
     int nmm = n;
+    center.multiply(1.0/nmm);
     Pose absolute_best[nmm+4];
     Interaction abe = mm[0]->get_intermol_binding(mm);          // Absolute Best Energy.
     Interaction abtest;
@@ -5957,7 +5959,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             #if fullrot_flex_unfavorable_energy_only
                             && benerg.summed() >= 0
                             #endif
-                            )
+                            )                                   // 360 DEGREE FLEXION
                         {
                             float best_theta = 0;
                             Pose prior_state;
@@ -5980,6 +5982,12 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
+                                if (mm[0]->glued_to == a)
+                                {
+                                    float suhrokvie = mm[0]->get_barycenter().get_3d_distance(center);
+                                    if (suhrokvie >= _INTERA_R_CUTOFF) benerg.repulsive = Avogadro;
+                                }
+
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
                                     && a->get_internal_clashes() <= self_clash
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
@@ -6001,7 +6009,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #endif
                             }
                         }
-                        else
+                        else                                    // MONTE CARLO FLEXION
                         {
                             if (!qiter) theta = frand(-flexion_maxangle, flexion_maxangle);
                             else theta *= 1.5;

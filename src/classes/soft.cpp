@@ -388,8 +388,11 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 for (dbgi = 1; dbgi <= dbgn; dbgi++)
                 {
                     AminoAcid *dbgaa = protein->get_residue(dbgi);
-                    if (dbgaa) cout << dbgaa->get_name() << " moved "
-                        << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << "A." << endl;
+                    if (dbgaa)
+                    {
+                        float dbgmovd = dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location());
+                        if (dbgmovd) cout << dbgaa->get_name() << " moved " << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << "A." << endl;
+                    }
                 }
                 cout << endl;
                 #endif
