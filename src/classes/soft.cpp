@@ -443,26 +443,27 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                     #endif
                     cafter = cbefore;
                     clafter = clbefore;
+
+                    if (ligand->glued_to_mol())
+                    {
+                        Atom *lca = ligand->glued_to_mol()->get_atom("CA");
+                        if (!lca) cerr << "SHIT!" << endl;
+                        float lcam = 0;
+                        if (lca) lcam = ligand_ca.get_3d_distance(lca->loc);
+                        if (lcam)
+                        {
+                            #if _dbg_soft_motions
+                            cerr << "LIGAND MOVED!" << endl << flush;
+                            throw 0xbadc0de;
+                            #endif
+                        }
+                    }
+
                     break;
                 }
                 #if move_ligand_with_soft_motion
                 else if (!ligand->glued_to_mol()) ligand_was.copy_state(ligand);
                 #endif
-
-                if (ligand->glued_to_mol())
-                {
-                    Atom *lca = ligand->glued_to_mol()->get_atom("CA");
-                    if (!lca) cerr << "SHIT!" << endl;
-                    float lcam = 0;
-                    if (lca) lcam = ligand_ca.get_3d_distance(lca->loc);
-                    if (lcam)
-                    {
-                        #if _dbg_soft_motions
-                        cerr << "LIGAND MOVED!" << endl << flush;
-                        throw 0xbadc0de;
-                        #endif
-                    }
-                }
             }
             /*cout << "Moved residues " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << " "
                 << translation_accomplished*ABx.r << "A." << endl << endl;*/
