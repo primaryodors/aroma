@@ -24,6 +24,9 @@ class LigandTarget
     float importance(Molecule* mol);
     bool contains(LigandTarget* lt);
     bool contains(Atom* a);
+    Atom* contains(const char* esym);
+    Atom* contains(int family);
+    bool is_aldehyde();
     intera_type best_interaction();
     std::string to_std_string();
 };

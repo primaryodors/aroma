@@ -498,7 +498,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
 {
     int i, j, k, l, m, n, ii;
     float best = 0;
-    bool require_ionic = false, require_neutral_polar = false, require_pi = false;
+    bool require_ionic = false, require_neutral_polar = false, require_pi = false, require_amine_aldehyde = false;
     Point ligcen = ligand->get_barycenter();
     int ntarg, npr;
     bool override_target_compatibility = false;
@@ -588,6 +588,9 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
         float ichg = targets[i].charge();
         float ipol = targets[i].polarity();
         if (ipol < hydrophilicity_cutoff) ipol = 0;
+
+        bool is_ald = targets[i].is_aldehyde();
+
         for (j=0; pocketres[j]; j++)
         {
             float jchg = pocketres[j]->get_charge();
@@ -597,6 +600,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
 
             if (ichg && jchg && sgn(ichg) == -sgn(jchg)) require_ionic = true;
             if (ipol && jpol) require_neutral_polar = true;
+            if (is_ald && pocketres[j]->is_amine()) require_amine_aldehyde = true;
         }
     }
 
@@ -618,6 +622,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
         iimp = targets[i].importance(ligand);
         if (multichalc) for (ii=0; mcatoms[ii]; ii++) if (targets[i].contains(mcatoms[ii])) imc = true;
 
+        if (require_amine_aldehyde && !targets[i].is_aldehyde()) continue;
+
         for (j=0; pocketres[j]; j++)
         {
             float jchg = pocketres[j]->get_charge();
@@ -631,6 +637,9 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
             bool jhbd = pocketres[j]->has_hbond_donors();
             Atom* jmtl = pocketres[j]->coordmtl;
             Point jext = pocketres[j]->get_reach_atom_location();
+
+            if (require_amine_aldehyde && !pocketres[j]->is_amine()) continue;
+            // cout << "passing mustard to " << pocketres[j]->get_name() << "..." << targets[i] << endl;
 
             bool ijmc = jmtl && (ifam == CHALCOGEN || ifam == PNICTOGEN) && ((iZ != 8 && ichg <= 0) || imc);
 
@@ -658,7 +667,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
             }
             #endif
 
-            if (!override_target_compatibility) if (!ijmc && !target_compatibility(ichg, jchg, ipol, jpol, ipi, jpi, ihba, jhba, ihbd, jhbd)) continue;
+            if (!override_target_compatibility && !require_amine_aldehyde)
+                if (!ijmc && !target_compatibility(ichg, jchg, ipol, jpol, ipi, jpi, ihba, jhba, ihbd, jhbd)) continue;
 
             if (ntarg < 2 || npr < 2)
             {
@@ -723,7 +733,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 bool kmc = false;
                 if (multichalc) for (ii=0; mcatoms[ii]; ii++) if (targets[k].contains(mcatoms[ii])) kmc = true;
                 kimp = targets[k].importance(ligand);
-                if (kimp > iimp) continue;
+                if (!require_amine_aldehyde && kimp > iimp) continue;
 
                 #if bb_secondary_must_be_farthest_from_primary || bb_secondary_must_be_at_least_threshold_distance_from_primary
                 int lfar = -1;
@@ -733,7 +743,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     float lpol = pocketres[l]->hydrophilicity();
                     if (lpol < hydrophilicity_cutoff) lpol = 0;
 
-                    if (!pocketres[l]->coordmtl)
+                    if (!pocketres[l]->coordmtl && !require_amine_aldehyde)
                         if ((kpol && !lpol) || (!kpol && lpol)) continue;
 
                     float r = pocketres[l]->get_nearest_atom(loneliest) ->distance_to(pocketres[j]->get_nearest_atom(loneliest));
@@ -760,7 +770,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                             if (JN < JL && pocketres[n]->intersects(J, L)) shadowed = true;
                         }
                     }
-                    if (shadowed) continue;
+                    if (shadowed && !require_amine_aldehyde) continue;
                 }
 
                 if (lfar < 0)
@@ -805,7 +815,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                             if (JN < JL && pocketres[n]->intersects(J, L)) shadowed = true;
                         }
                     }
-                    if (shadowed) continue;
+                    if (shadowed && !require_amine_aldehyde) continue;
                 #endif
 
                     if (l==j) continue;
@@ -850,11 +860,11 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                         Point mcen;
                         bool mhba, mhbd;
                         mimp = (m >= 0) ? targets[m].importance(ligand) : 0;
-                        if (mimp > iimp) continue;
+                        if (mimp > iimp && !require_amine_aldehyde) continue;
 
                         if (m >= 0)
                         {
-                            if (/*m==i ||*/ m<=k) continue;
+                            if (!require_amine_aldehyde && m<=k) continue;
                             if (targets[m].contains(&targets[i])) continue;
                             if (targets[i].contains(&targets[m])) continue;
                             if (targets[m].contains(&targets[k])) continue;
@@ -873,7 +883,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                         }
                         for (n=0; pocketres[n]; n++)
                         {
-                            if (m >= 0 && ntarg>=3 && (n==j || n==l)) continue;
+                            if (m >= 0 && !require_amine_aldehyde && ntarg>=3 && (n==j || n==l)) continue;
 
                             bool has_ionic = false, has_neutral_polar = false, has_pi = false;
                             if (ichg && jchg) has_ionic = true;
@@ -900,7 +910,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                                 nmtl = pocketres[n]->coordmtl;
 
                                 mnmc = pocketres[n]->coordmtl && (mfam == CHALCOGEN || mfam == PNICTOGEN) && mZ != 8 && mchg <= 0;
-                                if (!override_target_compatibility) 
+                                if (!override_target_compatibility && !require_amine_aldehyde) 
                                     if (!mnmc && !target_compatibility(mchg, nchg, mpol, npol, mpi, npi, mhba, nhba, mhbd, nhbd))
                                         continue;
 
@@ -919,93 +929,6 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
 
                             if (container) align_targets(ligand, bbr.barycenter(), &bbr);
                             score = bbr.score(ligcen, container) * (1.0 + frand(0,bb_stochastic));
-
-                            #if bb_avoid_eclipsing_contacts && !bb_secondary_must_be_farthest_from_primary
-                            // Prefer contacts without intervening residues.
-                            int h;
-                            float jldist = bbr.pri_res->distance_to(bbr.sec_res), jndist, lndist;
-                            Atom *aj, *al, *an;
-                            aj = bbr.pri_res->get_nearest_atom(loneliest);
-                            al = bbr.sec_res->get_nearest_atom(loneliest);
-                            if (m >= 0)
-                            {
-                                jndist = bbr.pri_res->distance_to(bbr.tert_res);
-                                lndist = bbr.sec_res->distance_to(bbr.tert_res);
-                                an = bbr.tert_res->get_nearest_atom(loneliest);
-                            }
-                            if (aj && al)
-                            {
-                                for (h=0; pocketres[h]; h++)
-                                {
-                                    if (h == j || h == l) continue;
-                                    if (m >= 0 && h == n) continue;
-
-                                    Atom* ha = pocketres[h]->get_nearest_atom(loneliest);
-                                    if (!ha) continue;
-
-                                    float hjdist, hldist, hndist;
-                                    hjdist = pocketres[h]->distance_to(bbr.pri_res);
-                                    hldist = pocketres[h]->distance_to(bbr.sec_res);
-                                    if (m >= 0)
-                                    {
-                                        hndist = pocketres[h]->distance_to(bbr.tert_res);
-                                    }
-
-                                    if (hjdist < jldist && hldist < jldist)
-                                    {
-                                        ha = pocketres[h]->get_nearest_atom_to_line(aj->loc, al->loc);
-                                        if (ha)
-                                        {
-                                            float hr = ha->loc.get_distance_to_line(aj->loc, al->loc);
-                                            if (hr < bb_eclipsing_limit)
-                                            {
-                                                score /= bb_eclipsing_divisor;
-                                                #if _dbg_eclipsing_contacts
-                                                cout << bbr.pri_res->get_name() << " --- " << bbr.sec_res->get_name()
-                                                    << " eclipsed by " << pocketres[h]->get_name() << " r=" << hr << endl;
-                                                #endif
-                                            }
-                                        }
-                                    }
-
-                                    if (m >= 0)
-                                    {
-                                        if (hjdist < jndist && hndist < jndist)
-                                        {
-                                            ha = pocketres[h]->get_nearest_atom_to_line(aj->loc, an->loc);
-                                            if (ha)
-                                            {
-                                                float hr = ha->loc.get_distance_to_line(aj->loc, an->loc);
-                                                if (hr < bb_eclipsing_limit)
-                                                {
-                                                    score /= bb_eclipsing_divisor;
-                                                    #if _dbg_eclipsing_contacts
-                                                    cout << bbr.pri_res->get_name() << " --- " << bbr.tert_res->get_name()
-                                                        << " eclipsed by " << pocketres[h]->get_name() << " r=" << hr << endl;
-                                                    #endif
-                                                }
-                                            }
-                                        }
-                                        if (hldist < lndist && hndist < lndist)
-                                        {
-                                            ha = pocketres[h]->get_nearest_atom_to_line(al->loc, an->loc);
-                                            if (ha)
-                                            {
-                                                float hr = ha->loc.get_distance_to_line(al->loc, an->loc);
-                                                if (hr < bb_eclipsing_limit)
-                                                {
-                                                    score /= bb_eclipsing_divisor;
-                                                    #if _dbg_eclipsing_contacts
-                                                    cout << bbr.sec_res->get_name() << " --- " << bbr.tert_res->get_name()
-                                                        << " eclipsed by " << pocketres[h]->get_name() << " r=" << hr << endl;
-                                                    #endif
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            #endif
 
                             #if _dbg_bb_scoring
                             cout << " ";
@@ -1028,77 +951,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                                 #endif
                                )
                             {
-                                #if bb_secondary_must_be_farthest_from_primary
                                 int i1 = i, j1 = j, i2 = k, j2 = l, i3 = m, j3 = n;
-                                #else
-                                // Assign by importance.
-                                int i1, i2, i3, j1, j2, j3;
-
-                                if (ijmc) iimp += 1000;
-                                if (klmc) kimp += 1000;
-                                if ((m >= 0) && mnmc) mimp += 1000;
-
-                                /* cout << targets[i] << " " << iimp << " "
-                                     << targets[k] << " " << kimp << " "
-                                     << targets[m] << " " << mimp << endl; */
-
-                                if (iimp > kimp && iimp > mimp)
-                                {
-                                    i1 = i; 
-                                    j1 = j;
-
-                                    if (kimp > mimp) { i2 = k; j2 = l; i3 = m; j3 = n; }
-                                    else { i2 = m; j2 = n; i3 = k; j3 = l; }
-                                }
-                                else if (kimp > mimp)
-                                {
-                                    i1 = k;
-                                    j1 = l;
-
-                                    if (mimp > iimp) { i2 = m; j2 = n; i3 = i; j3 = j; }
-                                    else { i2 = i; j2 = j; i3 = m; j3 = n; }
-                                }
-                                else
-                                {
-                                    i1 = m;
-                                    j1 = n;
-
-                                    if (kimp > iimp) { i2 = k; j2 = l; i3 = i; j3 = j; }
-                                    else { i2 = i; j2 = j; i3 = k; j3 = l; }
-                                }
-
-                                if (m >= 0)
-                                {
-                                    float AB = targets[i1].barycenter().get_3d_distance(targets[i2].barycenter());
-                                    float AC = targets[i1].barycenter().get_3d_distance(targets[i3].barycenter());
-
-                                    float A_B_ = pocketres[j1]->distance_to(pocketres[j2]);
-                                    float A_C_ = pocketres[j1]->distance_to(pocketres[j3]);
-
-                                    // Nearby atoms should not pair with far away residues and vice versa.
-                                    #if _dbg_bb_scoring
-                                    if ((AC > AB && A_C_ < A_B_) || (AC < AB && A_C_ > A_B_))
-                                    {
-                                        cout << "X4" << endl;
-                                        continue;
-                                    }
-                                    #else
-                                    if (AC > AB && A_C_ < A_B_) continue;
-                                    if (AC < AB && A_C_ > A_B_) continue;
-                                    #endif
-
-                                    if (AC > AB)
-                                    {
-                                        int swap = i2;
-                                        i2 = i3;
-                                        i3 = swap;
-                                        swap = j2;
-                                        j2 = j3;
-                                        j3 = swap;
-                                        // cout << "swapped" << endl;
-                                    }
-                                }
-                                #endif
 
                                 *output = bbr;
                                 output->pri_res = pocketres[j1];
@@ -1953,6 +1806,37 @@ bool LigandTarget::contains(Atom *a)
 {
     if (single_atom && single_atom == a) return true;
     if (conjgrp && conjgrp->contains(a)) return true;
+    return false;
+}
+
+Atom* LigandTarget::contains(const char *esym)
+{
+    if (single_atom && !strcmp(Atom::esym_from_Z(single_atom->Z), esym)) return single_atom;
+    if (conjgrp) return conjgrp->contains(esym);
+    return nullptr;
+}
+
+Atom* LigandTarget::contains(int family)
+{
+    if (single_atom && (single_atom->get_family() == family)) return single_atom;
+    if (conjgrp) return conjgrp->contains(family);
+    return nullptr;
+}
+
+bool LigandTarget::is_aldehyde()
+{
+    Atom *O = nullptr;
+    if (single_atom && single_atom->get_family() == CHALCOGEN) O = single_atom;
+    else O = contains("O");
+    if (O)
+    {
+        Atom *C = single_atom->is_bonded_to(TETREL, 2);
+        if (C)
+        {
+            Atom *H = C->is_bonded_to("H");
+            if (H) return true;
+        }
+    }
     return false;
 }
 

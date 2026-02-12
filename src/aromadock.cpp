@@ -3931,9 +3931,7 @@ _try_again:
             #endif
 
             #if _allow_Schiff_base_formation
-            bool retrying_Schiff = false;
             Molecule* Schiff_water = nullptr;
-            _retry_Schiff_base:
             if (g_bbr->pri_res->is_amine() && g_bbr->pri_tgt->single_atom
                 && g_bbr->pri_tgt->single_atom->get_family() == CHALCOGEN
                 && g_bbr->pri_tgt->single_atom->is_bonded_to(TETREL, 2))
@@ -3974,28 +3972,6 @@ _try_again:
                 }
                 ligand->stay_close_mine = ligand->stay_close2_mine = nullptr;
                 ligand->stay_close_other = ligand->stay_close2_other = nullptr;
-            }
-            else if (!retrying_Schiff
-                && g_bbr->pri_res->is_amine() && g_bbr->tert_tgt->single_atom
-                && g_bbr->tert_tgt->single_atom->get_family() == CHALCOGEN
-                && g_bbr->tert_tgt->single_atom->is_bonded_to(TETREL, 2))
-            {
-                retrying_Schiff = true;
-                LigandTarget* swap = g_bbr->pri_tgt;
-                g_bbr->pri_tgt = g_bbr->tert_tgt;
-                g_bbr->tert_tgt = swap;
-                goto _retry_Schiff_base;
-            }
-            else if (!retrying_Schiff
-                && g_bbr->pri_res->is_amine() && g_bbr->sec_tgt->single_atom
-                && g_bbr->sec_tgt->single_atom->get_family() == CHALCOGEN
-                && g_bbr->sec_tgt->single_atom->is_bonded_to(TETREL, 2))
-            {
-                retrying_Schiff = true;
-                LigandTarget* swap = g_bbr->pri_tgt;
-                g_bbr->pri_tgt = g_bbr->sec_tgt;
-                g_bbr->sec_tgt = swap;
-                goto _retry_Schiff_base;
             }
             #endif
 

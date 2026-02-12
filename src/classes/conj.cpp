@@ -129,6 +129,26 @@ bool Conjugation::contains(Atom *a)
     return false;
 }
 
+Atom *Conjugation::contains(const char *esym)
+{
+    int i, Z = Atom::Z_from_esym(esym);
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->Z == Z) return atoms[i];
+    }
+    return nullptr;
+}
+
+Atom *Conjugation::contains(int family)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->get_family() == family) return atoms[i];
+    }
+    return nullptr;
+}
+
 bool Conjugation::contains(Conjugation *c)
 {
     if (!c->atoms) return false;
