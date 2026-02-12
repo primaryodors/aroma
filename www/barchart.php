@@ -104,6 +104,8 @@ $res = 3;
 $xbuf = 80;
 $ybuf = 80;
 
+foreach ($prots as $protid => $prot) if (family_from_protid($protid) == "MS4A") unset($prots[$protid]);
+
 $w = count($prots)*$res + $xbuf;
 $h = 300;
 
@@ -173,26 +175,52 @@ $white = imagecolorallocate($im,240,240,240);
 $azure = imagecolorallocate($im,32,96,255);
 $sapphire = imagecolorallocate($im,32,16,224);
 
-$or1    = imagecolorallocate($im,255,255,255);
-$or2    = imagecolorallocate($im,250,192,  0);
-$or3    = imagecolorallocate($im,128,160, 96); 
-$or4    = imagecolorallocate($im, 64,  0,255);
-$or5    = imagecolorallocate($im,240,128,192);
-$or6    = imagecolorallocate($im,128,144,160); 
-$or7    = imagecolorallocate($im,255,  0,  0); 
-$or8    = imagecolorallocate($im,255,128,  0); 
-$or9    = imagecolorallocate($im,  0,  0,  0);
-$or10   = imagecolorallocate($im,160, 96, 64); 
-$or11   = imagecolorallocate($im,  0,255,255);
-$or12   = imagecolorallocate($im,255,255,  0);
-$or13   = imagecolorallocate($im,160,255,128);
-$or14   = imagecolorallocate($im,128,144,255);
-$or51   = imagecolorallocate($im,255,255,192);
-$or52   = imagecolorallocate($im,192,  0,224);
-$or56   = imagecolorallocate($im,  0,128,  0);
-$taar   = imagecolorallocate($im,  0,  0,160);
-$vn1r   = imagecolorallocate($im,255,240,224);
-$ms4a   = imagecolorallocate($im, 64,128,255);
+function orclr($fam, $im = false)
+{
+    if ($im)
+    {
+        $rgb = orclr($fam, false);            // RECURSION!
+        return imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
+    }
+
+    switch ($fam)
+    {
+        case 1: return [0xff, 0xff, 0x99];
+        case 2: return [0xff, 0xcc, 0x00];
+        case 3: return [0x99, 0xff, 0x00];
+        case 4: return [0x99, 0x66, 0xff];
+        case 5: return [0xff, 0x66, 0x88];
+        case 6: return [0x00, 0xee, 0xff];
+        case 7: return [0xff, 0x33, 0x44];
+        case 8: return [0xff, 0x77, 0x00];
+        case 9: return [0xff, 0x55, 0x22];
+        case 10: return [0x99, 0x66, 0x33];
+        case 11: return [0xaa, 0xcc, 0xee];
+        case 12: return [0xdd, 0xff, 0x00];
+        case 13: return [0x00, 0xff, 0x99];
+        case 14: return [0x33, 0x99, 0xff];
+        case 51: return [0xff, 0xbb, 0x66];
+        case 52: return [0xff, 0x33, 0xcc];
+        case 56: return [0x22, 0xff, 0x55];
+        case "TAAR": return [0x33, 0x22, 0xff];
+        case "VN1R": return [0x99, 0xdd, 0xff];
+        default: return [0xff, 0xff, 0xff];
+    }
+}
+
+for ($i=1; $i<=14; $i++)
+{
+    $var = "or$i";
+    $$var = orclr($i, $im);
+}
+for ($i=51; $i<=56; $i++)
+{
+    $var = "or$i";
+    $$var = orclr($i, $im);
+}
+
+$taar = orclr("TAAR", $im);
+$vn1r = orclr("VN1R", $im);
 
 $base = $h-$ybuf/2;
 $bsht = 8;
@@ -214,31 +242,37 @@ if (count($t) || count($e))
 {
     // Right labels first, so that left lines take precedence.
     for ($top = 1; $top <= floor($maxt); $top += 1)
-    {   
+    {
         $dy = intval($base-1 - $tscale*$top);
-        
-        if (!($top & 1)) imageline($im, $xbuf/3,$dy, $w-$xbuf/3,$dy, $wine );
-        imagestring($im, 3, $w-$xbuf/6,$dy-8, $top, $red);
+
+        if (!($top & 1))
+        {
+            imageline($im, $xbuf/3,$dy, $w-$xbuf/3,$dy, $wine );
+            imagestring($im, 3, $w-$xbuf/6,$dy-8, $top, $red);
+            imagestring($im, 3, 2,$dy-8, $top, $red);
+        }
     }
 
     // Left labels.
+    /*
     imagestring($im, 3, 2,0, "log10", $green);
     imagestring($im, 3, 2,15, "EC50", $green);
 
     for ($ec = floor($maxe); $ec >= ceil($mine); $ec -= 1)
-    {   
+    {
         $dy = intval($base-1 - $escale*($maxe-$ec));
-        
+
         imageline($im, $xbuf/3,$dy, $w-$xbuf/3,$dy, $cyan);
         imagestring($im, 3, 2,$dy-8, $ec, $green);
     }
+        */
 }
 
 if (count($p))
 {
     $step = max(0.5, floor($maxp / 7));
     for ($score = floor($maxp); $score > 0.1; $score -= $step)
-    {   
+    {
         $dy = intval($base-1 - $pscale*$score);
 
         imageline($im, $xbuf/3,$dy, $w-$xbuf/3,$dy, $sapphire);
@@ -264,8 +298,10 @@ $texts = [];
 $txtop = [];
 $dybyx = [];
 foreach (array_values($bytree) as $x => $orid)
-{   
+{
     $rcpcol = $white;
+    $fam = family_from_protid($orid);
+    if ($fam == "MS4A") continue;
     switch (substr($orid,0,2))
     {   case 'OR':
         $bcol = 'or'.intval(preg_replace("/[^0-9]/","",substr($orid,2,2)));
@@ -287,9 +323,9 @@ foreach (array_values($bytree) as $x => $orid)
         default:
         $bcol = $blue;
     }
-    
+
     $dx  = $x * $res + $xbuf/2;
-    $dyt = isset($t[$orid])
+    $dyt = (isset($t[$orid]) && $t[$orid])
          ? intval($base-1 - $tscale*$t[$orid])
          : false;
     $dye = (isset($e[$orid]) && $e[$orid])
@@ -308,9 +344,28 @@ foreach (array_values($bytree) as $x => $orid)
     $tgreen = imagecolorallocatealpha($im,64,144,96,$opacity);
     $tyellow= imagecolorallocatealpha($im,192,160,96,$opacity);
     $tazure = imagecolorallocatealpha($im,32,96,255,$opacity);
+    if (substr($fam, 0, 2) == "OR") $orcol = orclr(intval(substr($fam, 2)));
+    else $orcol = orclr($fam);
 
     $dy = $base;
-    if (false!==$dyt && false===$dye)
+
+    if (false===$dyt && false!==$dye) $dyt = $dye;
+
+    if ($dyt)
+    {
+        $dy = $dyt;
+        $dyscale = 1.0 / ($base-$dy);
+        for ($y1 = $base; $y1 > $dyt; $y1--)
+        {
+            $opc = $e[$orid]
+                ? 0.1 + 0.9 * pow(1.0-(($base-$y1) * $dyscale), ($e[$orid]+6)+1)
+                : 0.4;
+            $yc = imagecolorallocatealpha($im, $orcol[0], $orcol[1], $orcol[2], max(0, min(127, 127-127.0*$opc)));
+            imagefilledrectangle($im, $dx,$y1, $dx+$res-2,$y1, $yc);
+        }
+    }
+
+    /* if (false!==$dyt && false===$dye)
     {
         if (@$tprobs[$orid])
             {
@@ -335,7 +390,7 @@ foreach (array_values($bytree) as $x => $orid)
             imagefilledrectangle($im, $dx+1,$base1, $dx+$res-2,$dyt, $tred);
             imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dye, $tyellow);
         }
-    }
+    } */
 
     if (false!==$dyp) imagefilledrectangle($im, $dx+2,$base2, $dx+$res-1,$dy=$dyp, $tazure);
     $dybyx[$x] = $dy;
