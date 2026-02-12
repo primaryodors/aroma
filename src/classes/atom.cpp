@@ -1441,7 +1441,7 @@ void Bond::fill_moves_with_cache()
     float proximity = 1;
 
     if (!atom2) return;
-    if (atom2->get_Greek() < atom1->get_Greek()) return;
+    if (atom1->residue && atom2->residue && atom2->get_Greek() < atom1->get_Greek()) return;
 
     if (_DBGMOVES) cout << atom2->aa3let << atom2->residue << ": What moves with " << atom2->name << " when rotating about " << atom1->name << "?" << endl;
 
@@ -1629,7 +1629,9 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
         return false;
     }
 
-    if (!skip_inverse_check && ((!atom1->residue && atom2->residue) || (atom1->get_Greek() > atom2->get_Greek())))
+    if (!skip_inverse_check
+        && ((!atom1->residue && atom2->residue) 
+            || (atom1->residue && atom2->residue && atom1->get_Greek() > atom2->get_Greek())))
     {
         last_fail = bf_sidechain_hierarchy;
         bool result = get_reversed()->rotate(theta, allow_backbone, true);

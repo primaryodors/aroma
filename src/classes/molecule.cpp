@@ -2085,7 +2085,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
         b->can_flip = true;
         b->flip_angle = M_PI;
         b->rotate(b->flip_angle);
-        if (b->last_fail)
+        if (b->last_fail && b->last_fail != bf_limited_rotation)
         {
             cerr << "ISOMERIZATION FAIL " << b->last_fail << endl << flush;
             throw 0xbadc0de;
