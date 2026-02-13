@@ -1985,6 +1985,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CA=nullptr, *CE=nullptr;
     Atom *aaCA, *aaCB;
 
+    intermol_covalent_enthalpy = 0;
     identify_Schiff_carbonyl(&C, &O);
     other->identify_Schiff_amine(&N, &H1, &H2);
 
@@ -8170,13 +8171,20 @@ bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
     {
         if (atoms[i]->is_backbone) continue;
         if (atoms[i]->get_family() == PNICTOGEN
-            && atoms[i]->num_bonded_to("H") >= 2
-            && atoms[i]->is_bonded_to(TETREL))
+            && atoms[i]->num_bonded_to("H") >= 2)
         {
-            *N = atoms[i];
-            *H1 = atoms[i]->is_bonded_to("H");
-            *H2 = atoms[i]->is_bonded_to("H", *H1);
-            return true;
+            Atom *C = atoms[i]->is_bonded_to(TETREL);
+            if (C)
+            {
+                #if !_allow_Schiff_from_arginine
+                if (C->is_bonded_to("N", atoms[i])) continue;
+                #endif
+                if (C->is_bonded_to(CHALCOGEN)) continue;            // no Schiff if amide
+                if (N) *N = atoms[i];
+                if (H1) *H1 = atoms[i]->is_bonded_to("H");
+                if (H2) *H2 = atoms[i]->is_bonded_to("H", *H1);
+                return true;
+            }
         }
     }
     return false;
@@ -8190,17 +8198,19 @@ bool Molecule::identify_Schiff_carbonyl(Atom **C, Atom **O)
         if (atoms[i]->is_backbone) continue;
         if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
         {
-            *C = atoms[i]->is_bonded_to("C", 2);
-            if  (*C &&
+            Atom* lc = atoms[i]->is_bonded_to("C", 2);
+            if (lc->is_bonded_to(PNICTOGEN)) continue;
+            if (C) *C = lc;
+            if  (lc &&
                     (
                         #if _allow_Schiff_from_ketones
-                        (*C)->is_bonded_to(TETREL) ||
+                        (lc)->is_bonded_to(TETREL) ||
                         #endif
-                        (*C)->is_bonded_to("H")
+                        (lc)->is_bonded_to("H")
                     )
                 )
             {
-                *O = atoms[i];
+                if (O) *O = atoms[i];
                 return true;
             }
         }

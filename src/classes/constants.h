@@ -152,6 +152,7 @@
 #define allow_linear_motion 1
 #define _ALLOW_PROTONATE_PNICTOGENS 0
 #define _allow_Schiff_base_formation 1
+#define _allow_Schiff_from_arginine 0
 #define _allow_Schiff_from_ketones 0
 #define allow_stay_close_flexions 0
 #define allow_tethered_rotations 0
