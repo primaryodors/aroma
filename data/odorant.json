@@ -26055,12 +26055,6 @@
         },
         "oid": "94a50c2b658c0d7e623316d1b3b82953"
     },
-    "9519b0a0623852b024a14efdebc5efe3":
-    {
-        "full_name": "propofol",
-        "smiles": "CC(c1cccc(c1O)C(C)C)C",
-        "oid": "9519b0a0623852b024a14efdebc5efe3"
-    },
     "95c96a6310a267a67a3a90e86ea053ab":
     {
         "full_name": "vanilla cresol",

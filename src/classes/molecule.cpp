@@ -4794,7 +4794,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             && atoms[i]->residue != ligands[l]->atoms[j]->residue
                             && atoms[i]->is_bonded_to(ligands[l]->atoms[j]))
                         {
-                            abind.attractive = 251;     // Cystine kludge.
+                            abind.attractive = InteratomicForce::covalent_bond_energy(atoms[i], ligands[l]->atoms[j], 1);     // Cystine kludge.
                             abind.clash = 0;
                         }
                         else abind = InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]);
@@ -7732,9 +7732,9 @@ float Molecule::correct_structure(int iters)
     return error;
 }
 
-bool Molecule::is_thiol()
+Atom* Molecule::is_thiol()
 {
-    if (!atoms) return false;
+    if (!atoms) return nullptr;
     int i, j;
 
     for (i=0; atoms[i]; i++)
@@ -7742,11 +7742,11 @@ bool Molecule::is_thiol()
         if (atoms[i]->Z > 10 && atoms[i]->get_family() == CHALCOGEN)
         {
             Atom* H = atoms[i]->is_bonded_to("H");
-            if (H) return true;
+            if (H) return atoms[i];
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 bool Molecule::is_water()

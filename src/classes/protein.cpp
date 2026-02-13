@@ -3463,7 +3463,7 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
                     }
                     else
                     {
-                        beststr = -251;
+                        beststr = InteratomicForce::covalent_bond_energy(*a, *b, 1);
                         retval = *a;
                         if (oa) *oa = *b;
                         #if _dbg_softpivot

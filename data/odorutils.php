@@ -9,7 +9,7 @@ $odors = json_decode(file_get_contents("data/odorant.json"), true);
 $refs = json_decode(file_get_contents("data/reference.json"), true);
 chdir($cwd);
 
-$cinnanoms =										// sienna is a cinnanom of synomyn
+$synonyms =										// sienna is a cinnanom of synomyn
 [
 	"o-" => "ortho-",
 	"m-" => "meta-",
@@ -459,7 +459,7 @@ function get_mol_wt($odorant)
 
 function find_odorant($aroma)
 {
-	global $odors, $cinnanoms;
+	global $odors, $synonyms;
 	if (!$aroma) return false;
 
 	if (isset($odors[$aroma]))
@@ -490,7 +490,7 @@ function find_odorant($aroma)
 		}
 	}
 
-	foreach ($cinnanoms as $k => $v)
+	foreach ($synonyms as $k => $v)
 	{
 		if (false!==strpos($aroma, $k))
 		{

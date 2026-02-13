@@ -138,7 +138,7 @@ public:
     float get_exposed_surface_area(Molecule** neighbors, bool polaronly = false, bool overwrite_atom_areas = true);
     float get_charge() const;
     int is_residue();
-    bool is_thiol();
+    Atom* is_thiol();                           // Return the thiol sulfur, if exists.
     bool is_water();
     float pi_stackability(bool include_backbone = false);
 
