@@ -48,6 +48,8 @@ int main(int argc, char** argv)
     m2.recenter(Point(0,0,4.96));
     Vector axis = Point(1,0,0);
     m2.rotate(&axis, M_PI/2, false);
+    Rotation rot = align_points_3d(m2.get_atom("H9")->loc, m1.get_barycenter(), m2.get_barycenter());
+    m2.rotate(rot);
     e = m1.get_intermol_binding(&m2).summed();
     cout << "T-stack energy: " << e << " kJ/mol." << endl;
     pf = fopen("output/tstack.sdf", "wb");
