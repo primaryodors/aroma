@@ -152,6 +152,7 @@
 #define allow_linear_motion 1
 #define _ALLOW_PROTONATE_PNICTOGENS 0
 #define _allow_Schiff_base_formation 1
+#define _allow_Schiff_from_ketones 0
 #define allow_stay_close_flexions 0
 #define allow_tethered_rotations 0
 #define auto_pK_protonation 0
@@ -235,7 +236,6 @@
 #define tumble_spheres_include_vdW 0
 
 // Best-Binding constants.
-#define bb_avoid_eclipsing_contacts 1
 #define bb_clash_avoidance_threshold 5e8
 #define bb_disqualification_energy 1000
 #define bb_eclipsing_divisor 10

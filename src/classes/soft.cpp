@@ -367,12 +367,14 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             float cbefore, cafter, clbefore, clafter;
             for (translation_accomplished = 0; translation_accomplished < 1; translation_accomplished += translation_step)
             {
+                #if _dbg_soft_motions
                 Point ligand_ca;
                 if (ligand->glued_to_mol())
                 {
                     Atom *lca = ligand->glued_to_mol()->get_atom("CA");
                     if (lca) ligand_ca = lca->loc;
                 }
+                #endif
 
                 // Get energy before performing soft motion
                 clbefore = protein->get_intermol_clashes(ligand);
@@ -446,17 +448,17 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
 
                     if (ligand->glued_to_mol())
                     {
+                        #if _dbg_soft_motions
                         Atom *lca = ligand->glued_to_mol()->get_atom("CA");
-                        if (!lca) cerr << "SHIT!" << endl;
+                        if (!lca) cerr << "BAD! NO CA POINTER!" << endl;
                         float lcam = 0;
                         if (lca) lcam = ligand_ca.get_3d_distance(lca->loc);
                         if (lcam)
                         {
-                            #if _dbg_soft_motions
                             cerr << "LIGAND MOVED!" << endl << flush;
                             throw 0xbadc0de;
-                            #endif
                         }
+                        #endif
                     }
 
                     break;

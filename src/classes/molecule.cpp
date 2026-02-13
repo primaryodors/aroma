@@ -1985,13 +1985,13 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CA=nullptr, *CE=nullptr;
     Atom *aaCA, *aaCB;
 
-    identify_Schiff_ketald(&C, &O);
+    identify_Schiff_carbonyl(&C, &O);
     other->identify_Schiff_amine(&N, &H1, &H2);
 
     if (!C || !O || !N || !H1 || !H2)
     {
         identify_Schiff_amine(&N, &H1, &H2);
-        other->identify_Schiff_ketald(&C, &O);
+        other->identify_Schiff_carbonyl(&C, &O);
 
         if (!C || !O || !N || !H1 || !H2) return nullptr;       // nothing to form a Schiff base with.
     }
@@ -6015,8 +6015,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                                 if (mm[0]->glued_to == a)
                                 {
-                                    float suhrokvie = mm[0]->get_barycenter().get_3d_distance(center);
-                                    if (suhrokvie >= _INTERA_R_CUTOFF*0.8) benerg.repulsive = Avogadro;
+                                    float displacement = mm[0]->get_barycenter().get_3d_distance(center);
+                                    if (displacement >= _INTERA_R_CUTOFF*0.8) benerg.repulsive = Avogadro;
                                 }
 
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
@@ -8182,7 +8182,7 @@ bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
     return false;
 }
 
-bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
+bool Molecule::identify_Schiff_carbonyl(Atom **C, Atom **O)
 {
     int i;
     for (i=0; atoms[i]; i++)
@@ -8191,7 +8191,13 @@ bool Molecule::identify_Schiff_ketald(Atom **C, Atom **O)
         if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
         {
             *C = atoms[i]->is_bonded_to("C", 2);
-            if (*C && ((*C)->is_bonded_to(TETREL) || (*C)->is_bonded_to("H"))
+            if  (*C &&
+                    (
+                        #if _allow_Schiff_from_ketones
+                        (*C)->is_bonded_to(TETREL) ||
+                        #endif
+                        (*C)->is_bonded_to("H")
+                    )
                 )
             {
                 *O = atoms[i];

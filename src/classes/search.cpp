@@ -752,7 +752,6 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                     else r = r / loneliest.get_distance_to_line(pocketres[l]->get_CA_location(), pocketres[j]->get_CA_location());
                     if (r > lfarthest)
                     {
-                        // if (pocketres[j]->get_residue_no() == 159) cout << pocketres[l]->get_name() << " is " << r << " from " << pocketres[j]->get_name() << endl;
                         lfarthest = r;
                         lfar = l;
                     }

@@ -214,7 +214,7 @@ public:
     bool deprotonate();
     void propagate_stays();
     bool identify_Schiff_amine(Atom** N, Atom** H1, Atom** H2);
-    bool identify_Schiff_ketald(Atom** C, Atom** O);
+    bool identify_Schiff_carbonyl(Atom** C, Atom** O);
 
     // Bond functions.
     Bond** get_rotatable_bonds(bool include_can_flip = true);

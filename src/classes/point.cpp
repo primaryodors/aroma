@@ -252,7 +252,6 @@ Point average_of_points(Point* points, int count)
 
     if (!sum)
     {
-        throw 0xbadc0de;
         return Point(0,0,0);
     }
 
