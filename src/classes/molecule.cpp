@@ -2078,7 +2078,6 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
     // Default to trans configuration.
-    // TODO: this broke
     if (CA && CE)
     {
         float r1 = CA->distance_to(CE);

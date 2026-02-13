@@ -1982,6 +1982,7 @@ bool Bond::is_equivalent(Bond* cmp_to)
         fabs(mw_cardsum - cmp_to->mw_cardsum) < 0.001;
 }
 
+#if _dbg_moves_with
 const char *Bond::str_moves_with()
 {
     if (!moves_with_atom2) return nullptr;
@@ -1994,6 +1995,7 @@ const char *Bond::str_moves_with()
     }
     return retval;
 }
+#endif
 
 void Bond::swing(Vector newdir)
 {
@@ -2181,7 +2183,6 @@ float Atom::get_bond_angle_anomaly(Vector v, Atom* ignore)
 float Atom::distance_to(Atom *atom2)
 {
     if (!atom2) return -1;
-    if (location.magnitude() > 1e5) throw 0xbadc0de;
     else return location.get_3d_distance(&atom2->location);
 }
 
@@ -2255,7 +2256,6 @@ Bond* Atom::get_bond_closest_to(Point pt)
 
 Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 {
-    if (location.magnitude() > 1e5) throw 0xbadc0de;
     if (geov && !geometry_dirty) return geov;
 
     int bc = get_bonded_atoms_count();
@@ -2493,14 +2493,18 @@ Vector Atom::get_nearest_free_geometry(float lcard, Point pt)
         }
     }
 
-    // for (i=0; i<geometry; i++) cout << ranked[i] << endl;
+    #if _dbg_free_geometry
+    for (i=0; i<geometry; i++) cout << ranked[i] << endl;
+    #endif
 
     retval = center;
     for (i=0; i<lcard; i++)
     {
         retval = retval.add(ranked[i]);
     }
+    #if _dbg_free_geometry
     // cout << retval << endl;
+    #endif
     retval.r = 1;
 
     return retval;
@@ -2557,7 +2561,6 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
         || location.z < -9999.999 || location.z > 9999.999
         )
     {
-        // throw 0xbadc0de;
         cerr << "Atom " << name << " location out of range: " << location << endl;
         return;
     }

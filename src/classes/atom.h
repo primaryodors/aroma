@@ -78,7 +78,9 @@ public:
 
     bool is_equivalent(Bond* cmp_to);
 
+    #if _dbg_moves_with
     const char* str_moves_with();
+    #endif
 
     Atom* atom1 = nullptr;
     Atom* atom2 = nullptr;

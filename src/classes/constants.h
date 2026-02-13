@@ -373,6 +373,7 @@
 #define _dbg_eclipses 0
 #define _dbg_fitness_plummet 0
 #define _dbg_flexion_selection 0
+#define _dbg_free_geometry 0
 #define _dbg_groupsalign 0
 #define _dbg_groupsel 0
 #define _DBG_H2O_TELEPORT 0
@@ -400,6 +401,7 @@
 #define _dbg_mol_frames 0
 #define _dbg_molstruct_evolutions 0
 #define _dbg_molstruct_evolution_bond_lengths 0
+#define _dbg_moves_with 0
 #define _dbg_monaxial 0
 #define _dbg_multiflex 0
 #define _dbg_null_flexions 0

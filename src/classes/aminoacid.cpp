@@ -3758,7 +3758,6 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
-                    // if (residue_no == 159 && !a->residue) cout << bestr << endl;
                     best.copy_state(this);
                 }
             }
