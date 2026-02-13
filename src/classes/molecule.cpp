@@ -8199,7 +8199,7 @@ bool Molecule::identify_Schiff_carbonyl(Atom **C, Atom **O)
         if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
         {
             Atom* lc = atoms[i]->is_bonded_to("C", 2);
-            if (lc->is_bonded_to(PNICTOGEN)) continue;
+            if (lc && lc->is_bonded_to(PNICTOGEN)) continue;
             if (C) *C = lc;
             if  (lc &&
                     (
