@@ -2094,7 +2094,6 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     }
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
 
-    // TODO: fix water in Schiff test when protein linkage
     v.phi = frand(-M_PI, M_PI);
     v.theta = frand(-M_PI, M_PI);
     v.r = _INTERA_R_CUTOFF;
