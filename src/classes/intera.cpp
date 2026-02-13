@@ -538,6 +538,11 @@ void InteratomicForce::fetch_applicable(Atom* a, Atom* b, InteratomicForce** ret
         if (look[i]->achg && look[i]->achg != achgn) continue;
         if (look[i]->bchg && look[i]->bchg != bchgn) continue;
 
+        if (look[i]->type == polarpi)
+        {
+            if (fabs(a->is_polar()) < hydrophilicity_cutoff && fabs(b->is_polar()) < hydrophilicity_cutoff) continue;
+        }
+
         if (	(	(look[i]->Za == Za || look[i]->Za == any_element)
                     &&
                     (	!look[i]->bZa
@@ -736,11 +741,6 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
     if (a->Z == 1 && b->is_backbone && b->get_family() == PNICTOGEN) return kJmol;
     if (b->Z == 1 && a->is_backbone && a->get_family() == PNICTOGEN) return kJmol;
-
-    if (a->Z == 8 && b->Z == 29)
-    {
-        kJmol = 0;
-    }
 
     InteratomicForce* forces[32];
     fetch_applicable(a, b, forces);
@@ -943,6 +943,8 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
         if (skip) continue;
 
+        if (forces_by_type[i]->type == pi || forces_by_type[i]->type == polarpi) r = aheavy->distance_to(bheavy);
+
         if (!forces_by_type[i]->distance) continue;
         float r1 = r / forces_by_type[i]->distance;
 
@@ -1008,7 +1010,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
             if (current_type == ionic)
                 dpa = dpb = 0;
-            
+
             else if (current_type == hbond)
             {
                 if (a->is_polar() < 0 && b->is_polar() >= 0)
@@ -1105,8 +1107,9 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                 #endif
                 )
             {
-                if (a->get_bonded_atoms_count() >= ag || b->get_bonded_atoms_count() >= bg)
-                    continue;
+                if (current_type != pi && current_type != polarpi)
+                    if (a->get_bonded_atoms_count() >= ag || b->get_bonded_atoms_count() >= bg)
+                        continue;
 
                 // Sum up the anisotropic contribution from each geometry vertex of a.
                 for (j=0; j<ag; j++)
@@ -1175,6 +1178,14 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             #endif
 
             float force_eff_kJmol = forces_by_type[i]->kJ_mol;
+
+            // compensate for geometric calculation
+            if (current_type == pi || current_type == polarpi)
+            {
+                if (a->Z == 1 || b->Z == 1) force_eff_kJmol *= (8.0/1.37);
+                else force_eff_kJmol *= (12.0/4.87);
+            }
+
             if (current_type == ionic && sgn(achg) == sgn(bchg)) continue;
             if (current_type == ionic && (!achg || !bchg)) continue;
 
