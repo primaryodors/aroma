@@ -92,6 +92,8 @@ double DeltaG(double K);
 double K(double DeltaG);
 double equilibrium(double kJmol1, double kJmol2);
 
+bool equal_or_zero(int a, int b);           // True if ints are the same or either int is zero.
+
 // From here: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
 template <typename T> int sgn(T val)
 {
@@ -103,6 +105,11 @@ template <typename T> void init_nulls(T* array, int length)
     int i;
     for (i=0; i<length; i++) array[i] = 0;
 }
+
+#if _dbg_zero_contacts
+void begin_debug_file();
+void append_debug_file(std::string message);
+#endif
 
 extern bool end_program, end_iterations;
 

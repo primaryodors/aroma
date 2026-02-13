@@ -23,7 +23,7 @@ enum intera_type
 
 enum bond_rotation_fail_reason
 {
-    bf_none,
+    bf_none = 0,
     bf_empty_atom,
     bf_terminal_atom,
     bf_bond_not_found,
@@ -68,6 +68,7 @@ public:
         moves_with_atom2 = 0;
     }
     void fetch_moves_with_atom2(Atom** result);
+    bool ensure_moves_with_no_backbone();
     int count_moves_with_atom2();
     int count_heavy_moves_with_atom();
     int count_heavy_moves_with_atom2();
@@ -76,6 +77,10 @@ public:
     void swing(Vector newdir);		// Rotate atom2, and all its moves_with atoms, about atom1 so that the bond points to newdir.
 
     bool is_equivalent(Bond* cmp_to);
+
+    #if _dbg_moves_with
+    const char* str_moves_with();
+    #endif
 
     Atom* atom1 = nullptr;
     Atom* atom2 = nullptr;
@@ -209,13 +214,13 @@ public:
     float get_bond_card_sum();
     int get_num_lone_pairs();
 
-    bool bond_to(Atom* atom2, float cardinality);
+    Bond* bond_to(Atom* atom2, float cardinality);
     void unbond(Atom* atom2);
     void unbond_all();
     void consolidate_bonds();
 
     float is_bonded_to(Atom* atom2);			// If yes, return the cardinality.
-    Atom* is_bonded_to(const char* element);
+    Atom* is_bonded_to(const char* element, const Atom* that_isnt = nullptr);
     Atom* is_bonded_to(const char* element, const int cardinality);
     Atom* is_bonded_to(const int family);
     Atom* is_bonded_to(const int family, const int cardinality);
@@ -249,6 +254,7 @@ public:
     bool is_in_ring(Ring* ring);
     Ring* closest_arom_ring_to(Point target);
     Ring* in_same_ring_as(Atom* b, Ring* ignore = nullptr);
+    void condense_bondedtos();
     void aromatize()
     {
         int i;
@@ -283,7 +289,7 @@ public:
     void stream_pdb_line(ostream& os, unsigned int atomno, bool force_hetatm = false);              // Atoms can be forced het, unlike humans.
 
     // Spatial functions.
-    bool move(Point* pt);
+    bool move(Point* pt, bool delete_geometry = true);
     bool move(Point pt)
     {
         return move(&pt);
@@ -295,13 +301,10 @@ public:
     Vector* get_geometry_aligned_to_bonds(bool prevent_infinite_loop = false);
     float get_geometric_bond_angle();
     float get_bond_angle_anomaly(Vector v, Atom* ignore = nullptr);	// Assume v is centered on current atom.
-    float distance_to(Atom* atom2)
-    {
-        if (!atom2) return -1;
-        else return location.get_3d_distance(&atom2->location);
-    };
+    float distance_to(Atom* atom2);
     float similarity_to(Atom* atom2);
     Vector get_next_free_geometry(float lcard);
+    Vector get_nearest_free_geometry(float lcard, Point pt);
     int get_idx_next_free_geometry();
     void rotate_geometry(Rotation rot);			// Necessary for bond rotation.
     void clear_geometry_cache()

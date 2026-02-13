@@ -500,6 +500,7 @@ bool Protein::add_sequence(const char* lsequence)
         aas[i-1]->clear_all_bond_caches();
         aas[i] = 0;
     }
+    set_clashables();
     Molecule::conform_molecules(aas, 25);
     for (i=1; i<=seql; i++)
     {
@@ -1256,7 +1257,7 @@ void Protein::undo()
         if (undo_poses[i])
         {
             AminoAcid* aa = get_residue(i);
-            if (aa) undo_poses[i]->restore_state(aa);
+            if (aa) undo_poses[i]->restore_state(aa, true);
         }
     }
 }
@@ -2799,11 +2800,14 @@ float Protein::get_empty_space_between_residues(int resno1, int resno2)
 
     Point cursor;
     Sphere s;
+    Atom *la = nullptr;
     for (cursor=mca1->loc; cursor.get_3d_distance(mca1->loc) < r; cursor = cursor.add(v))
     {
         Atom* a = get_nearest_atom(cursor);
-        s.radius = fmax(0, a->loc.get_3d_distance(cursor) - a->vdW_radius);
-        result += s.volume();
+        if (a == la) continue;
+        s.radius = fmax(0, a->loc.get_distance_to_line(mca1->loc, mca2->loc) - a->vdW_radius);
+        result += s.radius; // s.volume();
+        la = a;
     }
 
     return result;
@@ -3439,6 +3443,7 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
             AminoAcid* ab = get_residue(j);
             if (!ab) continue;
             aa->mutual_closest_atoms(ab, a, b);
+            if (!*a || !*b) continue;
 
             if ((*a)->Z == 1 && (*a)->is_bonded_to("S")) *a = (*a)->get_bond_by_idx(0)->atom2;
             if ((*b)->Z == 1 && (*b)->is_bonded_to("S")) *b = (*b)->get_bond_by_idx(0)->atom2;
@@ -3458,7 +3463,7 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
                     }
                     else
                     {
-                        beststr = -251;
+                        beststr = InteratomicForce::covalent_bond_energy(*a, *b, 1);
                         retval = *a;
                         if (oa) *oa = *b;
                         #if _dbg_softpivot

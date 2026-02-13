@@ -181,7 +181,7 @@ function svg_from_smiles(smiles, w, h)
     {
         if (trim($ln) == "# PDB Data") break;
         if (trim($ln) == "Pose: 2") break;
-        if (false!==strpos($ln, "~(ligand)"))
+        if (false!==strpos($ln, "~(ligand)") || false!==strpos($ln, "$odor:"))
         {
             list($lcntct, $strength) = explode(": ", $ln, 2);
             $strength = floatval($strength);

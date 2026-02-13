@@ -1071,6 +1071,7 @@ void AminoAcid::save_pdb(FILE* os, int atomno_offset)
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->mol != this) continue;
         atoms[i]->pdbchain = pdbchain;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
 
@@ -3302,6 +3303,7 @@ void AminoAcid::ensure_pi_atoms_coplanar()
             dirty[j] = true;
         }
 
+        #if echo_non_coplanar_pi_atoms
         if (n < 4) continue;
 
         for (j = 3; j < n; j++)
@@ -3315,6 +3317,7 @@ void AminoAcid::ensure_pi_atoms_coplanar()
                     << endl;
             }
         }
+        #endif
     }
 }
 
@@ -3679,6 +3682,25 @@ bool AminoAcid::is_amide()
     return false;
 }
 
+bool AminoAcid::is_amine()
+{
+    if (!atoms) return false;
+    if (is_amide()) return false;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == TETREL
+            && !atoms[i]->is_pi()
+            && !atoms[i]->is_bonded_to(CHALCOGEN)
+            && atoms[i]->is_bonded_to(PNICTOGEN)
+            )
+            return true;
+    }
+
+    return false;
+}
+
 void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od)
 {
     if (!atoms) return;
@@ -3691,6 +3713,8 @@ void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, flo
             return;
         }
     }
+    cerr << "Atom " << an << " not found in residue " << this->name << endl << flush;
+    throw 0xbadc0de;
 }
 
 void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float od)
@@ -3698,7 +3722,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (!(movability & MOV_CAN_FLEX)) return;
     if (!a) return;
 
-    int iter, j, l, circdiv = 144;
+    int iter, i, j, l, circdiv = 144;
     Bond** b = get_rotatable_bonds();
     if (!b) return;
 

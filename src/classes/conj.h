@@ -27,6 +27,8 @@ class Conjugation
     bool has_hb_acceptors();
     bool has_hb_donors();
     bool contains(Atom* a);
+    Atom* contains(const char* esym);
+    Atom* contains(int family);
     bool contains(Conjugation* c);
     std::string to_std_string();
 

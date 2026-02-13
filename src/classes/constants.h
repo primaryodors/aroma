@@ -90,6 +90,7 @@
 // Molecular generation and conformation constants.
 #define _default_mutation_rate 0.1
 #define _default_population_size 100
+#define echo_non_coplanar_pi_atoms 0
 #define _evolution_atom_displacement 4.0
 #define _evolution_default_generations 2000
 #define stretch_out_molecules_by_interatomic_distance 1
@@ -142,28 +143,28 @@
 #define speed_limit 1.5
 
 // Docking features.
-#define _allow_conditional_basicity 1
-#define _allow_conditional_basicity_with_acid_ligand 1
-#define _ALLOW_PROTONATE_PNICTOGENS 0
-#define _dock_result_in_iter 1
-#define _teleport_dissatisfied_waters 0
 #define allow_abhor_vacuum 1
 #define allow_axial_tumble 1
 #define allow_bond_rots 1
+#define _allow_conditional_basicity 1
+#define _allow_conditional_basicity_with_acid_ligand 1
 #define allow_iter_cb 1
 #define allow_linear_motion 1
+#define _ALLOW_PROTONATE_PNICTOGENS 0
+#define _allow_Schiff_base_formation 1
+#define _allow_Schiff_from_arginine 0
+#define _allow_Schiff_from_ketones 0
 #define allow_stay_close_flexions 0
 #define allow_tethered_rotations 0
 #define auto_pK_protonation 0
 #define conj_charge_as_polarity 0
+#define _dock_result_in_iter 1
 #define flexion_selection 1
 #define include_eclipses 0
 #define include_residue_eclipses 0
 #define limit_flexions_by_mclash 0
 #define make_thiolates_in_scoring 0
 #define mclashables_as_residue_nearbys 1
-#define monte_carlo_axial 0
-#define monte_carlo_flex 0
 #define no_zero_flexions 1
 #define nodes_no_ligand_360_flex 1
 #define nodes_no_ligand_360_tumble 1
@@ -177,6 +178,7 @@
 #define stays_rotation 1
 #define stays_rotation_verbose 0
 #define summed_missed_connections 1
+#define _teleport_dissatisfied_waters 0
 #define use_exclusions 1
 #define warn_orphan_atoms 0
 // Auto hydroxy makes geraniol fail in OR1A1. So does pre-rotate side chains.
@@ -196,7 +198,7 @@
 #define attempt_to_connect_hydrogen_bonds_to_ligand 1
 #define default_pre_ligand_flex_radius 10
 #define default_pre_ligand_multimol_radius 15
-#define flexion_maxangle hexagonal
+#define flexion_maxangle hexagonal/2
 #define flexion_probability_multiplier 1
 #define flexion_sub_iterations_ligand 15
 #define flexion_sub_iterations_sidechain 1
@@ -235,7 +237,6 @@
 #define tumble_spheres_include_vdW 0
 
 // Best-Binding constants.
-#define bb_avoid_eclipsing_contacts 1
 #define bb_clash_avoidance_threshold 5e8
 #define bb_disqualification_energy 1000
 #define bb_eclipsing_divisor 10
@@ -260,11 +261,12 @@
 #define enable_bb_scooch 1
 #define enforce_no_bb_pullaway 0
 
-// Cavity constants.
+// Cavity and pocket-fitting constants.
+#define cavity_intersect_threshold 1e2
 #define default_cavity_stuffing 0.03
 #define min_cavmatch_ctainmt 0.6
-#define cavity_intersect_threshold 1e2
 #define min_cvty_ctnmt 0.25
+#define occlusion_as_disqualify_reason 0
 
 // Soft docking constants.
 #define initial_soft_contact_elasticity 0.1
@@ -372,6 +374,7 @@
 #define _dbg_eclipses 0
 #define _dbg_fitness_plummet 0
 #define _dbg_flexion_selection 0
+#define _dbg_free_geometry 0
 #define _dbg_groupsalign 0
 #define _dbg_groupsel 0
 #define _DBG_H2O_TELEPORT 0
@@ -399,6 +402,7 @@
 #define _dbg_mol_frames 0
 #define _dbg_molstruct_evolutions 0
 #define _dbg_molstruct_evolution_bond_lengths 0
+#define _dbg_moves_with 0
 #define _dbg_monaxial 0
 #define _dbg_multiflex 0
 #define _dbg_null_flexions 0
@@ -417,7 +421,9 @@
 #define _dbg_residue_poses 0
 #define _dbg_rock_pic 0
 #define _dbg_rshpm_apply 0
+#define _dbg_Schiff_internal_clashes 0
 #define _dbg_soft 0
+#define _dbg_soft_motions 0
 #define _dbg_softpivot 0
 #define _dbg_stays_assignment 0
 #define _dbg_stays_enforce 0
@@ -427,6 +433,7 @@
 #define _DBG_TUMBLE_SPHERES 0
 #define _dbg_unreciprocated_bonds 0
 #define _dbg_worst_energy 0
+#define _dbg_zero_contacts 0
 #define _debug_active_bond_rot 0
 #define debug_stop_after_tumble_sphere 0
 #define _DORESPHRES 0

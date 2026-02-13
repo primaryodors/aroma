@@ -26,6 +26,7 @@ bool allow_ligand_360_tumble = true;
 bool allow_ligand_360_flex = true;
 
 bool cfmols_have_metals = false;
+float intermol_covalent_enthalpy = 0;
 
 Molecule *worst_clash_1 = nullptr, *worst_clash_2 = nullptr;
 float worst_mol_clash = 0;
@@ -55,6 +56,24 @@ Molecule::Molecule(char const* lname)
 
     int j;
     for (j=0; j<10; j++) lastbind_history[j] = 0;
+}
+
+Molecule::Molecule(const char *lname, const char *smiles_string)
+{
+    name = new char[strlen(lname)+1];
+    strcpy(name, lname);
+
+    atoms = nullptr;
+    smiles = nullptr;
+    rings = nullptr;
+    atcount = 0;
+    reset_conformer_momenta();
+    rotatable_bonds = nullptr;
+
+    int j;
+    for (j=0; j<10; j++) lastbind_history[j] = 0;
+
+    from_smiles(smiles_string);
 }
 
 Molecule::Molecule()
@@ -367,8 +386,15 @@ void Pose::copy_state(Molecule* m)
     sz = i;
 }
 
-void Pose::restore_state(Molecule* m)
+void Pose::restore_state(Molecule* m, bool ap)
 {
+    if (!ap && !m->is_residue() && m->glued_to)
+    {
+        #if _dbg_soft_motions
+        cout << "Not restoring " << m->name << endl;
+        #endif
+        return;
+    }
     if (!m || !m->atoms || !sz) return;
     int i, n;
     if (m != saved_from)
@@ -396,13 +422,14 @@ void Pose::restore_state(Molecule* m)
 
     for (i=0; i<sz && m->atoms[i]; i++)
     {
-        if (!(m->movability & MOV_PINNED))
+        if (ap || !(m->movability & MOV_PINNED))
             m->atoms[i]->move(saved_atom_locs[i]);
     }
 }
 
 void Pose::restore_state_relative(Molecule *m, const char *ran)
 {
+    if (!m->is_residue() && m->glued_to) return;
     if (!m || !m->atoms || !sz) return;
     int i, n;    
     if (m != saved_from)
@@ -638,12 +665,7 @@ void Molecule::atoms_from_multimers()
 
 void Molecule::add_existing_atom(Atom* a)
 {
-    if (!atoms) atcount = 0;
-    else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
-
-    reallocate();
-    atoms[atcount++] = a;
-    atoms[atcount] = nullptr;
+    append_existing_atom(a);
 
     a->mol = reinterpret_cast<void*>(this);
     preflex_cb = &g_total_mclash;
@@ -654,6 +676,16 @@ void Molecule::add_existing_atom(Atom* a)
         a->residue = atoms[0]->residue;
         a->aaletter = atoms[0]->aaletter;
     }
+}
+
+void Molecule::append_existing_atom(Atom *a)
+{
+    if (!atoms) atcount = 0;
+    else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
+
+    reallocate();
+    atoms[atcount++] = a;
+    atoms[atcount] = nullptr;
 
     clear_all_bond_caches();
 }
@@ -759,7 +791,11 @@ int Molecule::is_residue()
 
     for (i=0; atoms[i]; i++)
     {
-        if (atoms[i]->Z < 9 && atoms[i]->get_family() >= TETREL && atoms[i]->residue) return atoms[i]->residue;     // Rule out metals.
+        if (atoms[i]->Z < 9
+            && atoms[i]->mol == this
+            && atoms[i]->get_family() >= TETREL
+            && atoms[i]->residue)
+            return atoms[i]->residue;     // Rule out metals.
     }
     return 0;
 }
@@ -1848,6 +1884,7 @@ int Molecule::from_sdf(char const *sdf_dat)
             Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
             if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
             Atom* a = new Atom(words[3], loc);
+            a->mol = reinterpret_cast<void*>(this);
             delete loc;
             a->name = new char[16];
             sprintf(a->name, "%s%d", words[3], added+1);
@@ -1941,6 +1978,179 @@ bool Molecule::check_Greek_continuity()
     }
 
     return true;
+}
+
+Molecule* Molecule::create_Schiff_base(Molecule *other)
+{
+    Atom *C=nullptr, *O=nullptr, *N=nullptr, *H1=nullptr, *H2=nullptr, *H3=nullptr, *CA=nullptr, *CE=nullptr;
+    Atom *aaCA, *aaCB;
+
+    intermol_covalent_enthalpy = 0;
+    identify_Schiff_carbonyl(&C, &O);
+    other->identify_Schiff_amine(&N, &H1, &H2);
+
+    if (!C || !O || !N || !H1 || !H2)
+    {
+        identify_Schiff_amine(&N, &H1, &H2);
+        other->identify_Schiff_carbonyl(&C, &O);
+
+        if (!C || !O || !N || !H1 || !H2) return nullptr;       // nothing to form a Schiff base with.
+    }
+
+    Bond *b = C->get_bond_by_idx(0);
+    CA = b->atom2;
+    b = N->get_bond_by_idx(0);
+    CE = b->atom2;
+
+    O->increment_charge(1);
+    H1->unbond_all();
+    Vector v;
+
+    Molecule* who_moves = is_residue() ? (other->is_residue() ? nullptr : other) : this;   // H00-M005
+    if (!who_moves) return nullptr;                             // cannot be two residues.
+    who_moves->movability = MOV_ALL;
+    // cout << "Who moves: " << who_moves->name << endl << endl;
+
+    aaCA = ((who_moves == this) ? other : this)->get_atom("CA");
+    aaCB = ((who_moves == this) ? other : this)->get_atom("CB");
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;           // *hits code with rolled up newspaper*
+
+    // Put N where O was
+    Molecule* H2O = new Molecule("water");
+    Vector mv = O->loc.subtract(N->loc);
+    if (O->mol == who_moves) mv = mv.negate();
+    v = O->get_nearest_free_geometry(1, N->loc);
+    who_moves->move(mv);
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    v.r = InteratomicForce::covalent_bond_radius(N, C, 2);
+    H1->bond_to(O, 1);
+    H1->move(O->loc.add(v));
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    LocRotation rot;
+    if (CE)
+    {
+        rot = align_points_3d(CE->loc, H1->loc, N->loc);
+        rot.origin = N->loc;
+        if (O->mol == who_moves) rot.a *= -1;
+        who_moves->rotate(rot, rot.origin);
+    }
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+    // return nullptr;
+
+    ((Molecule*)(O->mol))->delete_atom(O);              // also unbonds
+    ((Molecule*)(H1->mol))->delete_atom(H1);
+    ((Molecule*)(H2->mol))->delete_atom(H2);
+    H1->bond_to(O, 1);
+    H2->bond_to(O, 1);
+    H2O->add_existing_atom(O);
+    H2O->add_existing_atom(H1);
+    H2O->add_existing_atom(H2);
+    H2O->mol_typ = MOLTYP_WATER;
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    if (CA && CE && (H3 = N->is_bonded_to("H")))      // ANC
+    {
+        LocatedVector lv = (Vector)CE->loc.subtract(N->loc);
+        lv.origin = N->loc;
+        float step = 0.1*fiftyseventh, rbest = 0, thbest = 0, theta;
+        for (theta=0; theta<M_PI*2; theta+=step)
+        {
+            float r = H3->distance_to(CA);
+            if (r > rbest)
+            {
+                rbest = r;
+                thbest = theta;
+            }
+            // cout << (theta*fiftyseven) << "deg: " << r << endl;
+            who_moves->rotate(lv, step);
+            if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+        }
+
+        who_moves->rotate(lv, thbest);
+        if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+    }
+
+    b = C->bond_to(N, 2);
+    if (C->mol == who_moves) b = b->get_reversed();
+    b->can_flip = true;
+    b->flip_angle = M_PI;
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    // Default to trans configuration.
+    if (CA && CE)
+    {
+        float r1 = CA->distance_to(CE);
+        b->can_flip = true;
+        b->flip_angle = M_PI;
+        b->rotate(b->flip_angle);
+        if (b->last_fail && b->last_fail != bf_limited_rotation)
+        {
+            cerr << "ISOMERIZATION FAIL " << b->last_fail << endl << flush;
+            throw 0xbadc0de;
+        }
+        float r2 = CA->distance_to(CE);
+        if (r2 < r1) b->rotate(b->flip_angle);
+    }
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    v.phi = frand(-M_PI, M_PI);
+    v.theta = frand(-M_PI, M_PI);
+    v.r = _INTERA_R_CUTOFF;
+    O->move_rel(v);
+    H2O->refine_structure();
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    v = H1->loc.subtract(O->loc);
+    v.r = InteratomicForce::covalent_bond_radius(H1, O, 1);
+    H1->move(O->loc.add(v));
+    v = H2->loc.subtract(O->loc);
+    v.r = InteratomicForce::covalent_bond_radius(H2, O, 1);
+    H2->move(O->loc.add(v));
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    int i;
+    who_moves->glued_to = (who_moves == this) ? other : this;
+    who_moves->glued_atom_mine = (N->mol == who_moves) ? N : C;
+    who_moves->glued_atom_other = (C->mol == who_moves) ? N : C;
+    who_moves->glued_atoms_r = N->distance_to(C);
+    glued_energy.attractive = InteratomicForce::covalent_bond_energy(C, N, 2)
+        - InteratomicForce::covalent_bond_energy(C, O, 2)
+        - InteratomicForce::covalent_bond_energy(H1, N, 1)
+        - InteratomicForce::covalent_bond_energy(H2, N, 1)
+        + InteratomicForce::covalent_bond_energy(H1, O, 1)
+        + InteratomicForce::covalent_bond_energy(H2, O, 1);
+    intermol_covalent_enthalpy = glued_energy.summed();
+    // cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
+    if (who_moves == this)
+    {
+        for (i=0; atoms[i]; i++) other->append_existing_atom(atoms[i]);
+        base_internal_clashes = get_internal_clashes();
+    }
+    else
+    {
+        for (i=0; other->atoms[i]; i++) append_existing_atom(other->atoms[i]);
+        other->base_internal_clashes = other->get_internal_clashes();
+    }
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    // Refresh "moves-with" cache for all bonds of both molecules
+    for (i=0; atoms[i]; i++) atoms[i]->clear_all_moves_cache();
+    for (i=0; other->atoms[i]; i++) other->atoms[i]->clear_all_moves_cache();
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+
+    rotatable_bonds = other->rotatable_bonds = nullptr;
+    if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+    return H2O;
+}
+
+void Molecule::check_glued_bond()
+{
+    if (!glued_to) return;
+    float r = glued_atom_mine->distance_to(glued_atom_other);
+    r /= glued_atoms_r;
+    if (r < 0.9 || r > 1.1) throw 0xbadb0579;
 }
 
 int Molecule::from_pdb(FILE* is, bool het_only)
@@ -2142,8 +2352,8 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
     }
 
     int ac, bc, chargeds=0;
-    ac = get_atom_count();
-    bc = get_bond_count(true);
+    ac = 0;
+    bc = 0;
 
     int i, j, k, l;
     Atom* latoms[65536];
@@ -2151,29 +2361,32 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
     if (hasAtoms(atoms))
         for (j=0; atoms[j]; j++)
-            latoms[j] = atoms[j];
+            if (atoms[j]->mol == this) latoms[ac++] = atoms[j];
+    latoms[ac] = nullptr;
 
     Bond** b = get_all_bonds(true);
     if (b)
+    {
         for (l=0; b[l]; l++)
-            lbonds[l] = b[l];
+            if (b[l]->atom1->mol == this) lbonds[bc++] = b[l];
+    }
     if (b) delete[] b;
+    lbonds[bc] = nullptr;
 
     if (lig)
     {
         for (i=0; lig[i] && lig[i]->atoms; i++)
         {
             if (lig[i] == this) continue;
-            ac += lig[i]->get_atom_count();
-            bc += lig[i]->get_bond_count(true);
 
             for (k=0; lig[i]->atoms[k]; k++)
-                latoms[j++] = lig[i]->atoms[k];
+                if (lig[i]->atoms[k]->mol == lig[i]) latoms[ac++] = lig[i]->atoms[k];
 
             b = lig[i]->get_all_bonds(true);
 
             for (k=0; b[k]; k++)
-                lbonds[l++] = b[k];
+                if (b[k]->atom1->mol == lig[i] && b[k]->atom2->mol == lig[i])
+                    lbonds[bc++] = b[k];
 
             if (b) delete[] b;
         }
@@ -2181,7 +2394,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
 
     fprintf(os, " %d %d  0     0  0  0  0  0  0999 V2000\n", ac, bc );
 
-    for (i=0; i<ac; i++)
+    for (i=0; i<ac && latoms[i]; i++)
     {
         Point p = latoms[i]->loc;
         char const* esym = latoms[i]->get_elem_sym();
@@ -2214,9 +2427,9 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         fprintf(os, " %s%s  0  0  0  0  0  0  0  0  0  0  0  0\n", esym, esym[1]?"":" ");
     }
 
-
     for (i=0; i<bc; i++)
     {
+        if (!lbonds[i]->atom1) break;
         int laidx=0, lbidx=0;
 
         for (j=0; j<ac; j++)
@@ -2248,7 +2461,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         int thisline = min(chargeds, 8);
         fprintf(os, "M  CHG  %d  ", thisline);		// TODO: Multiline if chargeds>8.
         k = 0;
-        for (i=0; i<ac; i++)
+        for (i=0; i<ac && latoms[i]; i++)
         {
             float chg = latoms[i]->get_charge();
             if (!chg) continue;
@@ -2279,6 +2492,7 @@ void Molecule::save_pdb(FILE* os, int atomno_offset, bool endpdb)
     nconects = 0;
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->mol != this) continue;
         atoms[i]->save_pdb_line(os, i+1+atomno_offset);
         l = atoms[i]->get_bonded_atoms_count();
         // cout << "Save " << atoms[i]->name << " as pdbidx " << atoms[i]->pdbidx << " bonded to " << l << " atoms" << endl;
@@ -2526,7 +2740,7 @@ void Molecule::find_paths()
     {
         if (!b[i]->atom2) continue;
         if (b[i]->atom2->Z < 2) continue;
-        if (b[i]->atom2->residue && b[i]->atom2->residue != a->residue) continue;
+        if (!equal_or_zero(b[i]->atom2->residue, a->residue)) continue;
         paths[n] = new Atom*[atcount];
         for (q=0; q<atcount; q++) paths[n][q] = nullptr;
         paths[n][0] = a;
@@ -2560,7 +2774,7 @@ void Molecule::find_paths()
                 if (!b[j]->atom2) continue;
                 if (b[j]->atom2->Z < 2) continue;
                 if (b[j]->atom2->get_bonded_heavy_atoms_count() < 2) continue;
-                if (b[j]->atom2->residue && b[j]->atom2->residue != a->residue) continue;
+                if (!equal_or_zero(b[j]->atom2->residue, a->residue)) continue;
 
                 #if _dbg_path_search
                 cout << "Trying " << b[j]->atom2->name << "... ";
@@ -3072,8 +3286,13 @@ Bond** AminoAcid::get_rotatable_bonds()
     Bond* btemp[65536];
 
     int i,j, bonds=0;
-    for (i=0; i<65536; i++) btemp[i] = nullptr;
-    if (aadef && aadef->aabonds)
+    memset(btemp, 0, 65536*sizeof(Bond*));
+
+    // If there are any atoms not part of this molecule, then the side chain is joined to a ligand and we must skip the aadef.
+    bool skip_aadef = false;
+    for (i=0; !skip_aadef && atoms[i]; i++) if (atoms[i]->mol != this) skip_aadef = true;
+
+    if (!skip_aadef && aadef && aadef->aabonds)
     {
         for (i=0; aadef->aabonds[i] && aadef->aabonds[i]->Za && aadef->aabonds[i]->Zb; i++)
         {
@@ -3193,9 +3412,15 @@ Bond** AminoAcid::get_rotatable_bonds()
                     &&
                     !lb[j]->atom2->is_backbone
                     &&
-                    greek_from_aname(lb[j]->atom1->name) == (greek_from_aname(lb[j]->atom2->name)-1)
+                    (
+                        greek_from_aname(lb[j]->atom1->name) == (greek_from_aname(lb[j]->atom2->name)-1)
+                        || !lb[j]->atom1->residue
+                        || !lb[j]->atom2->residue
+                    )
                     &&
                     lb[j]->atom2->Z > 1
+                    &&
+                    lb[j]->ensure_moves_with_no_backbone()
                )
             {
                 // cout << *lb[j] << " ";
@@ -3336,6 +3561,16 @@ float Molecule::get_internal_clashes(bool sb)
         float avdW = atoms[i]->vdW_radius;
         for (j=i+1; atoms[j]; j++)
         {
+            #if _dbg_Schiff_internal_clashes
+            if (atoms[i]->residue != atoms[j]->residue
+                && (atoms[i]->residue == 159 || atoms[j]->residue == 159)
+                && atoms[i]->Z > 1 && atoms[j]->Z > 1
+                && !atoms[i]->is_bonded_to(atoms[j])
+                && atoms[i]->distance_to(atoms[j]) < 1.3)
+            {
+                cout << "K159 internal clash between " << atoms[i]->name << " and " << atoms[j]->name << endl << endl;
+            }
+            #endif
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
             if (atoms[i]->is_bonded_to(atoms[j]) /* || atoms[j]->is_bonded_to(atoms[i]) */)
             {
@@ -3489,7 +3724,7 @@ float Molecule::get_intermol_clashes(Molecule** ligands)
 
                 float f = fmax(InteratomicForce::Lennard_Jones(a, b), 0);
 
-                if (a->residue != b->residue)
+                if (!equal_or_zero(a->residue, b->residue))
                 {
                     if (f > worst)
                     {
@@ -3708,6 +3943,7 @@ void Molecule::mutual_closest_hbond_pair(Molecule *mol, Atom **a1, Atom **a2)
 void Molecule::move(Vector move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
+    if (glued_to) return;
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;
@@ -3741,6 +3977,7 @@ void Molecule::move(Vector move_amt, bool override_residue)
 void Molecule::move(Point move_amt, bool override_residue)
 {
     if (noAtoms(atoms)) return;
+    if (glued_to) return;
     if (immobile)
     {
         cout << "Warning: Attempt to move \"immobile\" molecule " << name << endl;
@@ -3788,6 +4025,7 @@ Point Molecule::get_barycenter(bool bond_weighted) const
 
     for (i=0; atoms[i]; i++)
     {
+        if (atoms[i]->loc.magnitude() > 1e5 || isnan(atoms[i]->loc.x)) throw 0xbadc0de;
         locs[i] = atoms[i]->loc;
         locs[i].weight = atoms[i]->get_atomic_weight();
         #if allow_tethered_rotations
@@ -3798,7 +4036,9 @@ Point Molecule::get_barycenter(bool bond_weighted) const
         #endif
     }
 
-    return average_of_points(locs, atcount);
+    Point mota_atespias = average_of_points(locs, atcount);
+    if (mota_atespias.magnitude() > 1e5 || isnan(mota_atespias.x) || isnan(mota_atespias.y) || isnan(mota_atespias.z)) throw 0xbadc0de;
+    return mota_atespias;
 }
 
 float Molecule::get_charge() const
@@ -3816,6 +4056,7 @@ float Molecule::get_charge() const
 void Molecule::recenter(Point nl)
 {
     if (movability <= MOV_NORECEN) return;
+    if (glued_to) return;
     Point loc = get_barycenter();
     Point rel = nl.subtract(&loc);
     Vector v(&rel);
@@ -3836,6 +4077,7 @@ void Molecule::recenter(Point nl)
 void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 {
     if (noAtoms(atoms)) return;
+    if (glued_to) return;
     // cout << name << " Molecule::rotate()" << endl;
 
     if (movability <= MOV_FLEXONLY) return;
@@ -3851,6 +4093,7 @@ void Molecule::rotate(Vector* v, float theta, bool bond_weighted)
 void Molecule::rotate(LocatedVector lv, float theta)
 {
     if (noAtoms(atoms)) return;
+    if (glued_to) return;
 
     if (movability <= MOV_FLEXONLY) return;
     if (movability <= MOV_NORECEN) lv.origin = get_barycenter();
@@ -3895,6 +4138,7 @@ void Molecule::rotate(LocatedVector lv, float theta)
 
 void Molecule::rotate(Rotation rot)
 {
+    if (glued_to) return;
     LocatedVector lv = rot.v;
     lv.origin = get_barycenter(true);
     rotate(lv, rot.a);
@@ -3902,6 +4146,7 @@ void Molecule::rotate(Rotation rot)
 
 void Molecule::rotate(Rotation rot, Point origin)
 {
+    if (glued_to) return;
     LocatedVector lv = rot.v;
     lv.origin = origin;
     rotate(lv, rot.a);
@@ -4142,9 +4387,11 @@ bool Molecule::check_stays()
 
 bool Molecule::check_stays_dry()
 {
+    if (!stay_close_mine || !stay_close_other) return true;
     float r = stay_close_other->distance_to(stay_close_mine);
     bool result = (r <= stay_close_optimal+stay_close_tolerance);
     if (!result) return result;
+    if (!stay_close2_mine || !stay_close2_other) return true;
     r = stay_close2_other->distance_to(stay_close2_mine);
     return (r <= stay_close2_optimal+stay_close_tolerance);
 }
@@ -4484,6 +4731,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         Point aloc = atoms[i]->loc;
         for (l=0; ligands[l]; l++)
         {
+            if (glued_to && ligands[l] == glued_to) return glued_energy;
+            if (ligands[l]->glued_to && ligands[l]->glued_to == this) return ligands[l]->glued_energy;
             bool skip = false;
             if (ligands[l]->nmonomers)
             {
@@ -4544,7 +4793,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             && atoms[i]->residue != ligands[l]->atoms[j]->residue
                             && atoms[i]->is_bonded_to(ligands[l]->atoms[j]))
                         {
-                            abind.attractive = 251;     // Cystine kludge.
+                            abind.attractive = InteratomicForce::covalent_bond_energy(atoms[i], ligands[l]->atoms[j], 1);     // Cystine kludge.
                             abind.clash = 0;
                         }
                         else abind = InteratomicForce::total_binding(atoms[i], ligands[l]->atoms[j]);
@@ -4571,14 +4820,6 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             int h;
                             Atom* heavy1 = atoms[i]->get_heavy_atom();
                             Atom* heavy2 = ligands[l]->atoms[j]->get_heavy_atom();
-
-                            if (!heavy1->residue && !heavy2->residue
-                                && heavy1->get_family() == TETREL && heavy2->get_family() == TETREL
-                                && asum < 0)
-                            {
-                                cout << atoms[i]->name << " (" << heavy1->name << ") ~ "
-                                    << ligands[l]->atoms[j]->name << " (" << heavy2->name << "): " << asum << endl;
-                            }
 
                             for (h=0; h<ninterall; h++)
                             {
@@ -5335,8 +5576,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
     check_mols = mm;
     #endif
 
-    for (n=0; mm[n]; n++);
+    Point center;
+    for (n=0; mm[n]; n++) center = center.add(mm[n]->get_barycenter());
     int nmm = n;
+    center.multiply(1.0/nmm);
     Pose absolute_best[nmm+4];
     Interaction abe = mm[0]->get_intermol_binding(mm);          // Absolute Best Energy.
     Interaction abtest;
@@ -5356,21 +5599,27 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
     for (i=0; mm[i]; i++) if (mm[i]->coordmtl) { cfmols_have_metals = true; break;}
 
+    Molecule* nearby[2048];
+    memset(nearby, 0, sizeof(Molecule*) * 2048);
     for (iter=0; iter<iters; iter++)
     {
         if (frand(0,1) < best_pose_reset_frequency) for (abc=0; mm[abc]; abc++) absolute_best[abc].restore_state(mm[abc]);
         for (i=0; mm[i]; i++) mm[i]->lastbind = 0;
 
-        Molecule* nearby[2048];
-        memset(nearby, 0, sizeof(Molecule*) * 2048);
         bool do_full_rotation = _allow_fullrot && ((iter % _fullrot_every) == 0);
 
         for (i=0; mm[i]; i++)
         {
             Molecule* a = mm[i];
             if (a->movability & MOV_PINNED) continue;
-            bool flipped_rings = false;
+            bool flipped_rings = false, allmm_nearby = false;
             int ares = a->is_residue();
+            float local_flexion_frequency = ares ? sidechain_flexion_frequency : 1;
+            if (mm[0]->glued_to == a)
+            {
+                local_flexion_frequency = 1;
+                allmm_nearby = true;
+            }
 
             if (a->movability & MOV_BKGRND) continue;
 
@@ -5378,13 +5627,30 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!a->check_Greek_continuity()) throw 0xbadc0de;
             #endif
 
-            Point aloc = a->get_barycenter();
             int flexion_sub_iterations = ares
                 ? flexion_sub_iterations_sidechain
                 : flexion_sub_iterations_ligand;
 
+            // Keep ligand-like flexion sub-iters and do_full_rotation for glued side chains.
+            if (a->glued_to)
+            {
+                a = a->glued_to;
+                ares = a->is_residue();
+                a->movability = MOV_FORCEFLEX;
+                allmm_nearby = true;
+            }
+
+            Point aloc = a->get_barycenter();
+
             Interaction benerg = 0;
-            if (1) // !ares)
+            if (allmm_nearby)
+            {
+                l = 0;
+                for (j=1; mm[j]; j++) if (mm[j] != a) nearby[l++] = mm[j];
+                for (j=0; a->mclashables[j]; j++) nearby[l++] = a->mclashables[j];
+                nearby[l] = nullptr;
+            }
+            else
             {
                 l = 0;
                 for (j=0; mm[j]; j++)
@@ -5398,9 +5664,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                     Point bloc = b->get_barycenter();
 
-                    Atom* na = a->get_nearest_atom(bloc);
-                    if (!na) continue;
-                    float r = na->distance_to(b->get_nearest_atom(aloc));
+                    Atom *na, *nb;
+                    a->mutual_closest_atoms(mm[j], &na, &nb);
+                    if (!na || !nb) continue;
+                    float r = na->distance_to(nb);
                     if (r > _INTERA_R_CUTOFF+2.5) continue;
                     nearby[l++] = b;
                 }
@@ -5430,6 +5697,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             bool fal, wfal;
             Pose pib;
             // pib.copy_state(a);
+
+            a->check_glued_bond();
 
             /**** Linear Motion ****/
             #if allow_linear_motion
@@ -5569,6 +5838,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             #endif
             #endif
 
+            a->check_glued_bond();
+
             #if _dbg_fitness_plummet
             if (!i) cout << "linear " << -benerg << " ";
             #endif
@@ -5657,6 +5928,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             }       // If can axial rotate.
             #endif
 
+            a->check_glued_bond();
+
             #if _dbg_fitness_plummet
             if (!i) cout << "axial " << -benerg << " ";
             #endif
@@ -5671,7 +5944,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (is_flexion_dbg_mol) cout << a->name << " movability " << hex << a->movability << dec << endl << flush;
             #endif
             if (((a->movability & MOV_CAN_FLEX) && !(a->movability & MOV_FORBIDDEN) && a->movability != MOV_PINNED)
-                && (!ares || frand(0,1) < sidechain_flexion_frequency)
+                && (!ares || frand(0,1) < local_flexion_frequency)
                 )
             {
                 pib.copy_state(a);
@@ -5718,7 +5991,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             #if fullrot_flex_unfavorable_energy_only
                             && benerg.summed() >= 0
                             #endif
-                            )
+                            )                                   // 360 DEGREE FLEXION
                         {
                             float best_theta = 0;
                             Pose prior_state;
@@ -5741,6 +6014,12 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (is_flexion_dbg_mol_bond) cout << (theta*fiftyseven) << "deg: " << -tryenerg << endl;
                                 #endif
 
+                                if (mm[0]->glued_to == a)
+                                {
+                                    float displacement = mm[0]->get_barycenter().get_3d_distance(center);
+                                    if (displacement >= _INTERA_R_CUTOFF*0.8) benerg.repulsive = Avogadro;
+                                }
+
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
                                     && a->get_internal_clashes() <= self_clash
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
@@ -5762,9 +6041,10 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #endif
                             }
                         }
-                        else
+                        else                                    // MONTE CARLO FLEXION
                         {
-                            theta = frand(-flexion_maxangle, flexion_maxangle);
+                            if (!qiter) theta = frand(-flexion_maxangle, flexion_maxangle);
+                            else theta *= 1.5;
                             if (ares) wfal = a->faces_any_ligand(mm);
 
                             if (!bb[q]->can_rotate)
@@ -5874,6 +6154,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                 #if _dbg_fitness_plummet
                 if (!i) cout << "flexion " << -benerg << " ";
                 #endif
+
+                a->check_glued_bond();
 
                 mm[i]->lastbind = benerg.summed();
 
@@ -6683,7 +6965,7 @@ float Molecule::fsb_lsb_anomaly(Atom* first, Atom* last, float lcard, float bond
 
 float Molecule::close_loop(Atom** path, float lcard)
 {
-    Bond* rotables[65536];
+    Bond* rotatables[65536];
 
     if (!path) return 0;
 
@@ -6711,13 +6993,13 @@ float Molecule::close_loop(Atom** path, float lcard)
                     )
                     &&
                     strcmp(b[j]->atom2->name, "N")
-               ) rotables[k++] = b[j];
+               ) rotatables[k++] = b[j];
         }
 
         last = path[i];
     }
-    rotables[k] = 0;
-    if (_DBGCLSLOOP) cout << "Close Loop: found " << k << " rotables." << endl;
+    rotatables[k] = 0;
+    if (_DBGCLSLOOP) cout << "Close Loop: found " << k << " rotatables." << endl;
 
     if (last == first) return 0;
     last->mirror_geo = -1;
@@ -6743,30 +7025,30 @@ float Molecule::close_loop(Atom** path, float lcard)
 
     for (iter=0; iter<250+(20*ringsize); iter++)
     {
-        for (i=0; rotables[i]; i++)
+        for (i=0; rotatables[i]; i++)
         {
-            float rr = rotables[i]->atom1->loc.get_3d_distance(rotables[i]->atom2->loc);
+            float rr = rotatables[i]->atom1->loc.get_3d_distance(rotatables[i]->atom2->loc);
 
             if (fabs(rr-bond_length) > 0.01)
             {
-                Point aloc = rotables[i]->atom1->loc;
-                Point bloc = rotables[i]->atom1->loc;
+                Point aloc = rotatables[i]->atom1->loc;
+                Point bloc = rotatables[i]->atom1->loc;
 
                 bloc = bloc.subtract(aloc);
                 bloc.scale(bond_length);
                 bloc = bloc.add(aloc);
 
-                rotables[i]->atom2->move(bloc);
+                rotatables[i]->atom2->move(bloc);
             }
 
             // issue_5
-            if (rotables[i]->rotate(bondrot[i], true))
+            if (rotatables[i]->rotate(bondrot[i], true))
             {
                 float newanom = fsb_lsb_anomaly(first, last, lcard, bond_length);
                 float nclash = get_internal_clashes();
                 if ((	newanom <= anomaly
                         ||
-                        (rotables[i]->can_flip && (rand()%100) < 22)
+                        (rotatables[i]->can_flip && (rand()%100) < 22)
                     )
                         &&
                         nclash <= allowance * iclash
@@ -6779,7 +7061,7 @@ float Molecule::close_loop(Atom** path, float lcard)
                 else
                 {
                     if (_DBGCLSLOOP) cout << "Anomaly was " << anomaly << " now " << newanom << ", reverting." << endl;
-                    rotables[i]->rotate(-bondrot[i]);
+                    rotatables[i]->rotate(-bondrot[i]);
                     bondrot[i] *= -0.6;
                 }
             }
@@ -6798,8 +7080,8 @@ float Molecule::close_loop(Atom** path, float lcard)
         if (_DBGCLSLOOP) cout << "Reset " << path[i]->name << " geometry." << endl;
     }
 
-    for (i=0; rotables[i]; i++)
-        rotables[i]->can_rotate = false;
+    for (i=0; rotatables[i]; i++)
+        rotatables[i]->can_rotate = false;
 
     return anomaly;
 }
@@ -7181,6 +7463,7 @@ int Molecule::get_ring_num_atoms(int ringid)
 void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 {
     if (!rings) return;
+    if (glued_to) return;
     Point old_ring_cen = get_ring_center(ringid);
     Vector motion = new_ring_cen.subtract(old_ring_cen);
     int i;
@@ -7194,6 +7477,7 @@ void Molecule::recenter_ring(int ringid, Point new_ring_cen)
 void Molecule::rotate_ring(int ringid, Rotation rot)
 {
     if (!rings) return;
+    if (glued_to) return;
     Point origin = get_ring_center(ringid);
     int i;
     Atom** ring_atoms = rings[ringid]->get_atoms();
@@ -7447,9 +7731,9 @@ float Molecule::correct_structure(int iters)
     return error;
 }
 
-bool Molecule::is_thiol()
+Atom* Molecule::is_thiol()
 {
-    if (!atoms) return false;
+    if (!atoms) return nullptr;
     int i, j;
 
     for (i=0; atoms[i]; i++)
@@ -7457,11 +7741,11 @@ bool Molecule::is_thiol()
         if (atoms[i]->Z > 10 && atoms[i]->get_family() == CHALCOGEN)
         {
             Atom* H = atoms[i]->is_bonded_to("H");
-            if (H) return true;
+            if (H) return atoms[i];
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 bool Molecule::is_water()
@@ -7879,6 +8163,59 @@ float g_total_mclash(void* mol)
 bool mclash_delta(void* mol, float previous_mclashes)
 {
     return reinterpret_cast<Molecule*>(mol)->get_total_mclashes() <= previous_mclashes;
+}
+bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == PNICTOGEN
+            && atoms[i]->num_bonded_to("H") >= 2)
+        {
+            Atom *C = atoms[i]->is_bonded_to(TETREL);
+            if (C)
+            {
+                #if !_allow_Schiff_from_arginine
+                if (C->is_bonded_to("N", atoms[i])) continue;
+                #endif
+                if (C->is_bonded_to(CHALCOGEN)) continue;            // no Schiff if amide
+                if (N) *N = atoms[i];
+                if (H1) *H1 = atoms[i]->is_bonded_to("H");
+                if (H2) *H2 = atoms[i]->is_bonded_to("H", *H1);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Molecule::identify_Schiff_carbonyl(Atom **C, Atom **O)
+{
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->is_backbone) continue;
+        if (atoms[i]->get_family() == CHALCOGEN && !atoms[i]->is_conjugated_to_charge())
+        {
+            Atom* lc = atoms[i]->is_bonded_to("C", 2);
+            if (lc && lc->is_bonded_to(PNICTOGEN)) continue;
+            if (C) *C = lc;
+            if  (lc &&
+                    (
+                        #if _allow_Schiff_from_ketones
+                        (lc)->is_bonded_to(TETREL) ||
+                        #endif
+                        (lc)->is_bonded_to("H")
+                    )
+                )
+            {
+                if (O) *O = atoms[i];
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 

@@ -65,7 +65,7 @@ public:
     Pose& operator=(Pose&& p) noexcept;
     ~Pose();
     void copy_state(Molecule* from_mol);
-    void restore_state(Molecule* to_mol);
+    void restore_state(Molecule* to_mol, bool allow_pinned = false);
     void restore_state_relative(Molecule* to_mol, const char* rel_atom_name = "");
     float total_atom_motions();
     void reset();
@@ -89,6 +89,7 @@ class Molecule
 public:
     Molecule();
     Molecule(const char* name);
+    Molecule(const char* name, const char* smiles_string);
     Molecule(const char* name, Atom** collection);
     Molecule(const Molecule& copyfrom);
     Molecule(Molecule** monomers);
@@ -137,7 +138,7 @@ public:
     float get_exposed_surface_area(Molecule** neighbors, bool polaronly = false, bool overwrite_atom_areas = true);
     float get_charge() const;
     int is_residue();
-    bool is_thiol();
+    Atom* is_thiol();                           // Return the thiol sulfur, if exists.
     bool is_water();
     float pi_stackability(bool include_backbone = false);
 
@@ -188,6 +189,7 @@ public:
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
     Atom* add_atom(const char* elemsym, const char* aname, const Point* location, Atom* bond_to, const float bcard, const int charge = 0);
     void add_existing_atom(Atom* to_add);
+    void append_existing_atom(Atom* to_add);            // similar to add_existing_atom() but does not change molecule pointer or residue number
     char** get_atom_names() const;
     Atom* get_atom(const char* aname) const;
     Atom* get_atom(const int a_idx) const
@@ -211,6 +213,8 @@ public:
     bool protonate();
     bool deprotonate();
     void propagate_stays();
+    bool identify_Schiff_amine(Atom** N, Atom** H1, Atom** H2);
+    bool identify_Schiff_carbonyl(Atom** C, Atom** O);
 
     // Bond functions.
     Bond** get_rotatable_bonds(bool include_can_flip = true);
@@ -220,6 +224,7 @@ public:
     void do_histidine_flip(HistidineFlip* hf);
     void identify_conjugations();
     bool check_Greek_continuity();
+    Molecule* create_Schiff_base(Molecule* other);      // Return a water molecule.
 
     // Ring functions.
     int identify_rings();
@@ -368,6 +373,10 @@ protected:
     Atom** most_bindable = nullptr;
     Pose* iterbegan = nullptr;
     int iters_without_change = 0;
+    Molecule* glued_to = nullptr;                       // For Schiff bases and the like.
+    Interaction glued_energy = 0;
+    Atom *glued_atom_mine = nullptr, *glued_atom_other = nullptr;
+    float glued_atoms_r = 0;
 
     // For intermol conformer optimization:
     float lmx=0,lmy=0,lmz=0;			// Linear momentum xyz.
@@ -401,6 +410,8 @@ protected:
 
     public:
     const int& num_monomers = nmonomers;
+    const Molecule* glued_to_mol() { return glued_to; }
+    void check_glued_bond();
 };
 
 float g_total_mclash(void* mol);
@@ -418,6 +429,7 @@ extern float worst_mol_clash;
 extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
+extern float intermol_covalent_enthalpy;
 
 #if _dbg_improvements_only_rule
 extern Molecule** check_mols;

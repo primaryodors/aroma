@@ -187,7 +187,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
     AminoAcid* allres[protein->get_end_resno()+16]; 
     int qpr = protein->fetch_residues_near(ligand->get_barycenter(), 100000, allres, false);
-    Molecule* postaa[qpr];
+    Molecule* postaa[qpr+16];
     postaa[0] = ligand;
     for (i=0; i<qpr; i++)
     {
@@ -311,6 +311,12 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mc_bpotential = 0;
         compute_interall = true;
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
+
+        #if _dbg_zero_contacts
+        std::string zcmsg = (std::string)"Ligand binding to "+(std::string)reaches_spheroid[i]->get_name() + (std::string)": "+std::to_string(lb.summed());
+        append_debug_file(zcmsg);
+        #endif
+
         interpot -= ligand->get_intermol_potential(reaches_spheroid[i], false);
         compute_interall = false;
         float clash = lb.clash;
@@ -665,7 +671,9 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         n = laa->get_atom_count();
         for (l=0; l<n; l++)
         {
-            laa->get_atom(l)->stream_pdb_line(
+            Atom* a = laa->get_atom(l);
+            if (a->mol == laa) a->residue = laa->get_residue_no();
+            a->stream_pdb_line(
                 lpdbdat,
                 laa->atno_offset+l
             );

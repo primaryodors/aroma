@@ -367,18 +367,53 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             float cbefore, cafter, clbefore, clafter;
             for (translation_accomplished = 0; translation_accomplished < 1; translation_accomplished += translation_step)
             {
+                #if _dbg_soft_motions
+                Point ligand_ca;
+                if (ligand->glued_to_mol())
+                {
+                    Atom *lca = ligand->glued_to_mol()->get_atom("CA");
+                    if (lca) ligand_ca = lca->loc;
+                }
+                #endif
+
                 // Get energy before performing soft motion
                 clbefore = protein->get_intermol_clashes(ligand);
                 cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                     + clbefore + softrgns[i].contact_distance_anomaly(protein, -1, false);
 
+                #if move_ligand_with_soft_motion
+                Pose ligand_was(ligand);
+                #endif
+
                 // Perform soft motion
+                #if _dbg_soft_motions
+                int dbgi, dbgn = protein->get_end_resno();
+                Point dbgaaloc[dbgn+2];
+                for (dbgi = 1; dbgi <= dbgn; dbgi++)
+                {
+                    AminoAcid *dbgaa = protein->get_residue(dbgi);
+                    if (dbgaa) dbgaaloc[dbgi] = dbgaa->get_CA_location();
+                }
+                #endif
                 protein->move_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, ABx_step);
+                #if _dbg_soft_motions
+                cout << "Moved " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << endl;
+                for (dbgi = 1; dbgi <= dbgn; dbgi++)
+                {
+                    AminoAcid *dbgaa = protein->get_residue(dbgi);
+                    if (dbgaa)
+                    {
+                        float dbgmovd = dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location());
+                        if (dbgmovd) cout << dbgaa->get_name() << " moved " << dbgaaloc[dbgi].get_3d_distance(dbgaa->get_CA_location()) << "A." << endl;
+                    }
+                }
+                cout << endl;
+                #endif
 
                 // If the ligand is "staying" near any part of the soft region, move it too.
                 #if move_ligand_with_soft_motion
-                Pose ligand_was(ligand);
                 if (ligand->stay_close_other 
+                    && !ligand->glued_to_mol()                                      // glued ligand will move with side chain already
                     && !ligand->stay_close_other->vanished
                     && ligand->stay_close_other->residue >= softrgns[i].rgn.start
                     && ligand->stay_close_other->residue <= softrgns[i].rgn.end
@@ -394,7 +429,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 #if move_ligand_with_soft_motion
                 if (clafter > (1.0-contact_energy_allowance_for_optimization)*clbefore)
                 {
-                    ligand_was.restore_state(ligand);
+                    if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand);
                     clafter = protein->get_intermol_clashes(ligand);
                     cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                         + clafter + softrgns[i].contact_distance_anomaly(protein, -1, false);
@@ -406,14 +441,30 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 {
                     protein->undo();
                     #if move_ligand_with_soft_motion
-                    ligand_was.restore_state(ligand);
+                    ligand_was.restore_state(ligand, true);
                     #endif
                     cafter = cbefore;
                     clafter = clbefore;
+
+                    if (ligand->glued_to_mol())
+                    {
+                        #if _dbg_soft_motions
+                        Atom *lca = ligand->glued_to_mol()->get_atom("CA");
+                        if (!lca) cerr << "BAD! NO CA POINTER!" << endl;
+                        float lcam = 0;
+                        if (lca) lcam = ligand_ca.get_3d_distance(lca->loc);
+                        if (lcam)
+                        {
+                            cerr << "LIGAND MOVED!" << endl << flush;
+                            throw 0xbadc0de;
+                        }
+                        #endif
+                    }
+
                     break;
                 }
                 #if move_ligand_with_soft_motion
-                else ligand_was.copy_state(ligand);
+                else if (!ligand->glued_to_mol()) ligand_was.copy_state(ligand);
                 #endif
             }
             /*cout << "Moved residues " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << " "
