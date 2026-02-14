@@ -1464,7 +1464,7 @@ void Protein::set_clashables(int resno, bool recursed)
             res_can_clash[i][j] = temp[j];
             if (resno > 0 && !recursed)
             {
-                set_clashables(temp[j]->get_residue_no(), true);
+                set_clashables(temp[j]->get_residue_no(), true);                // RECURSION
             }
             /*cout << residues[i]->get_aa_definition()->_3let << residues[i]->get_residue_no()
             	 << " can clash with "
@@ -1473,6 +1473,7 @@ void Protein::set_clashables(int resno, bool recursed)
         }
         res_can_clash[i][k] = nullptr;
         resi->mclashables = (Molecule**)res_can_clash[i];
+        resi->refresh_base_intermol_clashes();
     }
 
     res_can_clash[maxres+1] = 0;

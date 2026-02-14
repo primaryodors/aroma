@@ -242,6 +242,7 @@ public:
     float get_internal_clashes(bool subtract_baseline = false);
     void minimize_internal_clashes();
     float get_base_clashes() { return base_internal_clashes; }
+    float get_base_mclashes() { return base_intermol_clashes; }
     float get_intermol_clashes(Molecule* ligand);
     float get_intermol_clashes(Molecule** ligands);
     static float total_intermol_clashes(Molecule** ligands);
@@ -366,6 +367,7 @@ protected:
     bool immobile = false;
     bool doing_bkbend = false;
     float base_internal_clashes = 0;					// Baseline computed internal clashes due to unavoidably close atoms.
+    float base_intermol_clashes = 0;
     float base_eclipses = 0;
     std::string sdfgen_aboutline = "";
     Molecule** mandatory_connection = nullptr;
