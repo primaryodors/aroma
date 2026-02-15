@@ -297,8 +297,16 @@ foreach ($prots as $rcpid => $pp)
 $texts = [];
 $txtop = [];
 $dybyx = [];
+$cbt = count($bytree);
 foreach (array_values($bytree) as $x => $orid)
 {
+    if (@$_REQUEST['ecexptest'])
+    {
+        $t[$orid] = 10;
+        $e[$orid] = -(9.0 * (floatval($x)/$cbt));
+        // echo $e[$orid] ."\n";
+    }
+
     $rcpcol = $white;
     $fam = family_from_protid($orid);
     if ($fam == "MS4A") continue;
@@ -357,11 +365,13 @@ foreach (array_values($bytree) as $x => $orid)
         $dyscale = 1.0 / ($base-$dy);
         for ($y1 = $base; $y1 > $dyt; $y1--)
         {
+            $exp = 67.1003 / pow($e[$orid] ?: 0.0001, 2);
+            //if ($exp < 1) $exp = 1.0 / (1.0 - $exp);
             $opc = $e[$orid]
-                ? 0.1 + 0.9 * pow(1.0-(($base-$y1) * $dyscale), ($e[$orid]+6)+1)
-                : 0.4;
+                ? 0.05 + 0.95 * pow(1.0-(($base-$y1) * $dyscale), $exp)
+                : 0.35;
             $yc = imagecolorallocatealpha($im, $orcol[0], $orcol[1], $orcol[2], max(0, min(127, 127-127.0*$opc)));
-            imagefilledrectangle($im, $dx,$y1, $dx+$res-2,$y1, $yc);
+            imagefilledrectangle($im, $dx,$y1, $e[$orid]?($dx+$res-2):$dx,$y1, $yc);
         }
     }
 
