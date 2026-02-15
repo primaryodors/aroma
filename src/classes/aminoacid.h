@@ -129,6 +129,7 @@ public:
     Point get_reach_atom_location();
     Point HN_or_substitute_location();
     void establish_internal_clash_baseline();
+    void refresh_base_intermol_clashes();
     void renumber(int new_resno);
     float get_alpha_helix_penalty() { return aadef->alpha_helix_penalty; }
 

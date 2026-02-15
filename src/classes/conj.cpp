@@ -72,6 +72,9 @@ void Conjugation::add_atom(Atom* a, Atom* prev, Atom* orig)
         if (b[i]->atom2 == prev) continue;
         if (b[i]->atom2 == orig) continue;
 
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Conjugation::add_atom()..." << endl << flush;
+        #endif
         add_atom(b[i]->atom2, a, orig);              // RECURSION!
     }
 }

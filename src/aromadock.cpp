@@ -2000,7 +2000,7 @@ void apply_protein_specific_settings(Protein* p)
         MovabilityType aamov = aa->movability;
         aa->movability = MOV_FLEXONLY;
         if (!aa->mclashables) protein->set_clashables(aa->get_residue_no());
-        aa->conform_atom_to_location(a->name, target->get_CA_location());
+        aa->conform_atom_to_location(a->name, target->get_CA_location(), 10);
         aa->movability = aamov;
 
         delete[] words;
@@ -4298,9 +4298,10 @@ _try_again:
                 {
                     AminoAcid* aa2 = protein->get_residue(j);
                     if (!aa2) continue;
+                    if (!aa1->been_flexed && !aa2->been_flexed) continue;
 
-                    float f = aa1->get_intermol_clashes(aa2);
-                    if (f > clash_limit_per_aa*10)
+                    float f = aa1->get_intermol_clashes(aa2) - aa1->get_base_mclashes();
+                    if (f > clash_limit_per_aa*5)
                     {
                         dr[drcount][nodeno+nodeoff].disqualified = true;
                         std::string reason = (std::string)"Side chain clash "

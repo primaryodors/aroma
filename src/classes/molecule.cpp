@@ -3211,11 +3211,11 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
             }
         }
 
-        rotatable_bonds = new Bond*[bonds+1];
-        for (i=0; i<=bonds; i++) rotatable_bonds[i] = btemp[i];
-        rotatable_bonds[bonds] = 0;
+    rotatable_bonds = new Bond*[bonds+1];
+    for (i=0; i<=bonds; i++) rotatable_bonds[i] = btemp[i];
+    rotatable_bonds[bonds] = 0;
 
-        return rotatable_bonds;
+    return rotatable_bonds;
 }
 
 void Molecule::crumple(float theta)
@@ -3607,21 +3607,11 @@ float Molecule::get_internal_clashes(bool sb)
             if (!r) r += 10e-15;
             if (r < avdW + bvdW)
             {
-                float lclash = fmax(InteratomicForce::Lennard_Jones(atoms[i], atoms[j]), 0); // sphere_intersection(avdW, bvdW, r);
+                float local_clash_allowance = global_clash_allowance;
+                if (atoms[i]->Z == 1 && atoms[j]->Z == 1) local_clash_allowance *= double_hydrogen_clash_allowance_multiplier;
+                float sigma = (avdW+bvdW) - local_clash_allowance;
+                float lclash = fmax(InteratomicForce::Lennard_Jones(atoms[i], atoms[j], sigma), 0); // sphere_intersection(avdW, bvdW, r);
                 clash += lclash;
-
-                if (false && lclash > 3)
-                {
-                    cout << atoms[i]->name << " clashes with " << atoms[j]->name << " by " << lclash << " cu. A. resulting in " << clash << endl;
-                    int g = atoms[i]->get_geometry();
-                    cout << "Geometry: " << g << endl;
-                    Bond* b[16];
-                    atoms[i]->fetch_bonds(b);
-                    int k;
-                    for (k=0; k<g; k++)
-                        cout << atoms[i]->name << " is bonded to " << hex << b[k]->atom2 << dec << " "
-                             << (b[k]->atom2 ? b[k]->atom2->name : "") << "." << endl;
-                }
             }
         }
     }
@@ -3722,7 +3712,12 @@ float Molecule::get_intermol_clashes(Molecule** ligands)
                     if (sgn(a->get_charge()) == -sgn(b->get_charge())) continue;
                 }
 
-                float f = fmax(InteratomicForce::Lennard_Jones(a, b), 0);
+                float local_clash_allowance = global_clash_allowance;
+                if (a->Z == 1 && b->Z == 1) local_clash_allowance *= double_hydrogen_clash_allowance_multiplier;
+                float sigma = (avdW+b->vdW_radius) - local_clash_allowance;
+                float f = fmax(InteratomicForce::Lennard_Jones(a, b, sigma), 0);
+
+                // if (f > 100) cout << name << ":" << a->name << " CLASH! " << ligands[l]->name << ":" << b->name << endl;
 
                 if (!equal_or_zero(a->residue, b->residue))
                 {
@@ -4375,6 +4370,9 @@ bool Molecule::check_stays()
     if (!nm || !no)
     {
         stay_close_water = nullptr;
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Molecule::check_stays()..." << endl << flush;
+        #endif
         return check_stays();             // RECURSION!
     }
 
@@ -4438,6 +4436,9 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
         if (!nm || !no)
         {
             stay_close_water = nullptr;
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Molecule::enforce_stays()..." << endl << flush;
+            #endif
             enforce_stays(amt);             // RECURSION!
             if (stepscb) stepscb("forcing dry contact");
             return;
@@ -4696,11 +4697,17 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 for (j=i; j<nmonomers; j++)
                 {
                     // cout << i << "," << j << endl;
-                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost);
+                    #if _dbg_infinite_loops
+                    cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
+                    #endif
+                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost);      // RECURSION.
                 }
-                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost);
+                #if _dbg_infinite_loops
+                cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
+                #endif
+                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost);      // RECURSION.
             }
-            return result;      // RECURSION.
+            return result;
         }
     }
 
@@ -5566,6 +5573,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             else lmm[j++] = mm[i];
         }
         lmm[j] = nullptr;
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Molecule::conform_molecules()..." << endl << flush;
+        #endif
         return conform_molecules(lmm, iters, cb, progress, mi);             // RECURSION!
     }
 
@@ -5870,6 +5880,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     {
                         benerg = tryenerg;
                         pib.copy_state(a);
+                        a->been_flexed = true;
                         test_and_update_absolute_best_poses
                     }
                     else

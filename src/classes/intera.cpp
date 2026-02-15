@@ -939,6 +939,9 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                  || (bZ == 1 && achg > hydrophilicity_cutoff)
                 )
                 skip = true;
+
+            default:
+            ;
         }
 
         if (skip) continue;
@@ -1228,16 +1231,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             }
             else
             {
-                // rdecayed = r1*r1*r1*r1*r1*r1;
-                partial = aniso * force_eff_kJmol; // - Lennard_Jones(a, b, forces_by_type[i]->get_distance());
-                /*if (!strcmp(a->name, "H8") && !strcmp(b->name, "OD2")) 
-                    cout << "r1<1: aniso: " << aniso
-                        << " force_eff_kJmol: " << force_eff_kJmol
-                        << " r: " << r
-                        << " force dist: " << forces_by_type[i]->distance
-                        << " rdecayed: " << rdecayed
-                        << " partial: " << partial
-                        << endl;*/
+                partial = aniso * force_eff_kJmol;
             }
 
             if (current_type == hbond)

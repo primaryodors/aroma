@@ -152,12 +152,12 @@ if ($maxe) $maxe += 0.5;
 $mine -= 0.5;
 $maxp = count($p) ? ( @max($p) ?: 1 ) : 1;
 
-if ($maxt < 1) $maxt = 1;
+if ($maxt < 4) $maxt = 4;
 if ($maxp < 1) $maxp = 1;
 
 if ($maxe <= $mine+2) { $maxe += 1; $mine -= 1; }
 
-if ($mine <= -3 && $maxt < 2) $maxt = 2;
+if ($mine <= -3 && $maxt < 10) $maxt = 10;
 
 $tscale = floatval($h-$ybuf) / $maxt;
 $escale = floatval($h-$ybuf) / ($maxe-$mine);
@@ -297,8 +297,16 @@ foreach ($prots as $rcpid => $pp)
 $texts = [];
 $txtop = [];
 $dybyx = [];
+$cbt = count($bytree);
 foreach (array_values($bytree) as $x => $orid)
 {
+    if (@$_REQUEST['ecexptest'])
+    {
+        $t[$orid] = 10;
+        $e[$orid] = -(9.0 * (floatval($x)/$cbt));
+        // echo $e[$orid] ."\n";
+    }
+
     $rcpcol = $white;
     $fam = family_from_protid($orid);
     if ($fam == "MS4A") continue;
@@ -357,11 +365,13 @@ foreach (array_values($bytree) as $x => $orid)
         $dyscale = 1.0 / ($base-$dy);
         for ($y1 = $base; $y1 > $dyt; $y1--)
         {
+            $exp = 67.1003 / pow($e[$orid] ?: 0.0001, 2);
+            //if ($exp < 1) $exp = 1.0 / (1.0 - $exp);
             $opc = $e[$orid]
-                ? 0.1 + 0.9 * pow(1.0-(($base-$y1) * $dyscale), ($e[$orid]+6)+1)
-                : 0.4;
+                ? 0.05 + 0.95 * pow(1.0-(($base-$y1) * $dyscale), $exp)
+                : 0.35;
             $yc = imagecolorallocatealpha($im, $orcol[0], $orcol[1], $orcol[2], max(0, min(127, 127-127.0*$opc)));
-            imagefilledrectangle($im, $dx,$y1, $dx+$res-2,$y1, $yc);
+            imagefilledrectangle($im, $dx,$y1, $e[$orid]?($dx+$res-2):$dx,$y1, $yc);
         }
     }
 

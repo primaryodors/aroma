@@ -784,6 +784,13 @@ void AminoAcid::establish_internal_clash_baseline()
     base_eclipses = total_eclipses();
 }
 
+void AminoAcid::refresh_base_intermol_clashes()
+{
+    base_intermol_clashes = 0;
+    if (!mclashables) return;
+    base_intermol_clashes = get_intermol_clashes(mclashables);
+    // cout << name << " has base intermol clashes " << base_intermol_clashes << endl;
+}
 
 void AminoAcid::predict_previous_COCA(Point* retval)
 {
@@ -1788,7 +1795,7 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
                 if (!atoms[i]->get_charge() && !atoms[i]->is_conjugated_to_charge()) type_ok = false;
             break;
             case mcoord:
-                if (!atoms[i]->get_family() != CHALCOGEN && !atoms[i]->get_family() != PNICTOGEN) type_ok = false;
+                if (atoms[i]->get_family() != CHALCOGEN && atoms[i]->get_family() != PNICTOGEN) type_ok = false;
                 if (atoms[i]->Z == 8) type_ok = false;
             break;
             case hbond:

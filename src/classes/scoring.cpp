@@ -33,11 +33,20 @@ DockResult::DockResult(Protein* protein, Molecule* ligand, int sphres, AminoAcid
 void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, AminoAcid** reaches_spheroid,
     int* addl_resno, int drcount, Molecule** waters, bool is_movie)
 {
+    int i, li, j, k, l, n;
+
+    // This step doesn't actually do anything useful, but without it, the compiler has some kind of weird bug where it optimizes
+    // something out (yes even without -O) and we end up with a dock result that's all zeros and no PDB output.
+    // Valgrind and -Wall -Wextra find nothing wrong.
+    std::stringstream stst;
+    stst << "DockResult::initialize(" << protein->get_name() << ", " << ligand->get_name() << ", " << sphres << ", [";
+    for (i=0; i<sphres; i++) stst << (reaches_spheroid[i] ? reaches_spheroid[i]->get_name() : "(null)") << " ";
+    stst << "]" << endl << flush;
+
     int end1 = SPHREACH_MAX+4;
     mprot = protein;
     mlig = ligand;
     Molecule* met = protein->metals_as_molecule();
-    int i, li, j, k, l, n;
 
     char metrics[end1][20];
     float lmkJmol[end1];
@@ -686,6 +695,8 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     }
 
     this->pdbdat = lpdbdat.str();
+
+    for (i=0; i<end1; i++) stst << final_binding[i] << endl;
 }
 
 bool DockResult::clashes_with(DockResult *o)
