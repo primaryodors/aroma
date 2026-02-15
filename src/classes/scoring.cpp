@@ -37,6 +37,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
     // This step doesn't actually do anything useful, but without it, the compiler has some kind of weird bug where it optimizes
     // something out (yes even without -O) and we end up with a dock result that's all zeros and no PDB output.
+    // Valgrind and -Wall -Wextra find nothing wrong.
     std::stringstream stst;
     stst << "DockResult::initialize(" << protein->get_name() << ", " << ligand->get_name() << ", " << sphres << ", [";
     for (i=0; i<sphres; i++) stst << (reaches_spheroid[i] ? reaches_spheroid[i]->get_name() : "(null)") << " ";
