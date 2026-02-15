@@ -176,7 +176,13 @@ while (count($unused))
 }
 echo "\n";
 
-foreach ($btree as $node => $value) if (strlen($value) > 100) unset($btree[$node]);
+foreach ($btree as $node => $value)
+{
+    if (strlen($value) > 100) unset($btree[$node]);
+    else if (isset($prots[$value])) $prots[$value]['btree'] = $node;
+}
 
 ksort($btree);
 print_r($btree);
+
+file_put_contents("receptor.json", json_encode_pretty($prots));
