@@ -152,12 +152,12 @@ if ($maxe) $maxe += 0.5;
 $mine -= 0.5;
 $maxp = count($p) ? ( @max($p) ?: 1 ) : 1;
 
-if ($maxt < 1) $maxt = 1;
+if ($maxt < 4) $maxt = 4;
 if ($maxp < 1) $maxp = 1;
 
 if ($maxe <= $mine+2) { $maxe += 1; $mine -= 1; }
 
-if ($mine <= -3 && $maxt < 2) $maxt = 2;
+if ($mine <= -3 && $maxt < 10) $maxt = 10;
 
 $tscale = floatval($h-$ybuf) / $maxt;
 $escale = floatval($h-$ybuf) / ($maxe-$mine);
