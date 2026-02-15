@@ -126,9 +126,88 @@ while (count($unused))
     $ndelta = 999999999;
     foreach ($unused as $rcpid)
     {
+        $req_same_cls = $req_same_fam = $req_same_sub = false;
         $p1 = $prots[$rcpid];
+
+        $fam = family_from_protid($rcpid);
+        $sub = subfamily_from_protid($rcpid);
+        $cls = (substr($fam,0,2) == "OR") ? (intval(preg_replace("/[^0-9]/", "", $fam)) >= 50 ? 1 : 2) : 0;
+
         foreach ($btree as $node => $cmpid)
         {
+            if (strlen($cmpid) < 100 && isset($prots[$cmpid]))
+            {
+                $lfam = family_from_protid($cmpid);
+                $lsub = subfamily_from_protid($cmpid);
+                $lcls = (substr($lfam,0,2) == "OR") ? (intval(preg_replace("/[^0-9]/", "", $fam)) >= 50 ? 1 : 2) : 0;
+
+                if ($lfam == $fam)
+                {
+                    if ($lsub == $sub) $req_same_sub = true;
+                    else $req_same_fam = true;
+                }
+                else if ($cls && ($cls == $lcls)) $req_same_cls = true;
+            }
+        }
+
+        foreach ($btree as $node => $cmpid)
+        {
+            if ($req_same_cls || $req_same_fam || $req_same_sub)
+            {
+                $out_of_place = false;
+                if (strlen($cmpid) < 100 && isset($prots[$cmpid]))
+                {
+                    $lfam = family_from_protid($cmpid);
+                    $lsub = subfamily_from_protid($cmpid);
+                    $lcls = (substr($lfam,0,2) == "OR") ? (intval(preg_replace("/[^0-9]/", "", $lfam)) >= 50 ? 1 : 2) : 0;
+
+                    if ($req_same_sub || $req_same_fam) if ($fam != $lfam)
+                    {
+                        $out_of_place = true;
+                    }
+                    if ($req_same_sub) if ($sub != $lsub)
+                    {
+                        $out_of_place = true;
+                    }
+                    if ($req_same_cls) if ($cls != $lcls)
+                    {
+                        $out_of_place = true;
+                    }
+                }
+                else
+                {
+                    $lln = strlen($node);
+                    foreach ($btree as $lnode => $lcmpid)
+                    {
+                        if (strlen($lcmpid) > 100 || !isset($prots[$lcmpid])) continue;
+                        if (substr($lnode, 0, $lln) == $node)
+                        {
+                            $lfam = family_from_protid($lcmpid);
+                            $lsub = subfamily_from_protid($lcmpid);
+                            $lcls = (substr($lfam,0,2) == "OR") ? (intval(preg_replace("/[^0-9]/", "", $lfam)) >= 50 ? 1 : 2) : 0;
+
+                            if ($req_same_sub || $req_same_fam) if ($fam != $lfam)
+                            {
+                                $out_of_place = true;
+                                break;
+                            }
+                            if ($req_same_sub) if ($sub != $lsub)
+                            {
+                                $out_of_place = true;
+                            }
+                                break;
+                            if ($req_same_cls) if ($cls != $lcls)
+                            {
+                                $out_of_place = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if ($out_of_place) continue;
+            }
+
             if (strlen($cmpid) > 100) $seq2 = $cmpid;
             else
             {
