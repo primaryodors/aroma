@@ -698,6 +698,9 @@ Rotation Rotation::add(Rotation* rot)
         r1.a *= m;
         r2.a *= m;
 
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Rotation::add()..." << endl << flush;
+        #endif
         return r1.add(&r2);		// RECURSION!
     }
 

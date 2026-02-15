@@ -179,6 +179,9 @@ function orclr($fam, $im = false)
 {
     if ($im)
     {
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Molecule::()..." << endl << flush;
+        #endif
         $rgb = orclr($fam, false);            // RECURSION!
         return imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
     }

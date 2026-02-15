@@ -1464,6 +1464,9 @@ void Protein::set_clashables(int resno, bool recursed)
             res_can_clash[i][j] = temp[j];
             if (resno > 0 && !recursed)
             {
+                #if _dbg_infinite_loops
+                cout << "Calling recursive Protein::set_clashables()..." << endl << flush;
+                #endif
                 set_clashables(temp[j]->get_residue_no(), true);                // RECURSION
             }
             /*cout << residues[i]->get_aa_definition()->_3let << residues[i]->get_residue_no()
@@ -2681,7 +2684,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
     er = min(er, get_end_resno());
     float result = 0;
 
-    #define opth_fullrot_steps 30
+    #define opth_fullrot_steps 10
     #define opth_fullrot_stepa M_PI * 2.0 / opth_fullrot_steps
 
     int i, j, l;

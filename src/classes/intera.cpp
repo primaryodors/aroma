@@ -939,6 +939,9 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                  || (bZ == 1 && achg > hydrophilicity_cutoff)
                 )
                 skip = true;
+
+            default:
+            ;
         }
 
         if (skip) continue;

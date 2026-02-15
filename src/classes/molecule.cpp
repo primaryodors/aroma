@@ -3211,11 +3211,11 @@ Bond** Molecule::get_rotatable_bonds(bool icf)
             }
         }
 
-        rotatable_bonds = new Bond*[bonds+1];
-        for (i=0; i<=bonds; i++) rotatable_bonds[i] = btemp[i];
-        rotatable_bonds[bonds] = 0;
+    rotatable_bonds = new Bond*[bonds+1];
+    for (i=0; i<=bonds; i++) rotatable_bonds[i] = btemp[i];
+    rotatable_bonds[bonds] = 0;
 
-        return rotatable_bonds;
+    return rotatable_bonds;
 }
 
 void Molecule::crumple(float theta)
@@ -4370,6 +4370,9 @@ bool Molecule::check_stays()
     if (!nm || !no)
     {
         stay_close_water = nullptr;
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Molecule::check_stays()..." << endl << flush;
+        #endif
         return check_stays();             // RECURSION!
     }
 
@@ -4433,6 +4436,9 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
         if (!nm || !no)
         {
             stay_close_water = nullptr;
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Molecule::enforce_stays()..." << endl << flush;
+            #endif
             enforce_stays(amt);             // RECURSION!
             if (stepscb) stepscb("forcing dry contact");
             return;
@@ -4691,11 +4697,17 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 for (j=i; j<nmonomers; j++)
                 {
                     // cout << i << "," << j << endl;
-                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost);
+                    #if _dbg_infinite_loops
+                    cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
+                    #endif
+                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost);      // RECURSION.
                 }
-                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost);
+                #if _dbg_infinite_loops
+                cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
+                #endif
+                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost);      // RECURSION.
             }
-            return result;      // RECURSION.
+            return result;
         }
     }
 
@@ -5561,6 +5573,9 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             else lmm[j++] = mm[i];
         }
         lmm[j] = nullptr;
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Molecule::conform_molecules()..." << endl << flush;
+        #endif
         return conform_molecules(lmm, iters, cb, progress, mi);             // RECURSION!
     }
 

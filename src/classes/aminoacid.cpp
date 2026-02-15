@@ -1795,7 +1795,7 @@ Atom *AminoAcid::get_reach_atom(intera_type typ)
                 if (!atoms[i]->get_charge() && !atoms[i]->is_conjugated_to_charge()) type_ok = false;
             break;
             case mcoord:
-                if (!atoms[i]->get_family() != CHALCOGEN && !atoms[i]->get_family() != PNICTOGEN) type_ok = false;
+                if (atoms[i]->get_family() != CHALCOGEN && atoms[i]->get_family() != PNICTOGEN) type_ok = false;
                 if (atoms[i]->Z == 8) type_ok = false;
             break;
             case hbond:

@@ -388,6 +388,7 @@
 #define _dbg_imidazole_check 0
 #define _dbg_improvements_only_residue 158
 #define _dbg_improvements_only_rule 0
+#define _dbg_infinite_loops 0
 #define _dbg_intera_applicable 0
 #define _dbg_interatomic_forces 0
 #define _dbg_internal_energy 0

@@ -489,6 +489,9 @@ void Atom::unbond(Atom* atom2)
                 if (!reciprocity)
                 {
                     bonded_to[i].atom2->reciprocity = true;
+                    #if _dbg_infinite_loops
+                    cout << "Calling recursive Atom::unbond()..." << endl << flush;
+                    #endif
                     bonded_to[i].atom2->unbond(this);		// RECURSION!
                     bonded_to[i].atom2->reciprocity = false;
                 }
@@ -510,6 +513,9 @@ void Atom::unbond_all()
         if (bonded_to[i].atom2)
         {
             bonded_to[i].atom2->reciprocity = true;
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Atom::unbond() from unbond_all()..." << endl << flush;
+            #endif
             bonded_to[i].atom2->unbond(this);		// Potential for recursion!
             bonded_to[i].atom2->reciprocity = false;
 
@@ -1472,7 +1478,7 @@ void Bond::fill_moves_with_cache()
         for (j=0; j<tmplen; j++)
         {
             attmp[j]->fetch_bonds(b);
-            if (b)
+            if (b[0])
             {
                 for (i=0; b[i]; i++)
                 {
@@ -1693,6 +1699,9 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
 
         if (mwb_total_binding > mwbi_total_binding)
         {
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Bond::rotate()..." << endl << flush;
+            #endif
             bool result = inverse->rotate(-theta, allow_backbone, true);				// DANGER! RECURSION.
             eclipse_hash = 0;
             last_fail = inverse->last_fail;
@@ -2358,6 +2367,9 @@ Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
         if (_DBGGEO) cout << "avg: " << avg.printable() << endl;
 
         j=1;
+        #if _dbg_infinite_loops
+        cout << "Calling recursive Atom::get_geometry_aligned_to_bonds()..." << endl << flush;
+        #endif
         Vector* bgeov = b->atom2->get_geometry_aligned_to_bonds(true);		// RECURSION!
 
         for (i=0; i<b->atom2->geometry; i++)
@@ -2857,6 +2869,9 @@ float Atom::is_conjugated_to_charge(Atom* bir, Atom* c)
             }
 
             // DANGER: RECURSION.
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Atom::is_conjugated_to_charge()..." << endl << flush;
+            #endif
             f = bonded_to[i].atom2->is_conjugated_to_charge(bir, this);
             if (f)
             {
@@ -2916,6 +2931,9 @@ bool Atom::is_conjugated_to(Atom* a, Atom* bir, Atom* c)
                 bonded_to[i].atom2->is_pi()
                 &&
                 // DANGER: RECURSION.
+                #if _dbg_infinite_loops
+                // cout << "Calling recursive Atom::is_conjugated_to()..." << endl << flush;
+                #endif
                 bonded_to[i].atom2->is_conjugated_to(a, bir, this)
                )
             {
@@ -2965,6 +2983,9 @@ std::vector<Atom*> Atom::get_conjugated_atoms(Atom* bir, Atom* c)
             casf.push_back(bonded_to[i].atom2);
 
             // DANGER: RECURSION.
+            #if _dbg_infinite_loops
+            cout << "Calling recursive Atom::get_conjugated_atoms()..." << endl << flush;
+            #endif
             std::vector<Atom*> lcasf = bonded_to[i].atom2->get_conjugated_atoms(bir, this);
         }
     }
