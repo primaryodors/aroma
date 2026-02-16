@@ -359,6 +359,14 @@ foreach ($prots as $protid => $p)
                 $color = "color: #0c0;";
                 $right++;
             }
+            else if ($top && $top < 2.5)
+            {
+                $color = "color: #f90;";
+            }
+            else if (!$top && $ec50 > -3)
+            {
+                $color = "color: #f90;";
+            }
             else
             {
                 $color = "color: #f00;";
@@ -387,6 +395,10 @@ foreach ($prots as $protid => $p)
                 $color = "color: #0c0;";
                 $right++;
             }
+            else if ($prediction <= 10)
+            {
+                $color = "color: #f90;";
+            }
             else
             {
                 $color = "color: #f00;";
@@ -401,6 +413,10 @@ foreach ($prots as $protid => $p)
             {
                 $color = "color: #0c0;";
                 $right++;
+            }
+            else if ($prediction <= 20)
+            {
+                $color = "color: #f90;";
             }
             else
             {
