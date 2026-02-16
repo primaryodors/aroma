@@ -65,11 +65,13 @@ public:
     Point ring_rotate(float angle_radians, Atom* stop_at);
     void clear_moves_with_cache()
     {
-        moves_with_atom2 = 0;
+        moves_with_atom2 = moves_rigidly_with_atom2 = nullptr;
     }
     void fetch_moves_with_atom2(Atom** result);
+    void fetch_moves_rigidly_with_atom2(Atom** result);
     bool ensure_moves_with_no_backbone();
     int count_moves_with_atom2();
+    int count_moves_rigidly_with_atom2();
     int count_heavy_moves_with_atom();
     int count_heavy_moves_with_atom2();
     Bond* get_reversed();
@@ -91,7 +93,8 @@ protected:
     void fill_moves_with_cache();
     void enforce_moves_with_uniqueness();
 
-    Atom** moves_with_atom2 = 0;
+    Atom** moves_with_atom2 = nullptr;
+    Atom** moves_rigidly_with_atom2 = nullptr;
     int mw_atom_count = 0;
     float mw_Zsum = 0;
     float mw_cardsum = 0;

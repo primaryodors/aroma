@@ -8,7 +8,7 @@
 #include <climits>
 #include "atom.h"
 
-#define _DBGMOVES 0
+#define _DBGMOVES 1
 #define _DBGGEO 0
 
 using namespace std;
@@ -559,6 +559,26 @@ void Bond::fetch_moves_with_atom2(Atom** result)
     result[i] = nullptr;
 }
 
+void Bond::fetch_moves_rigidly_with_atom2(Atom** result)
+{
+    int i;
+    if (!moves_with_atom2)
+    {
+        fill_moves_with_cache();
+        enforce_moves_with_uniqueness();
+    }
+    if (!moves_rigidly_with_atom2)
+    {
+        result[0] = nullptr;
+        return;
+    }
+
+    // Not calling init_nulls() for performance reasons.
+    for (i=0; moves_rigidly_with_atom2[i]; i++)
+        result[i] = moves_rigidly_with_atom2[i];
+    result[i] = nullptr;
+}
+
 bool Bond::ensure_moves_with_no_backbone()
 {
     int i;
@@ -728,8 +748,8 @@ float Atom::hydrophilicity_rule()
 
 Bond::Bond()
 {
-    atom1 = atom2 = 0;
-    moves_with_atom2 = 0;
+    atom1 = atom2 = nullptr;
+    moves_with_atom2 = moves_rigidly_with_atom2 = nullptr;
     cardinality = 0;
     can_rotate = false;
 }
@@ -745,6 +765,7 @@ Bond::Bond(Atom* a, Atom* b, int card)
 Bond::~Bond()
 {
     if (moves_with_atom2) delete[] moves_with_atom2;
+    if (moves_rigidly_with_atom2) delete[] moves_rigidly_with_atom2;
 }
 
 void Atom::fetch_bonds(Bond** result)
@@ -1445,6 +1466,7 @@ void Bond::fill_moves_with_cache()
     int i, j, k;
     int lused = rand();
     float proximity = 1;
+    Bond* b[16];
 
     if (!atom2) return;
     if (atom1->residue && atom2->residue && atom2->get_Greek() < atom1->get_Greek()) return;
@@ -1452,7 +1474,6 @@ void Bond::fill_moves_with_cache()
     if (_DBGMOVES) cout << atom2->aa3let << atom2->residue << ": What moves with " << atom2->name << " when rotating about " << atom1->name << "?" << endl;
 
     atom2->used = lused;
-    Bond* b[16];
     atom2->fetch_bonds(b);
     if (!b[0]) return;
     for (i=0; b[i]; i++)
@@ -1516,6 +1537,78 @@ void Bond::fill_moves_with_cache()
         attmp[i]->used = 0;
     }
     moves_with_atom2[i] = 0;
+
+    tmplen = 0;
+    lused = rand();
+    atom2->used = lused;
+    atom2->fetch_bonds(b);
+    if (!b[0]) return;
+    for (i=0; b[i]; i++)
+    {
+        if (b[i]->atom2 && b[i]->atom2 != atom1
+            && equal_or_zero(atom2->residue, b[i]->atom2->residue)
+           )
+        {
+            mw_cardsum += b[i]->cardinality*proximity;
+            mw_atom_count++;
+            mw_Zsum += proximity*b[i]->atom2->Z;
+
+            attmp[tmplen++] = b[i]->atom2;
+            b[i]->atom2->used = lused;
+            if (_DBGMOVES) cout << b[i]->atom2->name << " ";
+        }
+    }
+    proximity -= 0.001;
+
+    do
+    {
+        k=0;
+        for (j=0; j<tmplen; j++)
+        {
+            attmp[j]->fetch_bonds(b);
+            if (b[0])
+            {
+                for (i=0; b[i]; i++)
+                {
+                    if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
+                    if (b[i]->atom1 != atom2 && (b[i]->can_rotate || b[i]->can_flip))
+                    {
+                        if (_DBGMOVES) cout << " skipping | ";
+                        continue;
+                    }
+                    if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
+                        && equal_or_zero(atom2->residue, b[i]->atom2->residue))
+                    {
+                        if (b[i]->atom2->in_same_ring_as(atom1))
+                        {
+                            b[i]->atom2->used = lused;
+                        if (_DBGMOVES) cout << atom2->name << " in same ring as " << atom1->name << " ";
+                            continue;
+                        }
+                        mw_cardsum += b[i]->cardinality*proximity;
+                        mw_atom_count++;
+                        mw_Zsum += proximity*b[i]->atom2->Z;
+                        attmp[tmplen++] = b[i]->atom2;
+                        b[i]->atom2->used = lused;
+                        if (_DBGMOVES) cout << b[i]->atom2->name << " " << flush;
+                        k++;
+                    }
+                }
+                proximity -= 0.001;
+            }
+        }
+    }
+    while (k);
+
+    moves_rigidly_with_atom2 = new Atom*[tmplen+4];
+    init_nulls(moves_rigidly_with_atom2, tmplen+4);
+
+    for (i=0; i<tmplen; i++)
+    {
+        moves_rigidly_with_atom2[i] = attmp[i];
+        attmp[i]->used = 0;
+    }
+    moves_rigidly_with_atom2[i] = 0;
     atom2->used = 0;
 
     if (_DBGMOVES) cout << endl << endl;
@@ -1525,42 +1618,6 @@ void Bond::fill_moves_with_cache()
 
 void Bond::enforce_moves_with_uniqueness()
 {
-    /*if (!strcmp(atom->name, "CD1") && !strcmp(atom2->name, "NE1"))
-    {
-    	Ring** rr = atom->get_rings();
-
-    	cout << atom->name << " is a member of:" << endl;
-    	if (rr)
-    	{
-    		int l;
-
-    		for (l=0; rr[l]; l++)
-    		{
-    			cout << *rr[l] << endl;
-    		}
-
-    		delete[] rr;
-    	}
-    	else cout << "(no rings.)" << endl;
-
-    	rr = atom2->get_rings();
-
-    	cout << atom2->name << " is a member of:" << endl;
-    	if (rr)
-    	{
-    		int l;
-
-    		for (l=0; rr[l]; l++)
-    		{
-    			cout << *rr[l] << endl;
-    		}
-
-    		delete[] rr;
-    	}
-    	else cout << "(no rings.)" << endl;
-
-    	cout << endl;
-    }*/
 
     // Ring bond rotation is not supported currently.
     if (!atom1->doing_ring_closure && !atom2->doing_ring_closure && atom1 && atom2 && atom1->in_same_ring_as(atom2))
@@ -1586,14 +1643,35 @@ void Bond::enforce_moves_with_uniqueness()
                 || !equal_or_zero(moves_with_atom2[j]->residue, atom2->residue)
                )
             {
-                moves_with_atom2[j] = 0;
+                moves_with_atom2[j] = nullptr;
                 break;
 
                 for (k=j+1; moves_with_atom2[k]; k++)
                 {
                     moves_with_atom2[k-1] = moves_with_atom2[k];
                 }
-                moves_with_atom2[k-1] = 0;
+                moves_with_atom2[k-1] = nullptr;
+            }
+        }
+    }
+
+    for (i=0; moves_rigidly_with_atom2[i]; i++)
+    {
+        for (j=i+1; moves_rigidly_with_atom2[j]; j++)
+        {
+            if (moves_rigidly_with_atom2[j] == moves_rigidly_with_atom2[i]
+                // || moves_rigidly_with_atom2[j]->is_backbone
+                || !equal_or_zero(moves_rigidly_with_atom2[j]->residue, atom2->residue)
+               )
+            {
+                moves_rigidly_with_atom2[j] = nullptr;
+                break;
+
+                for (k=j+1; moves_rigidly_with_atom2[k]; k++)
+                {
+                    moves_rigidly_with_atom2[k-1] = moves_rigidly_with_atom2[k];
+                }
+                moves_rigidly_with_atom2[k-1] = nullptr;
             }
         }
     }
@@ -2664,6 +2742,15 @@ int Bond::count_moves_with_atom2()
     if (!moves_with_atom2) return 0;
     int i;
     for (i=0; moves_with_atom2[i]; i++);	// Get count.
+    return i;
+}
+
+int Bond::count_moves_rigidly_with_atom2()
+{
+    if (!moves_with_atom2) fill_moves_with_cache();
+    if (!moves_rigidly_with_atom2) return 0;
+    int i;
+    for (i=0; moves_rigidly_with_atom2[i]; i++);	// Get count.
     return i;
 }
 
