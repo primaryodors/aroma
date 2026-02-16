@@ -240,6 +240,8 @@ for rcpid in data.protutils.prots.keys():
             ln = newcfg[i]
             if ln[0:4] == "PROT" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
+            if ln[0:4] == "VCVTY" or ln[0:3] == "OUT":
+                newcfg[i] = ln.replace(".active.", ".inactive.")
             if ln[0:6] == "CNTCT ":
                 newcfg[i] = ln.replace("_a.ic", "_i.ic")
         newcfgi = "\n".join(newcfg)
@@ -260,7 +262,7 @@ for rcpid in data.protutils.prots.keys():
         with open("tmp/" + conffna, 'w') as f:
             f.write(newcfga + "\n\n")
         with open("tmp/" + conffni, 'w') as f:
-            f.write("\n".join(newcfg) + "\n\n")
+            f.write("\n".join(newcfgi) + "\n\n")
 
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         cmd = ["bin/aromadock", "tmp/" + conffna]
