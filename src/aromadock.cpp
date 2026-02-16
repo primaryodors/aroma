@@ -4659,6 +4659,8 @@ _try_again:
                     {
                         if (!cvtys[cno].count_partials()) continue;
                         cp += cvtys[cno].molecule_inside_pocket(ligand);
+                        float cc = cvtys[cno].cavity_filling(ligand);
+                        if (cc > dr[j][nodeno].cavity_filling) dr[j][nodeno].cavity_filling = cc;
                     }
 
                     if (cp >= min_cvty_ctnmt) dr[j][nodeno].disqualified = false;

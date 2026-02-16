@@ -831,6 +831,7 @@ _btyp_unassigned:
     output << "Pocket bound hydration energy: " << dr.pocket_bound_solvation_energy*dr.energy_mult << endl;
     output << "Estimated water displacement energy: " << dr.ligand_h2o_displacement_energy << endl;
     output << "Solvation energy stabilizing internal contacts: " << dr.pocket_ic_DeltaG_solvation*dr.energy_mult << endl;
+    if (!isnan(dr.cavity_filling)) output << "Cavity filling: " << dr.cavity_filling << endl;
     #if compute_lsrb
     output << "Ligand surface receptor binding: " << dr.ligand_surface_receptor_binding << endl;
     #endif

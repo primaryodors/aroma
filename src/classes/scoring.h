@@ -88,6 +88,7 @@ class DockResult
     float energy_mult = 1;
     Pose ligpos;
     float ligvol;
+    float cavity_filling = nan("unset");
     Atom* stay_close_ligand = nullptr;
     Atom* stay_close_protein = nullptr;
     Atom* stay_close2_ligand = nullptr;

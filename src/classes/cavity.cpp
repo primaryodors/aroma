@@ -575,13 +575,19 @@ void Cavity::compute_vdW_surface(float d)
 CPartial* Cavity::point_inside_pocket(Point pt)
 {
     if (!pallocd) return nullptr;
-    int i;
+    int i, j=-1;
+    float rbest = Avogadro;
     for (i=0; i<pallocd; i++)
     {
         if (partials[i].s.radius < min_partial_radius) break;
         float r = partials[i].s.center.get_3d_distance(pt);
-        if (r < partials[i].s.radius) return &partials[i];
+        if (r < partials[i].s.radius && r < rbest)
+        {
+            rbest = r;
+            j = i;
+        }
     }
+    if (j >= 0) return &partials[j];
 
     return nullptr;
 }
@@ -685,6 +691,42 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
 
     if (n) result /= n;
     return result;
+}
+
+float Cavity::cavity_filling(Molecule *m)
+{
+    float empties = 0.0f;
+    int filleds = 0;
+    float x, y, z;
+    float step = 0.5;
+
+    Box b = boundingbox();
+
+    for (x=b.x1; x<=b.x2; x+=step)
+        for (y=b.y1; y<=b.y2; y+=step)
+            for (z=b.z1; z<=b.z2; z+=step)
+            {
+                Point pt(x,y,z);
+                CPartial* part = point_inside_pocket(pt);
+                if (part)
+                {
+                    Atom* a = m->get_nearest_atom(pt);
+                    if (a && a->loc.get_3d_distance(pt) <= a->vdW_radius)
+                        filleds++;
+                    else
+                    {
+                        if (part->chargedn || part->chargedp) empties += 0.1;
+                        else if (part->pi && part->polar) empties += 0.333;
+                        else if (part->polar) empties += 0.5;
+                        else if (part->thio) empties += 0.8;
+                        else if (part->pi) empties += 0.9;
+                        else empties += 1;
+                    }
+                }
+            }
+
+    if (!empties && !filleds) return 0;
+    return (float)filleds / (empties+filleds);
 }
 
 const Point* ligand_vertices;

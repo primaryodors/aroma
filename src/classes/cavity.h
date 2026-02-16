@@ -44,6 +44,7 @@ class Cavity
     CPartial* point_inside_pocket(Point pt);
     float sphere_inside_pocket(Sphere s, CPartial** partial = nullptr);
     float molecule_inside_pocket(Molecule* m, bool match_attributes = false);
+    float cavity_filling(Molecule* m);
     float containment_violations(Molecule* m, float stop_if_more_than = -1);
     float find_best_containment(Molecule* m, bool match_binding_types = false);
     float match_ligand(Molecule* ligand, Atom** match_atom = nullptr, CPartial** match_partial = nullptr, Protein* prot = nullptr);
