@@ -240,7 +240,7 @@ for rcpid in data.protutils.prots.keys():
             ln = newcfg[i]
             if ln[0:4] == "PROT" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
-            if ln[0:4] == "VCVTY" or ln[0:3] == "OUT":
+            if ln[0:5] == "VCVTY" or ln[0:3] == "OUT":
                 newcfg[i] = ln.replace(".active.", ".inactive.")
             if ln[0:6] == "CNTCT ":
                 newcfg[i] = ln.replace("_a.ic", "_i.ic")
