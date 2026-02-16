@@ -262,7 +262,7 @@ for rcpid in data.protutils.prots.keys():
         with open("tmp/" + conffna, 'w') as f:
             f.write(newcfga + "\n\n")
         with open("tmp/" + conffni, 'w') as f:
-            f.write("\n".join(newcfgi) + "\n\n")
+            f.write(newcfgi + "\n\n")
 
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         cmd = ["bin/aromadock", "tmp/" + conffna]
