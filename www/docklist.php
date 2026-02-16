@@ -145,6 +145,12 @@ foreach ($prots as $protid => $p)
             set_time_limit(600);
             foreach ($lines as $ln) 
             {
+                if (substr($ln, 0, 21) == "Disqualified because:" || substr($ln, 0, 25) == "Disqualified for reasons.")
+                {
+                    $benerg = 1000;
+                    $lsfe = $lsbe = $phfe = $phbe = $ewde = $occl = $tds = $nump = 0;
+                    break;
+                }
                 if (!$benerg && substr($ln, 0, 7) == "Total: ")
                 {
                     $benerg = floatval(substr($ln, 7));
