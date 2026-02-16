@@ -160,7 +160,7 @@ SoftRegion softrgns[32];
 int nsoftrgn = 0;
 int softrgn_allowed[32];
 int nsoftrgna = 0;
-ResiduePlaceholder soft_contact_a[256], soft_contact_b[256];
+ResiduePlaceholder soft_contact_a[SOFT_CNTCTS_MAX], soft_contact_b[SOFT_CNTCTS_MAX];
 int n_soft_contact = 0;
 ResiduePlaceholder soft_nodel_start[32], soft_nodel_end[32];
 int nsoftnodel = 0;
@@ -1206,6 +1206,11 @@ int interpret_config_line(char** words)
             soft_contact_a[n_soft_contact].set(words[1]);
             soft_contact_b[n_soft_contact].set(words[2]);
             n_soft_contact++;
+            if (n_soft_contact > SOFT_CNTCTS_MAX)
+            {
+                cerr << "Too many soft contacts." << endl << flush;
+                throw 0xbad19b07;
+            }
         }
         return 2;
     }

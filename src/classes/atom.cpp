@@ -8,7 +8,7 @@
 #include <climits>
 #include "atom.h"
 
-#define _DBGMOVES 1
+#define _DBGMOVES 0
 #define _DBGGEO 0
 
 using namespace std;
