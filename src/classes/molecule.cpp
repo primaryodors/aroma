@@ -6001,7 +6001,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         bool is_flexion_dbg_mol_bond = is_flexion_dbg_mol & !strcmp(bb[q]->atom2->name, "OG");
                         #endif
 
-                        bool do_selfish_flexion = frand(0,1) < 0.5;
+                        bool do_selfish_flexion = frand(0,1) < 0.9;
 
                         benerg.clash += a->total_eclipses();
                         if (do_full_rotation && bb[q]->can_rotate
