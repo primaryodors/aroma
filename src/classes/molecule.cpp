@@ -6001,6 +6001,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         bool is_flexion_dbg_mol_bond = is_flexion_dbg_mol & !strcmp(bb[q]->atom2->name, "OG");
                         #endif
 
+                        bool do_selfish_flexion = frand(0,1) < 0.5;
+
                         benerg.clash += a->total_eclipses();
                         if (do_full_rotation && bb[q]->can_rotate
                             #if fullrot_flex_first_subiter_only
@@ -6021,7 +6023,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             float best_theta = 0;
                             Pose prior_state;
                             prior_state.copy_state(a);
-                            benerg = cfmol_multibind(a, nearby, bb[q]);
+                            benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr);
                             for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
                             {
                                 prior_state.restore_state(a);
@@ -6030,7 +6032,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #endif
                                 bb[q]->rotate(theta, false);
                                 a->enforce_stays(multimol_stays_enforcement);
-                                tryenerg = cfmol_multibind(a, nearby, bb[q]);
+                                tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr);
                                 tryenerg.clash += a->total_eclipses();
                                 fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                                 if (audit) sprintf(triedchange, "fullrot flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
@@ -6078,7 +6080,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (!bb[q]->flip_angle) bb[q]->flip_angle = M_PI;
                             }
 
-                            benerg = cfmol_multibind(a, nearby, bb[q]);
+                            benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr);
                             benerg.clash += a->total_eclipses();
                             benerg.clash += a->get_internal_clashes();
                             benerg.clash += a->get_intermol_clashes(nearby);
@@ -6104,7 +6106,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 if (audit) sprintf(triedchange, "stochastic flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
                             }
 
-                            tryenerg = cfmol_multibind(a, nearby, bb[q]);
+                            tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr);
                             tryenerg.clash += a->total_eclipses();
                             tryenerg.clash += a->get_internal_clashes();
                             tryenerg.clash += a->get_intermol_clashes(nearby);
@@ -6138,7 +6140,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
 
                             a->enforce_stays(multimol_stays_enforcement);
-                            tryenerg = cfmol_multibind(a, nearby, bb[q]);
+                            tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr);
                             tryenerg.clash += a->total_eclipses();
                             tryenerg.clash += a->get_internal_clashes();
                             tryenerg.clash += a->get_intermol_clashes(nearby);
