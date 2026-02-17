@@ -44,6 +44,7 @@
 #define PROT_MAX_RGN 40
 #define SPHREACH_MAX 256
 #define VALENCE_EXCEEDS_GEOMETRY 22
+#define SOFT_CNTCTS_MAX 256
 
 #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
     #define CMD_CHECK_INSTALLED_3P_SMILES_PARSER "which obabel"
@@ -174,6 +175,8 @@
 #define prevent_ligand_360_on_activate 1
 #define recapture_ejected_ligand 0
 #define reuse_best_pose 1
+#define selfish_flexion_probability 0.9
+#define selfish_side_chains 0
 #define stay_close_conform_iters 1
 #define stays_rotation 1
 #define stays_rotation_verbose 0

@@ -247,8 +247,8 @@ public:
     float get_intermol_clashes(Molecule** ligands);
     static float total_intermol_clashes(Molecule** ligands);
     float get_worst_clash();
-    Interaction get_intermol_binding(Molecule* ligand, bool subtract_clashes = true, bool priority_boost = false);
-    Interaction get_intermol_binding(Molecule** ligands, bool subtract_clashes = true, bool priority_boost = false);
+    Interaction get_intermol_binding(Molecule* ligand, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr);
+    Interaction get_intermol_binding(Molecule** ligands, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr);
     Interaction get_atom_binding(Atom* a);
     float get_intermol_potential(Molecule* ligand, bool disregard_distance = false);
     float get_intermol_potential(Molecule** ligands, bool disregard_distance = false);
@@ -407,7 +407,8 @@ protected:
     bool in_same_ring(Atom* a, Atom* b);
     float get_atom_error(int atom_idx, LocatedVector* best_lv, bool hemispherical = true);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
-    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols);
+    Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash);
+    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr);
     bool faces_any_ligand(Molecule** ligands);
 
     public:
@@ -432,6 +433,7 @@ extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
 extern float intermol_covalent_enthalpy;
+extern Atom* tmp_rigid_atoms[1024];
 
 #if _dbg_improvements_only_rule
 extern Molecule** check_mols;
