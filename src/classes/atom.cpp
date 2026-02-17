@@ -1565,13 +1565,13 @@ void Bond::fill_moves_with_cache()
     do
     {
         k=0;
+        bool l_no_follow = false;
         for (j=0; j<tmplen; j++)
         {
             attmp[j]->fetch_bonds(b);
             if (b[0])
             {
                 if ((b[0]->can_rotate || b[0]->can_flip) && no_follow[j]) continue;
-                bool l_no_follow = false;
                 for (i=1; b[i]; i++)
                 {
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
@@ -1580,7 +1580,7 @@ void Bond::fill_moves_with_cache()
                         if (_DBGMOVES) cout << " not recursing ";
                         // no_follow[tmplen] = true;
                         l_no_follow = true;
-                        continue;
+                        if (b[0]->can_rotate || b[0]->can_flip) continue;
                     }
                     if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
                         && equal_or_zero(atom2->residue, b[i]->atom2->residue))
