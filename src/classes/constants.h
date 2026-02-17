@@ -175,6 +175,8 @@
 #define prevent_ligand_360_on_activate 1
 #define recapture_ejected_ligand 0
 #define reuse_best_pose 1
+#define selfish_flexion_probability 0.9
+#define selfish_side_chains 0
 #define stay_close_conform_iters 1
 #define stays_rotation 1
 #define stays_rotation_verbose 0
