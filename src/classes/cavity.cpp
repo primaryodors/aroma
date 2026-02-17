@@ -8,6 +8,7 @@ int cav_resmin = -99999, cav_resmax = 99999;
 float Cavity::cavity_intersection(Cavity* other)
 {
     float result = 0;
+    if (!partials) partials = (CPartial*)spartials;
     if (!partials || !pallocd || !other->partials || !other->pallocd) return result;
     int i, j;
 
@@ -37,6 +38,7 @@ void Cavity::unify(Cavity* cavfrom)
     int i, j, n;
 
     n = 0;
+    if (!partials) partials = (CPartial*)spartials;
     if (partials) for (; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
     j = n;
     if (cavfrom->partials)
@@ -515,6 +517,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
     Atom*     matom[10];
     float     score[10];
     int matches = 0;
+    if (!partials) partials = (CPartial*)spartials;
 
     int i, j, l, m, n;
     float f, f0;
@@ -679,6 +682,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
 
 int Cavity::resnos(Protein* p, AminoAcid** result)
 {
+    if (!partials) partials = (CPartial*)spartials;
     if (!partials || !pallocd) return 0;
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];
@@ -709,6 +713,7 @@ int Cavity::resnos(Protein* p, AminoAcid** result)
 
 std::string Cavity::resnos_as_string(Protein* p)
 {
+    if (!partials) partials = (CPartial*)spartials;
     if (!partials || !pallocd) return (std::string)"";
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];

@@ -30,7 +30,7 @@ class Cavity : public Space
     float cavity_intersection(Cavity* other);
     void unify(Cavity* cavfrom);
     int estimate_multiplicity(Molecule* ligand);
-    CPartial* get_partial_by_idx(int idx) { return &partials[idx]; }
+    CPartial* get_partial_by_idx(int idx) { if (!partials) partials = (CPartial*)spartials; return &partials[idx]; }
 
     protected:
     CPartial* partials = nullptr;
