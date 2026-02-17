@@ -1462,6 +1462,7 @@ int Atom::get_Greek()
 void Bond::fill_moves_with_cache()
 {
     Atom* attmp[65536];
+    bool no_follow[65536];
     int tmplen = 0;
     int i, j, k;
     int lused = rand();
@@ -1553,6 +1554,7 @@ void Bond::fill_moves_with_cache()
             mw_atom_count++;
             mw_Zsum += proximity*b[i]->atom2->Z;
 
+            no_follow[tmplen] = false;
             attmp[tmplen++] = b[i]->atom2;
             b[i]->atom2->used = lused;
             if (_DBGMOVES) cout << b[i]->atom2->name << " ";
@@ -1565,6 +1567,7 @@ void Bond::fill_moves_with_cache()
         k=0;
         for (j=0; j<tmplen; j++)
         {
+            if (no_follow[j]) continue;
             attmp[j]->fetch_bonds(b);
             if (b[0])
             {
@@ -1573,8 +1576,8 @@ void Bond::fill_moves_with_cache()
                     if (_DBGMOVES) if (b[i]->atom2) cout << "(" << attmp[j]->name << "-" << b[i]->atom2->name << ((b[i]->atom2->used == lused) ? "*" : "") << "?) ";
                     if (b[i]->atom1 != atom2 && (b[i]->can_rotate || b[i]->can_flip))
                     {
-                        if (_DBGMOVES) cout << " skipping | ";
-                        continue;
+                        if (_DBGMOVES) cout << " not recursing ";
+                        no_follow[tmplen] = true;
                     }
                     if (b[i]->atom2 && b[i]->atom2->used != lused && b[i]->atom2 != atom1
                         && equal_or_zero(atom2->residue, b[i]->atom2->residue))
