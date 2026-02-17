@@ -171,7 +171,7 @@
 #define nodes_no_ligand_360_tumble 1
 #define pocketcen_from_reach_atoms 0
 #define pocketcen_is_loneliest 1
-#define point_hydro_side_chains_inward 0
+#define point_hydro_side_chains_inward 1
 #define prevent_ligand_360_on_activate 1
 #define recapture_ejected_ligand 0
 #define reuse_best_pose 1
