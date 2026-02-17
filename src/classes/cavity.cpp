@@ -49,6 +49,7 @@ void Cavity::unify(Cavity* cavfrom)
         pallocd += n + 256;
         CPartial* oldpart = partials;
         partials = new CPartial[pallocd+4];
+        spartials = (SPartial*)partials;
         j=0;
         if (oldpart)
         {
@@ -63,26 +64,6 @@ void Cavity::unify(Cavity* cavfrom)
         for (i=0; cavfrom->partials[i].s.radius >= min_partial_radius; i++) partials[i+j] = cavfrom->partials[i];
         delete cavfrom->partials;
     }
-}
-
-Box Cavity::boundingbox()
-{
-    Box result(0,0,0,0,0,0);
-    if (pallocd)
-    {
-        int i;
-        for (i=0; i<pallocd; i++)
-        {
-            if (partials[i].s.radius < min_partial_radius) break;
-            Point size = Point(partials[i].s.radius, partials[i].s.radius, partials[i].s.radius);
-            Point corner1 = partials[i].s.center.subtract(size);
-            Point corner2 = partials[i].s.center.subtract(size);
-            if (!i) result = Box(corner1, corner2);
-            else result = result.outer(Box(corner1, corner2));
-        }
-    }
-
-    return result; 
 }
 
 int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb)
@@ -290,7 +271,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
             if (!aa) continue;
             Atom* a = aa->get_nearest_atom(tmpcav[i].get_center());
             if (!a) continue;
-            CPartial* part = tmpcav[i].get_nearest_partial(a->loc);
+            CPartial* part = (CPartial*)(tmpcav[i].get_nearest_partial(a->loc));
             if (!part) continue;
             r = part->s.center.get_3d_distance(a->loc);
             // if (r > _INTERA_R_CUTOFF+part->s.radius+a->vdW_radius) continue;
@@ -319,327 +300,6 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
     return j;
 }
 
-float Cavity::partial_intersects_cavity(CPartial p)
-{
-    if (!pallocd) return 0;
-    int i;
-    float result = 0;
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        // float inter = sphere_intersection(partials[i].s.radius, p.s.radius, p.s.center.get_3d_distance(partials[i].s.center));
-        float inter = partials[i].s.radius + p.s.radius - p.s.center.get_3d_distance(partials[i].s.center);
-        // inter /= p.s.volume();
-        if (inter > result) result = inter;
-        // result += inter;
-    }
-
-    return result;
-}
-
-void Cavity::add_partial(CPartial p)
-{
-    if (!pallocd)
-    {
-        pallocd = 256;
-        partials = new CPartial[pallocd+4];
-        priority = false;
-    }
-
-    if (!p.s.center.x && !p.s.center.y && !p.s.center.z) return;
-
-    int i, j;
-    for (i=0; i<pallocd; i++) if (partials[i].s.radius < min_partial_radius) break;             // Get count.
-
-    if (i >= pallocd-4)
-    {
-        CPartial* old = partials;
-        partials = new CPartial[pallocd+260];
-        for (j=0; j<i; j++) partials[j] = old[j];
-        delete[] old;
-        pallocd += 256;
-    }
-
-    partials[i] = p;
-    partials[i+1].s.radius = 0;
-    if (p.priority) this->priority = true;
-    cached_volume = -1;
-    // cout << "Cavity " << this << " added partial at " << partials[i].s.center << " radius " << partials[i].s.radius << endl << flush;
-}
-
-void Cavity::output_ngl_js(FILE* fp)
-{
-    if (!fp) return;
-    if (!pallocd) return;
-
-    int i;
-    if (priority) fprintf(fp, "// PRIORITY:\n");
-    fprintf(fp, "var shape = new NGL.Shape( \"shape\" );\n");
-    fprintf(fp, "var sphereBuffer = new NGL.SphereBuffer(\n{\n");
-    fprintf(fp, "    position: new Float32Array( [ ");
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        if (i) fprintf(fp, ", ");
-        fprintf(fp, "%f, %f, %f", partials[i].s.center.x, partials[i].s.center.y, partials[i].s.center.z);
-        if (!(i%5)) fprintf(fp, "\n\t\t");
-    }
-    fprintf(fp, " ] ),\n");
-    fprintf(fp, "    color: new Float32Array( [ ");
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        if (i) fprintf(fp, ", ");
-        if (partials[i].priority) fprintf(fp, "0.0, 1.0, 0.0");
-        else if (partials[i].metallic) fprintf(fp, "0.7, 0.5, 0.3");
-        else if (partials[i].chargedp && partials[i].chargedn) fprintf(fp, "1, 0, 1");
-        else if (partials[i].chargedp) fprintf(fp, "0.1, 0.1, 1");
-        else if (partials[i].chargedn) fprintf(fp, "1, 0.1, 0.1");
-        else if (partials[i].polar) fprintf(fp, "0.1, 1, 1");
-        else if (partials[i].thio) fprintf(fp, "1, 0.8, 0.1");
-        else if (partials[i].pi) fprintf(fp, "0.8, 0.6, 0.8");
-        else fprintf(fp, "0.6, 0.6, 0.6");
-        if (!(i%5)) fprintf(fp, "\n\t\t");
-    }
-    fprintf(fp, " ] ),\n");
-    fprintf(fp, "    radius: new Float32Array( [ ");
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        if (i) fprintf(fp, ", ");
-        fprintf(fp, "%f", partials[i].s.radius);
-        if (!(i%5)) fprintf(fp, "\n\t\t");
-    }
-    fprintf(fp, " ] ),\n");
-    fprintf(fp, "} );\n");
-    fprintf(fp, "shape.addBuffer( sphereBuffer );\n");
-    fprintf(fp, "var shapeComp = stage.addComponentFromObject( shape );\n");
-    fprintf(fp, "shapeComp.addRepresentation( \"buffer\", { opacity: 0.3 } );\n");
-    // fprintf(fp, "shapeComp.autoView();\n");
-    fprintf(fp, "\n");
-}
-
-int Cavity::count_partials()
-{
-    if (!pallocd) return 0;
-    int i;
-    for (i=0; i<pallocd; i++) if (partials[i].s.radius < min_partial_radius) return i;
-    return 0;
-}
-
-Point Cavity::get_center()
-{
-    if (!pallocd) return Point(0,0,0);
-    int i, j=0;
-    Point foravg[pallocd+4];
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        foravg[j] = partials[i].s.center;
-        foravg[j].weight = partials[i].s.radius;
-        j++;
-    }
-
-    return average_of_points(foravg, j);
-}
-
-float Cavity::get_volume()
-{
-    if (!pallocd) return 0;
-    if (cached_volume> 0) return cached_volume;
-
-    Box bounds = boundingbox();
-    float resolution = 0.5;
-    float x, y, z;
-    int present = 0;
-    for (x=bounds.x1; x<=bounds.x2; x+= resolution)
-    {
-        for (y=bounds.y1; y<=bounds.y2; y+= resolution)
-        {
-            for (z=bounds.z1; z<=bounds.z2; z+= resolution)
-            {
-                Point pt(x,y,z);
-                if (this->point_inside_pocket(pt)) present++;
-            }
-        }
-    }
-    cached_volume = (double)present * (resolution*resolution*resolution);
-    return cached_volume;
-
-    #if 0
-    int i, j;
-    float result = 0;
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        result += partials[i].s.volume();
-    }
-
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        for (j=i+1; j<pallocd; j++)
-        {
-            if (partials[j].s.radius < min_partial_radius) break;
-            result -= sphere_intersection(partials[i].s.radius, partials[j].s.radius, partials[i].s.center.get_3d_distance(partials[j].s.center));
-        }
-    }
-
-    return result;
-    #endif
-}
-
-Point Cavity::nearest_surface_vertex(Point pt)
-{
-    if (!vdw_vertex_count) return Point(0,0,0);
-    int i;
-    float bestr;
-    Point result;
-    for (i=0; i<vdw_vertex_count; i++)
-    {
-        float r = pt.get_3d_distance(vdw_surface[i]);
-        if (!i || r < bestr)
-        {
-            bestr = r;
-            result = vdw_surface[i];
-        }
-    }
-
-    return result;
-}
-
-CPartial* Cavity::get_nearest_partial(Point pt)
-{
-    if (!pallocd || !partials) return nullptr;
-
-    int i;
-    float bestr;
-    CPartial* result;
-    for (i=0; i<pallocd && partials[i].s.radius; i++)
-    {
-        float r = partials[i].s.center.get_3d_distance(pt);
-        if (!i || r < bestr)
-        {
-            bestr = r;
-            result = &partials[i];
-        }
-    }
-
-    return result;
-}
-
-void Cavity::compute_vdW_surface(float d)
-{
-    if (!pallocd || !partials) return;
-
-    int maxpoints = pallocd * d * d / 3 + 256;
-    if (!vdw_surface)
-    {
-        vdw_surface = new Point[maxpoints];
-        vdw_vertex_partial = new CPartial*[maxpoints];
-    }
-
-    float halfstep = M_PI / d;
-    float step = halfstep * 2;
-
-    int i, ivdW = 0;
-    Vector v;
-    for (i=0; i<pallocd && partials[i].s.radius; i++)
-    {
-        Point ploc = partials[i].s.center;
-        v.r = partials[i].s.radius;
-        float ystep = step / v.r / v.r;
-        for (v.theta = -square; v.theta <= square; v.theta += step)
-        {
-            float xstep = step / v.r / fmax(cos(v.theta), 0.000001);
-            float end = M_PI*2-xstep/2;
-            for (v.phi = 0; v.phi < end; v.phi += xstep)
-            {
-                Point pt = ploc.add(v);
-                CPartial* np = this->get_nearest_partial(pt);
-                if (np != &partials[i] && pt.get_3d_distance(np->s.center) < np->s.radius) continue;
-                if (!pt.x && !pt.y && !pt.z) pt = Point(-0.001, 0.001, -0.001);
-                vdw_vertex_partial[ivdW] = &partials[i];
-                vdw_surface[ivdW++] = pt;
-                if (ivdW >= maxpoints)
-                {
-                    cout << "Too many cavity surface ligand_vertices. Please increase limit in code." << endl;
-                    throw 0xbadc0de;
-                }
-            }
-        }
-    }
-    vdw_vertex_count = ivdW;
-}
-
-CPartial* Cavity::point_inside_pocket(Point pt)
-{
-    if (!pallocd) return nullptr;
-    int i, j=-1;
-    float rbest = Avogadro;
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        float r = partials[i].s.center.get_3d_distance(pt);
-        if (r < partials[i].s.radius && r < rbest)
-        {
-            rbest = r;
-            j = i;
-        }
-    }
-    if (j >= 0) return &partials[j];
-
-    return nullptr;
-}
-
-float Cavity::sphere_inside_pocket(Sphere s, CPartial** p)
-{
-    if (p) *p = nullptr;
-    if (!pallocd) return 0;
-
-    int i;
-    float result = 0, br = Avogadro, br1 = Avogadro;
-    CPartial *p0 = nullptr, *p1 = nullptr;
-    for (i=0; i<pallocd; i++)
-    {
-        if (partials[i].s.radius < min_partial_radius) break;
-        float r = partials[i].s.center.get_3d_distance(s.center);
-        if (!p0 || r < br)
-        {
-            p1 = p0;
-            br1 = br;
-            p0 = &partials[i];
-            if (p) *p = p0;
-            br = r;
-            // cout << r << endl;
-        }
-        else if (!p1 || r < br1)
-        {
-            p1 = &partials[i];
-            br1 = br;
-        }
-    }
-
-    if (p0 && p1)
-    {
-        float r = s.center.get_distance_to_line(p0->s.center, p1->s.center);
-        float rlim = 1.414*(fmax(p0->s.radius, p1->s.radius) - s.radius + global_clash_allowance);
-        if (r <= rlim) result = 1;
-        else if ((r - rlim) < s.radius) result = (r - rlim) / s.radius;
-        else result = 0;
-    }
-    else if (p0)
-    {
-        float r = s.center.get_3d_distance(p0->s.center);
-        float rlim = p0->s.radius - s.radius + global_clash_allowance;
-        if (r <= rlim) result = 1;
-        else if ((r - rlim) < s.radius) result = (r - rlim) / s.radius;
-        else result = 0;
-    }
-
-    return result;
-}
-
 float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
 {
     int i, j, n = m->get_atom_count();
@@ -654,7 +314,7 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
         if (Z < 2) s.radius /= 2;
 
         CPartial* p;
-        float partial = sphere_inside_pocket(s, &p);
+        float partial = sphere_inside_pocket(s, (SPartial**)&p);
 
         if (!partial) continue;
 
@@ -707,7 +367,7 @@ float Cavity::cavity_filling(Molecule *m)
             for (z=b.z1; z<=b.z2; z+=step)
             {
                 Point pt(x,y,z);
-                CPartial* part = point_inside_pocket(pt);
+                CPartial* part = (CPartial*)point_inside_pocket(pt);
                 if (part)
                 {
                     Atom* a = m->get_nearest_atom(pt);
@@ -776,7 +436,7 @@ float Cavity::find_best_containment(Molecule* m, bool mbt)
                     if (a->Z < 2) continue;
 
                     CPartial* inside;
-                    float f = sphere_inside_pocket(a->get_sphere(), &inside);
+                    float f = sphere_inside_pocket(a->get_sphere(), (SPartial**)&inside);
                     /* if (inside && a->get_charge() && a->distance_to(prot->get_residue(264)->get_atom("HH2")) < 5)
                         cout << a->distance_to(prot->get_residue(264)->get_atom("HH2")) << endl << flush; */
                     if (mbt && inside)
@@ -847,45 +507,6 @@ float Cavity::find_best_containment(Molecule* m, bool mbt)
     best.restore_state(m);
 
     return bestviol;
-}
-
-float CPartial::atom_match_score(Atom* a)
-{
-    float result = 0;
-    if (!a) return result;
-    if (chargedp || chargedn)
-    {
-        float achg = a->get_charge();
-        if (achg > 0 && chargedn) result += 0.3;
-        else if (achg < 0 && chargedp) result += 0.3;
-    }
-
-    if (metallic)
-    {
-        int fam = a->get_family();
-        int Z = a->Z;
-
-        if (fam == PNICTOGEN) result += 1.5 / sqrt(Z/8);
-        else if (fam == CHALCOGEN)
-        {
-            if (Z < 10) result += 0.5;
-            else result += 2.5 / sqrt(Z/16);
-        }
-    }
-
-    if (polar)
-    {
-        float apol = a->is_polar();
-        if (fabs(apol) >= hydrophilicity_cutoff) result += 0.2 * fabs(apol);
-    }
-
-    if (thio && a->is_thio()) result += 0.05;
-
-    if (this->pi && a->is_pi()) result += 0.12;
-
-    if (priority) result *= 5;
-
-    return result;
 }
 
 float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match_partial, Protein* prot)

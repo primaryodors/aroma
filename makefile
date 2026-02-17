@@ -5,7 +5,7 @@ SDF=sdf
 TMP=tmp
 
 DIRS=$(OBJ) $(BIN) $(OUT) $(SDF) $(TMP)
-OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
+OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/space.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
 	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
 DOBJ=$(OBJ)/dynamic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
@@ -75,6 +75,9 @@ $(OBJ)/point.o: src/classes/point.h src/classes/point.cpp $(OBJ)/misc.o src/clas
 
 $(OBJ)/atom.o: src/classes/atom.h src/classes/atom.cpp $(OBJ)/point.o makefile
 	$(CPL) -c src/classes/atom.cpp -o $(OBJ)/atom.o $(CFLAGS)
+
+$(OBJ)/space.o: src/classes/space.h src/classes/space.cpp $(OBJ)/atom.o makefile
+	$(CPL) -c src/classes/space.cpp -o $(OBJ)/space.o $(CFLAGS)
 
 $(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp $(OBJ)/atom.o makefile
 	$(CPL) -c src/classes/conj.cpp -o $(OBJ)/conj.o $(CFLAGS)

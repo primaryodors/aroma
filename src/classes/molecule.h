@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include "progress.h"
+#include "space.h"
 
 #define _solve_nonpol 2.1 / 84.5 / _kcal_per_kJ
 #define _solve_np2pol -6.9 / 19.9 / _kcal_per_kJ
@@ -184,6 +185,7 @@ public:
     float octant_occlusion(Molecule** ligands, bool ignore_polar = false);
     float octant_occlusion(Molecule* ligand, bool ignore_polar = false);
     Point polar_barycenter();
+    float contained_by_space(Space* container);
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
@@ -273,12 +275,14 @@ public:
     static void conform_molecules(Molecule** molecules, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
         void (*progress)(float) = nullptr,
-        int min_iter = 0
+        int min_iter = 0,
+        Space* container = nullptr
         );
     
     static void conform_molecules(Molecule** molecules, Molecule** background, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
-        void (*progress)(float) = nullptr
+        void (*progress)(float) = nullptr,
+        Space* container = nullptr
         );
 
     void quick_conform(Molecule** background, int iterations = 25);
@@ -408,7 +412,7 @@ protected:
     float get_atom_error(int atom_idx, LocatedVector* best_lv, bool hemispherical = true);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash);
-    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr);
+    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr, Space* container = nullptr);
     bool faces_any_ligand(Molecule** ligands);
 
     public:
