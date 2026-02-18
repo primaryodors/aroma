@@ -74,12 +74,18 @@ struct Box
     bool contains(Point pt);
 };
 
+float cap_volume(float r1, float r2, float d);                  // TODO:
+float cap_area(float r1, float r2, float d);                    // Important: this is the OUTER (i.e. NON-intersecting) cap of the sphere.
+float sphere_intersection(float r1, float r2, float d);         // Volume of the lens composed of the two caps.
+float sphere_inter_area(float r1, float r2, float d);           // Area of the circle formed by the spheres' intersection.
+
 struct Sphere
 {
     Point center;
     float radius = 0;
     float area() { return 4.0 * M_PI*radius*radius; }
     float volume() { return 4.0/3 * M_PI*radius*radius*radius; }
+    float intersection(Sphere other) { return sphere_intersection(radius, other.radius, center.get_3d_distance(other.center)) / volume(); }
 };
 
 struct Vector
@@ -206,11 +212,6 @@ Vector compute_normal(Point pt1, Point pt2, Point pt3);
 
 float are_points_planar(Point p1, Point p2, Point p3, Point p4);
 float polygon_radius(float side_length, int num_sides);
-
-float cap_volume(float r1, float r2, float d);                  // TODO:
-float cap_area(float r1, float r2, float d);                    // Important: this is the OUTER (i.e. NON-intersecting) cap of the sphere.
-float sphere_intersection(float r1, float r2, float d);         // Volume of the lens composed of the two caps.
-float sphere_inter_area(float r1, float r2, float d);           // Area of the circle formed by the spheres' intersection.
 
 Vector v_from_pt_sub(Point distal, Point reference);
 

@@ -3745,7 +3745,7 @@ int main(int argc, char** argv)
                     else raise_error("Unknown error.");
                 }
             }   // UPRIGHT
-            
+
             else if (!strcmp(words[0], "WIND"))
             {
                 l = 1;

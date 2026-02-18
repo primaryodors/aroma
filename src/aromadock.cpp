@@ -149,6 +149,7 @@ bool do_output_colors = false;
 
 LigandTarget* g_ligtargs;
 BestBindingResult g_bbr[16];
+Cavity* gcav = nullptr;
 
 MCoord mtlcoords[16];
 int nmtlcoords;
@@ -3562,23 +3563,22 @@ _try_again:
                     {
                         if (pose==1) cout << "Performing Best-Binding search..." << endl << flush;
 
-                        Cavity* cv = nullptr;
                         float cvr = Avogadro;
                         if (ncvtys) for (i=0; i<ncvtys; i++)
                         {
                             float r = cvtys[i].get_center().get_3d_distance(ligand->get_barycenter());
                             if (r < cvr)
                             {
-                                cv = &cvtys[i];
+                                gcav = &cvtys[i];
                                 cvr = r;
                             }
                         }
 
                         Molecule* llig;
                         AminoAcid** lrs = new AminoAcid*[SPHREACH_MAX];
-                        if (cv)
+                        if (gcav)
                         {
-                            j = cv->resnos(protein, lrs);
+                            j = gcav->resnos(protein, lrs);
                             lrs[j] = nullptr;
                             lrs[SPHREACH_MAX-1] = nullptr;
                         }
@@ -3599,7 +3599,7 @@ _try_again:
                             upivsmfpoy:
                             try
                             {
-                                Search::pair_targets(protein, llig, llt, lrs, searchcen, &g_bbr[l], cv, !l);
+                                Search::pair_targets(protein, llig, llt, lrs, searchcen, &g_bbr[l], gcav, !l);
                             }
                             catch (int sodivld)
                             {
@@ -3971,6 +3971,28 @@ _try_again:
                     g_bbr->pri_res->conform_atom_to_location(sa->name, nodecen);
                     if (output_each_iter) output_iter(++nodeoff, cfmols, "ligand to pocket center");
                 }
+
+                if (gcav)
+                {
+                    Bond** resb = g_bbr->pri_res->get_rotatable_bonds();
+                    if (resb) for (i=0; resb[i]; i++)
+                    {
+                        float best = ligand->contained_by_space(gcav);
+                        float theta, besth=0, step = hexagonal/2;
+                        for (theta=0; theta<M_PI*2; theta+=step)
+                        {
+                            resb[i]->rotate(step);
+                            float ltry = ligand->contained_by_space(gcav);
+                            if (ltry > best)
+                            {
+                                best = ltry;
+                                besth = theta;
+                            }
+                        }
+                        resb[i]->rotate(besth);
+                    }
+                }
+
                 if (pose == 1)
                 {
                     cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl << endl;
@@ -3983,7 +4005,7 @@ _try_again:
             /////////////////////////////////////////////////////////////////////////////////
             // Main call to conformational search function.
             /////////////////////////////////////////////////////////////////////////////////
-            Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0);
+            Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0, (Space*)gcav);
             if (end_program) poses = pose;
             float postdock_mclashes = protein->total_mclashes();
             float mclash_delta = postdock_mclashes - predock_mclashes;
