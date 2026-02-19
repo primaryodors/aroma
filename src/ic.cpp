@@ -7,6 +7,7 @@
 #include "classes/search.h"
 #include "classes/reshape.h"
 #include "classes/progress.h"
+#include "classes/dynamic.h"
 
 using namespace std;
 
@@ -22,13 +23,14 @@ int main(int argc, char** argv)
     }
     char* fname;
     Protein p("testing");
-    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false, dorshps = false, dohg = false;
+    bool dosave = false, dominc = false, polaronly = false, dohyd = false, totalall = false, dorshps = false, dohg = false, dowind = false;
     ResiduePlaceholder rotres;
     char* rota1 = nullptr;
     char* rota2 = nullptr;
     float rota = 0;
     Reshape rshp;
     ICHelixGroup hg;
+    DynamicMotion winding(&p);
 
     int i;
     FILE* fp;
@@ -65,6 +67,14 @@ int main(int argc, char** argv)
             rota1 = argv[++i];
             rota2 = argv[++i];
             rota = atof(argv[++i]) * fiftyseventh;
+        }
+        else if (!strcmp(argv[i], "wind"))
+        {
+            winding.type = dyn_wind;
+            winding.start_resno.from_string(argv[++i]);
+            winding.end_resno.from_string(argv[++i]);
+            winding.bias = atof(argv[++i]);
+            dowind = true;
         }
         else if (atof(argv[i])) threshold = atof(argv[i]);
         else if (strstr(argv[i], ".pdb"))
@@ -111,6 +121,8 @@ int main(int argc, char** argv)
         }
         cout << endl;
     }
+
+    if (dowind) winding.apply_absolute(1);
 
     if (dorshps) rshp.apply(&p, false);
 
