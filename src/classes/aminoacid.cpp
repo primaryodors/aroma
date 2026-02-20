@@ -3700,9 +3700,12 @@ bool AminoAcid::is_amine()
         if (atoms[i]->get_family() == TETREL
             && !atoms[i]->is_pi()
             && !atoms[i]->is_bonded_to(CHALCOGEN)
-            && atoms[i]->is_bonded_to(PNICTOGEN)
             )
-            return true;
+        {
+            Atom *pn = atoms[i]->is_bonded_to(PNICTOGEN);
+            if (pn && !pn->is_backbone)
+                return true;
+        }
     }
 
     return false;
