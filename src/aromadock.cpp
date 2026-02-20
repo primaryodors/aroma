@@ -3603,12 +3603,19 @@ _try_again:
                             }
                             catch (int sodivld)
                             {
-                                if (sodivld == 0x90ba1125)
+                                if (sodivld == 0x90ba1125)          // this says "no pairs". Yes, it looks like something else but Balsz rhymes with "waltz" anywho.
                                 {
                                     if (pose == 1)
                                     {
-                                        cout << "FATAL ERROR." << endl;
-                                        throw sodivld;
+                                        if (gcav && gcav->count_partials())
+                                        {
+                                            gcav->find_best_containment(ligand, true);
+                                        }
+                                        else
+                                        {
+                                            cout << "FATAL ERROR." << endl;
+                                            throw sodivld;
+                                        }
                                     }
                                     else goto upivsmfpoy;           // try again, we already know it can be done.
                                 }
