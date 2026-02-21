@@ -3274,6 +3274,7 @@ _try_again:
                 AminoAcid* aa = reaches_spheroid[nodeno][i];
                 if (!aa) continue;
                 if (aa->movability == MOV_PINNED) continue;
+                if (!aa->is_alpha_helix()) continue;
                 bool aa_cannot_point_inward = false;
                 for (j=0; j<n_soft_contact; j++)
                 {
