@@ -1448,7 +1448,7 @@ float Molecule::contained_by_space(Space *c)
 float Molecule::octant_occlusion(Molecule **ligands, bool ip)
 {
     if (!atoms) return 0;
-    int h, i, j, l;
+    int h, i, j, l, pduj;
 
     float Helecn = Atom::electronegativity_from_Z(1);
     float Oelecn = Atom::electronegativity_from_Z(8);
@@ -1562,9 +1562,20 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
     #else
     float total_occlusions = 0;
     Sphere octant_atoms[8];
+    int octant_ligid[8];
     float octant_atom_pol[8];
+    #if _dbg_octant_occlusion
+    std::string octant_atom_name[8];
+    #endif
 
-    for (i=0; i<8; i++) octant_atoms[i].radius = octant_atom_pol[i] = 0;
+    for (i=0; i<8; i++)
+    {
+        octant_atoms[i].radius = octant_atom_pol[i] = 0;
+        octant_ligid[i] = -1;
+        #if _dbg_octant_occlusion
+        octant_atom_name[i] = "null";
+        #endif
+    }
 
     #if _dbg_octant_occlusion
     cout << endl;
@@ -1582,13 +1593,24 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
             float oim = octant_atoms[octi].center.magnitude();
 
             float r = rel.r;
+            if (r > _INTERA_R_CUTOFF) continue;
+            // cout << ligands[i]->name << ":" << a->name << "..." << b->name << ": " << r << " octant " << octi << endl;
             if (!oim || r < oim)
             {
+                bool skip = false;
+                for (pduj=0; pduj<8; pduj++)
+                {
+                    if (pduj!=octi && octant_ligid[pduj] == i) skip = true;
+                }
+                if (skip) continue;
+
                 octant_atoms[octi].center = rel;
                 octant_atoms[octi].radius = a->vdW_radius + b->vdW_radius;
                 octant_atom_pol[octi] = fabs(a->is_polar());
+                octant_ligid[octi] = i;
                 #if _dbg_octant_occlusion
-                cout << "Atom " << ligands[i]->name << ":" << a->name << " for octant " << octi << endl;
+                octant_atom_name[octi] = (std::string)ligands[i]->name + (std::string)":" + (std::string)a->name;
+                cout << "Atom " << octant_atom_name[octi] << " for octant " << octi << endl;
                 #endif
             }
         }
@@ -1600,7 +1622,7 @@ float Molecule::octant_occlusion(Molecule **ligands, bool ip)
         int j = 7-i;
         #if _dbg_octant_occlusion
         if (!i) cout << endl;
-        cout << "Octant " << i << " vs. " << j << ":";
+        cout << "Octant " << i << " (" << octant_atom_name[i] << ") vs. " << j << " (" << octant_atom_name[j] << ")" << ":";
         #endif
         if (octant_atoms[i].radius && octant_atoms[j].radius)
         {
