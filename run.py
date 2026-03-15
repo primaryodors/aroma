@@ -303,7 +303,8 @@ for rcpid in data.protutils.prots.keys():
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config files because you have the debug \"nodelete\" option selected.")
         else:
-            os.remove("tmp/" + f"{rcpid}~{lignu}.*.config")
+            for suff in runsuff:
+                os.remove("tmp/" + f"{rcpid}~{lignu}.{suff}.config")
 
         print("Completed", rcpid, o["full_name"])
 

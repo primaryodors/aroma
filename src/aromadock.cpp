@@ -3878,6 +3878,7 @@ _try_again:
 
                     int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry();
                     bool bhal = bh->is_aldehyde();
+                    float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
 
                     if (!rhmet)
                     {
@@ -3893,7 +3894,17 @@ _try_again:
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
                                 if ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH))
                                 {
-                                    if (frand(0,1) < 0.25 * fabs(lrs[i]->hydrophilicity()))
+                                    float lrhyd = fabs(lrs[i]->hydrophilicity());
+                                    float probability = 0.1 * lrhyd;
+                                    Atom *ra = lrs[i]->get_reach_atom();
+                                    if (ra)
+                                    {
+                                        float rhcendist = ra->loc.get_3d_distance(nodecen);
+                                        float anomaly = rhcendist - bhcendist;
+                                        if (anomaly > 0) anomaly = fmax(0, anomaly-3.5);
+                                        probability += 0.25 * lrhyd / (1.0 + anomaly/2.5);
+                                    }
+                                    if (frand(0,1) < probability)
                                         break;
                                 }
                             }
