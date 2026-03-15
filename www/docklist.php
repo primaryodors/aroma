@@ -103,6 +103,7 @@ foreach ($prots as $protid => $p)
     natsort($files);
 
     $rows = [];
+    $modes = [];
     foreach ($files as $fname)
     {
         if (substr($fname, -5) != ".dock") continue;
@@ -126,6 +127,8 @@ foreach ($prots as $protid => $p)
 
         $rowid = "$protid~$odor";
         if (!isset($rows[$rowid])) $rows[$rowid] = [];
+        if (!isset($modes[$rowid])) $modes[$rowid] = [];
+        $modes[$rowid][] = $mode;
 
         $fpn = "../out/$fam/$protid/$fname";
 
@@ -294,9 +297,16 @@ foreach ($prots as $protid => $p)
     {
         list($protid, $odor) = explode("~", $k);
         $benerg_active = 0;
-        $benerg_inactive = 0;
-        $benerg_raw_active = 0;
-        $benerg_raw_inactive = 0;
+        // print_r($r);
+        $benerg_ = []; $nump_ = []; $occl_ = []; $benerg_raw_ = [];
+        foreach ($modes[$k] as $mode)
+        {
+            $benerg_[$mode] = @$r["benerg_$mode"] ?: 0;
+            $nump_[$mode] = @$r["nump_$mode"] ?: 0;
+            $occl_[$mode] = @$r["occl_$mode"] ?: 0;
+            $benerg_raw_[$mode] = @$r["benerg_raw_$mode"] ?: 0;
+            if ($mode != "inactive" && (!$benerg_active || $benerg_active > $benerg_[$mode])) $benerg_active = $benerg_[$mode];
+        }
         $top = $ec50 = false;
         extract($r);
 
@@ -318,15 +328,31 @@ foreach ($prots as $protid => $p)
         $flig = $o['oid'];
 
         echo "<td>";
-        echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">";
-        $dispe = "-";
+
         if ($benerg_active)
         {
-            if ($benerg_active >= 200) $dispe = "(fail)";
-            else $dispe = round($benerg_active, 4);
+            if ($benerg_active >= 200) echo "(fail)";
+            else if (@$benerg_["active"])
+            {
+                echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">";
+                echo round($benerg_active, 4);
+                echo "</a>";
+            }
+            else
+            {
+                $frist = true;
+                foreach ($modes[$k] as $mode)
+                {
+                    if (!$frist) echo ", ";
+                    echo $mode;
+                    echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">";
+                    echo round($benerg_[$mode], 4);
+                    echo "</a>";
+                    $frist = false;
+                }
+            }
         }
-        echo $dispe;
-        echo "</a>";
+
         echo " / ";
         echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=inactive\" target=\"_dock\">";
         $dispe = "-";
@@ -443,6 +469,8 @@ foreach ($prots as $protid => $p)
         }
 
         echo "<td style=\"$color\">$prediction</td>\n";
+
+        $benerg_active = $occl_active = $nump_active = $benerg_inactive = $occl_inactive = $nump_inactive = $prediction = 0;
     }
 }
 
