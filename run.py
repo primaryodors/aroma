@@ -281,16 +281,16 @@ for rcpid in data.protutils.prots.keys():
 
             if pocket:
                 # TODO: bridge, flxr, and stcr
-                if "atomtoa" in pocket:
+                if suff != "inactive" and "atomtoa" in pocket:
                     if isinstance(pocket["atomtoa"], str):
                         pocket["atomtoa"] = [pocket["atomtoa"]]
                     for a2 in pocket["atomtoa"]:
                         newcfga += "\n" + "ATOMTO " + a2
-                if "atomtoi" in pocket:
+                if suff == "inactive" and "atomtoi" in pocket:
                     if isinstance(pocket["atomtoa"], str):
                         pocket["atomtoa"] = [pocket["atomtoa"]]
                     for a2 in pocket["atomtoa"]:
-                        newcfgi += "\n" + "ATOMTO " + a2
+                        newcfga += "\n" + "ATOMTO " + a2
 
             with open("tmp/" + conffn, 'w') as f:
                 f.write(newcfga + "\n\n")
