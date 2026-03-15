@@ -305,7 +305,13 @@ foreach ($prots as $protid => $p)
             $nump_[$mode] = @$r["nump_$mode"] ?: 0;
             $occl_[$mode] = @$r["occl_$mode"] ?: 0;
             $benerg_raw_[$mode] = @$r["benerg_raw_$mode"] ?: 0;
-            if ($mode != "inactive" && (!$benerg_active || $benerg_active > $benerg_[$mode])) $benerg_active = $benerg_[$mode];
+            if ($mode != "inactive" && (!$benerg_active || $benerg_active > $benerg_[$mode]))
+            {
+                $benerg_active = $benerg_[$mode];
+                $nump_active = $nump_[$mode];
+                $occl_active = $occl_[$mode];
+                $benerg_raw_active = $benerg_raw_[$mode];
+            }
         }
         $top = $ec50 = false;
         extract($r);
