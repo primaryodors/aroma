@@ -337,41 +337,58 @@ foreach ($prots as $protid => $p)
 
         if ($benerg_active)
         {
-            if ($benerg_active >= 200) echo "(fail)";
-            else if (@$benerg_["active"])
+            if (@$benerg_["active"])
             {
-                echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">";
-                echo round($benerg_active, 4);
-                echo "</a>";
+                if ($benerg_active >= 200) $dispe = "(fail)";
+                else $dispe = round($benerg_active, 4);
+                echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=active\" target=\"_dock\">$dispe</a>";
             }
-            else
+            else if (count($modes[$k]))
             {
                 $frist = true;
                 foreach ($modes[$k] as $mode)
                 {
                     if (!$frist) echo ", ";
-                    echo $mode;
-                    echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">";
-                    echo round($benerg_[$mode], 4);
-                    echo "</a>";
+                    echo "$mode:";
+                    if ($benerg_[$mode] >= 200) $dispe = "(fail)";
+                    else $dispe = round($benerg_[$mode], 4);
+                    echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">$dispe</a>";
                     $frist = false;
                 }
             }
+            else echo "-";
         }
+        else echo "-";
 
         echo " / ";
-        echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=inactive\" target=\"_dock\">";
-        $dispe = "-";
         if ($benerg_inactive)
         {
             if ($benerg_inactive >= 200) $dispe = "(fail)";
             else $dispe = round($benerg_inactive, 4);
+            echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=inactive\" target=\"_dock\">$dispe</a>";
         }
-        echo $dispe;
-        echo "</a>";
+        else echo "-";
         echo "</td>";
 
-        echo @"<td>" . (round($occl_active, 3) ?: "-") . " / " . (round($occl_inactive, 3) ?: "-") . "</td>\n";
+        echo @"<td>";
+
+        if ($occl_["active"])
+            echo round($occl_active, 3) ?: "-";
+        else
+        {
+            $frist = true;
+            foreach ($modes[$k] as $mode)
+            {
+                if (!$frist) echo ", ";
+                echo "$mode:";
+                echo round($occl_[$mode], 3);
+                $frist = false;
+            }
+        }
+
+        echo " / " . (round($occl_inactive, 3) ?: "-") . "</td>\n";
+
+
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
 
         $dtop = $top ?: "-";
