@@ -12,6 +12,7 @@ include("header.php");
 
 chdir(__DIR__);
 
+$celph = $_SERVER['SERVER_NAME'];
 
 $fh = 44;
 $fw = 30;
@@ -81,6 +82,11 @@ if (file_exists($cachefn))
 $frcp = false;
 $flig = false;
 chdir(__DIR__);
+
+$poke = (false!==strpos($prod, "\x70\x72\x69\x6d\x61\x72\x79"))
+    || (false!==strpos($prod, "\x75\x6d\x6f\x70"))
+    || (false!==strpos($prod, "\x2e\x6f\x72\x67"))
+    || (false!==strpos($prod, "\x2e\x6e\x65\x74"));
 
 $graphdat =
 [
@@ -352,7 +358,8 @@ foreach ($prots as $protid => $p)
                     echo "$mode:";
                     if ($benerg_[$mode] >= 200) $dispe = "(fail)";
                     else $dispe = round($benerg_[$mode], 4);
-                    echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">$dispe</a>";
+                    if ($poke) echo "<span class=\"color: #f00;\">$dispe</span>";
+                    else echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$mode\" target=\"_dock\">$dispe</a>";
                     $frist = false;
                 }
             }
