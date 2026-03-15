@@ -123,15 +123,16 @@ for rcpid in data.protutils.prots.keys():
                         # TODO: Moieties
                         continue
         runsuff = []
-        for suff in g:
-            cpllocal = f"cpllocal/{fam}/{sbf}/{rcpid}.{suff}.pdb"
-            if not os.path.exists(cpllocal):
-                if not os.path.exists(f"cpllocal/{fam}"): os.mkdir(f"cpllocal/{fam}")
-                if not os.path.exists(f"cpllocal/{fam}/{sbf}"): os.mkdir(f"cpllocal/{fam}/{sbf}")
-                cpl = f"coupled/{fam}/{sbf}/{rcpid}~hGNA{suff}.pdb"
-                if os.path.exists(cpl): data.protutils.prepare_coupled(cpl, cpllocal, rcpid)
-            if os.path.exists(cpllocal):
-                runsuff.append(suff)
+        if os.path.exists("cpllocal"):
+            for suff in g:
+                cpllocal = f"cpllocal/{fam}/{sbf}/{rcpid}.{suff}.pdb"
+                if not os.path.exists(cpllocal):
+                    if not os.path.exists(f"cpllocal/{fam}"): os.mkdir(f"cpllocal/{fam}")
+                    if not os.path.exists(f"cpllocal/{fam}/{sbf}"): os.mkdir(f"cpllocal/{fam}/{sbf}")
+                    cpl = f"coupled/{fam}/{sbf}/{rcpid}~hGNA{suff}.pdb"
+                    if os.path.exists(cpl): data.protutils.prepare_coupled(cpl, cpllocal, rcpid)
+                if os.path.exists(cpllocal):
+                    runsuff.append(suff)
         if len(runsuff):
             pdbdir = f"cpllocal/{fam}/{sbf}"
         else:
