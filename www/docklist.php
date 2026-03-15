@@ -355,7 +355,7 @@ foreach ($prots as $protid => $p)
                 foreach ($modes[$k] as $mode)
                 {
                     if (!$frist) echo ", ";
-                    echo "$mode:";
+                    if (strlen($mode) < 6) echo "$mode:";
                     if ($benerg_[$mode] >= 200) $dispe = "(fail)";
                     else $dispe = round($benerg_[$mode], 4);
                     if ($poke) echo "<span class=\"color: #f00;\">$dispe</span>";
