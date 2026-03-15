@@ -44,6 +44,8 @@ else:
 if popt == "all": popt = "*"
 if lopt == "all": lopt = "*"
 
+g = ["L", "S2"]
+
 resseek = False
 if re.match("([A-Y]+[0-9]{1,2}[.][0-9]{2},?)+", popt):
     resseek = popt.split(",")
@@ -56,6 +58,8 @@ if len(sys.argv) > 3:
 
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
+    sbf = data.protutils.subfamily_from_protid(rcpid)
+
     if protid:
         if rcpid != protid: continue
     else:
@@ -118,6 +122,22 @@ for rcpid in data.protutils.prots.keys():
                     if not re.search(lopt, o["smiles"]) and not re.search(lopt, o["full_name"]):
                         # TODO: Moieties
                         continue
+        runsuff = []
+        if os.path.exists("cpllocal"):
+            for suff in g:
+                cpllocal = f"cpllocal/{fam}/{sbf}/{rcpid}.{suff}.pdb"
+                if not os.path.exists(cpllocal):
+                    if not os.path.exists(f"cpllocal/{fam}"): os.mkdir(f"cpllocal/{fam}")
+                    if not os.path.exists(f"cpllocal/{fam}/{sbf}"): os.mkdir(f"cpllocal/{fam}/{sbf}")
+                    cpl = f"coupled/{fam}/{sbf}/{rcpid}~hGNA{suff}.pdb"
+                    if os.path.exists(cpl): data.protutils.prepare_coupled(cpl, cpllocal, rcpid)
+                if os.path.exists(cpllocal):
+                    runsuff.append(suff)
+        if len(runsuff):
+            pdbdir = f"cpllocal/{fam}/{sbf}"
+        else:
+            runsuff = [ "active", "inactive" ]
+            pdbdir = f"pdbs/{fam}"
 
         lignu = o["full_name"].replace(' ', '_')
         isomers = data.odorutils.check_isomers(o["full_name"])
@@ -127,185 +147,163 @@ for rcpid in data.protutils.prots.keys():
         pocket = data.dyncenter.get_pocket(rcpid, o["full_name"])
         # pprint.pprint(pocket)
 
-        conffna = rcpid + "~" + lignu + ".active.config"
-        conffni = rcpid + "~" + lignu + ".inactive.config"
-        if not os.path.exists("out"): os.mkdir("out")
-        if not os.path.exists("out/" + fam): os.mkdir("out/" + fam)
-        if not os.path.exists("out/" + fam + "/" + rcpid): os.mkdir("out/" + fam + "/" + rcpid)
+        for suff in runsuff:
+            conffn = f"{rcpid}~{lignu}.{suff}.config"
+            if not os.path.exists("out"): os.mkdir("out")
+            if not os.path.exists("out/" + fam): os.mkdir("out/" + fam)
+            if not os.path.exists("out/" + fam + "/" + rcpid): os.mkdir("out/" + fam + "/" + rcpid)
 
-        if onlynew or onlymissing:
-            outfna = f"out/{fam}/{rcpid}/{rcpid}~{lignu}.active.dock"
-            if os.path.exists(outfna) and os.path.getsize(outfna) > 1e5:
-                if onlymissing: continue
-                fmt = os.path.getmtime(outfna)
-                if fmt > os.path.getmtime("data/binding_pocket.json") \
-                and fmt > os.path.getmtime(f"sdf/{lignu}.sdf") \
-                and fmt > os.path.getmtime(f"pdbs/{fam}/{rcpid}.active.pdb") \
-                and fmt > os.path.getmtime(f"pdbs/{fam}/{rcpid}.inactive.pdb") \
-                and fmt > os.path.getmtime("bin/aromadock"):
-                    continue
+            if onlynew or onlymissing:
+                outfn = f"out/{fam}/{rcpid}/{rcpid}~{lignu}.{suff}.dock"
+                if os.path.exists(outfn) and os.path.getsize(outfn) > 1e5:
+                    if onlymissing: continue
+                    fmt = os.path.getmtime(outfn)
+                    if fmt > os.path.getmtime("data/binding_pocket.json") \
+                    and fmt > os.path.getmtime(f"sdf/{lignu}.sdf") \
+                    and fmt > os.path.getmtime(f"{pdbdir}/{rcpid}.{suff}.pdb") \
+                    and fmt > os.path.getmtime("bin/aromadock"):
+                        continue
 
-        print(f"Beginning {rcpid} ~ "+o["full_name"]+"...")
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
-        with open("example.config") as f:
-            cfg = f.read()
-            lines = cfg.split("\n")
-            newcfg = ["# This file was automatically generated, therefore any changes you make will likely be overwritten."]
-            for ln in lines:
-                ln = ln.strip()
-                if not ln: continue
-                if ln[0:1] == '#': continue
-                if ln[0:5] == "PROT ":
-                    ln = "PROT pdbs/" + fam + "/" + rcpid + ".active.pdb"
-                elif ln[0:4] == "LIG ":
-                    ln = "LIG sdf/" + lignu + ".sdf"
-                    if isomers and len(isomers):
-                        for iso in isomers:
-                            ln += "\nISO sdf/" + iso.replace(' ', '_') + ".sdf"
-                    if forms and len(forms):
-                        for form in forms:
-                            ln += "\nFORM sdf/" + form.replace(' ', '_') + ".sdf"
-                elif ln[0:4] == "CEN ":
-                    if pocket:
-                        if isinstance(pocket["pocket"], str):
-                            ln = "CEN RES " + pocket["pocket"]
-                        else:
-                            ln = ""
-                            for pkt in pocket["pocket"]:
-                                ln = ln + "CEN RES " + pkt + "\n"
-                elif ln[0:4] == "OUT ":
-                    ln = ("OUT out/" + fam + "/" + rcpid + "/" + rcpid + "~" + lignu + ".active.dock" 
-                        + "\nOUTPDB 1 out/" + fam + "/" + rcpid + "/" + rcpid + "~" + lignu + ".active.model%"+"o.pdb")
+            print(f"Beginning {rcpid} ~ "+o["full_name"]+"...")
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+            with open("example.config") as f:
+                cfg = f.read()
+                lines = cfg.split("\n")
+                newcfg = ["# This file was automatically generated, therefore any changes you make will likely be overwritten."]
+                for ln in lines:
+                    ln = ln.strip()
+                    if not ln: continue
+                    if ln[0:1] == '#': continue
+                    if ln[0:5] == "PROT ":
+                        ln = f"PROT {pdbdir}/{rcpid}.{suff}.pdb"
+                    elif ln[0:4] == "LIG ":
+                        ln = "LIG sdf/" + lignu + ".sdf"
+                        if isomers and len(isomers):
+                            for iso in isomers:
+                                ln += "\nISO sdf/" + iso.replace(' ', '_') + ".sdf"
+                        if forms and len(forms):
+                            for form in forms:
+                                ln += "\nFORM sdf/" + form.replace(' ', '_') + ".sdf"
+                    elif ln[0:4] == "CEN ":
+                        if pocket:
+                            if isinstance(pocket["pocket"], str):
+                                ln = "CEN RES " + pocket["pocket"]
+                            else:
+                                ln = ""
+                                for pkt in pocket["pocket"]:
+                                    ln = ln + "CEN RES " + pkt + "\n"
+                    elif ln[0:4] == "OUT ":
+                        ln = (f"OUT out/{fam}/{rcpid}/{rcpid}~{lignu}.{suff}.dock" 
+                            + f"\nOUTPDB 1 out/{fam}/{rcpid}/{rcpid}~{lignu}.{suff}.model%"+"o.pdb")
 
-                newcfg.append(ln)
+                    newcfg.append(ln)
 
-        if fam[0:2] == "OR":
-            if int(fam[2:]) < 50: softness = "1.0"
-            else: softness = "0.1"
-            newcfg.append("SOFT " + softness + " 4 5 6 7")
-        newcfg.append("NODEL 45.52 5.39")
-        newcfg.append("NODEL 7.49 7.55")
-        # newcfg.append("OUTBBP")
-        # newcfg.append("OUTDISQ")
-        # newcfg.append("OUTMC 1")
-        newcfg.append("NORESWARN")
-        newcfg.append("NOFAIL")
-        # newcfg.append("MOVIE")
+            if fam[0:2] == "OR":
+                if int(fam[2:]) < 50: softness = "1.0"
+                else: softness = "0.1"
+                newcfg.append("SOFT " + softness + " 4 5 6 7")
+            newcfg.append("NODEL 45.52 5.39")
+            newcfg.append("NODEL 7.49 7.55")
+            # newcfg.append("OUTBBP")
+            # newcfg.append("OUTDISQ")
+            # newcfg.append("OUTMC 1")
+            newcfg.append("NORESWARN")
+            newcfg.append("NOFAIL")
+            # newcfg.append("MOVIE")
 
-        if not skipdock:
-            cmd = ["bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "-3.0", "nooil"]
-            print(" ".join(cmd))
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
-            for ln in proc.stdout.decode().split('\n'):
-                # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
-                # CNTCT 77 97
-                ln = ln.split(':')[0]
-                ln = re.sub("\\([0-9.]*\\)[.][A-Z0-9]+", "", ln)
-                ln = re.sub("[^0-9-]", "", ln)
-                if not "-" in ln: continue
-                ln = re.sub("-", " ", ln).strip()
-                if ln: newcfg.append("CNTCT "+ln)
+            if not skipdock:
+                cmd = ["bin/ic", f"{pdbdir}/{rcpid}.{suff}.pdb", "-3.0", "nooil"]
+                print(" ".join(cmd))
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                for ln in proc.stdout.decode().split('\n'):
+                    # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
+                    # CNTCT 77 97
+                    ln = ln.split(':')[0]
+                    ln = re.sub("\\([0-9.]*\\)[.][A-Z0-9]+", "", ln)
+                    ln = re.sub("[^0-9-]", "", ln)
+                    if not "-" in ln: continue
+                    ln = re.sub("-", " ", ln).strip()
+                    if ln: newcfg.append("CNTCT "+ln)
 
-        cavfna = f"pdbs/{fam}/{rcpid}.active.cvty"
-        cavfni = cavfna.replace(".active.", ".inactive.")
-        if not os.path.exists(cavfna):
-            cmd = ["bin/cavity_search", "-p", f"pdbs/{fam}/{rcpid}.active.pdb", "-o", cavfna,
-                "--yminr", "3.37", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
+            cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
+            if not os.path.exists(cavfn):
+                cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn,
+                    "--yminr", "3.37", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
+                print(" ".join(cmd))
+                subprocess.run(cmd)
+            newcfg.append(f"VCVTY {cavfn}")
+
+            if skipdock: break
+
+            if fam[0:2] == "OR":
+                famno = int(re.sub("[^0-9]", "", fam))
+                if famno < 50:
+                    newcfg.append("CNTCT data/OR_ClassII_a.ic")
+                else:
+                    newcfg.append("CNTCT data/OR_ClassI_a.ic")
+
+            if pocket:
+                if "atomto" in pocket:
+                    if isinstance(pocket["atomto"], str):
+                        pocket["atomto"] = [pocket["atomto"]]
+                    for a2 in pocket["atomto"]:
+                        newcfg.append("ATOMTO " + a2)
+                if "bridge" in pocket:
+                    if isinstance(pocket["bridge"], str):
+                        pocket["bridge"] = [pocket["bridge"]]
+                    for st in pocket["bridge"]:
+                        newcfg.append("BRIDGE " + st)
+                if "search" in pocket:
+                    if isinstance(pocket["search"], str):
+                        newcfg.append("SEARCH " + pocket["search"])
+                if "flxr" in pocket:
+                    if isinstance(pocket["flxr"], str):
+                        pocket["flxr"] = [pocket["flxr"]]
+                    for fx in pocket["flxr"]:
+                        newcfg.append("FLXR " + fx)
+                if "stcr" in pocket:
+                    if isinstance(pocket["stcr"], str):
+                        pocket["stcr"] = [pocket["stcr"]]
+                    for st in pocket["stcr"]:
+                        newcfg.append("STCR " + st)
+                if "vest" in pocket:
+                    print(pocket["vest"])
+                    if isinstance(pocket["vest"], str):
+                        pocket["vest"] = [pocket["vest"]]
+                    for vb in pocket["vest"]:
+                        newcfg.append("VESTIBULE " + vb)
+                        print("VESTIBULE " + vb)
+                if "mcoord" in pocket:
+                    print(pocket["mcoord"])
+                    newcfg.append("MCOORD " + pocket["mcoord"])
+
+            newcfga = "\n".join(newcfg)
+
+            if pocket:
+                # TODO: bridge, flxr, and stcr
+                if "atomtoa" in pocket:
+                    if isinstance(pocket["atomtoa"], str):
+                        pocket["atomtoa"] = [pocket["atomtoa"]]
+                    for a2 in pocket["atomtoa"]:
+                        newcfga += "\n" + "ATOMTO " + a2
+                if "atomtoi" in pocket:
+                    if isinstance(pocket["atomtoa"], str):
+                        pocket["atomtoa"] = [pocket["atomtoa"]]
+                    for a2 in pocket["atomtoa"]:
+                        newcfgi += "\n" + "ATOMTO " + a2
+
+            with open("tmp/" + conffn, 'w') as f:
+                f.write(newcfga + "\n\n")
+
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+            cmd = ["bin/aromadock", "tmp/" + conffn]
             print(" ".join(cmd))
             subprocess.run(cmd)
-        if not os.path.exists(cavfni):
-            cmd = ["bin/cavity_search", "-p", f"pdbs/{fam}/{rcpid}.inactive.pdb", "-o", cavfni,
-                "--yminr", "3.37", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
-            print(" ".join(cmd))
-            subprocess.run(cmd)
-        newcfg.append(f"VCVTY {cavfna}")
-
-        if skipdock: break
-
-        if fam[0:2] == "OR":
-            sub = int(re.sub("[^0-9]", "", fam))
-            if sub < 50:
-                newcfg.append("CNTCT data/OR_ClassII_a.ic")
-            else:
-                newcfg.append("CNTCT data/OR_ClassI_a.ic")
-
-        if pocket:
-            if "atomto" in pocket:
-                if isinstance(pocket["atomto"], str):
-                    pocket["atomto"] = [pocket["atomto"]]
-                for a2 in pocket["atomto"]:
-                    newcfg.append("ATOMTO " + a2)
-            if "bridge" in pocket:
-                if isinstance(pocket["bridge"], str):
-                    pocket["bridge"] = [pocket["bridge"]]
-                for st in pocket["bridge"]:
-                    newcfg.append("BRIDGE " + st)
-            if "search" in pocket:
-                if isinstance(pocket["search"], str):
-                    newcfg.append("SEARCH " + pocket["search"])
-            if "flxr" in pocket:
-                if isinstance(pocket["flxr"], str):
-                    pocket["flxr"] = [pocket["flxr"]]
-                for fx in pocket["flxr"]:
-                    newcfg.append("FLXR " + fx)
-            if "stcr" in pocket:
-                if isinstance(pocket["stcr"], str):
-                    pocket["stcr"] = [pocket["stcr"]]
-                for st in pocket["stcr"]:
-                    newcfg.append("STCR " + st)
-            if "vest" in pocket:
-                print(pocket["vest"])
-                if isinstance(pocket["vest"], str):
-                    pocket["vest"] = [pocket["vest"]]
-                for vb in pocket["vest"]:
-                    newcfg.append("VESTIBULE " + vb)
-                    print("VESTIBULE " + vb)
-            if "mcoord" in pocket:
-                print(pocket["mcoord"])
-                newcfg.append("MCOORD " + pocket["mcoord"])
-
-        newcfga = "\n".join(newcfg)
-        for i in range(len(newcfg)):
-            ln = newcfg[i]
-            if ln[0:4] == "PROT" or ln[0:3] == "OUT":
-                newcfg[i] = ln.replace(".active.", ".inactive.")
-            if ln[0:5] == "VCVTY" or ln[0:3] == "OUT":
-                newcfg[i] = ln.replace(".active.", ".inactive.")
-            if ln[0:6] == "CNTCT ":
-                newcfg[i] = ln.replace("_a.ic", "_i.ic")
-        newcfgi = "\n".join(newcfg)
-
-        if pocket:
-            # TODO: bridge, flxr, and stcr
-            if "atomtoa" in pocket:
-                if isinstance(pocket["atomtoa"], str):
-                    pocket["atomtoa"] = [pocket["atomtoa"]]
-                for a2 in pocket["atomtoa"]:
-                    newcfga += "\n" + "ATOMTO " + a2
-            if "atomtoi" in pocket:
-                if isinstance(pocket["atomtoa"], str):
-                    pocket["atomtoa"] = [pocket["atomtoa"]]
-                for a2 in pocket["atomtoa"]:
-                    newcfgi += "\n" + "ATOMTO " + a2
-
-        with open("tmp/" + conffna, 'w') as f:
-            f.write(newcfga + "\n\n")
-        with open("tmp/" + conffni, 'w') as f:
-            f.write(newcfgi + "\n\n")
-
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
-        cmd = ["bin/aromadock", "tmp/" + conffna]
-        print(" ".join(cmd))
-        subprocess.run(cmd)
-        cmd = ["bin/aromadock", "tmp/" + conffni]
-        print(" ".join(cmd))
-        subprocess.run(cmd)
 
         if os.path.exists("tmp/nodelete"):
-            print("Warning: not deleting temporary config file because you have the debug \"nodelete\" option selected.")
+            print("Warning: not deleting temporary config files because you have the debug \"nodelete\" option selected.")
         else:
-            os.remove("tmp/" + conffna)
-            os.remove("tmp/" + conffni)
+            os.remove("tmp/" + f"{rcpid}~{lignu}.*.config")
 
         print("Completed", rcpid, o["full_name"])
 

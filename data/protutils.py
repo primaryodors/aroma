@@ -2,6 +2,7 @@
 
 import json
 import re
+import subprocess
 import data.globals
 
 def load_prots():
@@ -63,12 +64,41 @@ def aalet_at_resno(protid, resno):
     if not prots.get(protid): raise Exception("Protein not found: "+protid)
     return prots[protid]["sequence"][resno-1]
 
-
 def family_from_protid(protid):
     if protid[0:2] == "OR":
         return "OR" + str(int(re.sub("[^0-9]", "", protid[2:4])))
     else:
         return protid[0:4]
+
+def subfamily_from_protid(protid):
+    if protid[0:2] == "OR":
+        fam = family_from_protid(protid)
+        l = len(fam)
+        return re.sub("[^A-Z]", "", protid[l:l+2])
+    else:
+        return ""
+
+def prepare_coupled(inpfn, outfn, rcpid):
+    fam = family_from_protid(rcpid)
+    phew  = f"LOAD \"{inpfn}\" A A\n"
+    phew += f"LOAD \"pdbs/{fam}/{rcpid}.active.pdb\" A R\n"
+    phew += "STRAND A\n"
+    phew += "BWCOPY R A\n"
+    phew += "UNCHAIN R\n"
+    phew += "UPRIGHT\n"
+    phew += "HYDRO\n"
+    phew += "BWCENTER\n"
+    with open(f"pdbs/{fam}/{rcpid}.active.pdb", "r") as f:
+        indat = f.read()
+        lines = indat.split("\n")
+        for ln in lines:
+            if ln[0:16] == "REMARK 800 SITE ":
+                phew += f"{ln}\n"
+    phew += f"SAVE {outfn}\n"
+    with open("tmp/cpl.phew", "w") as f:
+        f.write(phew)
+    cmd = [ "bin/phew", "tmp/cpl.phew" ]
+    subprocess.run(cmd)
 
 def json_encode_pretty(array):
     return re.sub(r"(\s*)([^\s]*) ([{[(])\n", r"\1\2\n\1\3\n", json.dumps(array, indent = 4, default=lambda o: o.__dict__)).replace("\n\n", "\n")

@@ -1070,14 +1070,13 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
                 buffer[6] = buffer[11] = buffer[16] = 0;
                 int a1 = atoi(&buffer[7]);
                 int a2 = atoi(&buffer[12]);
-                if (pdba[a1] && pdba[a2])
+                if (pdba[a1] && pdba[a2] && abs(pdba[a1]->residue - pdba[a2]->residue) > 1 && !pdba[a1]->is_bonded_to(pdba[a2]))
                 {
                     pdba[a1]->bond_to(pdba[a2], 1);
                     Bond* b = pdba[a1]->get_bond_between(pdba[a2]);
                     if (b) connections.push_back(b);
                 }
             }
-            
 
         _found_AA:
             ;

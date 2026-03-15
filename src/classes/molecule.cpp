@@ -2352,7 +2352,7 @@ int Molecule::from_pdb(FILE* is, bool het_only)
                 has_conects = true;
                 int ia1 = atoi(words[1]), ia2 = atoi(words[2]);
                 Atom *a1 = get_atom_by_pdbidx(ia1), *a2 = get_atom_by_pdbidx(ia2);
-                if (a1 && a2)
+                if (a1 && a2 && abs(a1->residue - a2->residue) > 1 && !a1->is_bonded_to(a2))
                 {
                     float card = 1;
                     if (words[3] && strchr(words[3], '.'))

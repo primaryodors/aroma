@@ -27213,6 +27213,12 @@
         "aligned": "----------------------------------------------------------MEPQNTSTVTNFQLLGFQNLLEWQALLFVIFLLIYCLTIIGNVVIITVVS------------------------------------------------------------------------------------------------------QGLRLHSPMYMFLQHLSFLEVWYTSTTVPLLLANLL------------------------------------------------------------------------------SWGQAISFSACMAQLYFFVFLGATECFLLAFMAYDRYLAICS-------------------------------------------------------------------------------------------------------PLRYPFLMHRGLCARLVVVSWCTGVSTGFLPSLMI---------------------------------------------------------------------SRLDFCGRNQINHFFCDLPPLMQLSCSRVYITEVTIFILSIAVLCICFFLTLGPYVFIVSSILRI--------------------------------------------------------------------------------------PSTSGRRKTFSTCGSHLAVVTLYYGTMISMYVCPS-------------------------------------------------------------------------------------------------PHLLPEINKIISVFYTVVTPLLNPVIYSLR------------------------------------------------------------------------------------------------------------------------NKDFKEAVRKVMRRKCGILWSTSKRKFLY---------",
         "expression": 100
     },
+    "OR12D1":
+    {
+        "id": "OR12D1",
+        "uniprot_id": "P0DN82",
+        "sequence": "MLNTTSVTEFLLLGVTDIQELQPFLFVVFLTIYFISVAGNGAILMIVISDPRLHSPMYFFLGNLSCLDICYSSVTLPKMLQNFLSAHKAISFLGCISQLHFFHFLGSTEAMLLAVMAFDRFVAICKPLRYTVIMNPQLCTQMAITIWMIGFFHALLHSLMTSRLNFCGSNRIYHFFCDVKPLLKLACGNTELNQWLLSTVTGTIAMGPFFLTLLSYFYIITHLFFKTHSFSMLRKALSTCASHFMVVILLYAPVLFTYIHHASGTSMDQDRITAIMYTVVTPVLNPLIYTLRNKEVKGAFNRAMKRWLWPKEILKNSSEA"
+    },
     "OR12D2":
     {
         "id": "OR12D2",

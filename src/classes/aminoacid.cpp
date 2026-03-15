@@ -1157,7 +1157,7 @@ int AminoAcid::from_pdb(FILE* is, int rno)
 			while (buffer[k]) k++;			// Find zero.
 			// Rtrim.
 			for (k--; buffer[k] == ' '; k--) buffer[k] = 0;
-			
+
 			// strcpy(words[i], &buffer[j]);
             for (k=words.size(); k<=j; k++) words.push_back("");
             words[i] = &buffer[j];
