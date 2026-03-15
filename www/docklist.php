@@ -390,7 +390,7 @@ foreach ($prots as $protid => $p)
                 if ($mode == "inactive") continue;
                 if (!$frist) echo ", ";
                 if (strlen($mode) < 6) echo "$mode:";
-                echo round($occl_[$mode], 3);
+                echo round($occl_[$mode] ?: '-', 3);
                 $frist = false;
             }
         }
