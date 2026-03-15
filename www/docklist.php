@@ -387,7 +387,7 @@ foreach ($prots as $protid => $p)
             foreach ($modes[$k] as $mode)
             {
                 if (!$frist) echo ", ";
-                echo "$mode:";
+                if (strlen($mode) < 6) echo "$mode:";
                 echo round($occl_[$mode], 3);
                 $frist = false;
             }
