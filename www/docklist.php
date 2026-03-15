@@ -354,6 +354,7 @@ foreach ($prots as $protid => $p)
                 $frist = true;
                 foreach ($modes[$k] as $mode)
                 {
+                    if ($mode == "inactive") continue;
                     if (!$frist) echo ", ";
                     if (strlen($mode) < 6) echo "$mode:";
                     if ($benerg_[$mode] >= 200) $dispe = "(fail)";
@@ -386,6 +387,7 @@ foreach ($prots as $protid => $p)
             $frist = true;
             foreach ($modes[$k] as $mode)
             {
+                if ($mode == "inactive") continue;
                 if (!$frist) echo ", ";
                 if (strlen($mode) < 6) echo "$mode:";
                 echo round($occl_[$mode], 3);
