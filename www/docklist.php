@@ -62,6 +62,7 @@ $args = implode("&", $args);
 <table class="liglist">
     <tr><th>Receptor</th>
         <th>Odorant</th>
+        <th>Dock Date</th>
         <th>Dock Energies</th>
         <th>Occlusion</th>
         <th>Poses</th>
@@ -110,6 +111,7 @@ foreach ($prots as $protid => $p)
 
     $rows = [];
     $modes = [];
+    $dates = [];
     foreach ($files as $fname)
     {
         if (substr($fname, -5) != ".dock") continue;
@@ -137,9 +139,13 @@ foreach ($prots as $protid => $p)
         $modes[$rowid][] = $mode;
 
         $fpn = "../out/$fam/$protid/$fname";
+        $fmt = filemtime($fpn);
+
+        if (!isset($dates[$rowid])) $dates[$rowid] = $fmt;
+        else $dates[$rowid] = max($dates[$rowid], $fmt);
 
         set_time_limit(600);
-        if (isset($cached[$fname]) /*&& intval($cached[$fname]['nump'])*/ && filemtime($fpn) < $cachemt)
+        if (isset($cached[$fname]) /*&& intval($cached[$fname]['nump'])*/ && $fmt < $cachemt)
         {
             extract($cached[$fname]);
             // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
@@ -338,6 +344,8 @@ foreach ($prots as $protid => $p)
             echo " <a href=\"docklist.php?o={$o['oid']}\"><svg height=\"13px\" viewBox=\"0 0 80 90\" xmlns=\"http://www.w3.org/2000/svg\"><path fill=\"#50cea8\" d=\"$filter_svgdat\"></path></svg></a>";
         echo "</td>\n";
         $flig = $o['oid'];
+
+        echo "<td>".date("Y-m-d H:i:s", $dates[$rowid])."</td>";
 
         echo "<td>";
 
