@@ -18,15 +18,22 @@ if (!$protid || !isset($prots[$protid]) )
 $prot = $prots[$prot];
 
 $fam = family_from_protid($protid);
+$sub = subfamily_from_protid($protid);
 
 chdir(__DIR__);
 chdir("..");
 
-$mod = "inactive";
-if (@$_REQUEST['mod'] == 'm') $mod = "metal";
-else if (@$_REQUEST['mod'] == 'a') $mod = "active";
+$mod = @$_REQUEST['mod'];
 $pdbfn = "pdbs/$fam/$protid.$mod.pdb";
-if (!file_exists($pdbfn)) $pdbfn = "pdbs/$fam/$protid.inactive.pdb";
+if (!file_exists($pdbfn)) $pdbfn = "cpllocal/$fam/$sub/$protid.$mod.pdb";
+if (!file_exists($pdbfn))
+{
+    $mod = "inactive";
+    if (@$_REQUEST['mod'] == 'm') $mod = "metal";
+    else if (@$_REQUEST['mod'] == 'a') $mod = "active";
+    $pdbfn = "pdbs/$fam/$protid.$mod.pdb";
+    if (!file_exists($pdbfn)) $pdbfn = "pdbs/$fam/$protid.inactive.pdb";
+}
 
 if (!file_exists($pdbfn))
 {
