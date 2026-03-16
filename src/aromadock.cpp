@@ -3548,7 +3548,8 @@ _try_again:
                 float cvr = Avogadro;
                 if (ncvtys) for (i=0; i<ncvtys; i++)
                 {
-                    float r = cvtys[i].get_center().get_3d_distance(ligand->get_barycenter());
+                    float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
+                    r *= frand(0.8, 1.3);
                     if (r < cvr)
                     {
                         gcav = &cvtys[i];
@@ -4868,6 +4869,7 @@ _try_again:
                         if (!cvtys[cno].count_partials()) continue;
                         cp += cvtys[cno].molecule_inside_pocket(ligand);
                         float cc = cvtys[cno].cavity_filling(ligand);
+                        if (isnan(cc)) continue;
                         if (cc > dr[j][nodeno].cavity_filling) dr[j][nodeno].cavity_filling = cc;
                     }
 
