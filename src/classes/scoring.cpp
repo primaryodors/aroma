@@ -528,7 +528,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         else atomlvl += (std::string)"(ligand)";
         atomlvl += (std::string)":" + (std::string)interall_a1[l]->name;
         atomlvl += (std::string)": ";
-        sprintf(fmtbuff, "%.3f", interall[l]);
+        sprintf(fmtbuff, "%.3f", interall[l] * energy_mult);
         atomlvl += (std::string)fmtbuff + (std::string)"\n";
         fmtbuff[0] = 0;
     }
