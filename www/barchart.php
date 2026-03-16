@@ -365,33 +365,6 @@ foreach (array_values($bytree) as $x => $orid)
         }
     }
 
-    /* if (false!==$dyt && false===$dye)
-    {
-        if (@$tprobs[$orid])
-            {
-                for ($y1 = $base1; $y1 > $dy=$dyt; $y1 -= 10)
-                {
-                    imagefilledrectangle($im, $dx,$y1, $dx+$res-2,$y1-3, $tred);
-                }
-            }
-        else imagefilledrectangle($im, $dx,$base1, $dx+$res-2,$dy=$dyt, $tred);
-    }
-    if (false!==$dye && false===$dyt) imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dy=$dye, $tgreen);
-    if (false!==$dye && false!==$dyt)
-    {
-        $dy = min($dye,$dyt);
-        if ($dye < $dyt)
-        {
-            if ($t[$orid] >= 0) imagefilledrectangle($im, $dx,$base , $dx+$res-3,$dye, $tgreen);
-            imagefilledrectangle($im, $dx,$base1, $dx+$res-2,$dyt, $tyellow);
-        }
-        else
-        {
-            imagefilledrectangle($im, $dx+1,$base1, $dx+$res-2,$dyt, $tred);
-            imagefilledrectangle($im, $dx,$base , $dx+$res-2,$dye, $tyellow);
-        }
-    } */
-
     if (false!==$dyp) imagefilledrectangle($im, $dx+2,$base2, $dx+$res-1,$dy=$dyp, $tazure);
     $dybyx[$x] = $dy;
 
@@ -404,16 +377,22 @@ foreach (array_values($bytree) as $x => $orid)
 	$dy = $dybyx[$x];
     if ($dy < $h/7) $dy = $h/7;
     $peak = true;
-    $xl = min($x+10, count($bytree)-1);
-    for ($lx = max($x-10, 0); $lx < $xl; $lx++)
+    $xl = min($x+5, count($bytree)-1);
+    for ($lx = max($x-5, 0); $lx < $xl; $lx++)
     {
     	if ($lx == $x) continue;
-    	if ($dy > @$dybyx[$lx]) $peak = false;
+    	if ($dy > (@$dybyx[$lx]+10)) $peak = false;
     }
-    if ($peak && $dy < $h/1.4)
+    if ($peak && $dy < $h/1.333)
     {
+        $fam = family_from_protid($orid);
+        if (substr($fam, 0, 2) == "OR") $orcol = orclr(intval(substr($fam, 2)));
+        else $orcol = orclr($fam);
+        list($red, $green, $blue) = $orcol;
+
         $texts[] = [$dx, $dy-5, (@$tprobs[$orid] && $t[$orid] < 5) ? "($orid)" : $orid];
         $txtop[] = intval(0.81 * (100-(floatval(@$prots[$orid]['expression'] ?: 100))));
+        $txcol[] = imagecolorallocatealpha($im, intval($red), intval($green), intval($blue), 24);
     }
 }
 
@@ -436,7 +415,7 @@ $x1 = $x + 10*strlen($odor['full_name']);
 foreach ($texts as $k => $txt)
 {
     $tpink = imagecolorallocatealpha($im,192,176,218,$txtop[$k]);
-    imagettftext($im, 9, 35, $txt[0], $txt[1], $tpink, $fontfile, $txt[2]);
+    imagettftext($im, 9, 35, $txt[0], $txt[1], $txcol[$k], $fontfile, $txt[2]);
 
     if ($txt[0] >= $x && $txt[0] <= $x1) $x = $txt[0] + 50;
 }

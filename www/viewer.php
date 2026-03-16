@@ -90,6 +90,7 @@ if (@$_REQUEST['view'] == "dock")
     require("../data/odorutils.php");
     $protid = $_REQUEST["prot"];
     $fam = family_from_protid($protid);
+    $sub = subfamily_from_protid($protid);
     $odor = $_REQUEST["odor"];
     $mode = $_REQUEST["mode"];      // active or inactive.
     $n = @$_REQUEST["n"] ?: 1;
@@ -99,7 +100,8 @@ if (@$_REQUEST['view'] == "dock")
     if (!file_exists($dock)) die("Something went wrong.");
     $txt = file_get_contents($dock);
 
-    $cavfn = "../pdbs/$fam/$protid.".($mode=='active'?$mode:"upright").".cvty";
+    $cavfn = "../pdbs/$fam/$protid.$mode.cvty";
+    if (!file_exists($cavfn)) $cavfn = "../cpllocal/$fam/$sub/$protid.$mode.cvty";
     if (file_exists($cavfn))
     {
         $lines = explode("\n", $txt);
