@@ -335,6 +335,8 @@ foreach (array_values($bytree) as $x => $orid)
     {
         $dy = $dyt;
         $dyscale = 1.0 / ($base-$dy);
+        list($red, $green, $blue) = $orcol;
+        $change = ($e[$orid] ? 2.5 : 0.666) / ($base-$dyt);
         for ($y1 = $base; $y1 > $dyt; $y1--)
         {
             $exp = 67.1003 / pow($e[$orid] ?: 0.0001, 2);
@@ -342,8 +344,22 @@ foreach (array_values($bytree) as $x => $orid)
             $opc = $e[$orid]
                 ? 0.05 + 0.95 * pow(1.0-(($base-$y1) * $dyscale), $exp)
                 : 0.35;
-            $yc = imagecolorallocatealpha($im, $orcol[0], $orcol[1], $orcol[2], max(0, min(127, 127-127.0*$opc)));
+            $yc = imagecolorallocatealpha($im, intval($red), intval($green), intval($blue), max(0, min(127, 127-127.0*$opc)));
             imagefilledrectangle($im, $dx,$y1, $e[$orid]?($dx+$res-2):$dx,$y1, $yc);
+
+            if (0)
+            {
+                // We'll use this block later; leave it for now.
+                $red   = (1.0-$change) * $red   + $change *  16;
+                $green = (1.0-$change) * $green + $change *  64;
+                $blue  = (1.0-$change) * $blue  + $change * 255;
+            }
+            else
+            {
+                $red   = (1.0-$change) * $red   + $change * 128;
+                $green = (1.0-$change) * $green + $change * 160;
+                $blue  = (1.0-$change) * $blue  + $change * 192;
+            }
 
             if ($tprobs[$orid]) $y1 -= 2;
         }
