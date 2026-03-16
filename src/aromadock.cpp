@@ -3824,8 +3824,12 @@ _try_again:
                     #if _dbg_rh_selection
                     cout << endl << "Residues for randhyd";
                     #endif
+                    ligand->movability = MOV_ALL;
+                    ligand->recenter(nodecen);
                     if (gcav)
                     {
+                        ligand->recenter(gcav->get_center());
+                        gcav->find_best_containment(ligand, true);
                         j = gcav->resnos(protein, lrs);
                         lrs[j] = nullptr;
                         lrs[SPHREACH_MAX-1] = nullptr;
@@ -3925,9 +3929,7 @@ _try_again:
                         << endl << endl;
                     #endif
 
-                    ligand->movability = MOV_ALL;
                     float ropt = InteratomicForce::optimal_distance(bh, rh);
-                    ligand->recenter(nodecen);
                     LocRotation lrot = align_points_3d(bh->loc, rh->loc, ligand->get_barycenter());
                     lrot.origin = ligand->get_barycenter();
                     ligand->rotate(lrot);
@@ -4624,7 +4626,11 @@ _try_again:
                     std::string reason = (std::string)cfmols[i]->get_name()
                         + (std::string)" internal clashes too great "
                         + std::to_string(cfmi)
-                        + (std::string)".";
+                        + (std::string)" ("
+                        + (std::string)(cfmols[i]->clash1 ? cfmols[i]->clash1->name : "(null)")
+                        + (std::string)"..."
+                        + (std::string)(cfmols[i]->clash2 ? cfmols[i]->clash2->name : "(null)")
+                        + (std::string)". ";
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason
                         += reason;

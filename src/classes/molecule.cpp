@@ -3667,6 +3667,8 @@ float Molecule::get_internal_clashes(bool sb)
 
     if (noAtoms(atoms)) return 0;
 
+    clash_worst = 0;
+    clash1 = clash2 = nullptr;
     for (i=0; atoms[i]; i++)
     {
         Point pta = atoms[i]->loc;
@@ -3714,7 +3716,7 @@ float Molecule::get_internal_clashes(bool sb)
             float bvdW = atoms[j]->vdW_radius;
 
             r = pta.get_3d_distance(&ptb);
-            if (r >= 0.9 && atoms[i]->shares_bonded_with(atoms[j])) continue;
+            if (r >= 0.8 && atoms[i]->shares_bonded_with(atoms[j])) continue;
 
             if (!r) r += 10e-15;
             if (r < avdW + bvdW)
@@ -3724,6 +3726,13 @@ float Molecule::get_internal_clashes(bool sb)
                 float sigma = (avdW+bvdW) - local_clash_allowance;
                 float lclash = fmax(InteratomicForce::Lennard_Jones(atoms[i], atoms[j], sigma), 0); // sphere_intersection(avdW, bvdW, r);
                 clash += lclash;
+
+                if (lclash > clash_worst)
+                {
+                    clash1 = atoms[i];
+                    clash2 = atoms[j];
+                    clash_worst = lclash;
+                }
             }
         }
     }

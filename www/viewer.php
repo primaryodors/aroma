@@ -170,7 +170,8 @@ function svg_from_smiles(smiles, w, h)
 }
 </script>
 <?php
-    echo "<h1>$protid ~ $odor</h1>";
+    if (isset($gprots["hGNA$mode"])) echo "<h1>$protid:GNA$mode ~ $odor</h1>";
+    else echo "<h1>$protid ~ $odor</h1>";
     $bsr4sim = array_values(similar_receptors($protid))[0][0];
     // print_r($bsr4sim);
 
