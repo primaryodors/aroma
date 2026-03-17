@@ -1610,6 +1610,11 @@ int interpret_config_line(char** words)
             pdpst = pst_randhyd;
             return 1;
         }
+        else if (!strcmp(words[1], "CF"))
+        {
+            pdpst = pst_cavfit;
+            return 1;
+        }
         else if (!strcmp(words[1], "CP"))
         {
             int lf = 1;
@@ -3965,6 +3970,16 @@ _try_again:
                     g_bbr->pri_res = lrs[i];
                     g_bbr->pri_tgt = new LigandTarget();
                     g_bbr->pri_tgt->single_atom = bh;
+                }
+                else if (pdpst == pst_cavfit)
+                {
+                    ligand->movability = MOV_ALL;
+                    ligand->recenter(nodecen);
+                    if (gcav)
+                    {
+                        ligand->recenter(gcav->get_center());
+                        gcav->find_best_containment(ligand, true);
+                    }
                 }
                 else if (pdpst == pst_copyfrom)
                 {

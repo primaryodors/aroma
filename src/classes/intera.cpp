@@ -1503,11 +1503,21 @@ bool Interaction::improved(Interaction rel)
 
 float Interaction::probability(Interaction rel)
 {
+    #if 0
     // Metropolis Criterion
     float Emine = summed(), Eyours = rel.summed();
-    // if (Emine < Eyours) return 1;
+    if (Emine < Eyours) return 1;
     float K = exp((Eyours-Emine)/(kB_kJmol*temperature));
     return K / (K+1);
+    #else
+    float Kattr = exp((attractive-rel.attractive)/(kB_kJmol*temperature));
+    float Krepl = exp((repulsive-rel.repulsive)/(kB_kJmol*temperature));
+    float Kclsh = exp((clash-clash)/10/(kB_kJmol*temperature));
+    float probsattr = Kattr / (Kattr+1);
+    float probsrepl = Krepl / (Krepl+1);
+    float probsclsh = Kclsh / (Kclsh+1);
+    return pow(Kattr*Krepl*Kclsh, 1.0/3);
+    #endif
 }
 
 bool Interaction::accept_change(Interaction rel)
