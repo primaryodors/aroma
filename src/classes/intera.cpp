@@ -1512,11 +1512,11 @@ float Interaction::probability(Interaction rel)
     #else
     float Kattr = exp((attractive-rel.attractive)/(kB_kJmol*temperature));
     float Krepl = exp((repulsive-rel.repulsive)/(kB_kJmol*temperature));
-    float Kclsh = exp((clash-clash)/10/(kB_kJmol*temperature));
+    float Kclsh = exp((clash-clash)/(kB_kJmol*temperature));
     float probsattr = Kattr / (Kattr+1);
     float probsrepl = Krepl / (Krepl+1);
     float probsclsh = Kclsh / (Kclsh+1);
-    return pow(Kattr*Krepl*Kclsh, 1.0/3);
+    return pow(probsattr*probsrepl*probsclsh, 1.0/3);
     #endif
 }
 
