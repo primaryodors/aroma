@@ -62,7 +62,7 @@ $args = implode("&", $args);
 <table class="liglist">
     <tr><th>Receptor</th>
         <th>Odorant</th>
-        <th>Dock Date</th>
+        <th>Dock Date (UTC)</th>
         <th>Dock Energies</th>
         <th>Occlusion</th>
         <th>Poses</th>
