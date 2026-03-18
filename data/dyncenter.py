@@ -54,6 +54,7 @@ def get_pocket(protid, lig):
                     m = re.search("[0-9]+ times in molecule", ln)
                     if m:
                         inmol = int(re.sub("[^0-9]", "", m.string))
+                        print(inmol)
                         if inmol:
                             for key in matched["odorophores"][phore].keys():
                                 matched[key] = matched["odorophores"][phore][key]
