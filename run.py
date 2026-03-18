@@ -83,7 +83,7 @@ for rcpid in data.protutils.prots.keys():
         else:
             o = data.odorutils.odors[ligid]
 
-        if lopt != "*":
+        if lopt != "*" or popt != "*":
             if popt == "emp" or lopt == "emp":
                 if not "activity" in o: continue
                 isemp = False
