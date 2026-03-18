@@ -3,6 +3,7 @@ import re
 import os
 import sys
 import subprocess
+import copy
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
@@ -25,7 +26,7 @@ def get_pocket(protid, lig):
     matched = False
     for patt in bsrdat.keys():
         if patt == protid:
-            matched = bsrdat[patt]
+            matched = copy.deepcopy(bsrdat[patt])
             print("Matched " + patt)
             break
         elif patt[-1:] == '*':
@@ -33,12 +34,12 @@ def get_pocket(protid, lig):
             pl = len(pat)
             proti = protid[0:pl]
             if proti == pat:
-                matched = bsrdat[patt]
+                matched = copy.deepcopy(bsrdat[patt])
                 print("Matched " + patt)
                 break
             # else: print(f"Protid {protid} didn't match {patt}")
         elif re.search(patt, protid):
-            matched = bsrdat[patt]
+            matched = copy.deepcopy(bsrdat[patt])
             print("Matched " + patt)
             break
         # else: print(f"Protid {protid} didn't match {patt}")
@@ -54,9 +55,7 @@ def get_pocket(protid, lig):
                     m = re.search("[0-9]+ times in molecule", ln)
                     if m:
                         inmol = int(re.sub("[^0-9]", "", m.string))
-                        print(inmol)
                         if inmol:
-                            print("I am a waste of silicon.")
                             for key in matched["odorophores"][phore].keys():
                                 matched[key] = matched["odorophores"][phore][key]
                             break
