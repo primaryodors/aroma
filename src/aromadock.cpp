@@ -2292,6 +2292,38 @@ int main(int argc, char** argv)
 
     cout << splash << endl;
 
+    FILE* fp = fopen("TODO.txt", "r");
+    if (fp)
+    {
+        std::vector<std::string> todolist;
+        while (fgets(buffer, 65530, fp))
+        {
+            todolist.push_back((std::string)buffer);
+        }
+        fclose(fp);
+
+        j = todolist.size();
+        if (j)
+        {
+            i = rand() % j;
+            cout << endl << endl;
+            std::string mesg = "While you wait for the dock to finish, why don't you consider tackling an item from your to-do list? Perhaps this one:\n\n";
+            mesg += todolist[i];
+            const char* msg = mesg.c_str();
+            int l;
+            for (l=0; msg[l]; l++)
+            {
+                int r = 176 + 79 * sin(0.25*l),
+                    g = 176 + 79 * sin(0.18*l),
+                    b = 176 + 79 * sin(0.10*l);
+                colorrgb(r, g, b);
+                cout << msg[l];
+            }
+            colorless();
+            cout << endl << endl << endl;
+        }
+    }
+
     for (i=1; i<argc; i++)
     {
         if (argv[i][0] == '-' && argv[i][1] == '-')
@@ -2359,7 +2391,7 @@ int main(int argc, char** argv)
             cerr << "ERROR file not found: " << cvtyfname << endl;
             return -7;
         }
-        FILE* fp = fopen(cvtyfname, "rb");
+        fp = fopen(cvtyfname, "rb");
         if (!fp)
         {
             cerr << "FAILED to open " << cvtyfname << " for reading." << endl;
@@ -2733,7 +2765,7 @@ int main(int argc, char** argv)
         ligand = &pose_ligands[1];
 
         // Open file.
-        FILE* fp = fopen(copyfrom_filename.c_str(), "rb");
+        fp = fopen(copyfrom_filename.c_str(), "rb");
         if (!fp)
         {
             cerr << "Failed to open pre-conformation file " << copyfrom_filename << " for reading." << endl;
@@ -3896,9 +3928,9 @@ _try_again:
                         do
                         {
                             i = rand() % j;
+                            if (frand(0,1) < 1e-4) break;                                // just in case there are no polar side chains.
                             if (lrs[i]->hydrophilicity() > hydrophilicity_cutoff
                                 || lrs[i]->coordmtl
-                                || frand(0,1) < 1e-6                                // just in case there are no polar side chains.
                                 )
                             {
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;

@@ -1503,10 +1503,10 @@ bool Interaction::improved(Interaction rel)
 
 float Interaction::probability(Interaction rel)
 {
-    #if 0
-    // Metropolis Criterion
     float Emine = summed(), Eyours = rel.summed();
     if (Emine < Eyours) return 1;
+    #if 1
+    // Metropolis Criterion
     float K = exp((Eyours-Emine)/(kB_kJmol*temperature));
     return K / (K+1);
     #else
