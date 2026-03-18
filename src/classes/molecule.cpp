@@ -3651,8 +3651,9 @@ Bond** Molecule::get_all_bonds(bool unidirectional)
         }
     }
 
-    Bond** retval = new Bond*[bonds+1];
+    Bond** retval = new Bond*[bonds+4];
     for (i=0; i<=bonds; i++) retval[i] = btemp[i];
+    retval[i] = nullptr;
 
     return retval;
 }

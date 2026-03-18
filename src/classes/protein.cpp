@@ -2726,6 +2726,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
             if (b[j]->atom1->is_backbone && b[j]->atom2->is_backbone) continue;
             if (b[j]->atom2->Z < 2) continue;
             if (!faa && b[j]->atom2->get_bonded_heavy_atoms_count() > 1) continue;
+            if (!equal_or_zero(b[j]->atom1->residue, b[j]->atom2->residue)) continue;
             if (b[j]->can_rotate)
             {
                 for (l=0; l<opth_fullrot_steps; l++)

@@ -3414,7 +3414,7 @@ _try_again:
                 {
                     float bestwt = 0;
                     int besti = -1;
-                    for (j=0; j<100; j++)
+                    for (j=0; j<10; j++)
                         for (i=0; i<sphres; i++)
                         {
                             if (reaches_spheroid[nodeno][i]->movability != MOV_FLXDESEL) continue;
@@ -3442,7 +3442,7 @@ _try_again:
                                 cout << reaches_spheroid[nodeno][i]->get_name() << " has weight " << weight << endl;
                             #endif
 
-                            if ( /*weight >= bestwt &&*/ frand(0,100) < weight )
+                            if ( /*weight >= bestwt &&*/ frand(0,20) < weight )
                             {
                                 besti = i;
                                 bestwt = weight;
@@ -3460,7 +3460,7 @@ _try_again:
                     }
                     another_flex = (frand(0,1) < 0.6);
                 }
-                
+
                 #if _dbg_flexion_selection
                 cout << flexible_resnos.size() << " residues selected for flexion." << endl;
                 #endif

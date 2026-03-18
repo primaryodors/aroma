@@ -1774,6 +1774,11 @@ bool Bond::rotate(float theta, bool allow_backbone, bool skip_inverse_check)
     rot.a = theta;
 
     Bond* inverse = atom2->get_bond_between(atom1);
+    if (!inverse)
+    {
+        last_fail = bf_not_connected;
+        return false;
+    }
     #if allow_tethered_rotations
     // Whichever side has the less favorable sum of Atom::last_bind_energy values, rotate that side.
     float mwb_total_binding=0, mwbi_total_binding=0;
@@ -2163,7 +2168,6 @@ void Bond::swing(Vector newdir)
         moves_with_atom2[i]->move(&nl);
     }
 }
-
 
 Vector* Atom::get_basic_geometry()
 {
