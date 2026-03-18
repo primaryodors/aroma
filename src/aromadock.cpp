@@ -3931,6 +3931,7 @@ _try_again:
                             if (frand(0,1) < 1e-4) break;                                // just in case there are no polar side chains.
                             if (lrs[i]->hydrophilicity() > hydrophilicity_cutoff
                                 || lrs[i]->coordmtl
+                                || (lrs[i]->is_thiol() && frand(0,1) < 0.1)
                                 )
                             {
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
@@ -3952,6 +3953,8 @@ _try_again:
                             }
                         } while (1);
                     }
+
+                    cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl;
 
                     Atom *rh = rhmet ? rhmet : lrs[i]->get_most_polar();
                     if (!rh)
