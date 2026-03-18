@@ -2929,7 +2929,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
         {
             mcoord_aa[l]->movability = MOV_FORCEFLEX;
-            mcoord_aa[l]->conform_atom_to_location(coord_atoms[l], lmtl, 20, optimal[l]);
+            mcoord_aa[l]->conform_atom_to_location(coord_atoms[l], lmtl, 20, optimal[l], true);
         }
 
         for (q=0; q<100; q++)

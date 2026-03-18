@@ -3734,7 +3734,7 @@ bool AminoAcid::is_amine()
     return false;
 }
 
-void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od)
+void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od, bool imc)
 {
     if (!atoms) return;
     int i;
@@ -3742,7 +3742,7 @@ void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, flo
     {
         if (!strcmp(atoms[i]->name, an))
         {
-            conform_atom_to_location(i, t, iters, od);
+            conform_atom_to_location(i, t, iters, od, imc);
             return;
         }
     }
@@ -3750,7 +3750,7 @@ void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, flo
     throw 0xbadc0de;
 }
 
-void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float od)
+void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float od, bool imc)
 {
     if (!(movability & MOV_CAN_FLEX)) return;
     if (!a) return;
@@ -3760,7 +3760,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (!b) return;
 
     float oc = get_internal_clashes();
-    if (mclashables) oc += get_intermol_clashes(mclashables);
+    if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
     float bestr = Avogadro;
@@ -3784,14 +3784,14 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
                 b[j]->rotate(step, false, true);
                 r = a->distance_to(target);
                 if (od) r = fabs(r-od);
-                r -= distance_to_nearest_mclashables_atom();
+                if (!imc) r -= distance_to_nearest_mclashables_atom();
 
                 #if _dbg_atom_pointing
                 cout << " " << bestr;
                 #endif
 
                 float c = get_internal_clashes();
-                if (mclashables) c += get_intermol_clashes(mclashables);
+                if (mclashables && !imc) c += get_intermol_clashes(mclashables);
                 if (r < bestr && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
@@ -3810,10 +3810,10 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     Molecule* mols[2];
     mols[0] = (Molecule*)this;
     mols[1] = nullptr;
-    conform_molecules(mols, mclashables, 50);
+    if (!imc) conform_molecules(mols, mclashables, 50);
 }
 
-void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
+void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bool imc)
 {
     if (!(movability & MOV_CAN_FLEX)) return;
 
@@ -3824,7 +3824,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
     if (!a) return;
 
     float oc = get_internal_clashes();
-    if (mclashables) oc += get_intermol_clashes(mclashables);
+    if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
     float bestr = Avogadro;
@@ -3848,14 +3848,14 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
                 b[j]->rotate(step, false, true);
                 r = a->loc.get_3d_distance(t);
                 if (od) r = fabs(r-od);
-                r -= distance_to_nearest_mclashables_atom();
+                if (!imc) r -= distance_to_nearest_mclashables_atom();
 
                 #if _dbg_atom_pointing
                 cout << " " << bestr;
                 #endif
 
                 float c = get_internal_clashes();
-                if (mclashables) c += get_intermol_clashes(mclashables);
+                if (mclashables && !imc) c += get_intermol_clashes(mclashables);
                 if (r < bestr) // && (CACB || c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
@@ -3874,7 +3874,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od)
     Molecule* mols[2];
     mols[0] = (Molecule*)this;
     mols[1] = nullptr;
-    conform_molecules(mols, mclashables, 50);
+    if (!imc) conform_molecules(mols, mclashables, 50);
 }
 
 
