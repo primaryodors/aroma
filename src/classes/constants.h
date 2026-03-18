@@ -271,7 +271,7 @@
 #define cav_linking_threshold 2.0
 #define cavity_intersect_threshold 1e2
 // #define cavity_min_occlusion 0.53
-#define cavity_occlusion_threshold_mult 0.8
+#define cavity_occlusion_threshold_mult 0.85
 #define default_cavity_stuffing 0.03
 #define min_cavmatch_ctainmt 0.6
 #define min_cvty_ctnmt 0.25

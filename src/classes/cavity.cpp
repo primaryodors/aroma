@@ -78,6 +78,8 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
     float x, y, z, step, yoff = 0, zoff = 0;
     Point pcen = p->get_region_center(sr, er), pbox = p->get_region_bounds(sr, er);
 
+    Point loneliest = p->find_loneliest_point(pcen);
+
     int priorities[1024], pqty;
     priorities[0] = pqty = 0;
     l = p->get_end_resno();
@@ -142,9 +144,10 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
             for (z = zmin - zoff; z <= zmax; z += step)
             {
                 Point pt(x,y,z);
+                float ptcendist = fmin(pt.get_3d_distance(pcen), pt.get_3d_distance(loneliest));
                 dummy.recenter(pt);
                 int sphres = p->get_residues_can_clash_ligand(can_clash, &dummy, pt, size, priorities, true);
-                if (sphres < 8+pqty) continue;          // Too isolated.
+                if (sphres < 6+pqty) continue;          // Too isolated.
 
                 float occltot = 0;
                 for (i=0; i<sphres; i++)
@@ -154,7 +157,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                 }
                 float occlavg = occltot / i;
                 // cout << pt << " avg mclashable occlusion: " << occlavg << endl;
-                if (occlavg < occl_threshold) continue;            // Too isolated.
+                if (ptcendist >= _INTERA_R_CUTOFF && occlavg < occl_threshold) continue;            // Too isolated.
 
                 float rmin;
                 CPartial working;
