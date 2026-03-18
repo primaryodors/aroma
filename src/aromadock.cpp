@@ -2307,17 +2307,19 @@ int main(int argc, char** argv)
         {
             i = rand() % j;
             cout << endl << endl;
-            std::string mesg = "While you wait for the dock to finish, why don't you consider tackling an item from your to-do list? Perhaps this one:\n\n";
+            std::string mesg = "While you wait for the dock to finish, why not consider tackling an item from your to-do list? Perhaps this one:\n\n";
             mesg += todolist[i];
             const char* msg = mesg.c_str();
             int l;
+            float offset = frand(0, 1000);
             for (l=0; msg[l]; l++)
             {
-                int r = 176 + 79 * sin(0.25*l),
-                    g = 176 + 79 * sin(0.18*l),
-                    b = 176 + 79 * sin(0.10*l);
+                int r = 176 + 79 * sin(0.19*offset),
+                    g = 176 + 79 * sin(0.13*offset),
+                    b = 176 + 79 * sin(0.08*offset);
                 colorrgb(r, g, b);
                 cout << msg[l];
+                offset += frand(0.5, 1.5);
             }
             colorless();
             cout << endl << endl << endl;
