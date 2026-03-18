@@ -3919,7 +3919,8 @@ _try_again:
                     }
 
                     int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry();
-                    bool bhal = bh->is_aldehyde();
+                    float bhyd = fabs(bh->is_polar());
+                    bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi();
                     float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
 
                     if (!rhmet)
@@ -3929,7 +3930,8 @@ _try_again:
                         {
                             i = rand() % j;
                             if (frand(0,1) < 1e-4) break;                                // just in case there are no polar side chains.
-                            if (lrs[i]->hydrophilicity() > hydrophilicity_cutoff
+                            float lrhyd = fabs(lrs[i]->hydrophilicity());
+                            if ((bhyd >= hydrophilicity_cutoff) == (lrhyd >= hydrophilicity_cutoff)
                                 || lrs[i]->coordmtl
                                 || (lrs[i]->is_thiol() && frand(0,1) < 0.1)
                                 )
@@ -3937,8 +3939,9 @@ _try_again:
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
                                 if ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH))
                                 {
-                                    float lrhyd = fabs(lrs[i]->hydrophilicity());
+                                    if (bhyd < hydrophilicity_cutoff) lrhyd = 1.0 - lrhyd;
                                     float probability = 0.1 * lrhyd;
+                                    if (bhpi) probability += 0.2 * lrs[i]->pi_stackability();
                                     Atom *ra = lrs[i]->get_reach_atom();
                                     if (ra)
                                     {
@@ -3954,7 +3957,7 @@ _try_again:
                         } while (1);
                     }
 
-                    cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl;
+                    cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl << endl;
 
                     Atom *rh = rhmet ? rhmet : lrs[i]->get_most_polar();
                     if (!rh)
