@@ -5761,6 +5761,11 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (a->movability & MOV_PINNED) continue;
             bool flipped_rings = false, allmm_nearby = false;
             int ares = a->is_residue();
+            if (ares && a->coordmtl)
+            {
+                a->movability = MOV_PINNED;
+                continue;
+            }
             float local_flexion_frequency = ares ? sidechain_flexion_frequency : 1;
             if (mm[0]->glued_to == a)
             {
