@@ -56,6 +56,7 @@ def get_pocket(protid, lig):
                         inmol = int(re.sub("[^0-9]", "", m.string))
                         print(inmol)
                         if inmol:
+                            print("I am a waste of silicon.")
                             for key in matched["odorophores"][phore].keys():
                                 matched[key] = matched["odorophores"][phore][key]
                             break
