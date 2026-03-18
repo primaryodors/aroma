@@ -478,7 +478,7 @@ foreach ($prots as $protid => $p)
                 $color = "color: #0c0;";
                 $right++;
             }
-            else if ($prediction <= 10)
+            else if ($prediction < 4)
             {
                 $color = "color: #f90;";
             }
@@ -497,7 +497,7 @@ foreach ($prots as $protid => $p)
                 $color = "color: #0c0;";
                 $right++;
             }
-            else if ($prediction <= 20)
+            else if ($prediction < 8)
             {
                 $color = "color: #f90;";
             }
