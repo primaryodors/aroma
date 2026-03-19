@@ -51,6 +51,11 @@ if re.match("([A-Y]+[0-9]{1,2}[.][0-9]{2},?)+", popt):
     resseek = popt.split(",")
     popt = "res"
 
+if (popt != "*" and popt != "emp" and popt != "ago" and popt != "top") and oid:
+    if "ago" in sys.argv: lopt = "ago"
+    elif "emp" in sys.argv: lopt = "emp"
+    elif "top" in sys.argv: lopt = "top"
+
 if len(sys.argv) > 3:
     for i in range(3, len(sys.argv)):
         if sys.argv[i] == "refresh": onlynew = True
@@ -70,7 +75,7 @@ for rcpid in data.protutils.prots.keys():
                 rn = data.protutils.resno_from_bw(rcpid, aabw)
                 if not rn: match = False
             if not match: continue
-        elif popt != "*" and popt != "emp" and popt != "ago":
+        elif popt != "*" and popt != "emp" and popt != "ago" and popt != "top":
             if re.match("e[0-9]+", popt):
                 if not "expression" in data.protutils.prots[rcpid]: continue
                 minexpr = int(popt[1:])
