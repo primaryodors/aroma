@@ -4700,7 +4700,13 @@ _try_again:
             float pstot = dr[drcount][nodeno].polsat;
             if (isomers.size()) dr[drcount][nodeno].isomer = ligand->get_name();
 
-            if ((pose==1 && !nodeno) || best_energy > btot) best_energy = btot;
+            #if _dbg_output_something_even_if_it_is_wrong
+            cout << "dr[" << drcount << "][" << nodeno << "].kJmol = " << btot << endl << endl;
+            #endif
+            if ((pose==1 && !nodeno) || best_energy > btot)
+            {
+                best_energy = btot;
+            }
             if ((pose==1 && !nodeno) || best_worst_clash > dr[drcount][nodeno].worst_energy) best_worst_clash = dr[drcount][nodeno].worst_energy;
 
             #if reuse_best_pose
@@ -4795,7 +4801,7 @@ _try_again:
                     cout << "Internal ligand energy " << -dr[drcount][nodeno].ligand_self << " out of range." << endl << endl;
                     #endif
 
-                    break;          // Exit nodeno loop.
+                    if (!output_something_even_if_it_is_wrong) break;          // Exit nodeno loop.
                 }
                 // else cout << "Internal ligand energy " << -dr[drcount][nodeno].ligand_self << " satisfactory." << endl << endl;
 
@@ -4815,7 +4821,7 @@ _try_again:
                     #endif
 
                     // cout << "Least favorable binding energy " << dr[drcount][nodeno].worst_energy << " out of range." << endl << endl;
-                    break;          // Exit nodeno loop.
+                    if (!output_something_even_if_it_is_wrong) break;          // Exit nodeno loop.
                 }
                 // else cout << "Least favorable binding energy " << dr[drcount][nodeno].worst_energy << " satisfactory." << endl << endl;
                 #endif
@@ -5044,11 +5050,20 @@ _exitposes:
         int lbi = 0;
         for (l=0; l<poses; l++)
         {
+            #if _dbg_output_something_even_if_it_is_wrong
+            cout << "Candidate: " << dr[l][0].kJmol << " kJ/mol";
+            #endif
             if (dr[l][0].kJmol && dr[l][0].kJmol < leastbad)
             {
-                leastbad = Avogadro;
+                #if _dbg_output_something_even_if_it_is_wrong
+                cout << "*";
+                #endif
+                leastbad = dr[l][0].kJmol;
                 lbi = l;
             }
+            #if _dbg_output_something_even_if_it_is_wrong
+            cout << endl;
+            #endif
         }
         pose = 1;
         protein = &pose_proteins[lbi];

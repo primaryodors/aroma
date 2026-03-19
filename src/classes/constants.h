@@ -420,6 +420,7 @@
 #define _dbg_octant_occlusion 0
 #define _dbg_optimize_hydrogens 0
 #define _dbg_optimize_hydrogens_resno 260
+#define _dbg_output_something_even_if_it_is_wrong 0
 #define _dbg_path_search 0
 #define _dbg_peptide_bond_formation 0
 #define _dbg_pocket_DeltaG_solv 0
