@@ -2718,6 +2718,7 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
 
     /*
     ATOM   2039  CA  ALA   128      -6.065 -24.834  -5.744  1.00001.00           C
+    HETATM 9010 Br11 LIG     0       2.325  11.869  10.075  1.00001.00          Br
     */
     fprintf(pf, (residue && !fh) ? "ATOM   " : "HETATM ");
     sprintf(numbuf, "%d", atomno);
@@ -2751,7 +2752,10 @@ void Atom::save_pdb_line(FILE* pf, unsigned int atomno, bool fh)
     sprintf(numbuf, "%4.3f", location.z);
     fprintf(pf, "%7s ", numbuf);
 
-    fprintf(pf, "  1.00001.00           %s%c\n", get_elem_sym(), 
+    const char* esym = get_elem_sym();
+    int esyml = strlen(esym);
+
+    fprintf(pf, "  1.00001.00          %s%s%c\n", (esyml<2?" ":""), esym,
         (m_Z>1 && fabs(origchg) > hydrophilicity_cutoff) ? (origchg > 0 ? '+' : '-') : ' ' );
 }
 
@@ -2792,7 +2796,10 @@ void Atom::stream_pdb_line(ostream& os, unsigned int atomno, bool fh)
     if (!location.z) location.z = 0;
     os << fixed << setprecision(3) << setw(8) << setfill(' ') << location.z;
 
-    os << "  1.00001.00           " << get_elem_sym();
+    const char* esym = get_elem_sym();
+    int esyml = strlen(esym);
+
+    os << "  1.00001.00          " << (esyml<2?" ":"") << get_elem_sym();
     os << (fabs(charge) > hydrophilicity_cutoff ? (charge > 0 ? '+' : '-') : ' ');
     os << endl;
 }
