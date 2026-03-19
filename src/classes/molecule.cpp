@@ -3687,9 +3687,14 @@ float Molecule::get_internal_clashes(bool sb)
             }
             #endif
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
-            if (atoms[i]->is_bonded_to(atoms[j]) /* || atoms[j]->is_bonded_to(atoms[i]) */)
+            if (atoms[i]->is_bonded_to(atoms[j]) || atoms[j]->is_bonded_to(atoms[i]))
             {
                 Bond* ab = atoms[i]->get_bond_between(atoms[j]);
+                if (!ab)
+                {
+                    ab = atoms[j]->get_bond_between(atoms[i]);
+                    if (!ab) continue;
+                }
                 if (atoms[i] < atoms[j] && atoms[i]->is_pi() && atoms[j]->is_pi() && !atoms[i]->in_same_ring_as(atoms[j]))
                 {
                     Atom* c = atoms[i]->get_heaviest_bonded_atom_that_isnt(atoms[j]);
