@@ -3686,7 +3686,16 @@ float Molecule::get_internal_clashes(bool sb)
                 cout << "K159 internal clash between " << atoms[i]->name << " and " << atoms[j]->name << endl << endl;
             }
             #endif
-            if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue && !strcmp(atoms[i]->name, atoms[j]->name)) continue;
+            if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue)
+            {
+                if (!strcmp(atoms[i]->name, atoms[j]->name)) continue;
+                if (atoms[i]->Z < 2 || atoms[j]->Z < 2)
+                    if (atoms[i]->get_Greek() == atoms[j]->get_Greek())
+                    {
+                        if (!atoms[i]->is_bonded_to(atoms[j])) atoms[i]->bond_to(atoms[j], 1);
+                        continue;               // IT FUCKIN' ISN'T CLASHING.
+                    }
+            }
             if (atoms[i]->is_bonded_to(atoms[j]) || atoms[j]->is_bonded_to(atoms[i]))
             {
                 Bond* ab = atoms[i]->get_bond_between(atoms[j]);

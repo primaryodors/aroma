@@ -44,7 +44,7 @@ else:
 if popt == "all": popt = "*"
 if lopt == "all": lopt = "*"
 
-g = ["L", "S2"]
+g = ["L", "S2", "I2", "O1"]
 
 resseek = False
 if re.match("([A-Y]+[0-9]{1,2}[.][0-9]{2},?)+", popt):

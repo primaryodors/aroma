@@ -233,6 +233,7 @@ function load_viewer(obj)
 
                     echo "filediv.innerHTML = \"$rcpid";
                     $altdir = "../cpllocal/$fam/$sub";
+                    $ncpld = 0;
                     if (file_exists($altdir))
                     {
                         $ridl = strlen($rcpid);
@@ -244,11 +245,13 @@ function load_viewer(obj)
                                 {
                                     $suff = explode('.',substr($fname,$ridl+1))[0];
                                     // die("\n\n$fname|$suff");
-                                    echo " &#xb7; <small><a id=\\\"mdl3di\\\" class=\\\"mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').show(); load_remote_pdb('pdb.php?prot=$rcpid&mod=$suff'); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel'; window.parent.setTimeout( window.parent.show_bsr_chains, 1234);\\\">$suff</a></small>";
+                                    $mdlsel = $ncpld ? "" : "mdlsel ";
+                                    echo " &#xb7; <small><a id=\\\"mdl3di\\\" class=\\\"{$mdlsel}mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').show(); load_remote_pdb('pdb.php?prot=$rcpid&mod=$suff'); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel'; window.parent.setTimeout( window.parent.show_bsr_chains, 1234);\\\">$suff</a></small>";
+                                    $ncpld++;
                                 }
                         }
                     }
-                    echo " &#xb7; <small><a id=\\\"mdl3da\\\" class=\\\"mdlsel mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').show(); load_remote_pdb('pdb.php?prot=$rcpid&mod=a'); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel'; window.parent.setTimeout( window.parent.show_bsr_chains, 1234);\\\">active</a></small>";
+                    if (!$ncpld) echo " &#xb7; <small><a id=\\\"mdl3da\\\" class=\\\"mdlsel mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').show(); load_remote_pdb('pdb.php?prot=$rcpid&mod=a'); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel'; window.parent.setTimeout( window.parent.show_bsr_chains, 1234);\\\">active</a></small>";
                     echo " &#xb7; <small><a id=\\\"mdl3di\\\" class=\\\"mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').show(); load_remote_pdb('pdb.php?prot=$rcpid&mod=i'); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel'; window.parent.setTimeout( window.parent.show_bsr_chains, 1234);\\\">inactive</a></small>";
                     echo " &#xb7; <small><a id=\\\"mdl3dj\\\" class=\\\"mdl3dselbtn\\\" href=\\\"#\\\" onclick=\\\"$('#sdchbtn').hide(); load_remote_pdb('pdb.php?prot=$rcpid&mod=a', false, $colschm); load_remote_pdb('pdb.php?prot=$rcpid&mod=i', true, charcoalScheme); $('.mdl3dselbtn').removeClass('mdlsel'); this.className += ' mdlsel';  \\\">juxtapose</a></small>";
                     echo "\";";
