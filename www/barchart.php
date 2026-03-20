@@ -74,7 +74,7 @@ switch ($mode)
             if (!isset($t[$rcpid])) $t[$rcpid] = $act;
             else
             {
-                if ($t[$rcpid] < $act) $t[$rcpid] = $act;
+                if ($t[$rcpid] < $act) $t[$rcpid] = min($act, 10);
             }
 
             $ec50 = @$a['ec50'] ?: 0;
