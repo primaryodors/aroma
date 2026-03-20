@@ -7489,6 +7489,13 @@ Atom *Molecule::get_most_polar()
         if (atoms[i]->Z < 2) continue;
         if (atoms[i]->is_backbone) continue;
         float h = fabs(atoms[i]->is_polar());
+
+        #if _dbg_most_polar
+        colorize(-h);
+        cout << atoms[i]->name << " polarity: " << h << endl;
+        colorless();
+        #endif
+
         if (atoms[i]->is_pi()) h += 0.1;    // Effect of polar-pi potential.
 
         if (h > hbest)
@@ -7497,6 +7504,11 @@ Atom *Molecule::get_most_polar()
             result = atoms[i];
         }
     }
+
+    #if _dbg_most_polar
+    cout << endl;
+    #endif
+
     return result;
 }
 

@@ -1155,32 +1155,33 @@ float Atom::is_polar()
                 float f = (bonded_to[i].atom2->elecn - elecn);
                 if (m_Z==1 && bonded_to[i].atom2->family == TETREL) f = 0;
 
-                for (j=0; j<valence; j++)
+                // TODO: What on earth is this cosine thing doing here, also why is this j loop nestled inside the i loop?
+                /* for (j=0; j<valence; j++)
                 {
                     if (j==i) continue;
                     if (!bonded_to[j].atom2) continue;
                     float e = (bonded_to[j].atom2->elecn - elecn);
                     e *= cos(find_3d_angle(bonded_to[i].atom2->location, bonded_to[j].atom2->location, location));
                     f += e;
-                }
+                } */
 
                 polarity += f;
                 #if _dbg_polar_calc
-                cout << "# " << name << " is bonded to " << bonded_to[i].atom2->name << " " << f << ", ";
+                if (!residue) cout << "# " << name << " is bonded to " << bonded_to[i].atom2->name << " " << f << ", ";
                 #endif
             }
         }
 
         if (n) polarity /= n;
         #if _dbg_polar_calc
-        cout << "# / " << n << " = polarity " << polarity << endl;
+        if (!residue) cout << "# / " << n << " = polarity " << polarity << endl;
         #endif
 
         if (charge) polarity += charge;
         polar_calcd = true;
     }
     #if _dbg_polar_calc
-    // cout << "# " << name << " has polarity " << polarity << endl;
+    // if (!residue) cout << "# " << name << " has polarity " << polarity << endl;
     #endif
 
     return polarity;

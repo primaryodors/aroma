@@ -3920,7 +3920,7 @@ _try_again:
                         if (llig->deprotonate(bH)) bH = nullptr;
                     }
 
-                    int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry();
+                    int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry(), bhfam = bh->get_family();
                     float bhyd = fabs(bh->is_polar());
                     bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi();
                     float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
@@ -3939,19 +3939,40 @@ _try_again:
                                 )
                             {
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
+                                float probability = 0;
+                                Atom *ra;
+
+                                // HYDROPHILIC CALCULATION
                                 if ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH))
                                 {
-                                    if (bhyd < hydrophilicity_cutoff) lrhyd = 1.0 - lrhyd;
-                                    float probability = 0.1 * lrhyd;
+                                    probability = 0.1 * lrhyd;
+                                    if (bhpi) probability -= 0.2 * lrs[i]->pi_stackability();
+                                    ra = lrs[i]->get_reach_atom();
+                                }
+
+                                // HYDROPHOBIC CALCULATION
+                                else if (bhfam == TETREL)
+                                {
+                                    lrhyd = 1.0 - lrhyd;
+                                    probability = 0.1 * lrhyd;
                                     if (bhpi) probability += 0.2 * lrs[i]->pi_stackability();
-                                    Atom *ra = lrs[i]->get_reach_atom();
-                                    if (ra)
-                                    {
-                                        float rhcendist = ra->loc.get_3d_distance(nodecen);
-                                        float anomaly = rhcendist - bhcendist;
-                                        if (anomaly > 0) anomaly = fmax(0, anomaly-3.5);
-                                        probability += 0.25 * lrhyd / (1.0 + anomaly/2.5);
-                                    }
+                                    ra = lrs[i]->get_reach_atom();
+                                    if (ra->get_charge()) probability = pow(probability, 0.2);
+                                }
+
+                                // DISTANCE ADJUSTMENT
+                                if (ra)
+                                {
+                                    float rhcendist = ra->loc.get_3d_distance(nodecen);
+                                    float anomaly = rhcendist - bhcendist;
+                                    if (anomaly > 0) anomaly = fmax(0, anomaly-3.5);
+                                    probability += 0.25 * lrhyd / (1.0 + anomaly/2.5);
+                                }
+
+                                // PROBABILITY OF ATOM SELECTION
+                                if (probability) 
+                                {
+                                    probability *= frand(0.8, 1.3);         // stochastic
                                     if (frand(0,1) < probability)
                                         break;
                                 }

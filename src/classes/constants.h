@@ -413,6 +413,7 @@
 #define _dbg_mol_frames 0
 #define _dbg_molstruct_evolutions 0
 #define _dbg_molstruct_evolution_bond_lengths 0
+#define _dbg_most_polar 0
 #define _dbg_moves_with 0
 #define _dbg_monaxial 0
 #define _dbg_multiflex 0
