@@ -382,7 +382,7 @@ foreach ($prots as $protid => $p)
         echo "</td>\n";
         $flig = $o['oid'];
 
-        echo "<td>".date("Y-m-d H:i:s", $dates[$rowid])."</td>";
+        echo "<td>".date("Y-m-d H:i:s", $dates[$k])."</td>";
 
         foreach ($allmodes as $m)
         {
