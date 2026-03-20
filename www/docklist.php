@@ -79,11 +79,18 @@ foreach ($prots as $protid => $p)
         if (substr($fname, -5) != ".dock") continue;
         if (false===strpos($fname, "~")) continue;
         list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
+        if ($mode == "L") $mode = "000000000";
+        else if ($mode == "S2") $mode = "000000001";
         $allmodes[$mode] = $mode;
     }
 }
 $allmodes = array_values($allmodes);
 natsort($allmodes);
+foreach ($allmodes as $k => $v)
+{
+    if ($v == "000000000") $allmodes[$k] = "L";
+    if ($v == "000000001") $allmodes[$k] = "S2";
+}
 ?>
 
 <table class="liglist">
