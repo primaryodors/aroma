@@ -59,13 +59,49 @@ $args = implode("&", $args);
 <a href="docklist.php">Clear filters</a>
 <?php } ?>
 
+<?php
+$allmodes = [];
+$protfs = [];
+foreach ($prots as $protid => $p)
+{
+    // if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
+    $fam = family_from_protid($protid);
+    $dockpath = "../out/$fam/$protid";
+    if (!file_exists($dockpath)) continue;
+    $dir = dir($dockpath);
+    $files = [];
+    while (false!==($fname=$dir->read())) $files[] = $fname;
+    natsort($files);
+    $protfs[$protid] = $files;
+
+    foreach ($protfs[$protid] as $fname)
+    {
+        if (substr($fname, -5) != ".dock") continue;
+        if (false===strpos($fname, "~")) continue;
+        list($odor, $mode, $opfisehciet) = explode('.', explode('~', $fname)[1], 3);
+        $allmodes[$mode] = $mode;
+    }
+}
+$allmodes = array_values($allmodes);
+natsort($allmodes);
+?>
+
 <table class="liglist">
     <tr><th>Receptor</th>
         <th>Odorant</th>
         <th>Dock Date (UTC)</th>
-        <th>Dock Energies</th>
+        <!-- th>Dock Energies</th>
         <th>Occlusion</th>
-        <th>Poses</th>
+        <th>Poses</th -->
+        <?php
+        foreach ($allmodes as $m)
+        {
+            if (strlen($m) > 3)
+                echo "<th>H/o/#p $m</th>\n";
+            else
+                echo "<th>H/o/#p +hGNA$m</th>\n";
+        }
+        ?>
         <th>Agonist?</td>
         <th>Predicted</td>
     </tr>
@@ -102,17 +138,11 @@ foreach ($prots as $protid => $p)
 {
     if (isset($_REQUEST['r']) && $protid != $_REQUEST['r']) continue;
     $fam = family_from_protid($protid);
-    $dockpath = "../out/$fam/$protid";
-    if (!file_exists($dockpath)) continue;
-    $dir = dir($dockpath);
-    $files = [];
-    while (false!==($fname=$dir->read())) $files[] = $fname;
-    natsort($files);
 
     $rows = [];
     $modes = [];
     $dates = [];
-    foreach ($files as $fname)
+    foreach ($protfs[$protid] as $fname)
     {
         if (substr($fname, -5) != ".dock") continue;
         if (false===strpos($fname, "~")) continue;
@@ -347,6 +377,27 @@ foreach ($prots as $protid => $p)
 
         echo "<td>".date("Y-m-d H:i:s", $dates[$rowid])."</td>";
 
+        foreach ($allmodes as $m)
+        {
+            echo "<td>";
+            if (@$benerg_[$m]) echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$m\" target=\"_dock\">";
+            if (@$benerg_[$m] >= 200) echo "(fail)";
+            else
+            {
+                echo @$benerg_[$m] ?: "-";
+                if (@$benerg_[$m])
+                {
+                    echo " / ";
+                    echo @$occl_[$m] ?: "-";
+                    echo " / ";
+                    echo @$nump_[$m] ?: "-";
+                }
+            }
+            if (@$benerg_[$m]) echo "</a>";
+            echo "</td>";
+        }
+
+        /*
         echo "<td>";
 
         if ($benerg_active)
@@ -407,6 +458,7 @@ foreach ($prots as $protid => $p)
 
 
         echo @"<td>" . ($nump_active ?: "-") . " / " . ($nump_inactive ?: "-") . "</td>\n";
+        */
 
         $dtop = $top ?: "-";
         $dec50 = $ec50 ?: "-";
@@ -528,6 +580,8 @@ if ($right + $wrong)
     if (count($ec50xy['x']) > 3) echo " EC<sub>50</sub> = " . round(correlationCoefficient($ec50xy['x'], $ec50xy['y']), 4);
     echo "</p>"; 
 }
+
+echo "<p>H/o/#p = enthalpy, occlusion, number of poses.</p>";
 ?>
 
 <?php if (0) { ?>
