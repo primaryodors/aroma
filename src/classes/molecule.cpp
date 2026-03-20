@@ -3693,7 +3693,7 @@ float Molecule::get_internal_clashes(bool sb)
                     if (atoms[i]->get_Greek() == atoms[j]->get_Greek())
                     {
                         // if (!atoms[i]->is_bonded_to(atoms[j])) atoms[i]->bond_to(atoms[j], 1);       // this would ruin threonine, valine, etc.
-                        continue;               // IT F***IN' ISN'T CLASHING.
+                        continue;
                     }
             }
             if (atoms[i]->is_bonded_to(atoms[j]) || atoms[j]->is_bonded_to(atoms[i]))
