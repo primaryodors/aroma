@@ -30,6 +30,40 @@ if (file_exists($dbsrfn)) $dockbsr = json_decode(file_get_contents($dbsrfn), tru
 ?>
 <style>
 <?php output_dlmenu_style(); ?>
+.hop
+{
+    text-align: center!important;
+}
+.modeL
+{
+    background-color: rgba(0, 128, 64, 0.08);
+    text-align: center!important;
+}
+.modeS2
+{
+    background-color: rgba(128, 128, 0, 0.08);
+    text-align: center!important;
+}
+.modeI2
+{
+    background-color: rgba(128, 40, 0, 0.08);
+    text-align: center!important;
+}
+.modeO1
+{
+    background-color: rgba(128, 0, 96, 0.08);
+    text-align: center!important;
+}
+.modeactive
+{
+    background-color: rgba(64, 128, 64, 0.08);
+    text-align: center!important;
+}
+.modeinactive
+{
+    background-color: rgba(0, 64, 128, 0.08);
+    text-align: center!important;
+}
 </style>
 <script>
 <?php output_dlmenu_script(); ?>
@@ -96,7 +130,14 @@ foreach ($allmodes as $k => $v)
 <table class="liglist">
     <tr><th>Receptor</th>
         <th>Odorant</th>
-        <th>Dock Date (UTC)</th>
+        <th>Dock Date</th>
+        <th colspan="<?php echo count($allmodes); ?>" class="hop">Enthalpy, Occlusion, # Poses</th>
+        <th>Agonist Y/N,</td>
+        <th>Prediction</td>
+    </tr>
+    <tr><th>ID</th>
+        <th>Name</th>
+        <th>(UTC)</th>
         <!-- th>Dock Energies</th>
         <th>Occlusion</th>
         <th>Poses</th -->
@@ -104,13 +145,13 @@ foreach ($allmodes as $k => $v)
         foreach ($allmodes as $m)
         {
             if (strlen($m) > 3)
-                echo "<th>H/o/#p $m</th>\n";
+                echo "<th class=\"mode$m\">$m</th>\n";
             else
-                echo "<th>H/o/#p +hGNA$m</th>\n";
+                echo "<th class=\"mode$m\">+GNA$m</th>\n";
         }
         ?>
-        <th>Agonist?</td>
-        <th>Predicted</td>
+        <th>EC<sub>50</sub>, crvtop</td>
+        <th>Score</td>
     </tr>
 <?php
 
@@ -386,7 +427,7 @@ foreach ($prots as $protid => $p)
 
         foreach ($allmodes as $m)
         {
-            echo "<td>";
+            echo "<td class=\"mode$m\">";
             if (@$benerg_[$m]) echo "<a href=\"viewer.php?view=dock&prot=$protid&odor=$fnu&mode=$m\" target=\"_dock\">";
             if (@$benerg_[$m] >= 200) echo "(fail)";
             else
