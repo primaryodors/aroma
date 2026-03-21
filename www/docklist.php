@@ -436,7 +436,7 @@ foreach ($prots as $protid => $p)
                 if (@$benerg_[$m])
                 {
                     echo " / ";
-                    echo @$occl_[$m] ? round($occl_[$m], 3) : "-";
+                    echo @$occl_[$m] ? round($occl_[$m], 2) : "-";
                     echo " / ";
                     echo @$nump_[$m] ?: "-";
                 }
