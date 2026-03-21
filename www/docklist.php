@@ -628,8 +628,6 @@ if ($right + $wrong)
     if (count($ec50xy['x']) > 3) echo " EC<sub>50</sub> = " . round(correlationCoefficient($ec50xy['x'], $ec50xy['y']), 4);
     echo "</p>"; 
 }
-
-echo "<p>H/o/#p = enthalpy, occlusion, number of poses.</p>";
 ?>
 
 <?php if (0) { ?>
