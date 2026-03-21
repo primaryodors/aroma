@@ -432,11 +432,11 @@ foreach ($prots as $protid => $p)
             if (@$benerg_[$m] >= 200) echo "(fail)";
             else
             {
-                echo @$benerg_[$m] ?: "-";
+                echo @$benerg_[$m] ? round(@$benerg_[$m], 2) : "-";
                 if (@$benerg_[$m])
                 {
                     echo " / ";
-                    echo @$occl_[$m] ?: "-";
+                    echo @$occl_[$m] ? round($occl_[$m], 3) : "-";
                     echo " / ";
                     echo @$nump_[$m] ?: "-";
                 }
