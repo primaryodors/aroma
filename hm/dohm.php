@@ -127,6 +127,8 @@ if ($usecpl) $mdlcls = "AutoModel";
 $path = "../coupled/$fam/$sub";
 if ($usecpl && file_exists($path))
 {
+    $allaln = file_get_contents("allgpcr.ali");
+
     $knowns = [];
     $relateds = [];
     $d = dir($path);
@@ -137,23 +139,27 @@ if ($usecpl && file_exists($path))
         if (count($pieces) < 2) continue;
         list($cplrcpid, $gprot) = $pieces;
 
-        if ($cplrcpid == $rcpid)
+        if (false!==strpos($allaln, "$cplrcpid~$gprot"))
         {
-            $knowns[] = "$cplrcpid~$gprot";
-        }
-        else
-        {
-            $relateds[] = "$cplrcpid~$gprot";
+            if ($cplrcpid == $rcpid)
+            {
+                $knowns[] = "$cplrcpid~$gprot";
+            }
+            else
+            {
+                $relateds[] = "$cplrcpid~$gprot";
+            }
         }
     }
 
     if (!count($knowns)) $knowns = $relateds;
-    if (!count($knowns)) die("Empty folder: $path\n");
+    if (!count($knowns)) goto noaln;
 
     $knowns = "'".implode("', '", $knowns)."'";
 }
 else if ($usecpl)
 {
+    noaln:
     $btree = $prots[$rcpid]["btree"];
     while (($btlen = strlen($btree)) > 4)
     {
