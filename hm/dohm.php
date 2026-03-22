@@ -139,11 +139,11 @@ if ($usecpl && file_exists($path))
 
         if ($cplrcpid == $rcpid)
         {
-            $knowns[] = "$rcpid~$gprot";
+            $knowns[] = "$cplrcpid~$gprot";
         }
         else
         {
-            $relateds[] = "$rcpid~$gprot";
+            $relateds[] = "$cplrcpid~$gprot";
         }
     }
 
