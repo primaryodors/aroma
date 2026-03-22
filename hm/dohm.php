@@ -113,14 +113,16 @@ $usecpl = (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
 if (file_exists("../coupled/$fam/$sub"))
 {
     $atomfiles = "'../coupled/$fam/$sub'";
-    if (file_exists("../coupled/legal.pdb"))
-    {
-        $legal = file_get_contents("../coupled/legal.pdb");
-        $refno += 2;
-    }
     $usecpl = true;
     $mdlcls = "AutoModel";
 }
+if ($usecpl && file_exists("../coupled/legal.pdb"))
+{
+    $legal = file_get_contents("../coupled/legal.pdb");
+    $refno += 2;
+}
+
+if ($usecpl) $mdlcls = "AutoModel";
 
 $path = "../coupled/$fam/$sub";
 if ($usecpl && file_exists($path))
@@ -170,6 +172,7 @@ else if ($usecpl)
     // print_r($relatives);
 
     if (!count($relatives)) goto norel;
+    natsort($relatives);
 
     $knowns = [];
     $lrfam = $lrsub = "";
@@ -532,7 +535,7 @@ natrixs;
     else if ($famno == 51 || $famno == 52) $adjustments .= "ATOMTO %6.59 EXTENT @4.57\n";
     else if ($rcpid == "OR56B2") $adjustments .= "ATOMTO %6.58 EXTENT @4.57\n";
 
-    $knowns = preg_replace("/[^0-9a-zA-Z_ ]/", "", $knowns);
+    $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
 }
 
 $refs = <<<refs
