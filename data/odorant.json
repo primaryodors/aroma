@@ -27005,15 +27005,8 @@
     {
         "full_name": "strawberry glycidate 1",
         "name1": "ethyl methylphenylglycidate",
-        "iupac": "ethyl 3-methyl-3-phenyloxirane-2-carboxylate",
-        "smiles": "CC(C2C(OCC)=O)(O2)C1=CC=CC=C1",
-        "isomers":
-        {
-            "(+)-(2S,3S)": "C[C@]([C@H]2C(OCC)=O)(O2)C1=CC=CC=C1",
-            "(-)-(2R,3R)": "C[C@@]([C@@H]2C(OCC)=O)(O2)C1=CC=CC=C1",
-            "(2R,3S)": "C[C@]([C@@H]2C(OCC)=O)(O2)C1=CC=CC=C1",
-            "(2S,3R)": "C[C@@]([C@H]2C(OCC)=O)(O2)C1=CC=CC=C1"
-        },
+        "iupac": "(+)-ethyl (2S,3S)-3-methyl-3-phenyloxirane-2-carboxylate",
+        "smiles": "C[C@]([C@H]2C(OCC)=O)(O2)C1=CC=CC=C1",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -27024,6 +27017,10 @@
                 "floral",
                 "honey",
                 "fatty"
+            ],
+            "http://www.leffingwell.com/chirality/ethyl_methylphenylgycidate.htm":
+            [
+                "strawberry"
             ]
         },
         "notes":
@@ -43143,15 +43140,8 @@
     {
         "full_name": "strawberry glycidate 2",
         "name1": "ethyl 3-phenylglycidate",
-        "iupac": "ethyl 3-phenyloxirane-2-carboxylate",
-        "smiles": "CCOC(=O)C1C(O1)C2=CC=CC=C2",
-        "isomers":
-        {
-            "(+)-(2S,3S)": "CCOC(=O)[C@@H]1[C@@H](O1)C2=CC=CC=C2",
-            "(-)-(2R,3R)": "CCOC(=O)[C@H]1[C@H](O1)C2=CC=CC=C2",
-            "(2R,3S)": "CCOC(=O)[C@H]1[C@@H](O1)C2=CC=CC=C2",
-            "(2S,3R)": "CCOC(=O)[C@@H]1[C@H](O1)C2=CC=CC=C2"
-        },
+        "iupac": "(+)-ethyl (2S,3S)-3-phenyloxirane-2-carboxylate",
+        "smiles": "CCOC(=O)[C@@H]1[C@@H](O1)C2=CC=CC=C2",
         "notes":
         {
             "text": "See also the very similar ethyl methylphenylglycidate also known as strawberry glycidate 1."

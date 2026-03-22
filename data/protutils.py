@@ -78,7 +78,7 @@ def subfamily_from_protid(protid):
     else:
         return ""
 
-def prepare_coupled(inpfn, outfn, rcpid):
+def prepare_coupled(inpfn, outfn, rcpid, remarks):
     fam = family_from_protid(rcpid)
     phew  = f"LOAD \"{inpfn}\" A A\n"
     phew += f"LOAD \"pdbs/{fam}/{rcpid}.active.pdb\" A R\n"
@@ -88,6 +88,7 @@ def prepare_coupled(inpfn, outfn, rcpid):
     phew += "UPRIGHT\n"
     phew += "HYDRO\n"
     phew += "BWCENTER\n"
+    if remarks: phew += remarks
     with open(f"pdbs/{fam}/{rcpid}.active.pdb", "r") as f:
         indat = f.read()
         lines = indat.split("\n")
