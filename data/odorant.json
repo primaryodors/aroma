@@ -8236,12 +8236,7 @@
     {
         "full_name": "sotolone",
         "name1": "caramel furanone",
-        "smiles": "CC1C(=C(C(=O)O1)O)C",
-        "isomers":
-        {
-            "(R)": "C[C@@H]1C(=C(C(=O)O1)O)C",
-            "(S)": "C[C@H]1C(=C(C(=O)O1)O)C"
-        },
+        "smiles": "C[C@H]1C(=C(C(=O)O1)O)C",
         "pK":
         {
             "a": "9.28",
@@ -8259,6 +8254,14 @@
                 "coffee",
                 "brown_sugar",
                 "cotton_candy"
+            ],
+            "http://www.leffingwell.com/chirality/sotolon.htm":
+            [
+                "caramel",
+                "maple_syrup",
+                "burnt_sugar",
+                "fenugreek",
+                "curry"
             ]
         },
         "activity":
