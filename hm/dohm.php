@@ -169,6 +169,7 @@ else if ($usecpl)
         $relatives = [];
         foreach ($prots as $lrcp => $lp)
         {
+            if ($lrcp == $rcpid) continue;
             if (substr(@$lp['btree'], 0, $btlen) == $btree)
                 $relatives[] = $lrcp;
         }
@@ -199,6 +200,7 @@ else if ($usecpl)
             $pieces = explode('~', substr($entry, 0, -4));
             if (count($pieces) < 2) continue;
             list($cplrcpid, $gprot) = $pieces;
+            if ($cplrcpid == $rcpid) continue;
 
             if (in_array($cplrcpid, $relatives))
             {
