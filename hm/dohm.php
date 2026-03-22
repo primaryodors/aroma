@@ -106,109 +106,209 @@ $restraints_misc = [];
 $fam = family_from_protid($rcpid);
 $sub = subfamily_from_protid($rcpid);
 $famsub = "$fam$sub";
-
-switch ($fam)
+$atomfiles = "'.'";
+$legal = "";
+$refno = 1;
+$usecpl = (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
+if (file_exists("../coupled/$fam/$sub"))
 {
-    case 'TAAR':
-    if ($rcpid == "TAAR1")
+    $atomfiles = "'../coupled/$fam/$sub'";
+    if (file_exists("../coupled/legal.pdb"))
     {
-        $knowns = $TAAR1;
-        $mdlcls = "AutoModel";
+        $legal = file_get_contents("../coupled/legal.pdb");
+        $refno += 2;
     }
-    else if ($rcpid == "TAAR9") $knowns = $mTAAR;
-    else $knowns = "$mTAAR"; //, $TAAR1";
-    break;
+    $usecpl = true;
+    $mdlcls = "AutoModel";
+}
 
-    case 'VN1R':
-    $knowns = "$TAS2R, $CB";
-    break;
-
-    case 'MS4A':
-    die("No HM templates known for MS4A receptors.\n");
-    break;
-
-    case 'OR1':
-    $knowns = "$consOR1";
-    break;
-
-    case 'OR2':
-    $knowns = "$consOR2";
-    break;
-
-    case 'OR3':
-    $knowns = "$consOR1";
-    break;
-
-    case 'OR4':
-    $knowns = "$consOR4";
-    break;
-
-    case 'OR5':
-    if ($rcpid == "OR5V1") $knowns = "$OR5V1";
-    else $knowns = "$consOR5";
-    break;
-
-    case 'OR6':
-    if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
+$path = "../coupled/$fam/$sub";
+if ($usecpl && file_exists($path))
+{
+    $knowns = [];
+    $relateds = [];
+    $d = dir($path);
+    while (false !== ($entry = $d->read()))
     {
-        $knowns = "$bmOR6A2";
-        $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
+        if (substr($entry, -4) != ".pdb") continue;
+        $pieces = explode('~', substr($entry, 0, -4));
+        if (count($pieces) < 2) continue;
+        list($cplrcpid, $gprot) = $pieces;
+
+        if ($cplrcpid == $rcpid)
+        {
+            $knowns[] = "$rcpid~$gprot";
+        }
+        else
+        {
+            $relateds[] = "$rcpid~$gprot";
+        }
     }
-    else $knowns = "$consOR6";
-    break;
 
-    case 'OR7':
-    $knowns = "$consOR1";
-    break;
+    if (!count($knowns)) $knowns = $relateds;
+    if (!count($knowns)) die("Empty folder: $path\n");
 
-    case 'OR8':
-    $knowns = "$consOR5";
-    break;
-
-    case 'OR9':
-    $knowns = "$consOR5";
-    break;
-
-    case 'OR10':
-    $knowns = "$consOR6";
-    break;
-
-    case 'OR11':
-    $knowns = "$consOR6";
-    break;
-
-    case 'OR12':
-    $knowns = "$consOR4";
-    break;
-
-    case 'OR13':
-    $knowns = "$consOR2";
-    break;
-
-    case 'OR14':
-    $knowns = "$CLASSII";
-    break;
-
-    case 'OR51':
-    if ($rcpid == "OR51E2")
+    $knowns = "'".implode("', '", $knowns)."'";
+}
+else if ($usecpl)
+{
+    $btree = $prots[$rcpid]["btree"];
+    while (($btlen = strlen($btree)) > 4)
     {
-        $knowns = false;
-        $pyoutfn = "8f76.pdb";
-        $hmrcpstrid = 'A';
+        $btree = substr($btree, 0, -1);
+        $btlen--;
+        // echo "$btree\n";
+        $relatives = [];
+        foreach ($prots as $lrcp => $lp)
+        {
+            if (substr(@$lp['btree'], 0, $btlen) == $btree)
+                $relatives[] = $lrcp;
+        }
+
+        if (count($relatives)) break;
     }
-    else $knowns = "$consOR51";
-    break;
+    // print_r($relatives);
 
-    case 'OR52':
-    $knowns = "$consOR52";
-    break;
+    if (!count($relatives)) goto norel;
 
-    case 'OR56':
-    $knowns = "$CLASSI";
-    break;
+    $knowns = [];
+    $lrfam = $lrsub = "";
+    foreach ($relatives as $rel)
+    {
+        $rfam = family_from_protid($rel);
+        $rsub = subfamily_from_protid($rel);
+        $rpath = "../coupled/$rfam/$rsub";
+        if (!file_exists($rpath)) continue;
 
-    default:
-    $knowns = "$CLASSI, $CLASSII, $mTAAR, $TAAR1";
+        if ($rfam == $lrfam && $rsub == $lrsub) continue;
+
+        $atomfiles .= ", '$rpath'";
+        $d = dir($rpath);
+        while (false !== ($entry = $d->read()))
+        {
+            if (substr($entry, -4) != ".pdb") continue;
+            $pieces = explode('~', substr($entry, 0, -4));
+            if (count($pieces) < 2) continue;
+            list($cplrcpid, $gprot) = $pieces;
+
+            if (in_array($cplrcpid, $relatives))
+            {
+                $knowns[] = "$cplrcpid~$gprot";
+            }
+        }
+
+        $lrfam = $rfam;
+        $lrsub = $rsub;
+    }
+
+    $knowns = "'".implode("', '", $knowns)."'";
+}
+else
+{
+    norel:
+    switch ($fam)
+    {
+        case 'TAAR':
+        if ($rcpid == "TAAR1")
+        {
+            $knowns = $TAAR1;
+            $mdlcls = "AutoModel";
+        }
+        else if ($rcpid == "TAAR9") $knowns = $mTAAR;
+        else $knowns = "$mTAAR"; //, $TAAR1";
+        break;
+
+        case 'VN1R':
+        $knowns = "$TAS2R, $CB";
+        break;
+
+        case 'MS4A':
+        die("No HM templates known for MS4A receptors.\n");
+        break;
+
+        case 'OR1':
+        $knowns = "$consOR1";
+        break;
+
+        case 'OR2':
+        $knowns = "$consOR2";
+        break;
+
+        case 'OR3':
+        $knowns = "$consOR1";
+        break;
+
+        case 'OR4':
+        $knowns = "$consOR4";
+        break;
+
+        case 'OR5':
+        if ($rcpid == "OR5V1") $knowns = "$OR5V1";
+        else $knowns = "$consOR5";
+        break;
+
+        case 'OR6':
+        if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
+        {
+            $knowns = "$bmOR6A2";
+            $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
+        }
+        else $knowns = "$consOR6";
+        break;
+
+        case 'OR7':
+        $knowns = "$consOR1";
+        break;
+
+        case 'OR8':
+        $knowns = "$consOR5";
+        break;
+
+        case 'OR9':
+        $knowns = "$consOR5";
+        break;
+
+        case 'OR10':
+        $knowns = "$consOR6";
+        break;
+
+        case 'OR11':
+        $knowns = "$consOR6";
+        break;
+
+        case 'OR12':
+        $knowns = "$consOR4";
+        break;
+
+        case 'OR13':
+        $knowns = "$consOR2";
+        break;
+
+        case 'OR14':
+        $knowns = "$CLASSII";
+        break;
+
+        case 'OR51':
+        if ($rcpid == "OR51E2")
+        {
+            $knowns = false;
+            $pyoutfn = "8f76.pdb";
+            $hmrcpstrid = 'A';
+        }
+        else $knowns = "$consOR51";
+        break;
+
+        case 'OR52':
+        $knowns = "$consOR52";
+        break;
+
+        case 'OR56':
+        $knowns = "$CLASSI";
+        break;
+
+        default:
+        $knowns = "$CLASSI, $CLASSII, $mTAAR, $TAAR1";
+    }
 }
 
 if ($knowns)
@@ -373,7 +473,7 @@ $restraints_misc_str
 $disulfs
 
 # directories for input atom files
-env.io.atom_files_directory = ['.', '../atom_files']
+env.io.atom_files_directory = [$atomfiles]
 
 a = MyModel(env,
               alnfile  = 'allgpcr.ali',
@@ -435,6 +535,46 @@ natrixs;
     $knowns = preg_replace("/[^0-9a-zA-Z_ ]/", "", $knowns);
 }
 
+$refs = <<<refs
+$legal
+REMARK   1
+REMARK   1 REFERENCE $refno
+REMARK   1  AUTH B. Webb, A. Sali.
+REMARK   1  TITL Comparative Protein Structure Modeling Using Modeller.
+REMARK   1  REF  Current Protocols in Bioinformatics 54, John Wiley & Sons, Inc., 5.6.1-5.6.37, 2016.
+REMARK   1  DOI  10.1002/0471250953.bi0506s15
+refs;
+$refno++;
+$refs .= <<<refs
+REMARK   1  
+REMARK   1 REFERENCE $refno
+REMARK   1  AUTH M.A. Marti-Renom, A. Stuart, A. Fiser, R. Sánchez, F. Melo, A. Sali.
+REMARK   1  TITL Comparative protein structure modeling of genes and genomes.
+REMARK   1  REF  Annu. Rev. Biophys. Biomol. Struct. 29, 291-325, 2000.
+REMARK   1  DOI  10.1146/annurev.biophys.29.1.291
+refs;
+$refno++;
+$refs .= <<<refs
+REMARK   1  
+REMARK   1 REFERENCE $refno
+REMARK   1
+REMARK   1  AUTH A. Sali & T.L. Blundell.
+REMARK   1  TITL Comparative protein modelling by satisfaction of spatial restraints.
+REMARK   1  REF  J. Mol. Biol. 234, 779-815, 1993.
+REMARK   1  DOI  10.1006/jmbi.1993.1626
+refs;
+$refno++;
+$refs .= <<<refs
+REMARK   1  
+REMARK   1 REFERENCE $refno
+REMARK   1  
+REMARK   1  AUTH A. Fiser, R.K. Do, & A. Sali.
+REMARK   1  TITL Modeling of loops in protein structures.
+REMARK   1  REF  Protein Science 9. 1753-1773, 2000.
+REMARK   1  DOI  10.1110/ps.9.9.1753
+REMARK   1
+refs;
+
 $phew = <<<blixtos
 
 LET \$rcpid = "$rcpid"
@@ -454,29 +594,7 @@ UPRIGHT I
 BWCENTER
 
 STRAND A
-
-REMARK   1
-REMARK   1 REFERENCE 1
-REMARK   1  AUTH 1 B. Webb, A. Sali.
-REMARK   1  TITL 1 Comparative Protein Structure Modeling Using Modeller.
-REMARK   1  REF  1 Current Protocols in Bioinformatics 54, John Wiley & Sons, Inc., 5.6.1-5.6.37, 2016.
-REMARK   1  DOI  1 10.1002/0471250953.bi0506s15
-REMARK   1  
-REMARK   1  AUTH 2 M.A. Marti-Renom, A. Stuart, A. Fiser, R. Sánchez, F. Melo, A. Sali.
-REMARK   1  TITL 2 Comparative protein structure modeling of genes and genomes.
-REMARK   1  REF  2 Annu. Rev. Biophys. Biomol. Struct. 29, 291-325, 2000.
-REMARK   1  DOI  2 10.1146/annurev.biophys.29.1.291
-REMARK   1
-REMARK   1  AUTH 3 A. Sali & T.L. Blundell.
-REMARK   1  TITL 3 Comparative protein modelling by satisfaction of spatial restraints.
-REMARK   1  REF  3 J. Mol. Biol. 234, 779-815, 1993.
-REMARK   1  DOI  3 10.1006/jmbi.1993.1626
-REMARK   1  
-REMARK   1  AUTH 4 A. Fiser, R.K. Do, & A. Sali.
-REMARK   1  TITL 4 Modeling of loops in protein structures.
-REMARK   1  REF  4 Protein Science 9. 1753-1773, 2000.
-REMARK   1  DOI  4 10.1110/ps.9.9.1753
-REMARK   1  
+$refs
 IF "$knowns" = "" REMARK 265 HM_TEMPLATES: none
 ELSE REMARK 265 HM_TEMPLATES: $knowns
 

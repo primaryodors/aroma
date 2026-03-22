@@ -57,6 +57,117 @@ foreach (explode("\n", $exp) as $ln)
     $prevln = $ln;
 }
 
+$cpl = "";
+chdir(__DIR__);
+if (file_exists("../coupled"))
+{
+    if (file_exists("../coupled/coupled.ali"))
+    {
+        $cpl = file_get_contents("../coupled/coupled.ali");
+    }
+    else
+    {
+        $lfam = $lsub = "zero";
+        foreach ($prots as $rcpid => $p)
+        {
+            $fam = family_from_protid($rcpid);
+            $sub = subfamily_from_protid($rcpid);
+            if ($fam == $lfam && $sub == $lsub) continue;
+
+            chdir(__DIR__);
+            $path = "../coupled/$fam/$sub";
+            if (!file_exists($path)) continue;
+            $d = dir($path);
+            $files = [];
+            while (false !== ($entry = $d->read()))
+            {
+                if (substr($entry, -4) != ".pdb") continue;
+                $pieces = explode('~', substr($entry, 0, -4));
+                if (count($pieces) < 2) continue;
+                $files[] = $entry;
+            }
+            natsort($files);
+            foreach ($files as $entry)
+            {
+                echo "Processing $entry...\n";
+                $pieces = explode('~', substr($entry, 0, -4));
+                list($rcpid, $gprot) = $pieces;
+
+                chdir("..");
+                $phew = <<<phew
+LOAD "coupled/$fam/$sub/$entry" A A
+ECHO \$SEQUENCEA
+phew;
+                file_put_contents("tmp/sequence.phew", $phew);
+                $result = [];
+                exec("bin/phew tmp/sequence.phew", $result);
+                unlink("tmp/sequence.phew");
+                chdir(__DIR__);
+                $cplseq = preg_replace("/\\s+/", "", implode("\n", $result));
+
+                // echo "$cplseq\n";
+
+                if (isset($prots[$rcpid]["aligned"]))
+                {
+                    $append = "";
+                    $cpllen = strlen($cplseq);
+                    $rcpseq = $prots[$rcpid]["sequence"];
+                    $seqlen = strlen($rcpseq);
+                    if ($cpllen != $seqlen)
+                    {
+                        echo "ERROR: SEQUENCE LENGTH MISMATCH $entry:\n$rcpseq\n$cplseq\n\n";
+                        continue;
+                    }
+
+                    $cplaln = "";
+                    $rcpaln = $prots[$rcpid]["aligned"];
+                    $n = strlen($rcpaln);
+                    $j = 0;
+                    for ($i=0; $i<$n; $i++)
+                    {
+                        $c = substr($rcpaln, $i, 1);
+                        if ($c >= 'A' && $c <= 'Z')
+                        {
+                            $cplaln .= substr($cplseq, $j, 1);
+                            $j++;
+                        }
+                        else $cplaln .= $c;
+                    }
+
+                    $caligned = "";
+                    $temp = $cplaln;
+                    if (substr($temp, -4) == '----') $temp = substr($temp, 0, -4);
+                    while ($temp)
+                    {
+                        $caligned .= substr($temp, 0, 130)."\n";
+                        $temp = substr($temp, 130);
+                    }
+                    $caligned .= $append;
+
+                    $p1row = ">P1;$rcpid~$gprot";
+                    $famno = intval(preg_replace("/[^0-9]/", "", $fam));
+                    $memno = substr($rcpid, strlen($fam)+strlen($sub));
+                    $structrow = "structure:$rcpid~$gprot:FIRST:A:LAST :A:Olfactory receptor family $famno subfamily $sub member $memno:Homo sapiens: 2.00: 0.20";
+
+                    $new = "$p1row\n$structrow\n$caligned---------------------------------------------------------------------------------------------------*\n\n";
+                    // die($new);
+                    $cpl .= $new;
+                }
+                else
+                {
+                    continue;
+                    // TODO:
+                }
+            }
+
+            $lfam = $fam;
+            $lsub = $sub;
+            // break;
+        }
+    }
+}
+
+chdir(__DIR__);
 $fp = fopen("allgpcr.ali", "w");
 if (!$fp) die("FAIL; check folder permissions.\n");
 fwrite($fp, $exp);
@@ -114,6 +225,9 @@ foreach ($prots as $rcpid => $p)
     fwrite($fp, "$deets\n");
     fwrite($fp, "$paligned---------------------------------------------------------------------------------------------------*\n\n"); */
 }
+
+fwrite($fp, "\n\n");
+fwrite($fp, $cpl);
 
 fclose($fp);
 echo "Wrote alignments file.\n";
