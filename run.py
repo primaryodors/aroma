@@ -233,7 +233,7 @@ for rcpid in data.protutils.prots.keys():
             cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
             if not os.path.exists(cavfn):
                 cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn,
-                    "--yminr", "3.34", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
+                    "--xmaxr", "6.55", "--yminr", "3.34", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
                 print(" ".join(cmd))
                 subprocess.run(cmd)
             newcfg.append(f"VCVTY {cavfn}")
