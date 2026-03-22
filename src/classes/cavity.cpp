@@ -34,6 +34,41 @@ float Cavity::cavity_intersection(Cavity* other)
     return result;
 }
 
+float Cavity::residue_intersection(Cavity *other, Protein* p)
+{
+    if (!pallocd || !partials || !other->pallocd || !other->partials) return 0;
+    int i, j, l, m, n;
+    for (n=0; n<other->pallocd && other->partials[n].s.radius >= min_partial_radius; n++);
+    int other_resnos[n*8+16];
+    m = other->resnos_as_array(p, other_resnos);
+    for (n=0; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
+    int my_resnos[n*8+16];
+    n = resnos_as_array(p, my_resnos);
+
+    l=0;
+    for (i=0; i<n; i++)
+    {
+        for (j=0; j<m; j++)
+        {
+            if (other_resnos[j] == my_resnos[i])
+            {
+                l++;
+                break;          // exit loop j and go onto the next my_resnos[i]
+            }
+        }
+    }
+
+    float result = (float)l / n;
+
+    /* for (i=0; i<n; i++) cout << my_resnos[i] << " ";
+    cout << endl;
+    for (j=0; j<m; j++) cout << other_resnos[j] << " ";
+    cout << endl;
+    cout << result << endl; */
+
+    return result;
+}
+
 void Cavity::unify(Cavity* cavfrom)
 {
     int i, j, n;
@@ -249,27 +284,45 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
     l=j;
 
     // Any cavities that intersect more than a threshold amount, unify them.
-    for (i=0; i<l; i++)
+    int iter;
+    for (iter=0; iter<3; iter++)
     {
-        Point cen = tmpcav[i].get_center();
-        if (cen.x < cav_xmin || cen.x > cav_xmax) continue;
-        if (cen.y < cav_ymin || cen.y > cav_ymax) continue;
-        if (cen.z < cav_zmin || cen.z > cav_zmax) continue;
-
-        for (j=i+1; j<l; j++)
+        for (i=0; i<l; i++)
         {
-            cen = tmpcav[j].get_center();
+            // cout << i << endl;
+            Point cen = tmpcav[i].get_center();
             if (cen.x < cav_xmin || cen.x > cav_xmax) continue;
             if (cen.y < cav_ymin || cen.y > cav_ymax) continue;
             if (cen.z < cav_zmin || cen.z > cav_zmax) continue;
-            float u = tmpcav[i].cavity_intersection(&tmpcav[j]);
-            if (u >= cavity_intersect_threshold)
+
+            for (j=i+1; j<l; j++)
             {
-                // cout << "Cavities " << i << " and " << j << " intersect by " << u << endl;
-                tmpcav[i].unify(&tmpcav[j]);
-                for (n=j+1; n<l; n++) tmpcav[n-1] = tmpcav[n];
+                // cout << i << " " << j << endl;
+                cen = tmpcav[j].get_center();
+                if (cen.x < cav_xmin || cen.x > cav_xmax) continue;
+                if (cen.y < cav_ymin || cen.y > cav_ymax) continue;
+                if (cen.z < cav_zmin || cen.z > cav_zmax) continue;
+                float u = tmpcav[i].cavity_intersection(&tmpcav[j]);
+                if (!u) continue;
+                if (u >= cavity_intersect_threshold || 
+                    (tmpcav[i].residue_intersection(&tmpcav[j], p) * tmpcav[j].residue_intersection(&tmpcav[i], p)) >= 0.4
+                )
+                {
+                    // cout << "Cavities " << i << " and " << j << " intersect by " << u << endl;
+                    tmpcav[i].unify(&tmpcav[j]);
+                    for (n=j+1; n<l; n++) tmpcav[n-1] = tmpcav[n];
+                    l--;
+                    j = i;
+                }
+            }
+        }
+        
+        if (!iter) for (i=0; i<l; i++)
+        {
+            if (tmpcav[i].count_partials() < 3)
+            {
+                for (n=i+1; n<l; n++) tmpcav[n-1] = tmpcav[n];
                 l--;
-                j = i;
             }
         }
     }
@@ -317,6 +370,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
         }
 
         if (tmpcav[i].count_partials() >= cav_min_partials
+            && tmpcav[i].resnos_as_array(p, nullptr) >= 7
             && (!any_priority || tmpcav[i].priority)
             )
         {
@@ -793,10 +847,18 @@ int Cavity::resnos_as_array(Protein *p, int *output)
         }
     }
 
-    l=0;
-    for (i=1; i<n; i++)
+    if (!output)
     {
-        if (included[i]) output[l++] = i;
+        for (i=1; i<n; i++)
+            if (included[i]) l++;
+    }
+    else
+    {
+        l=0;
+        for (i=1; i<n; i++)
+        {
+            if (included[i]) output[l++] = i;
+        }
     }
     return l;
 }

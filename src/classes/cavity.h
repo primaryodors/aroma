@@ -30,6 +30,7 @@ class Cavity : public Space
     int resnos_as_array(Protein* p, int* output);
     Protein* prot = nullptr;
     float cavity_intersection(Cavity* other);
+    float residue_intersection(Cavity* other, Protein* p);
     void unify(Cavity* cavfrom);
     int estimate_multiplicity(Molecule* ligand);
     CPartial* get_partial_by_idx(int idx) { if (!partials) partials = (CPartial*)spartials; return &partials[idx]; }
