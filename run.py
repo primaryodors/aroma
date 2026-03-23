@@ -232,8 +232,10 @@ for rcpid in data.protutils.prots.keys():
 
             cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
             if not os.path.exists(cavfn):
-                cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn,
-                    "--xmaxr", "6.55", "--yminr", "3.34", "--ymaxr", "45.52", "--sr", "3.28", "--er", "7.48"]
+                with open('data/cavopts.json', 'r') as file:
+                    cavopts = json.load(file)
+                cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn]
+                cmd.append(cavopts)
                 print(" ".join(cmd))
                 subprocess.run(cmd)
             newcfg.append(f"VCVTY {cavfn}")

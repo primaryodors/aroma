@@ -62,6 +62,12 @@ if argc > 2:
     delcav = inppdb[0:-3]+"cvty"
     if os.path.exists(delcav):
         os.unlink(delcav)
+    with open('data/cavopts.json', 'r') as file:
+        cavopts = json.load(file)
+    cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
+    cmd.append(cavopts)
+    print(" ".join(cmd))
+    subprocess.run(cmd)
 else:
     inppdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 
