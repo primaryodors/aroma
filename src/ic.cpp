@@ -169,6 +169,7 @@ int main(int argc, char** argv)
         Progressbar pbr;
         pbr.maximum = 0;
         pbr.set_color(192, 64, 156);
+        cout << "Optimizing helix groups..." << endl;
         float anomaly = hg.optimize_helices(&p, 20, &pbr);
         cout << "Post-optimization anomaly: " << anomaly << endl;
     }
