@@ -166,7 +166,10 @@ int main(int argc, char** argv)
 
     if (dohg)
     {
-        float anomaly = hg.optimize_helices(&p);
+        Progressbar pbr;
+        pbr.maximum = 0;
+        pbr.set_color(192, 64, 156);
+        float anomaly = hg.optimize_helices(&p, 20, &pbr);
         cout << "Post-optimization anomaly: " << anomaly << endl;
     }
 

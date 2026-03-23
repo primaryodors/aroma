@@ -974,7 +974,7 @@ void ICHelixGroup::load_ic_file(const char *filename)
     fclose(fp);
 }
 
-float ICHelixGroup::optimize_helices(Protein *prot, int iters)
+float ICHelixGroup::optimize_helices(Protein *prot, int iters, Progressbar* pbr)
 {
     if (!prot)
     {
@@ -984,6 +984,8 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
     int iter, i, j;
     m_prot = prot;
     float amount = 1.0 / iters;
+
+    if (pbr && !pbr->maximum) pbr->maximum = iters;
 
     for (i=0; i<n_deletion; i++)
     {
@@ -1008,6 +1010,8 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
             #endif*/
             for (j=0; j<helices[i].n_ic; j++)
             {
+                if (pbr) pbr->update((float)iter + (float)i / n_helix);
+
                 LocRotation lr = get_motion(&(helices[i].ic[j]), &(helices[i]), prot);
 
                 if (!lr.a && !lr.v.r && lr.origin.magnitude())
@@ -1036,6 +1040,7 @@ float ICHelixGroup::optimize_helices(Protein *prot, int iters)
             }
         }
     }
+    if (pbr) pbr->erase();
 
     return contact_anomaly(prot);
 }

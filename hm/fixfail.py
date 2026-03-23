@@ -113,6 +113,7 @@ if not os.path.exists(rshpmfn):
 
 shutil.copyfile(inppdb, tplpdb)
 cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
+print(" ".join(cmd))
 subprocess.run(cmd)
 
 haslig = False

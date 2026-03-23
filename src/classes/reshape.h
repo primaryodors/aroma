@@ -102,7 +102,7 @@ class ICHelixGroup
 
     LocRotation get_motion(InternalContact* ic, ICHelix* ich = nullptr, Protein* prot = nullptr);
     void load_ic_file(const char* filename);
-    float optimize_helices(Protein* prot, int iterations = 20);
+    float optimize_helices(Protein* prot, int iterations = 20, Progressbar* pbr = nullptr);
     float contact_anomaly(Protein* prot);
 
     protected:
