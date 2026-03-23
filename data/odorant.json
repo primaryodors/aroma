@@ -1769,7 +1769,7 @@
     "08cf9dd201083b82b348d694453218d4":
     {
         "full_name": "(-)-camphor",
-        "smiles": "CC1(C)[C@@H]2CC[C@@]1(C)C(=O)C2",
+        "smiles": "CC1(C)[C@H]2CC[C@]1(C)C(=O)C2",
         "activity":
         {
             "https://doi.org/10.1126/scisignal.2000016":
