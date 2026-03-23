@@ -17,6 +17,7 @@ class Progressbar
     int rbase = 98, gbase = 176, bbase = 224;       // PrimaryOdors blue.
     int spinchr = 0;
     float hueoffset = 0;
+    bool drawn = false;
 };
 
 #endif

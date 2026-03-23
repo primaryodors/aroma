@@ -17,7 +17,7 @@ void Progressbar::update(float value)
     // value = value/(poses) + (float)(pose-1)*100.0/poses;
     float percentage = (value-minimum)/(maximum-minimum)*width;
     if (percentage > width) percentage = width;
-    cout << "\033[A|";
+    if (drawn) cout << "\033[A|";
     int i;
     bool grayyet = false;
     for (i=0; i<width; i++)
@@ -42,13 +42,14 @@ void Progressbar::update(float value)
         }
     }
     colorless();
-    cout << ("|/-\\")[spinchr/4] << " " << (int)percentage << "%.               " << endl;
+    cout << ("|/-\\")[spinchr % 4] << " " << (int)percentage << "%.               " << endl;
     spinchr++;
-    if (spinchr >= 16) spinchr = 0;
     hueoffset += 0.1;
+    drawn = true;
 }
 
 void Progressbar::erase()
 {
-    cout << "\033[A\033[K";
+    if (drawn) cout << "\033[A\033[K";
+    drawn = false;
 }
