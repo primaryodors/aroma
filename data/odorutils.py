@@ -129,19 +129,7 @@ def ensure_sdf_exists(odorant):
                 else:
                     fname = ("sdf/" + iso + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
-                    pettias = o["isomers"][iso].split("|")
-                    smiles = pettias[0]
-                    smiles_to_sdf(smiles, fname)
-
-                    if 1 in pettias:
-                        sub4 = pettias[1][0:4]
-                        rest = pettias[1][4:]
-                        if sub4 == "rflp":
-                            cmd = ["bin/ringflip"]
-                            for larg in rest.strip().split(" "):
-                                cmd.append(larg)
-                            print(" ".join(cmd), "\n")
-                            subprocess.run(cmd)
+                    smiles_to_sdf(o["isomers"][iso], fname)
     if forms:
         if len(forms):
             for form in o["forms"].keys():
@@ -151,24 +139,15 @@ def ensure_sdf_exists(odorant):
                 else:
                     fname = ("sdf/" + form + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
-                    pettias = o["forms"][form].split("|")
-                    smiles = pettias[0]
-                    smiles_to_sdf(smiles, fname)
-
-                    if 1 in pettias:
-                        sub4 = pettias[1][0:4]
-                        rest = pettias[1][4:]
-                        if sub4 == "rflp":
-                            cmd = ["bin/ringflip"]
-                            for larg in rest.strip().split(" "):
-                                cmd.append(larg)
-                            print(" ".join(cmd), "\n")
-                            subprocess.run(cmd)
+                    smiles_to_sdf(o["forms"][form], fname)
 
 def smiles_to_sdf(smiles, output_file):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
     try:
+        pieces = smiles.split("|")
+        smiles = pieces[0]
+
         mol = Chem.MolFromSmiles(smiles)
         if not mol:
             cmd = ["obabel", "--gen3d", "-osdf", f"-O{output_file}", f"-:{smiles}" ]
@@ -183,6 +162,16 @@ def smiles_to_sdf(smiles, output_file):
                 writer.removeHs = False
                 writer.write(mol)
             print(f"Saved {output_file}")
+
+            if 1 in pieces:
+                sub4 = pieces[1][0:4]
+                rest = pieces[1][4:]
+                if sub4 == "rflp":
+                    cmd = ["bin/ringflip", output_file]
+                    for larg in rest.strip().split(" "):
+                        cmd.append(larg)
+                    print(" ".join(cmd), "\n")
+                    subprocess.run(cmd)
         else:
             print(f"Invalid SMILES string: {smiles}")
     except Exception as e:
