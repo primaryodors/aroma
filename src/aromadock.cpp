@@ -990,6 +990,26 @@ void vestibule_callback(int iter, Molecule** mols)
 }
 #endif
 
+std::string build_outpdb_fname()
+{
+    char protn[64];
+    strcpy(protn, strrchr(protfname, '/')+1);
+    char* dot = strchr(protn, '.');
+    if (dot) *dot = 0;
+
+    char lign[64];
+    strcpy(lign, strrchr(ligfname, '/')+1);
+    dot = strchr(lign, '.');
+    if (dot) *dot = 0;
+
+    // std::string temp_pdb_fn = (std::string)"tmp/pose" + std::to_string(j+1) + (std::string)".pdb";
+    std::string out_pdb_fn = std::regex_replace(outpdb, std::regex("[%][p]"), protn);
+    out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][l]"), lign);
+    out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][o]"), to_string(pose));
+
+    return out_pdb_fn;
+}
+
 void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
 {
 
@@ -1006,21 +1026,7 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_
 
     if (!lnodeno && outpdb.length() && pose <= outpdb_poses)
     {
-        char protn[64];
-        strcpy(protn, strrchr(protfname, '/')+1);
-        char* dot = strchr(protn, '.');
-        if (dot) *dot = 0;
-
-        char lign[64];
-        strcpy(lign, strrchr(ligfname, '/')+1);
-        dot = strchr(lign, '.');
-        if (dot) *dot = 0;
-
-        // std::string temp_pdb_fn = (std::string)"tmp/pose" + std::to_string(j+1) + (std::string)".pdb";
-        std::string out_pdb_fn = std::regex_replace(outpdb, std::regex("[%][p]"), protn);
-        out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][l]"), lign);
-        out_pdb_fn = std::regex_replace(out_pdb_fn, std::regex("[%][o]"), to_string(pose));
-
+        std::string out_pdb_fn = build_outpdb_fname();
         // FILE* pftmp = fopen(temp_pdb_fn.c_str(), "rb");
         FILE* pfout = fopen(out_pdb_fn.c_str(), "wb");
         if (/*!pftmp ||*/ !pfout)
@@ -5089,6 +5095,15 @@ _exitposes:
         pose = 1;
         protein = &pose_proteins[lbi];
         do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
+
+        if (append_pdb && outpdb_poses)
+        {
+            std::string out_pdb_fn = build_outpdb_fname();
+            cout << endl << "You may be able to obtain a successful dock by trying again after running the following command:" << endl;
+            cout << "python3 hm/fixfail.py " << protid << " " << out_pdb_fn << endl << endl;
+            if (output) *output << "You may be able to obtain a successful dock by trying again after running the following command:" << endl;
+            if (output) *output << "python3 hm/fixfail.py " << protid << " " << out_pdb_fn << endl << endl;
+        }
     }
     else 
     {
