@@ -59,6 +59,9 @@ if argc > 2:
     if not os.path.exists(inppdb):
         print(f"Input file not found: {sys.argv[2]}")
         exit()
+    delcav = inppdb[0:-3]+"cvty"
+    if os.path.exists(delcav):
+        os.unlink(delcav)
 else:
     inppdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 

@@ -655,6 +655,9 @@ chdir(__DIR__);
 chdir("..");
 passthru("./bin/phew hm/$rcpid.hm.phew");
 
+$delcav = "pdbs/$fam/$rcpid.active.cvty";
+if (file_exists($delcav)) unlink($delcav);
+
 if ($famsub == "OR5K")
 {
     passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb 4 7");
