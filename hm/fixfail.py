@@ -428,7 +428,6 @@ IF $6.55 = "H" THEN LET %y6 = %6.55
 IF $6.55 = "H" THEN LET $atom6 = "NE2"
 LET %de45 = 0
 IF %45.51 = "D" OR %45.51 = "E" THEN LET %de45 = %45.51
-ELSE IF %45.52 = "D" OR %45.52 = "E" THEN LET %de45 = %45.52
 IF NOT %y6 THEN GOTO _no_456_contact
 IF NOT %de45 THEN GOTO _no_456_contact
 BRIDGE %y6 %de45

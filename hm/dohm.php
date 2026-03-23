@@ -334,15 +334,11 @@ if ($knowns)
         else if ($aa655 == 'H') $atom655 = "NE2:$rno655:A";
 
         $rno4551 = resno_from_bw($rcpid, "45.51");
-        $rno4552 = $rno4551 + 1;
         $aa4551 = substr($p['sequence'], $rno4551-1, 1);
-        $aa4552 = substr($p['sequence'], $rno4552-1, 1);
         if ($aa4551 == 'D') $atom4551 = "OD1:$rno4551:A";
         else if ($aa4551 == 'N') $atom4551 = "OD1:$rno4551:A";
         else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
         else if ($aa4551 == 'Q') $atom4551 = "OE1:$rno4551:A";
-        else if ($aa4552 == 'D') $atom4551 = "OD1:$rno4552:A";
-        else if ($aa4552 == 'E') $atom4551 = "OE1:$rno4552:A";
 
         // if ($aa4551 == 'E' || $aa4551 == 'Q' || $aa4552 == 'E') $knowns = "$consOR2b";
     }
@@ -627,7 +623,6 @@ _not_disulfide:
 
 IF $6.55 != "Y" GOTO _not_456_hbond
 # IF $45.51 = "D" OR $45.51 = "E" OR $45.51 = "N" OR $45.51 = "Q" OR $45.51 = "H" OR $45.51 = "Y" BRIDGE %6.55 %45.51
-# ELSE IF $45.52 = "D" BRIDGE %6.55 %45.52
 _not_456_hbond:
 
 IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
