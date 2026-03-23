@@ -460,10 +460,10 @@ float Cavity::cavity_filling(Molecule *m)
                         filleds++;
                     else
                     {
-                        if (part->chargedn || part->chargedp) empties += 0.1;
-                        else if (part->pi && part->polar) empties += 0.333;
-                        else if (part->polar) empties += 0.5;
-                        else if (part->thio) empties += 0.8;
+                        if (part->chargedn || part->chargedp) empties += 0.05;
+                        else if (part->pi && part->polar) empties += 0.1;
+                        else if (part->polar) empties += 0.15;
+                        else if (part->thio) empties += 0.75;
                         else if (part->pi) empties += 0.9;
                         else empties += 1;
                     }
