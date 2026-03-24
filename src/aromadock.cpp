@@ -3928,7 +3928,7 @@ _try_again:
 
                     int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry(), bhfam = bh->get_family();
                     float bhyd = fabs(bh->is_polar());
-                    bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi();
+                    bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi(), bhthi = bh->is_thio();
                     float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
 
                     if (!rhmet)
@@ -3954,6 +3954,12 @@ _try_again:
                                     probability = 0.1 * lrhyd;
                                     if (bhpi) probability -= 0.2 * lrs[i]->pi_stackability();
                                     ra = lrs[i]->get_reach_atom();
+                                }
+
+                                // THIOL-PI CALCULATION
+                                else if (bhthi && lrs[i]->ring_is_aromatic(0))
+                                {
+                                    probability = 0.25;
                                 }
 
                                 // HYDROPHOBIC CALCULATION

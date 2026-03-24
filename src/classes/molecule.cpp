@@ -7490,6 +7490,20 @@ Atom *Molecule::get_most_polar()
         if (atoms[i]->is_backbone) continue;
         float h = fabs(atoms[i]->is_polar());
 
+        switch (atoms[i]->get_family())
+        {
+            case CHALCOGEN:
+            h *= 1.5;
+            break;
+
+            case PNICTOGEN:
+            h *= 1.25;
+            break;
+
+            default:
+            ;
+        }
+
         #if _dbg_most_polar
         colorize(-h);
         cout << atoms[i]->name << " polarity: " << h << endl;

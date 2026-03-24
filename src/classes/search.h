@@ -18,6 +18,7 @@ class LigandTarget
     float polarity();
     Point barycenter();
     bool is_pi();
+    bool is_thio();
     bool has_hb_acceptors();
     bool has_hb_donors();
     int count_heavy_atoms();

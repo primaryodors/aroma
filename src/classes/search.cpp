@@ -672,7 +672,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
             #endif
 
             if (!override_target_compatibility && !require_metal && !require_amine_aldehyde)
-                if (!ijmc && !target_compatibility(ichg, jchg, ipol, jpol, ipi, jpi, ihba, jhba, ihbd, jhbd)) continue;
+                if (!targets[i].is_thio() || jpi<5)
+                    if (!ijmc && !target_compatibility(ichg, jchg, ipol, jpol, ipi, jpi, ihba, jhba, ihbd, jhbd)) continue;
 
             if (ntarg < 2 || npr < 2)
             {
@@ -852,7 +853,9 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
 
                     klmc = lmtl && (kfam == CHALCOGEN || kfam == PNICTOGEN) && ((kZ != 8 && kchg <= 0) || kmc);
                     #if !bb_secondary_must_be_farthest_from_primary
-                    if (!override_target_compatibility) if (!klmc && !target_compatibility(kchg, lchg, kpol, lpol, kpi, lpi, khba, lhba, khbd, lhbd)) continue;
+                    if (!override_target_compatibility) 
+                        if (!targets[k].is_thio() || lpi<5)
+                            if (!klmc && !target_compatibility(kchg, lchg, kpol, lpol, kpi, lpi, khba, lhba, khbd, lhbd)) continue;
                     #endif
 
                     for (m=-1; m<ntarg; m++)
@@ -913,9 +916,10 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                                 nmtl = pocketres[n]->coordmtl;
 
                                 mnmc = pocketres[n]->coordmtl && (mfam == CHALCOGEN || mfam == PNICTOGEN) && mZ != 8 && mchg <= 0;
-                                if (!override_target_compatibility && !require_amine_aldehyde && !require_metal) 
-                                    if (!mnmc && !target_compatibility(mchg, nchg, mpol, npol, mpi, npi, mhba, nhba, mhbd, nhbd))
-                                        continue;
+                                if (!override_target_compatibility && !require_amine_aldehyde && !require_metal)
+                                    if (!targets[m].is_thio() || npi<5)
+                                        if (!mnmc && !target_compatibility(mchg, nchg, mpol, npol, mpi, npi, mhba, nhba, mhbd, nhbd))
+                                            continue;
 
                                 if (mchg && nchg) has_ionic = true;
                                 else if (mpol && npol) has_neutral_polar = true;
@@ -1608,6 +1612,7 @@ bool Search::target_compatibility(float chg1, float chg2, float pol1, float pol2
 
 bool Search::target_compatibility(AminoAcid *aa, LigandTarget *lt)
 {
+    if (lt->is_thio() && aa->ring_is_aromatic(0)) return true;
     return target_compatibility(aa->get_charge(), lt->charge(),
         fabs(aa->hydrophilicity()), fabs(lt->polarity()),
         aa->has_pi_atoms()/aa->get_heavy_atom_count(), lt->is_pi() ? 1 : 0,
@@ -1745,6 +1750,18 @@ bool LigandTarget::is_pi()
 {
     if (single_atom) return single_atom->is_pi();
     else if (conjgrp) return true;
+    return false;
+}
+
+bool LigandTarget::is_thio()
+{
+    if (single_atom) return single_atom->is_thio();
+    else if (conjgrp)
+    {
+        // Typically the code that searches for conjgrps should not lump thiols in without also
+        // creating a separate single_atom for the sulfur of the thiol moiety itself. TODO: test this.
+        return false;
+    }
     return false;
 }
 
