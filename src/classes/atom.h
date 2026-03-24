@@ -130,6 +130,7 @@ public:
     RING_TYPE get_type();
     Point get_center();
     Vector get_normal();
+    Atom* get_nearest_atom(Point ref);
     LocatedVector get_center_and_normal();
     bool is_coplanar();
     bool is_conjugated();

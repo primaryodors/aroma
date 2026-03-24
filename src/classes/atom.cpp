@@ -3410,6 +3410,23 @@ Vector Ring::get_normal()
     return (Vector)pt1;
 }
 
+Atom *Ring::get_nearest_atom(Point ref)
+{
+    int i;
+    float rbest = Avogadro;
+    Atom* result = nullptr;
+    for (i=0; atoms[i]; i++)
+    {
+        float r = atoms[i]->loc.get_3d_distance(ref);
+        if (r < rbest)
+        {
+            rbest = r;
+            result = atoms[i];
+        }
+    }
+    return result;
+}
+
 bool Ring::is_conjugated()
 {
     if (!atoms) return false;

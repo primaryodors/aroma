@@ -174,7 +174,7 @@ C       NH     plpi     0.25  2.8?        1.91?			3
 C       OH     plpi     0.25  2.9?        2.08?			3
 
 # https://doi.org/10.1021/jacs.6b08415
-C       SH     plpi     0.25  2.71        8.3           4?
+C       SH     plpi     0.25  2.71        8.3           3?
 
 # https://doi.org/10.1002/asia.201801156 supplement
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
