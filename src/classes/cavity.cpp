@@ -199,7 +199,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                 for (i=0; i<sphres; i++)
                 {
                     Atom* a = can_clash[i]->get_nearest_atom(pt);
-                    float r = a->loc.get_3d_distance(pt) - a->vdW_radius + global_clash_allowance*1.5;
+                    float r = a->loc.get_3d_distance(pt) - a->vdW_radius + global_clash_allowance;
 
                     if (!a->is_backbone)
                     {
@@ -305,7 +305,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                 float u = tmpcav[i].cavity_intersection(&tmpcav[j]);
                 if (!u) continue;
                 if (u >= cavity_intersect_threshold || 
-                    (tmpcav[i].residue_intersection(&tmpcav[j], p) * tmpcav[j].residue_intersection(&tmpcav[i], p)) >= 0.4
+                    (tmpcav[i].residue_intersection(&tmpcav[j], p) * tmpcav[j].residue_intersection(&tmpcav[i], p)) >= 0.6
                 )
                 {
                     // cout << "Cavities " << i << " and " << j << " intersect by " << u << endl;

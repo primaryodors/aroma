@@ -4,7 +4,7 @@
 #ifndef _CAVITY
 #define _CAVITY
 
-#define flexional_give_coefficient 0.9
+#define flexional_give_coefficient 0.6
 
 class CPartial : public SPartial
 {

@@ -268,7 +268,7 @@
 #define cav_360_step fiftyseventh*8
 #define cav_xyz_step 1.1
 #define cav_min_partials 4
-#define cav_linking_threshold 2.0
+#define cav_linking_threshold 2.5
 #define cavity_intersect_threshold 1e2
 // #define cavity_min_occlusion 0.53
 #define cavity_occlusion_threshold_mult 0.85
