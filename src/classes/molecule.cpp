@@ -1809,7 +1809,7 @@ float Molecule::bindability_by_type(intera_type t, bool ib)
     return result;
 }
 
-int Molecule::has_hbond_donors()
+int Molecule::has_hbond_donors() const
 {
     if (!atoms) return 0;
 
@@ -1833,7 +1833,7 @@ int Molecule::has_hbond_donors()
     return result;
 }
 
-int Molecule::has_hbond_acceptors()
+int Molecule::has_hbond_acceptors() const
 {
     if (!atoms) return 0;
 

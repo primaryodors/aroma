@@ -122,32 +122,70 @@ int main(int argc, char** argv)
         {
             const char* all_letters = "ARNDCUEQGHIKLMFPSTWYV";
 
-            int i, j, n = strlen(all_letters);
+            int i, j, l, n = strlen(all_letters);
             AminoAcid* all_aa[n+4];
 
             cout << "   ";
             for (i=0; i<n; i++)
             {
                 all_aa[i] = new AminoAcid(all_letters[i]);
-                cout << all_letters[i] << " ";
+                // cout << all_letters[i] << " ";
+            }
+
+            AminoAcid* sorted[n+4];
+            bool used[n+4];
+            for (i=0; i<n; i++) used[i] = false;
+            float best;
+            for (i=0; i<n; i++)
+            {
+                best = -Avogadro;
+                l = -1;
+                for (j=0; j<n; j++)
+                {
+                    if (used[j]) continue;
+                    float h = all_aa[j]->hydrophilicity();
+                    if (h > best)
+                    {
+                        best = h;
+                        l = j;
+                    }
+                }
+                if (l < 0) throw 0xbadc0de;
+                sorted[i] = all_aa[l];
+                used[l] = true;
+            }
+
+            for (i=0; i<n; i++)
+            {
+                cout << sorted[i]->get_letter() << " ";
             }
             cout << endl;
 
             for (i=0; i<n; i++)
             {
-                cout << all_letters[i] << "  ";
+                // cout << all_letters[i] << "  ";
+                cout << sorted[i]->get_letter() << "  ";
                 for (j=0; j<n; j++)
                 {
-                    float s = all_aa[i]->similarity_to(all_aa[j]);
+                    float s = sorted[i]->similarity_to(sorted[j]);
                     /*char buffer[16];
                     sprintf(buffer, "%0.2f", 0.02 * roundf(s*50));
                     cout << " " << buffer;*/
 
-                    if (s < 0.1) cout << "  ";
-                    else if (s < 0.25) cout << "\u2591\u2591";
-                    else if (s < 0.5) cout << "\u2592\u2592";
-                    else if (s < 0.8) cout << "\u2593\u2593";
-                    else cout << "\u2588\u2588";
+                    if (0)
+                    {
+                        colorize(-s*35);
+                        cout << "\u2588\u2588";
+                        colorless();
+                    }
+                    else
+                    {
+                        if (s < 0.1) cout << "  ";
+                        else if (s < 0.25) cout << "\u2591\u2591";
+                        else if (s < 0.5) cout << "\u2592\u2592";
+                        else if (s < 0.8) cout << "\u2593\u2593";
+                        else cout << "\u2588\u2588";
+                    }
                 }
                 cout << endl;
             }

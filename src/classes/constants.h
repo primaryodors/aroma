@@ -22,7 +22,10 @@
 #define temperature 310.2
 #define R 0.00831446261815324
 #define kJ_mol_per_summed_bond_strain (91.0 / 4.332)
-#define pH 6.0
+
+// https://doi.org/10.1002/lary.32247
+#define pH 6.93
+
 #define hydrophilicity_cutoff 0.28
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25

@@ -2026,7 +2026,7 @@ std::ostream& operator<<(std::ostream& os, const AABondDef& b)
 }
 
 #define DBG_TYRLIKE 0
-bool AminoAcid::is_tyrosine_like()
+bool AminoAcid::is_tyrosine_like() const
 {
     if (!atoms)
     {
@@ -2100,9 +2100,9 @@ bool AminoAcid::is_tyrosine_like()
     return false;
 }
 
-bool AminoAcid::is_histidine_like()
+bool AminoAcid::is_histidine_like() const
 {
-    if (fabs(hydrophilicity()) >= hydrophilicity_cutoff) return false;
+    // if (fabs(hydrophilicity()) >= hydrophilicity_cutoff) return false;
     if (is_tyrosine_like()) return false;
     return (has_hbond_acceptors() || has_hbond_donors());
 }
@@ -2643,7 +2643,10 @@ float AminoAcid::hydrophilicity() const
             count++;
         }*/
     }
-    return count ? (total / count) : 0;
+
+    float result = count ? (total / count) : 0;
+    if (is_histidine_like()) result += protonation(sc_pKa());
+    return result;
 }
 
 void AminoAcid::hydrogenate(bool steric_only)

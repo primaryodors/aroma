@@ -209,8 +209,8 @@ public:
     virtual void hydrogenate(bool steric_only = false);
     virtual void dehydrogenate();
     void clear_atom_binding_energies();
-    int has_hbond_donors();
-    int has_hbond_acceptors();                    // N+ is not an h-bond acceptor.
+    int has_hbond_donors() const;
+    int has_hbond_acceptors() const;                    // N+ is not an h-bond acceptor.
     int has_pi_atoms(bool include_backbone = false);
     bool protonate();
     bool deprotonate(Atom* which = nullptr);
