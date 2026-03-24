@@ -4703,13 +4703,16 @@ _try_again:
 
             for (i=0; cfmols[i]; i++)
             {
+                char cfmolsilett = 0;
                 if (cfmols[i]->is_residue())
                 {
                     AminoAcid* aacfmolsi = (AminoAcid*)cfmols[i];
-                    if (aacfmolsi->get_letter() == 'P') continue;
-                    if (ligand->glued_to_mol() == cfmols[i]) continue;     // sad that it had to come to this.
+                    cfmolsilett = aacfmolsi->get_letter();
+                    if (cfmolsilett == 'P') continue;
+                    if (ligand->glued_to_mol() == cfmols[i]) continue;      // sad that it had to come to this.
                 }
                 float cfmi = cfmols[i]->get_internal_clashes();
+                if (cfmolsilett == 'H') cfmi = 0;                           // CAN'T TRUST YOU! sick of the same bullshit error over and over
                 if (cfmi > clash_limit_per_aa*10)
                 {
                     std::string reason = (std::string)cfmols[i]->get_name()
