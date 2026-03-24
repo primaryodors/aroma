@@ -65,7 +65,7 @@ if argc > 2:
     with open('data/cavopts.json', 'r') as file:
         cavopts = json.load(file)
     cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
-    cmd.append(cavopts)
+    cmd.extend(cavopts)
     print(" ".join(cmd))
     subprocess.run(cmd)
 else:

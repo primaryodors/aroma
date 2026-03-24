@@ -235,7 +235,7 @@ for rcpid in data.protutils.prots.keys():
                 with open('data/cavopts.json', 'r') as file:
                     cavopts = json.load(file)
                 cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn]
-                cmd.append(cavopts)
+                cmd.extend(cavopts)
                 print(" ".join(cmd))
                 subprocess.run(cmd)
             newcfg.append(f"VCVTY {cavfn}")
