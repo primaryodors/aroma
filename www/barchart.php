@@ -383,7 +383,7 @@ foreach (array_values($bytree) as $x => $orid)
     	if ($lx == $x) continue;
     	if ($dy > (@$dybyx[$lx]+10)) $peak = false;
     }
-    if ($peak && $dy < $h/1.333)
+    if ($peak && $dy < $h-44)
     {
         $fam = family_from_protid($orid);
         if (substr($fam, 0, 2) == "OR") $orcol = orclr(intval(substr($fam, 2)));
@@ -415,7 +415,7 @@ $x1 = $x + 10*strlen($odor['full_name']);
 foreach ($texts as $k => $txt)
 {
     $tpink = imagecolorallocatealpha($im,192,176,218,$txtop[$k]);
-    imagettftext($im, 9, 35, $txt[0], $txt[1], $txcol[$k], $fontfile, $txt[2]);
+    imagettftext($im, 9, 53, $txt[0], $txt[1], $txcol[$k], $fontfile, $txt[2]);
 
     if ($txt[0] >= $x && $txt[0] <= $x1) $x = $txt[0] + 50;
 }
