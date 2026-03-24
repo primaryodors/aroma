@@ -3939,9 +3939,10 @@ _try_again:
                             i = rand() % j;
                             if (frand(0,1) < 1e-4) break;                                // just in case there are no polar side chains.
                             float lrhyd = fabs(lrs[i]->hydrophilicity());
+                            bool lrharom = lrs[i]->ring_is_aromatic(0);
                             if ((bhyd >= hydrophilicity_cutoff) == (lrhyd >= hydrophilicity_cutoff)
                                 || lrs[i]->coordmtl
-                                || (lrs[i]->is_thiol() && frand(0,1) < 0.1)
+                                || (lrs[i]->is_thiol() && (lrharom || frand(0,1) < 0.1))
                                 )
                             {
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
@@ -3957,7 +3958,7 @@ _try_again:
                                 }
 
                                 // THIOL-PI CALCULATION
-                                else if (bhthi && lrs[i]->ring_is_aromatic(0))
+                                else if (bhthi && lrharom)
                                 {
                                     probability = 0.25;
                                 }
