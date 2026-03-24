@@ -27217,7 +27217,65 @@
     {
         "id": "OR12D1",
         "uniprot_id": "P0DN82",
-        "sequence": "MLNTTSVTEFLLLGVTDIQELQPFLFVVFLTIYFISVAGNGAILMIVISDPRLHSPMYFFLGNLSCLDICYSSVTLPKMLQNFLSAHKAISFLGCISQLHFFHFLGSTEAMLLAVMAFDRFVAICKPLRYTVIMNPQLCTQMAITIWMIGFFHALLHSLMTSRLNFCGSNRIYHFFCDVKPLLKLACGNTELNQWLLSTVTGTIAMGPFFLTLLSYFYIITHLFFKTHSFSMLRKALSTCASHFMVVILLYAPVLFTYIHHASGTSMDQDRITAIMYTVVTPVLNPLIYTLRNKEVKGAFNRAMKRWLWPKEILKNSSEA"
+        "sequence": "MLNTTSVTEFLLLGVTDIQELQPFLFVVFLTIYFISVAGNGAILMIVISDPRLHSPMYFFLGNLSCLDICYSSVTLPKMLQNFLSAHKAISFLGCISQLHFFHFLGSTEAMLLAVMAFDRFVAICKPLRYTVIMNPQLCTQMAITIWMIGFFHALLHSLMTSRLNFCGSNRIYHFFCDVKPLLKLACGNTELNQWLLSTVTGTIAMGPFFLTLLSYFYIITHLFFKTHSFSMLRKALSTCASHFMVVILLYAPVLFTYIHHASGTSMDQDRITAIMYTVVTPVLNPLIYTLRNKEVKGAFNRAMKRWLWPKEILKNSSEA",
+        "bw":
+        {
+            "1.50": "40",
+            "2.50": "68",
+            "3.50": "120",
+            "34.50": "127",
+            "4.50": "147",
+            "45.50": "177",
+            "5.50": "208",
+            "6.50": "253",
+            "7.50": "286",
+            "8.50": "296"
+        },
+        "region":
+        {
+            "TMR1":
+            {
+                "start": 18,
+                "end": 50
+            },
+            "TMR2":
+            {
+                "start": 56,
+                "end": 85
+            },
+            "TMR3":
+            {
+                "start": 88,
+                "end": 126
+            },
+            "TMR4":
+            {
+                "start": 136,
+                "end": 162
+            },
+            "TMR5":
+            {
+                "start": 190,
+                "end": 227
+            },
+            "TMR6":
+            {
+                "start": 233,
+                "end": 264
+            },
+            "TMR7":
+            {
+                "start": 268,
+                "end": 291
+            },
+            "HXR8":
+            {
+                "start": 292,
+                "end": 320
+            }
+        },
+        "btree": "00001100",
+        "aligned": "------------------------------------------------------------MLNTTSVTEFLLLGVTDIQELQPFLFVVFLTIYFISVAGNGAILMIVI------------------------------------------------------------------------------------------------------SDPRLHSPMYFFLGNLSCLDICYSSVTLPKMLQNFL------------------------------------------------------------------------------SAHKAISFLGCISQLHFFHFLGSTEAMLLAVMAFDRFVAICK-------------------------------------------------------------------------------------------------------PLRYTVIMNPQLCTQMAITIWMIGFFHALLHSLMT---------------------------------------------------------------------SRLNFCGSNRIYHFFCDVKPLLKLACGNTELNQWLLSTVTGTIAMGPFFLTLLSYFYIITHLFFK-------------------------------------------------------------------------------------THSFSMLRKALSTCASHFMVVILLYAPVLFTYIHHA-------------------------------------------------------------------------------------------------SGTSMDQDRITAIMYTVVTPVLNPLIYTLR------------------------------------------------------------------------------------------------------------------------NKEVKGAFNRAMKRW-----------------------LWPKEILKNSSEA"
     },
     "OR12D2":
     {
@@ -27306,7 +27364,7 @@
                 "end": 307
             }
         },
-        "btree": "0000110",
+        "btree": "00001101",
         "aligned": "------------------------------------------------------------MLNTTSVTEFLLLGVTDIQELQPFLFVVFLTIYFISVTGNGAVLMIVI------------------------------------------------------------------------------------------------------SDPRLHSLMYFFLGNLSYLDICYSTVTLPKMLQNFL------------------------------------------------------------------------------STHKAISFLGCISQLHFFHSLGSTESMLFAVMAFDLSVAICK-------------------------------------------------------------------------------------------------------PLRYTVIMNPQLCTQMAITIWVIGFFHALLHSVMT---------------------------------------------------------------------SRLNFCGSNRIHHFLCDIKPLLKLACGNTELNQWLLSTVTGTIAMGPFFLTLLSYFYIITYLFFK-------------------------------------------------------------------------------------TRSCSMLCKALSTCASHFMVVILFYAPVLFTYIHPA-------------------------------------------------------------------------------------------------LESFMDQDRIVAIMYTVVTPVLNPLIYTLR------------------------------------------------------------------------------------------------------------------------NKEVKGALGRVIRRL-----------------------",
         "expression": 96
     },
