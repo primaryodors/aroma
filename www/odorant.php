@@ -284,7 +284,11 @@ if (@$odor['activity']) foreach ($odor['activity'] as $refurl => $acv)
         if (!isset($sorted[$rcpid])) $sorted[$rcpid] = 0.0;
         $ssamples = 0;
         if (!isset($a['adjusted_curve_top']) && @$a['type'] == 'na') $a['adjusted_curve_top'] = 0;
-        else if (!isset($a['adjusted_curve_top']) && @$a['type'] == 'a') $a['adjusted_curve_top'] = "(agonist)";
+        else if (!isset($a['adjusted_curve_top']) && @$a['type'] == 'a')
+        {
+            $a['adjusted_curve_top'] = "(agonist)";
+            $agonist[$rcpid] = true;
+        }
         if (isset($a['adjusted_curve_top']))
         {
             if (!isset($tbltops[$rcpid])) $tbltops[$rcpid] = "";
@@ -355,7 +359,6 @@ if (@$odor['activity']) foreach ($odor['activity'] as $refurl => $acv)
 
 arsort($sorted);
 
-$isagonist = [];
 foreach (array_keys($sorted) as $rcpid)
 {
     echo "<tr>\n";
@@ -374,7 +377,6 @@ foreach (array_keys($sorted) as $rcpid)
     else
     {
         echo "<td>&nbsp;</td>";
-        $isagonist[$rcpid] = (floatval(@$tbltops[$rcpid]) > 0 || floatval(@$tblec50[$rcpid]) < 0);
     }
 
     if (@$agonist[$rcpid])
@@ -481,7 +483,7 @@ foreach ($predictions as $rcpid => $score)
     $abn = $predvals[$rcpid]["active_n"];
     $ibn = $predvals[$rcpid]["inactive_n"];
 
-    echo "<td style=\"white-space: nowrap;\">".(@$isagonist[$rcpid] ? "&#x2714;" : "&nbsp;")."</td>\n";
+    echo "<td style=\"white-space: nowrap;\">".(@$agonist[$rcpid] ? "&#x2714;" : "&nbsp;")."</td>\n";
     $lig = urlencode(str_replace(' ', '_', $odor["full_name"]));
     echo "<td><a href=\"#\" onclick=\"show_dlmenu(event, '$rcpid', '$lig', '{$predvals[$rcpid]['Predate']}', '{$predvals[$rcpid]['Docker']}', '$abn', '$ibn');\">"
         .round($score, 4)."</a></td>";
