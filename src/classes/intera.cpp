@@ -545,7 +545,9 @@ void InteratomicForce::fetch_applicable(Atom* a, Atom* b, InteratomicForce** ret
 
         if (look[i]->type == polarpi)
         {
-            if (fabs(a->is_polar()) < hydrophilicity_cutoff && fabs(b->is_polar()) < hydrophilicity_cutoff) continue;
+            if (!a->is_thio() && fabs(a->is_polar()) < hydrophilicity_cutoff 
+                && !b->is_thio() && fabs(b->is_polar()) < hydrophilicity_cutoff
+            ) continue;
         }
 
         if (	(	(look[i]->Za == Za || look[i]->Za == any_element)
@@ -614,9 +616,9 @@ void InteratomicForce::fetch_applicable(Atom* a, Atom* b, InteratomicForce** ret
                 break;
 
             case polarpi:
-                if (  (a->is_pi() && (b->is_polar() || b->is_metal()) )
+                if (  (a->is_pi() && (b->is_polar() || b->is_thio() || b->is_metal()) )
                         ||
-                        (b->is_pi() && (a->is_polar() || a->is_metal()) )
+                        (b->is_pi() && (a->is_polar() || a->is_thio() || a->is_metal()) )
                    )
                     retval[j++] = look[i];
                 break;
@@ -703,7 +705,8 @@ float InteratomicForce::potential_binding(Atom* a, Atom* b, bool shpmm)
 
         if (forces[i]->type == polarpi)
         {
-            partial *= fmax(fabs(a->is_polar()), fabs(b->is_polar())) / 6;
+            if (!a->is_thio() && !b->is_thio())
+                partial *= fmax(fabs(a->is_polar()), fabs(b->is_polar())) / 6;
         }
 
         if (forces[i]->type == pi)
@@ -951,7 +954,9 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 
         if (skip) continue;
 
-        if (forces_by_type[i]->type == pi || forces_by_type[i]->type == polarpi) r = aheavy->distance_to(bheavy);
+        if (forces_by_type[i]->type == pi || forces_by_type[i]->type == polarpi
+            && !a->is_thio() && !b->is_thio()
+            ) r = aheavy->distance_to(bheavy);
 
         if (!forces_by_type[i]->distance) continue;
         float r1 = r / forces_by_type[i]->distance;
@@ -1074,6 +1079,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                     a->Z > 1
                     &&
                     a->num_conj_rings()
+                    && !b->is_thio()            // Thiol-pi bonds act on individual pi atoms, not entire rings.
             )
             {
                 // Find the coplanar ring closest to bloc, if any.
@@ -1094,6 +1100,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                     b->Z > 1
                     &&
                     b->num_conj_rings()
+                    && !a->is_thio()            // Thiol-pi bonds act on individual pi atoms, not entire rings.
             )
             {
                 // Find the coplanar ring closest to aloc, if any.
@@ -1190,8 +1197,11 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             // compensate for geometric calculation
             if (current_type == pi || current_type == polarpi)
             {
-                if (a->Z == 1 || b->Z == 1) force_eff_kJmol *= (8.0/1.37);
-                else force_eff_kJmol *= (12.0/4.87);
+                if (!a->is_thio() && !b->is_thio())
+                {
+                    if (a->Z == 1 || b->Z == 1) force_eff_kJmol *= (8.0/1.37);
+                    else force_eff_kJmol *= (12.0/4.87);
+                }
             }
 
             if (current_type == ionic && sgn(achg) == sgn(bchg)) continue;
@@ -1257,13 +1267,15 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             // Divide each ring by its number of atoms.
             if (current_type == pi || current_type == polarpi)
             {
-                if (ar) partial /= ar->get_atom_count();
-                else partial /= 6;
+                if (!a->is_thio() && !b->is_thio())
+                {
+                    if (ar) partial /= ar->get_atom_count();
+                    else partial /= 6;
 
-                if (br) partial /= br->get_atom_count();
-                else partial /= 6;
+                    if (br) partial /= br->get_atom_count();
+                    else partial /= 6;
+                }
             }
-            else if (current_type == polarpi) partial /= 6;
 
             if (partial > fabs(forces_by_type[i]->kJ_mol*2) || partial >= 500)
             {
