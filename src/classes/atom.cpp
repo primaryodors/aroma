@@ -227,6 +227,7 @@ Atom::Atom(const char* elem_sym)
 {
     int l = strlen(elem_sym);
     char buffer[l+2];
+    bool mkpi = false;
     strcpy(buffer, elem_sym);
     while (l>0 && buffer[l-1] == '+')
     {
@@ -240,12 +241,20 @@ Atom::Atom(const char* elem_sym)
         buffer[l-1] = 0;
         l--;
     }
+
+    if (buffer[0] >= 'a' && buffer[0] <= 'z')
+    {
+        mkpi = true;
+        buffer[0] &= 0x5f;
+    }
+
     m_Z = Z_from_esym(buffer);
 
     reciprocity = false;
     used = 0;
 
     figure_out_valence();
+    if (mkpi) aromatize();
 
     bonded_to = new Bond[abs(geometry)+4];
     int i;
@@ -2533,6 +2542,23 @@ Vector* Atom::get_geometry_aligned_to_bonds(bool prevent_infinite_loop)
 
 
     return geov;
+}
+
+Vector Atom::get_pi_normal(const Point *closerto)
+{
+    if (geometry != 3) return Vector(0,0,0);         // not pi
+    Vector* gab = get_geometry_aligned_to_bonds();
+    Vector normal = compute_normal(gab[0], gab[1], gab[2]);
+    if (closerto)
+    {
+        Point norm1 = loc.add(normal),
+              norm2 = loc.subtract(normal);
+        float r1 = norm1.get_3d_distance(*closerto),
+              r2 = norm2.get_3d_distance(*closerto);
+        if (r1 < r2) normal = norm1.subtract(loc);
+        else normal = norm2.subtract(loc);
+    }
+    return normal;
 }
 
 Vector Atom::get_next_free_geometry(float lcard)

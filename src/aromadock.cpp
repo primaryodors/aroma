@@ -3993,7 +3993,7 @@ _try_again:
                         } while (1);
                     }
 
-                    // cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl << endl;
+                    cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl << endl;
 
                     Atom *rh = rhmet ? rhmet : lrs[i]->get_most_polar();
                     if (!rh)

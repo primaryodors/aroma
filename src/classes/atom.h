@@ -304,6 +304,7 @@ public:
     int move_assembly(Point* pt, Atom* excluding);			// Return number of atoms moved. Note excluding must be a bonded atom.
     Vector* get_basic_geometry();
     Vector* get_geometry_aligned_to_bonds(bool prevent_infinite_loop = false);
+    Vector get_pi_normal(const Point* closerto = nullptr);
     float get_geometric_bond_angle();
     float get_bond_angle_anomaly(Vector v, Atom* ignore = nullptr);	// Assume v is centered on current atom.
     float distance_to(Atom* atom2);

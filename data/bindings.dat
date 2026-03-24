@@ -169,12 +169,12 @@ C       Rb     plpi     0.25  1.52       11.16			3
 
 # https://doi.org/10.1016/0022-2836(88)90471-8
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.
-C		H	   plpi		0.25  2.4		 12.55			3
+# C		H	   plpi		0.25  2.4		 12.55			3
 C       NH     plpi     0.25  2.8?        1.91?			3
 C       OH     plpi     0.25  2.9?        2.08?			3
 
 # https://doi.org/10.1021/jacs.6b08415
-C       SH     plpi     0.25  2.71        8.3           3?
+C       SH     plpi     0.25  2.71        8.3           4?
 
 # https://doi.org/10.1002/asia.201801156 supplement
 #Elem.1 Elem.2 Type     Card. Distance   kJ/mol       Dir.

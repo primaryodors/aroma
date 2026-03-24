@@ -23,11 +23,12 @@ void clear_color()
 
 int main(int argc, char** argv)
 {
-    Molecule m("Test");
+    Molecule m("Test"), p("Probe");
     cout << "Created empty molecule named " << m.get_name() << ".\n";
 
     Atom* anisoa;
     bool colors = false;
+    bool hfwid = false;
 
     if (argc > 1 && argv[1][0] != '-')
     {
@@ -68,32 +69,34 @@ int main(int argc, char** argv)
     {
         if (!strcmp(argv[i], "--colors")) colors = true;
         else if (!strcmp(argv[i], "--asciiart")) colors = false;
+        else if (!strcmp(argv[i], "--hfwid")) hfwid = true;
     }
 
     const int search_size=22;
-    const float ar = 2.1;		// Aspect ratio.
+    float ar = 2.1;		// Aspect ratio.
     int x, y;
     const char* asciiart = " .':+=inm@";
     int asciilen = strlen(asciiart);
 
-    Atom probe((argc > 3 && argv[3][0] != '-') ? argv[3] : "H");
-    probe.name = new char[256];
-    strcpy(probe.name, probe.get_elem_sym());
-    if (probe.is_metal()) probe.increment_charge(probe.get_valence());
-    int pz = probe.Z;
-    Atom oxy(pz == 1 ? "O" : "C");
-    probe.bond_to(&oxy, 1);
+    if (hfwid) ar /= 2;
 
-    Atom* aarr[4];;
-    aarr[0] = &probe;
-    aarr[1] = &oxy;
-    aarr[2] = NULL;
+    Atom* probe;
+    if (argc > 4 && argv[3][0] != '-')
+    {
+        p.from_smiles(argv[3]);
+        probe = p.get_atom(argv[4]);
+    }
+    else
+    {
+        p.from_smiles("O");
+        probe = p.get_atom(1);
+    }
 
-    Molecule mp("probe", aarr);
+    Atom* oxy = probe->get_bonded_atoms_count() ? probe->get_bond_by_idx(0)->atom2 : nullptr;
 
     InteratomicForce* ifs[32];
     only_closest_conj_charge = false;
-    InteratomicForce::fetch_applicable(&probe, anisoa, ifs);
+    InteratomicForce::fetch_applicable(probe, anisoa, ifs);
     if (!ifs || !ifs[0])
     {
         cout << "No forces to measure; check bindings.dat." << endl;
@@ -172,16 +175,32 @@ int main(int argc, char** argv)
                 Vector v(hb->get_distance(), theta, phi);
                 Point loc = anisoa->loc.add(&v);
 
-                probe.move(&loc);
-                probe.clear_geometry_cache();
+                Vector motion = loc.subtract(probe->loc);
+                p.move(motion);
+                
+                if (oxy)
+                {
+                    loc = loc.add(v);
+                    Rotation rot = align_points_3d(oxy->loc, loc, probe->loc);
+                    p.rotate(rot, probe->loc);
+                }
 
-                v.r = 1;
-                loc = loc.add(&v);
+                if (probe->is_pi())
+                {
+                    Point norm = probe->loc.add(probe->get_pi_normal(&(anisoa->loc)));
+                    Rotation rot = align_points_3d(norm, anisoa->loc, probe->loc);
+                    // if (!x && !y) cout << endl << (rot.a*fiftyseven) << " degrees" << endl;
+                    p.rotate(rot, probe->loc);
+                }
 
-                oxy.move(&loc);
-                oxy.clear_geometry_cache();
+                probe->clear_geometry_cache();
+                oxy->clear_geometry_cache();
 
-                float tb = InteratomicForce::total_binding(anisoa, &probe).summed();
+                if (!x && !y)
+                {
+                    p.been_flexed = false;              // put debug breakpoints here
+                }
+                float tb = InteratomicForce::total_binding(anisoa, probe).summed();
 
                 if (tb < best_energy) best_energy = tb;
 
@@ -208,8 +227,8 @@ int main(int argc, char** argv)
                     Vector* anisgeo = anisoa->get_geometry_aligned_to_bonds();
                     Molecule mptemp("Very temporary");
 
-                    int n = mp.get_atom_count();
-                    for (i=0; i<n; i++) mptemp.add_existing_atom(mp.get_atom(i));
+                    int n = p.get_atom_count();
+                    for (i=0; i<n; i++) mptemp.add_existing_atom(p.get_atom(i));
 
                     if (anisgeo)
                         for (i=0; i<anisg; i++)

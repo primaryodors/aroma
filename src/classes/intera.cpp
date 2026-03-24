@@ -1079,19 +1079,29 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                     a->Z > 1
                     &&
                     a->num_conj_rings()
-                    && !b->is_thio()            // Thiol-pi bonds act on individual pi atoms, not entire rings.
             )
             {
-                // Find the coplanar ring closest to bloc, if any.
-                ar = a->closest_arom_ring_to(bloc);
-                if (ar)
+                if (b->is_thio())            // Thiol-pi bonds act on individual pi atoms, not entire rings.
                 {
-                    aloc = ar->get_center();
-                    avec[0] = ar->get_normal();
+                    avec[0] = a->get_pi_normal(&bloc);
                     avec[1] = avec[0];
                     avec[1] = avec[1].negate();
                     for (j=2; j<ag; j++) avec[j] = Vector(0,0,0);
                     ag = 2;
+                }
+                else
+                {
+                    // Find the coplanar ring closest to bloc, if any.
+                    ar = a->closest_arom_ring_to(bloc);
+                    if (ar)
+                    {
+                        aloc = ar->get_center();
+                        avec[0] = ar->get_normal();
+                        avec[1] = avec[0];
+                        avec[1] = avec[1].negate();
+                        for (j=2; j<ag; j++) avec[j] = Vector(0,0,0);
+                        ag = 2;
+                    }
                 }
             }
 
@@ -1100,19 +1110,29 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
                     b->Z > 1
                     &&
                     b->num_conj_rings()
-                    && !a->is_thio()            // Thiol-pi bonds act on individual pi atoms, not entire rings.
             )
             {
-                // Find the coplanar ring closest to aloc, if any.
-                br = b->closest_arom_ring_to(aloc);
-                if (br)
+                if (a->is_thio())            // Thiol-pi bonds act on individual pi atoms, not entire rings.
                 {
-                    bloc = br->get_center();
-                    bvec[0] = br->get_normal();
+                    bvec[0] = b->get_pi_normal(&bloc);
                     bvec[1] = bvec[0];
                     bvec[1] = bvec[1].negate();
-                    for (j=2; j<ag; j++) bvec[j] = Vector(0,0,0);
+                    for (j=2; j<bg; j++) bvec[j] = Vector(0,0,0);
                     bg = 2;
+                }
+                else
+                {
+                    // Find the coplanar ring closest to aloc, if any.
+                    br = b->closest_arom_ring_to(aloc);
+                    if (br)
+                    {
+                        bloc = br->get_center();
+                        bvec[0] = br->get_normal();
+                        bvec[1] = bvec[0];
+                        bvec[1] = bvec[1].negate();
+                        for (j=2; j<bg; j++) bvec[j] = Vector(0,0,0);
+                        bg = 2;
+                    }
                 }
             }
 
