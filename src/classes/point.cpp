@@ -308,7 +308,9 @@ float equidistance_anomaly(Point point, Point* refs, int count)
         float r = point.get_3d_distance(refs[i]);
         if (r<min || !i) min = r;
         if (r>max || !i) max = r;
+        // cout << r << " ";
     }
+    // cout << endl;
 
     return max-min;
 }
@@ -323,7 +325,6 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
     if (bias) lbias = bias->subtract(retval);
 
     int iter;
-    Point was = retval;
     for (iter=0; iter<333; iter++)
     {
         int xyz = iter % 3;
@@ -337,10 +338,11 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
         }
 
         float f;
-        if (bd < 0) f = frand(-anom, anom/3);
-        else if (bd > 0) f = frand(-anom/3, anom);
-        else bd = frand(-anom, anom);
+        if (bd < 0) f = frand(-anom/10, anom/30);
+        else if (bd > 0) f = frand(-anom/30, anom/10);
+        else f = frand(-anom/10, anom/10);
 
+        Point was = retval;
         switch (xyz)
         {
             case 0: retval.x += f; break;
@@ -349,7 +351,8 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
         }
 
         float r = equidistance_anomaly(retval, points, count);
-        if (r < 0.01) return retval;
+        // cout << r << endl;
+        if (r < 0.001) return retval;
 
         if (r < anom) anom = r;
         else retval = was;

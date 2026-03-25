@@ -2850,9 +2850,10 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         {
             if (!mtlcoords[i].coordres[j].resno) mtlcoords[i].coordres[j].resolve_resno(this);
             Point respt = get_atom_location(mtlcoords[i].coordres[j].resno, "CA");
+            respt.weight = 1;
             pt4avg[l++] = respt;
         }
-        Point alpcen = average_of_points(pt4avg, l);
+        Point alpcen = find_equidistant_point(pt4avg, l);
 
         // Obtain the beta center.
         l=0;
@@ -2860,9 +2861,28 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         {
             if (!mtlcoords[i].coordres[j].resno) mtlcoords[i].coordres[j].resolve_resno(this);
             Point respt = get_atom_location(mtlcoords[i].coordres[j].resno, "CB");
+            AminoAcid* aa = get_residue(mtlcoords[i].coordres[j].resno);
+            Atom *CB = aa->get_atom("CB");
+            // cout << respt << " vs. " << CB->loc << endl;
+            respt.weight = 1;
             pt4avg[l++] = respt;
         }
-        Point betcen = average_of_points(pt4avg, l);
+        Point betcen = find_equidistant_point(pt4avg, l);
+
+        // Obtain the beta normal
+        Vector normal;
+        if (l >= 3)
+        {
+            normal = compute_normal(pt4avg[0], pt4avg[1], pt4avg[2]);
+            if (alpcen.get_3d_distance(betcen.add(normal)) < alpcen.get_3d_distance(betcen.subtract(normal)))
+            {
+                normal = Point(0,0,0).subtract(normal);
+            }
+        }
+        else
+        {
+            normal = betcen.subtract(alpcen);
+        }
 
         m_mcoords[nm_mcoords++] = mtlcoords[i];
         Point lpt;
@@ -2903,7 +2923,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
                 if (!lmtl->residue) lmtl->residue = aa->get_residue_no();
                 Atom** Ss = aa->get_most_bindable(1, lmtl);
                 lpt = lpt.add(aa->get_CA_location());
-                if (Ss) (*Ss)->bond_to(lmtl, 0.5);
+                // if (Ss) (*Ss)->bond_to(lmtl, 0.5);               // DO NOT DO THIS.
 
                 // If cysteine, make thiolate form.
                 if (aa->is_thiol())
@@ -2928,8 +2948,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         coord_atoms[k] = nullptr;
         lmc[l] = nullptr;
 
-        #if 1
-        Vector v = betcen.subtract(alpcen);
+        Vector v = normal;
         v.r = _INTERA_R_CUTOFF;
         Point ptmtl = betcen.add(v);
         lmtl->move(ptmtl);
@@ -2937,6 +2956,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
         {
             mcoord_aa[l]->movability = MOV_FORCEFLEX;
+            mcoord_aa[l]->clear_all_bond_caches();
             mcoord_aa[l]->conform_atom_to_location(coord_atoms[l], lmtl, 20, optimal[l], true);
         }
 
@@ -2969,7 +2989,8 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
             if (!omega) continue;
             omega = omega->get_heavy_atom();
             if (omega == coord_atoms[l]) continue;
-            if (omega->get_Greek() > coord_atoms[l]->get_Greek()) continue;
+            if (omega->get_Greek() < coord_atoms[l]->get_Greek()) continue;
+            float rvdw = lmtl->vdW_radius + omega->vdW_radius;
             Bond *b = coord_atoms[l]->get_bond_by_idx(0)->get_reversed();
             if (b)
             {
@@ -2984,15 +3005,9 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
                 {
                     b->rotate(step);
                     rC = omega->distance_to(lmtl);
-                    if (rC > rS) break;
+                    if (rC > rvdw*1.1) break;
                 }
             }
-        }
-
-        if (0) for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
-        {
-            cout << lmtl->name << "..." << mcoord_aa[l]->get_name() << ":" << coord_atoms[l]->name
-                << " = " << coord_atoms[l]->distance_to(lmtl) << "A." << endl;
         }
 
         for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
@@ -3000,110 +3015,6 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
             mcoord_aa[l]->movability = MOV_PINNED;
             mcoord_aa[l]->coordmtl = lmtl;
         }
-
-        #else
-        // Obtain the beta normal.
-        Vector betnorm = compute_normal(pt4avg[0], pt4avg[1], pt4avg[2]);
-        betnorm.r = 0.2;
-
-        // If the beta normal points toward the alpha center, reverse the normal.
-        float r1 = betcen.get_3d_distance(alpcen);
-        float r2 = betcen.add(betnorm).get_3d_distance(alpcen);
-        if (r2 < r1)
-        {
-            betnorm.r *= -1;
-            Point tmp = betnorm;
-            betnorm = tmp;              // a little trick to get r positive in its new direction.
-        }
-        if (l > 1)
-        {
-            l--;
-            lpt.x /= l; lpt.y /= l; lpt.z /= l;
-            l++;
-
-            Vector tocen = pocketcen.subtract(lpt);
-            tocen.r = 5;
-            lpt = lpt.add(tocen);
-
-            lmtl->move(lpt);
-        }
-
-        Point pt;
-
-        Vector v = betcen.subtract(alpcen);
-        v.r = 5.0;
-        pt = betcen.add(v);
-        lmtl->move(pt);
-        lmc[0]->movability = MOV_PINNED;
-
-        Molecule::conform_molecules(lmc, 50);
-
-        for (j=0; j<ncr; j++)
-        {
-            AminoAcid* aa = get_residue(mtlcoords[i].coordres[j].resno);
-            if (!aa) continue;
-            if (!lmtl->residue) lmtl->residue = aa->get_residue_no();
-            aa->movability = MOV_FLEXONLY;
-            r1 = coord_atoms[j]->distance_to(lmtl);
-            if (!aa->mclashables) set_clashables(aa->get_residue_no());
-            aa->conform_atom_to_location(coord_atoms[j]->name, lmtl->loc, 20, optimal[j]);
-            r1 = coord_atoms[j]->distance_to(lmtl);
-            aa->movability = MOV_PINNED;
-        }
-
-        l=0;
-        for (j=0; j<ncr; j++)
-        {
-            Point respt = coord_atoms[j]->loc;
-            pt4avg[l++] = respt;
-        }
-        Point gamcen = average_of_points(pt4avg, l);
-        Vector gamnorm = compute_normal(pt4avg[0], pt4avg[1], pt4avg[2]);
-        gamnorm.r = 0.8;
-        r1 = gamcen.get_3d_distance(alpcen);
-        r2 = gamcen.add(gamnorm).get_3d_distance(alpcen);
-        if (r2 < r1)
-        {
-            gamnorm.r *= -1;
-            Point tmp = gamnorm;
-            gamnorm = tmp;
-        }
-
-        lmtl->move(gamcen.add(gamnorm));
-
-        for (j=0; j<ncr; j++)
-        {
-            AminoAcid* aa = get_residue(mtlcoords[i].coordres[j].resno);
-            if (!aa) continue;
-            aa->movability = MOV_FLEXONLY;
-            Bond* bca = coord_atoms[j]->get_bond_by_idx(0);
-            if (!bca) continue;
-            bca = bca->get_reversed();
-            if (!bca) continue;
-            if (!bca->can_rotate) continue;
-
-            float step = hexagonal/2;
-            float before = aa->get_intermol_clashes(lmc);
-            if (before < clash_limit_per_aa*2) continue;
-            for (l=0; l<100; l++)
-            {
-                bca->rotate(step);
-                float after = aa->get_intermol_clashes(lmc);
-                if (after > before)
-                {
-                    bca->rotate(-step);
-                    step *= -0.666;
-                }
-                else if (after < clash_limit_per_aa*2) break;
-            }
-
-            aa->movability = MOV_PINNED;
-            aa->coordmtl = lmtl;
-
-            Bond** aabb = aa->get_rotatable_bonds();
-            if (aabb) for (l=0; aabb[l]; l++) aabb[l]->can_rotate = aabb[l]->can_flip = false;          // THERE IS NO FLEXION OF ANY MCOORD RESIDUE AT ANY TIME.
-        }
-        #endif
 
         mtlcoords[i].mtl_original_location = lmtl->loc;
     }
