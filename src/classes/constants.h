@@ -441,6 +441,7 @@
 #define _dbg_rshpm_apply 0
 #define _dbg_Schiff_internal_clashes 0
 #define _dbg_soft 0
+#define _dbg_soft_metal 0
 #define _dbg_soft_motions 0
 #define _dbg_softpivot 0
 #define _dbg_stays_assignment 0

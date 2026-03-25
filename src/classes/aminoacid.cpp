@@ -2925,6 +2925,9 @@ void AminoAcid::aamove(Vector move_amt)
     if (coordmtl && coordmtl->residue && coordmtl->residue == this->residue_no)
     {
         coordmtl->move_rel(move_amt);
+        #if _dbg_soft_metal
+        cout << "Moved coordmetal." << endl;
+        #endif
     }
 }
 

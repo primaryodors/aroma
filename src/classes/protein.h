@@ -284,6 +284,7 @@ protected:
     std::vector<Pose> origpdb_residues;
     char pdbchain = ' ';
     Pose** undo_poses = nullptr;
+    Point* undo_mcoord_loc = nullptr;
     bool mass_undoable = false;
 
     int* get_residues_in_reach(int resno);

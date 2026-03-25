@@ -1220,13 +1220,16 @@ void Protein::allocate_undo_poses()
         for (i=1; i<l+4; i++) if (reinterpret_cast<__uint128_t>(undo_poses[i]) > sizeof(Protein)) undo_poses[i]->deallocate();
         delete[] undo_poses;
     }
+    if (undo_mcoord_loc) delete[] undo_mcoord_loc;
 
     undo_poses = new Pose*[l+4];
+    undo_mcoord_loc = new Point[l+4];
     undo_poses[0] = nullptr;
     for (i=1; i<l+4; i++)
     {
         AminoAcid* aa = get_residue(i);
         undo_poses[i] = aa ? new Pose(aa) : nullptr;
+        if (aa && aa->coordmtl) undo_mcoord_loc[i] = aa->coordmtl->loc;
     }
 }
 
@@ -1247,6 +1250,7 @@ void Protein::save_undo_state()
             {
                 undo_poses[i]->deallocate();
                 undo_poses[i]->copy_state(aa);
+                if (undo_mcoord_loc && aa->coordmtl) undo_mcoord_loc[i] = aa->coordmtl->loc;
             }
         }
     }
@@ -1263,7 +1267,11 @@ void Protein::undo()
         if (undo_poses[i])
         {
             AminoAcid* aa = get_residue(i);
-            if (aa) undo_poses[i]->restore_state(aa, true);
+            if (aa)
+            {
+                undo_poses[i]->restore_state(aa, true);
+                if (undo_mcoord_loc && aa->coordmtl) aa->coordmtl->move(undo_mcoord_loc[i]);
+            }
         }
     }
 }
@@ -3415,7 +3423,13 @@ void Protein::move_piece(int start_res, int end_res, Vector move_amt)
         if (!aa) continue;
         MovabilityType mov = aa->movability;
         aa->movability = MOV_ALL;
+        #if _dbg_soft_metal
+        Point caloc = aa->get_CA_location();
+        #endif
         aa->aamove(move_amt);
+        #if _dbg_soft_metal
+        cout << "Moved " << aa->get_name() << " " << caloc.get_3d_distance(aa->get_CA_location()) << " of " << move_amt.r << "A." << endl;
+        #endif
         aa->movability = mov;
         set_clashables(i);
     }

@@ -604,6 +604,13 @@ bool Atom::move(Point* pt, bool delgeo)
 
     // if (residue==198 || residue==277) throw 0xbadc0de;
 
+    #if _dbg_soft_metal
+    if (is_metal() || !strcmp(name, "Cu"))
+    {
+        cout << name << " moved." << endl;
+    }
+    #endif
+
     location = *pt;
     location.weight = at_wt;
     if (delgeo)
