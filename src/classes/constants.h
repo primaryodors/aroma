@@ -282,14 +282,14 @@
 #define ray_occlusion_density 81
 
 // Soft docking constants.
-#define initial_soft_contact_elasticity 0.1
+#define initial_soft_contact_elasticity 0.03
 #define move_ligand_with_soft_motion 1
 #define progressively_increase_elasticity 1
 #define repack_soft_clashes false
 #define soft_repack_iterations 20
-#define soft_contact_elasticity_progress 0.01
+#define soft_contact_elasticity_progress 0.003
 #define soft_iter_min 10
-#define soft_push_multiplier 0.01
+#define soft_push_multiplier 0.03
 
 // Vestibule feature (non-functional)
 #define enable_vestibules 0
