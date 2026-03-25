@@ -190,6 +190,7 @@ foreach ($prots as $protid => $p)
     $rows = [];
     $modes = [];
     $dates = [];
+    $incplt = [];
     foreach ($protfs[$protid] as $fname)
     {
         if (substr($fname, -5) != ".dock") continue;
@@ -235,6 +236,11 @@ foreach ($prots as $protid => $p)
             echo "<!-- Reading $fpn ... -->\n";
             chdir(__DIR__);
             $c = file_get_contents($fpn);
+            if (strlen($c) < 500)
+            {
+                $incplt[$rowid] = true;
+                continue;
+            }
             $lines = explode("\n", $c);
             $benerg = 0;
             $lsfe = $lsbe = $phfe = $phbe = $ewde = 0;
@@ -532,79 +538,85 @@ foreach ($prots as $protid => $p)
         $prediction = round($prediction, 2);
 
         $color = "";
-
-        if ($agonist == 'Y')
+        if (@$incplt[$rowid])
         {
-            $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
-            $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if ($prediction > 0)
-            {
-                $color = "color: #0c0;";
-                $right++;
-            }
-            else if ($top && $top < 2.5)
-            {
-                $color = "color: #f90;";
-            }
-            else if (!$top && $ec50 > -3)
-            {
-                $color = "color: #f90;";
-            }
-            else
-            {
-                $color = "color: #f00;";
-                $wrong++;
-            }
+            $prediction = "...";
         }
-        if ($agonist == 'Y?')
+        else
         {
-            if ($prediction > 0)
+            if ($agonist == 'Y')
             {
-                $color = "color: #0cc;";
-                $right++;
+                $graphdat[0][] = [$benerg_active, $occl_active, $prediction];
+                $graphdat[2][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+                if ($prediction > 0)
+                {
+                    $color = "color: #0c0;";
+                    $right++;
+                }
+                else if ($top && $top < 2.5)
+                {
+                    $color = "color: #f90;";
+                }
+                else if (!$top && $ec50 > -3)
+                {
+                    $color = "color: #f90;";
+                }
+                else
+                {
+                    $color = "color: #f00;";
+                    $wrong++;
+                }
             }
-            else
+            if ($agonist == 'Y?')
             {
-                $color = "color: #960;";
-                $wrong++;
+                if ($prediction > 0)
+                {
+                    $color = "color: #0cc;";
+                    $right++;
+                }
+                else
+                {
+                    $color = "color: #960;";
+                    $wrong++;
+                }
             }
-        }
-        else if ($agonist == 'inv' || $agonist == 'ant')
-        {
-            $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
-            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if ($prediction <= 0)
+            else if ($agonist == 'inv' || $agonist == 'ant')
             {
-                $color = "color: #0c0;";
-                $right++;
+                $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
+                $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+                if ($prediction <= 0)
+                {
+                    $color = "color: #0c0;";
+                    $right++;
+                }
+                else if ($prediction < 4)
+                {
+                    $color = "color: #f90;";
+                }
+                else
+                {
+                    $color = "color: #f00;";
+                    $wrong++;
+                }
             }
-            else if ($prediction < 4)
+            else if ($agonist == 'N')
             {
-                $color = "color: #f90;";
-            }
-            else
-            {
-                $color = "color: #f00;";
-                $wrong++;
-            }
-        }
-        else if ($agonist == 'N')
-        {
-            $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
-            $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
-            if (!$prediction)
-            {
-                $color = "color: #0c0;";
-                $right++;
-            }
-            else if ($prediction < 8)
-            {
-                $color = "color: #f90;";
-            }
-            else
-            {
-                $color = "color: #f00;";
-                $wrong++;
+                $graphdat[1][] = [$benerg_active, $occl_active, $prediction];
+                $graphdat[3][] = [$benerg_active - $benerg_inactive, $occl_active, $prediction];
+                if (!$prediction)
+                {
+                    $color = "color: #0c0;";
+                    $right++;
+                }
+                else if ($prediction < 8)
+                {
+                    $color = "color: #f90;";
+                }
+                else
+                {
+                    $color = "color: #f00;";
+                    $wrong++;
+                }
             }
         }
 
