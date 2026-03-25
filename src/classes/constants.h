@@ -432,6 +432,7 @@
 #define _dbg_point_side_chains_inward 0
 #define _dbg_polar_calc 0
 #define _dbg_polsat 0
+#define _dbg_randhyd_probs 0
 #define _dbg_rap_resolve_special_atom 0
 #define _dbg_repack 0
 #define _DBG_RESBMULT 0

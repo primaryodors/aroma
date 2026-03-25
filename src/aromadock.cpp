@@ -3937,7 +3937,13 @@ _try_again:
                         do
                         {
                             i = rand() % j;
-                            if (frand(0,1) < 1e-4) break;                                // just in case there are no polar side chains.
+                            if (frand(0,1) < 1e-7)                                // just in case there are no polar side chains.
+                            {
+                                #if _dbg_randhyd_probs
+                                cout << "Randomly selected " << lrs[i]->get_name() << " for " << bh->name << endl;
+                                #endif
+                                break;
+                            }
                             float lrhyd = fabs(lrs[i]->hydrophilicity());
                             bool lrharom = lrs[i]->ring_is_aromatic(0);
                             if ((bhyd >= hydrophilicity_cutoff) == (lrhyd >= hydrophilicity_cutoff)
@@ -3953,14 +3959,30 @@ _try_again:
                                 if ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH))
                                 {
                                     probability = 0.1 * lrhyd;
-                                    if (bhpi) probability -= 0.2 * lrs[i]->pi_stackability();
+                                    if (bhpi) probability *= (1.0 - 0.2 * lrs[i]->pi_stackability());
                                     ra = lrs[i]->get_reach_atom();
+                                    if (ra->get_charge()) probability = pow(probability, 0.2);
+                                    #if _dbg_randhyd_probs
+                                    cout << lrs[i]->get_name();
+                                    if (lrs[i]->has_hbond_donors() && bhbt < bhg)
+                                        cout << " has hbond donors and " << bh->name << " bt " << bhbt << " < geo " << bhg;
+                                    if (lrs[i]->has_hbond_acceptors() && bH)
+                                        cout << " has hbond acceptors and " << bH->name << " exists";
+                                    if (ra->get_charge()) cout << "; " << ra->name << " is charged";
+                                    cout << "; probability = " << probability;
+                                    cout << endl;
+                                    #endif
                                 }
 
                                 // THIOL-PI CALCULATION
                                 else if (bhthi && lrharom)
                                 {
                                     probability = 0.25;
+                                    #if _dbg_randhyd_probs
+                                    cout << bh->name << " is thiol and " << lrs[i]->get_name() << " is aromatic";
+                                    cout << "; probability = " << probability;
+                                    cout << endl;
+                                    #endif
                                 }
 
                                 // HYDROPHOBIC CALCULATION
@@ -3970,25 +3992,57 @@ _try_again:
                                     probability = 0.1 * lrhyd;
                                     if (bhpi) probability += 0.2 * lrs[i]->pi_stackability();
                                     ra = lrs[i]->get_reach_atom();
-                                    if (ra->get_charge()) probability = pow(probability, 0.2);
+                                    #if _dbg_randhyd_probs
+                                    cout << bh->name << " is tetrel and " 
+                                        << lrs[i]->get_name() << " hydrophilicity = " << (1.0 - lrhyd);
+                                    if (bhpi) cout << " and is pi = " << lrs[i]->pi_stackability();
+                                    cout << "; probability = " << probability;
+                                    cout << endl;
+                                    #endif
+                                }
+
+                                // EFFECT OF PRIORITY
+                                if (probability && lrs[i]->priority)
+                                {
+                                    probability *= 5;
+                                    #if _dbg_randhyd_probs
+                                    cout << lrs[i]->get_name() << " has priority";
+                                    cout << "; probability now = " << probability;
+                                    cout << endl;
+                                    #endif
                                 }
 
                                 // DISTANCE ADJUSTMENT
-                                if (ra)
+                                if (ra && probability)
                                 {
                                     float rhcendist = ra->loc.get_3d_distance(nodecen);
                                     float anomaly = rhcendist - bhcendist;
                                     if (anomaly > 0) anomaly = fmax(0, anomaly-3.5);
                                     probability += 0.25 * lrhyd / (1.0 + anomaly/2.5);
+                                    #if _dbg_randhyd_probs
+                                    cout << bh->name << " is " << bhcendist << "A from ligand barycenter";
+                                    cout << "; " << lrs[i]->get_name() << ":" << ra->name << " is " << rhcendist << "A from pocket center";
+                                    cout << "; probability now = " << probability;
+                                    cout << endl;
+                                    #endif
                                 }
 
                                 // PROBABILITY OF ATOM SELECTION
                                 if (probability) 
                                 {
-                                    probability *= frand(0.8, 1.3);         // stochastic
+                                    probability *= frand(0.08, 0.13);         // stochastic
                                     if (frand(0,1) < probability)
+                                    {
+                                        #if _dbg_randhyd_probs
+                                        cout << lrs[i]->get_name() << " SELECTED." << endl;
+                                        #endif
                                         break;
+                                    }
                                 }
+
+                                #if _dbg_randhyd_probs
+                                cout << endl;
+                                #endif
                             }
                         } while (1);
                     }
