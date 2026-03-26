@@ -199,7 +199,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                 for (i=0; i<sphres; i++)
                 {
                     Atom* a = can_clash[i]->get_nearest_atom(pt);
-                    float r = a->loc.get_3d_distance(pt) - a->vdW_radius + global_clash_allowance;
+                    float r = a->loc.get_3d_distance(pt) - a->vdW_radius + global_clash_allowance*2;        // extra allowance because we do soft docks
 
                     if (!a->is_backbone)
                     {
@@ -370,7 +370,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
         }
 
         if (tmpcav[i].count_partials() >= cav_min_partials
-            && tmpcav[i].resnos_as_array(p, nullptr) >= 7
+            && tmpcav[i].resnos_as_array(p, nullptr) >= cav_min_residues
             && (!any_priority || tmpcav[i].priority)
             )
         {

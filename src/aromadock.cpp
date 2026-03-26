@@ -3591,8 +3591,10 @@ _try_again:
                 protein->set_conditional_basicities();
 
                 float cvr = Avogadro;
+                gcav = nullptr;
                 if (ncvtys) for (i=0; i<ncvtys; i++)
                 {
+                    if (!cvtys[i].point_inside_pocket(nodecen)) continue;
                     float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
                     r *= frand(0.8, 1.3);
                     if (r < cvr)
@@ -5017,7 +5019,7 @@ _try_again:
                 }
                 dr[j][nodeno].ligpos.restore_state(ligand);
 
-                if (ncvtys)
+                if (ncvtys && gcav)
                 {
                     dr[j][nodeno].disqualified = true;
                     int cno;
