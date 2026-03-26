@@ -19976,6 +19976,38 @@
         },
         "oid": "72967351e46f4f25870ece3bce0e5bb3"
     },
+    "7375c229f40e703f38005229d66bd0d8":
+    {
+        "full_name": "theaspirane",
+        "smiles": "C[C@@H]1CC[C@@]2(O1)C(=CCCC2(C)C)C",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "tea",
+                "herbal",
+                "green",
+                "wet",
+                "tobacco",
+                "leafy",
+                "metallic",
+                "woody",
+                "spicy",
+                "minty",
+                "camphoreous",
+                "fresh",
+                "pine"
+            ],
+            "http://www.leffingwell.com/chirality/theaspiranes.htm":
+            [
+                "fresh",
+                "fruity",
+                "black_currant",
+                "cassis"
+            ]
+        },
+        "oid": "7375c229f40e703f38005229d66bd0d8"
+    },
     "73fb9cf1a926583f1d2c5c72b1192709":
     {
         "full_name": "delta-dodecalactone",
