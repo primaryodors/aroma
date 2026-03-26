@@ -316,7 +316,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                 }
             }
         }
-        
+
         if (!iter) for (i=0; i<l; i++)
         {
             if (tmpcav[i].count_partials() < 3)
