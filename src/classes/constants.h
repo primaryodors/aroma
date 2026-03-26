@@ -287,9 +287,9 @@
 #define progressively_increase_elasticity 1
 #define repack_soft_clashes false
 #define soft_repack_iterations 20
-#define soft_contact_elasticity_progress 0.003
+#define soft_contact_elasticity_progress 0.001
 #define soft_iter_min 10
-#define soft_push_multiplier 0.03
+#define soft_push_multiplier 0.1
 
 // Vestibule feature (non-functional)
 #define enable_vestibules 0

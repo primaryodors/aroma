@@ -390,8 +390,16 @@ foreach (array_values($bytree) as $x => $orid)
         else $orcol = orclr($fam);
         list($roudia, $gladsia, $bugiia) = $orcol;
 
-        $texts[] = [$dx, $dy-5, (@$tprobs[$orid] && $t[$orid] < 5) ? "($orid)" : $orid];
+        $lorid = (substr($orid, 0, 2) == "OR") ? substr($orid, 2) : (substr($orid, 0, 1).substr($orid, 4));
+
+        $texts[] = [$dx, $dy-5, (@$tprobs[$orid] && $t[$orid] < 5) ? "($lorid)" : $lorid];
         $txtop[] = intval(0.81 * (100-(floatval(@$prots[$orid]['expression'] ?: 100))));
+        if (max($roudia, $gladsia) < 64)
+        {
+            $roudia += 64;
+            $gladsia += 64;
+            $bugiia = min(255, $bugiia+64);
+        }
         $txcol[] = imagecolorallocatealpha($im, intval($roudia), intval($gladsia), intval($bugiia), 24);
     }
 }
