@@ -60,6 +60,23 @@
     #error It appears your operating system is not supported yet - would you be willing to add it and submit a pull request?
 #endif
 
+// Progressbar colors
+#define pbrc_dock_nopose 160, 168, 176
+#define pbrc_dock_activepose 96, 216, 128
+#define pbrc_dock_inactivepose 98, 176, 224
+#define pbrc_cavfit_genconf 192, 64, 224
+#define pbrc_cavfit_goodfit 160, 64, 224
+#define pbrc_cavfit_optfit 128, 64, 224
+#define pbrc_cavfit_outconf_sel 96, 64, 224
+#define pbrc_cavfit_sort 64, 64, 224
+#define pbrc_cavsearch 224, 48, 32
+#define pbrc_ic_hxopt 192, 24, 156
+#define pbrc_olfph_tumble 192, 80, 64
+#define pbrc_olfph_pocket 224, 144, 76
+#define pbrc_olfph_ligtarg 240, 192, 96
+#define pbrc_ameliorate 128, 224, 64
+#define pbrc_multimer 255, 225, 44
+
 // Periodic table constants.
 #define ALKMETAL 1
 #define ALKEARTH 2

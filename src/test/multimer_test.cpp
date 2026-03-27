@@ -23,7 +23,7 @@ int main(int adhrim_u_nouga, char** nouga)
 
     pb.minimum = 0;
     pb.maximum = 100;
-    pb.set_color(255, 225, 44);
+    pb.set_color(pbrc_multimer);
     Molecule::conform_molecules(cfmols, nullptr, pb.maximum, &athigarh);
     pb.erase();
 

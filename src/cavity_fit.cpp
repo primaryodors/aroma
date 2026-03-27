@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 
     cout << "Generating conformers..." << endl << endl << flush;
     Progressbar pb;
-    pb.set_color(192, 64, 224);
+    pb.set_color(pbrc_cavfit_genconf);
     pb.minimum = 0;
     pb.maximum = nligconf-1;
     for (i=0; i<nligconf; i++)
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 
     // Narrow down the ligand conformers to those that meet a minimal threshold of molecule_inside_pocket().
     cout << "Filtering by goodness of fit..." << endl << endl << flush;
-    pb.set_color(160, 64, 224);
+    pb.set_color(pbrc_cavfit_goodfit);
     j = 0;
     for (i=0; i<nligconf; i++)
     {
@@ -248,7 +248,7 @@ int main(int argc, char** argv)
 
     // Perform translations, rotations, and flexions to try to optimize each conformer's cavity fit.
     cout << "Optimizing fit..." << endl << endl << flush;
-    pb.set_color(128, 64, 224);
+    pb.set_color(pbrc_cavfit_optfit);
     pb.maximum = nmatches;
     for (i=0; i<nmatches; i++)
     {
@@ -343,7 +343,7 @@ int main(int argc, char** argv)
 
     // Narrow the conformers further to those that meet a reasonable threshold.
     cout << "Selecting output conformers..." << endl << endl << flush;
-    pb.set_color(96, 64, 224);
+    pb.set_color(pbrc_cavfit_outconf_sel);
     j = 0;
     for (i=0; i<nmatches; i++)
     {
@@ -369,7 +369,7 @@ int main(int argc, char** argv)
 
     // Sort the conformers by their cavity fit scores.
     cout << "Sorting..." << endl << endl << flush;
-    pb.set_color(64, 64, 224);
+    pb.set_color(pbrc_cavfit_sort);
     pb.maximum = nmatches;
     for (i=0; i<nmatches; i++)
     {

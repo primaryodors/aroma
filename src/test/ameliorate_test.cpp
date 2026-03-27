@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     cout << "Initial bond strain: " << strain << " kJ/mol." << endl;
 
     Progressbar pgb;
-    pgb.set_color(128, 224, 64);
+    pgb.set_color(pbrc_ameliorate);
 
     // m.mangle();
     m.refine_structure(_evolution_default_generations, _default_mutation_rate, _default_population_size,

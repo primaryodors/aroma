@@ -104,7 +104,7 @@ void Cavity::unify(Cavity* cavfrom)
     }
 }
 
-int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb)
+int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr)
 {
     if (!p || !cavs) return 0;
     if (cmax < 1) return 0;
@@ -159,18 +159,17 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
     float xmin = fmax(cav_xmin, pcen.x - pbox.x + min_dist_bounding_box), xmax = fmin(cav_xmax, pcen.x + pbox.x - min_dist_bounding_box);
     float ymin = fmax(cav_ymin, pcen.y - pbox.y + min_dist_bounding_box), ymax = fmin(cav_ymax, pcen.y + pbox.y - min_dist_bounding_box);
     float zmin = fmax(cav_zmin, pcen.z - pbox.z + min_dist_bounding_box), zmax = fmin(cav_zmax, pcen.z + pbox.z - min_dist_bounding_box);
-    if (pgb)
+    if (pbr)
     {
-        pgb->minimum = xmin;
-        pgb->maximum = xmax;
-        cout << endl;
+        pbr->minimum = xmin;
+        pbr->maximum = xmax;
     }
     else cout << "Cavity search in progress..." << flush;
 
     j=0;
     for (x = xmin; x <= xmax; x += step)
     {
-        if (pgb) pgb->update(x);
+        if (pbr) pbr->update(xmin + (x-xmin)/3);
         else cout << "." << flush;
         yoff = yoff ? 0 : step/2;
         for (y = ymin - yoff; y <= ymax; y += step)
@@ -251,13 +250,19 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
             }
         }
     }
-    if (pgb) pgb->erase();
+    if (pbr) pbr->erase();
     else cout << endl;
 
     // Now consolidate all partials into glommed cavities.
     Cavity tmpcav[4096];
     int pmax = j;
+    float pbrscale;
     j=0;
+    if (pbr)
+    {
+        pbr->minimum = 0;
+        pbr->maximum = 1;
+    }
     for (i=0; i<pmax; i++)
     {
         if (parts[i].s.center.magnitude() == 0) break;
@@ -284,11 +289,14 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
     l=j;
 
     // Any cavities that intersect more than a threshold amount, unify them.
-    int iter;
-    for (iter=0; iter<3; iter++)
+    int iter, iters = 3;
+    pbrscale = 0.333/(iters*l);
+    for (iter=0; iter<iters; iter++)
     {
         for (i=0; i<l; i++)
         {
+            if (pbr) pbr->update(0.333+pbrscale*(iter*l+i));
+
             // cout << i << endl;
             Point cen = tmpcav[i].get_center();
             if (cen.x < cav_xmin || cen.x > cav_xmax) continue;
@@ -297,6 +305,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
 
             for (j=i+1; j<l; j++)
             {
+
                 // cout << i << " " << j << endl;
                 cen = tmpcav[j].get_center();
                 if (cen.x < cav_xmin || cen.x > cav_xmax) continue;
@@ -308,11 +317,13 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
                     (tmpcav[i].residue_intersection(&tmpcav[j], p) * tmpcav[j].residue_intersection(&tmpcav[i], p)) >= 0.6
                 )
                 {
+                    if (pbr) pbr->update(0.333+pbrscale*(iter*l+i));
                     // cout << "Cavities " << i << " and " << j << " intersect by " << u << endl;
                     tmpcav[i].unify(&tmpcav[j]);
                     for (n=j+1; n<l; n++) tmpcav[n-1] = tmpcav[n];
                     l--;
-                    j = i;
+                    pbrscale = 0.333/(iters*l);
+                    j--;
                 }
             }
         }
@@ -323,6 +334,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
             {
                 for (n=i+1; n<l; n++) tmpcav[n-1] = tmpcav[n];
                 l--;
+                pbrscale = 0.333/(iters*l);
             }
         }
     }
@@ -331,6 +343,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
 
     // if (any_priority) cout << "Priority residues found." << endl;
     j=0;
+    pbrscale = 0.333/(l*pqty);
     for (i=0; i<l; i++)
     {
         tmpcav[i].prot = p;
@@ -351,6 +364,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
         int x;
         for (x=0; x<pqty; x++)
         {
+            if (pbr) pbr->update(0.666+pbrscale*(i*pqty+x));
             AminoAcid* aa = p->get_residue(priorities[x]);
             if (!aa) continue;
             Atom* a = aa->get_nearest_atom(tmpcav[i].get_center());
@@ -380,6 +394,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pgb
         if (j >= cmax-1) break;
     }
 
+    if (pbr) pbr->erase();
     // cout << cavs[4].cavity_intersection(&cavs[6]) << endl;
 
     return j;

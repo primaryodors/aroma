@@ -1099,11 +1099,11 @@ void update_progressbar(float percentage)
     if (success_sofar)
     {
         if (strstr(protfname, ".inactive.pdb"))
-            progb.set_color(98, 176, 224);
+            progb.set_color(pbrc_dock_inactivepose);
         else
-            progb.set_color(96, 216, 128);
+            progb.set_color(pbrc_dock_activepose);
     }
-    else progb.set_color(160, 168, 176);
+    else progb.set_color(pbrc_dock_nopose);
     progb.update(percentage);
 }
 

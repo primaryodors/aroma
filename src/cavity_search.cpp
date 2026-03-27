@@ -361,13 +361,16 @@ int main(int argc, char** argv)
 
 
     ////////////////////////////////////////////////////////////////////////////
-    // Phase I: Cavity Search.                                                //
+    // Main Section.                                                          //
     ////////////////////////////////////////////////////////////////////////////
 
     time_t began = time(NULL);
 
     Cavity cavities[1029];
-    int qfound = Cavity::scan_in_protein(&p, cavities, 1024);
+    Progressbar pbr;
+    pbr.set_color(pbrc_cavsearch);
+    cout << "Performing cavity search..." << endl;
+    int qfound = Cavity::scan_in_protein(&p, cavities, 1024, &pbr);
 
     cout << "Found " << qfound << " cavit" << (qfound == 1 ? "y." : "ies.") << endl;
 

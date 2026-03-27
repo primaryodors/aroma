@@ -36,7 +36,7 @@ Pose phore_tumble_3d(Molecule& existing, Molecule& added)
 
     Progressbar pgb;
     pgb.maximum = M_PI*2;
-    pgb.set_color(192, 64, 80);
+    pgb.set_color(pbrc_olfph_tumble);
     cout << endl;
 
     for (x=0; x<M_PI*2; x+=step)
@@ -412,7 +412,7 @@ int main(int argc, char** argv)
     else if (prot.get_seq_length() && infname1)
     {
         Progressbar pgb;
-        pgb.set_color(224, 32, 144);
+        pgb.set_color(pbrc_olfph_pocket);
         cout << "Performing pocket search..." << endl << flush;
         Point sz = prot.get_region_bounds(1, 99999);
         sz.multiply(0.666);
@@ -492,7 +492,7 @@ int main(int argc, char** argv)
         LigandTarget lt[256];
         int nlt = Search::identify_ligand_pairing_targets(&existing, lt, 256);
         BestBindingResult bbr;
-        pgb.set_color(128, 64, 255);
+        pgb.set_color(pbrc_olfph_ligtarg);
         cout << endl;
         Search::pair_targets(&prot, &existing, lt, bsr, cen, &bbr, nullptr, true, &pgb);
         Search::align_targets(&existing, cen, &bbr, 1);
