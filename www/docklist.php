@@ -8,6 +8,20 @@ require_once("dlmenu.php");
 $extra_js = ['js/tabs.js'];
 $extra_css = ['assets/tabs.css'];
 $page_title = "AROMA Docks";
+
+if (@$_REQUEST['r'] || @$_REQUEST['o']) $page_title = "Docks";
+
+if (@$_REQUEST['r'])
+{
+    $page_title .= " - {$_REQUEST['r']}";
+}
+
+if (@$_REQUEST['o'])
+{
+    $o = find_odorant($_REQUEST['o']);
+    if ($o) $page_title .= " - {$o['full_name']}";
+}
+
 include("header.php");
 
 chdir(__DIR__);
