@@ -794,13 +794,14 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
         #endif
 
         // Normalize positional errors
-        for (y=0; y<rows; y++)
-        {
-            errors[y] /= maxerr;
-            #if _dbg_entropy
-            cout << "Result " << x << ":" << y << " normalized positional error: " << errors[y] << endl;
-            #endif
-        }
+        if (maxerr)
+            for (y=0; y<rows; y++)
+            {
+                errors[y] /= maxerr;
+                #if _dbg_entropy
+                cout << "Result " << x << ":" << y << " normalized positional error: " << errors[y] << endl;
+                #endif
+            }
 
         #if _dbg_entropy
         cout << endl;
@@ -809,6 +810,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
         // Sum the positional errors
         float n = 0;                    // using a float instead of an int because the number of permutations will be treated as a non-integer.
         for (y=0; y<rows; y++) n += errors[y];
+        n = fmax(1, n);
 
         #if _dbg_entropy
         cout << "Number of partial states: " << n << endl;
@@ -819,7 +821,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
         float W = 1;
         j = 1;
         while (j <= n) W *= j++;
-        W *= (float)j * (n - j + 1);
+        W *= 1.0 + (float)(j-1) * (n - j + 1);
 
         // Total entropy for all states.
         float S = kB * log(W);

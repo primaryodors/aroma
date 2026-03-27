@@ -350,6 +350,9 @@ float Pose::position_error(Pose *relative_to)
 {
     float error = 0;
     int i, j;
+    #if _dbg_entropy
+    cout << "Position error called: poses are " << sz << " and " << relative_to->sz << " atoms." << endl;
+    #endif
     for (i=0; i<sz; i++)
     {
         for (j=0; j<relative_to->sz; j++)
