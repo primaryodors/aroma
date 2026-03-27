@@ -288,6 +288,7 @@ function load_viewer(obj)
 
 function showSkeletal(e, smiles)
 {
+    smiles = smiles.split('|')[0];
     var skeletal = $("#skeletal")[0];
     var top = e.pageY;
     if (top > document.body.scrollHeight - 300) top -= 300;
