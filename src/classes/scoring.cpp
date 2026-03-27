@@ -236,6 +236,13 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     interpot = 0;
     atomlvl = "";
     reaches_spheroid[sphres] = nullptr;
+
+    Molecule* mol4occl[sphres+8];
+    mol4occl[0] = ligand;
+    for (i=0; i<sphres; i++)
+        mol4occl[i+1] = reaches_spheroid[i];
+    mol4occl[sphres+1] = nullptr;
+
     for (i=0; i<sphres; i++)
     {
         if (!reaches_spheroid[i]) continue;
@@ -320,7 +327,14 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         lis_mcr[nmetrics] = false;
         mc_bpotential = 0;
         compute_interall = true;
+        float was_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic];
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
+        float new_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic] - was_hbond;
+
+        if (lb.summed() >= 0 && new_hbond <= -1 && reaches_spheroid[i]->is_ic_res)
+        {
+            ic_disruption_energy += new_hbond;
+        }
 
         #if _dbg_zero_contacts
         std::string zcmsg = (std::string)"Ligand binding to "+(std::string)reaches_spheroid[i]->get_name() + (std::string)": "+std::to_string(lb.summed());
@@ -346,16 +360,19 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
 
         if (fabs(lb.summed()) >= 0.1)
         {
-            float sfe = reaches_spheroid[i]->sc_hfe();
-            float occlusion_by_ligand = reaches_spheroid[i]->occlusion(ligand);
+            float aahfe = reaches_spheroid[i]->sc_hfe();
+            // Because of the way the occlusion algorithm works, specifically that it looks at opposite sides of the object,
+            // we have to holistically figure ligand and neighbors together. Ligand-only occlusion will always be zero
+            // and ligand-only occlusion plus neighbors-only occlusion != ligand-and-neighbors occlusion.
+            float occlusion_by_ligand_and_neighbors = reaches_spheroid[i]->occlusion(mol4occl);
             float occlusion_by_neighbors = reaches_spheroid[i]->occlusion((Molecule**)reaches_spheroid);
-            sfe *= fmax(0, 1.0 - occlusion_by_neighbors);
-            pocket_wet_solvation_energy += sfe;
-            float sbe = sfe * fmax(0, 1.0 - occlusion_by_ligand);
+            float sfe = aahfe * fmax(0, 1.0 - occlusion_by_neighbors);
+            pocket_apo_hydration_energy += sfe;
+            float sbe = aahfe * fmax(0, 1.0 - occlusion_by_ligand_and_neighbors);
             #if _dbg_pocket_DeltaG_solv
             cout << reaches_spheroid[i]->get_name() << " sfe = " << sfe << " sbe = " << sbe << endl;
             #endif
-            pocket_bound_solvation_energy += sbe;
+            pocket_bound_hydration_energy += sbe;
             if (sfe < 0 && reaches_spheroid[i]->is_ic_res) pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
         }
 
@@ -840,10 +857,11 @@ _btyp_unassigned:
     output << "Ligand pocket occlusion: " << dr.ligand_pocket_occlusion << endl;
     output << "Ligand solvation energy: " << dr.ligand_solvation_energy*dr.energy_mult << endl;
     output << "Ligand pocket solvation energy: " << dr.ligand_pocket_wet_energy*dr.energy_mult << endl;
-    output << "Pocket hydration energy: " << dr.pocket_wet_solvation_energy*dr.energy_mult << endl;
-    output << "Pocket bound hydration energy: " << dr.pocket_bound_solvation_energy*dr.energy_mult << endl;
+    output << "Pocket hydration energy: " << dr.pocket_apo_hydration_energy*dr.energy_mult << endl;
+    output << "Pocket bound hydration energy: " << dr.pocket_bound_hydration_energy*dr.energy_mult << endl;
     output << "Estimated water displacement energy: " << dr.ligand_h2o_displacement_energy*dr.energy_mult << endl;
     output << "Solvation energy stabilizing internal contacts: " << dr.pocket_ic_DeltaG_solvation*dr.energy_mult << endl;
+    output << "Internal contact disruption: " << dr.ic_disruption_energy*dr.energy_mult << endl;
     if (!isnan(dr.cavity_filling)) output << "Cavity filling: " << dr.cavity_filling << endl;
     #if compute_lsrb
     output << "Ligand surface receptor binding: " << dr.ligand_surface_receptor_binding << endl;

@@ -76,10 +76,11 @@ class DockResult
     float ligand_pocket_occlusion = 0;
     float ligand_solvation_energy = 0;
     float ligand_pocket_wet_energy = 0;
-    float pocket_wet_solvation_energy = 0;
-    float pocket_bound_solvation_energy = 0;
+    float pocket_apo_hydration_energy = 0;
+    float pocket_bound_hydration_energy = 0;
     float ligand_h2o_displacement_energy = 0;
     float pocket_ic_DeltaG_solvation = 0;
+    float ic_disruption_energy = 0;
     float ligand_waters_energy = 0;         // Actual energy between ligand and water inside protein.
     bool do_output_colors = false;
     bool include_pdb_data = true;
