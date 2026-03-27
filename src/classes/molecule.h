@@ -72,6 +72,7 @@ public:
     void reset();
     bool has_data();
     void deallocate();
+    float position_error(Pose* relative_to);
 
 protected:
     int sz = 0;

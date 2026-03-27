@@ -22,6 +22,10 @@ class DockResult
     bool clashes_with(DockResult* other);
     DockResult merge(DockResult* other);
 
+    float total_pose_enthalpy();
+
+    static void entropy(DockResult* dr, int rows, int columns);
+
     protected:
     void initialize(Protein* prot, Molecule* lig,
         int sphres, AminoAcid** reaches_spheroid, int* addl_resno,

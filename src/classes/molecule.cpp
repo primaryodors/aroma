@@ -346,6 +346,21 @@ void Pose::deallocate()
     saved_atom_name = nullptr;
 }
 
+float Pose::position_error(Pose *relative_to)
+{
+    float error = 0;
+    int i, j;
+    for (i=0; i<sz; i++)
+    {
+        for (j=0; j<relative_to->sz; j++)
+        {
+            if (!strcmp(saved_atom_name[i], relative_to->saved_atom_name[j]))
+                error += saved_atom_locs[i].get_3d_distance(relative_to->saved_atom_locs[j]);
+        }
+    }
+    return error;
+}
+
 void Pose::reset()
 {
     sz = 0;

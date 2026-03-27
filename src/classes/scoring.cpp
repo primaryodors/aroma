@@ -748,6 +748,98 @@ DockResult DockResult::merge(DockResult *other)
     return DockResult();
 }
 
+float DockResult::total_pose_enthalpy()
+{
+    return kJmol
+        + ligand_pocket_wet_energy-ligand_solvation_energy
+        + pocket_bound_hydration_energy-pocket_apo_hydration_energy
+        + ligand_h2o_displacement_energy
+        + pocket_ic_DeltaG_solvation
+        - ic_disruption_energy;
+}
+
+void DockResult::entropy(DockResult* dr, int rows, int cols)
+{
+    int i, j, x, y;
+
+    // Columns will be the path nodes of docking; rows will be the dock results.
+    for (x=0; x<cols; x++)
+    {
+        float errors[rows+4];
+        float maxerr = 0;
+        float total_enthalpy = 0;
+
+        // Obtain positional errors for poses in the column.
+        for (y=0; y<rows; y++)
+        {
+            float closest_error = Avogadro;
+            for (i=0; i<rows; i++)
+            {
+                if (i == y) continue;
+                float e = dr[y*cols+x].ligpos.position_error(&dr[i*cols+x].ligpos);
+                if (e < closest_error) closest_error = e;
+            }
+            errors[y] = closest_error;
+            if (closest_error > maxerr) maxerr = closest_error;
+
+            #if _dbg_entropy
+            cout << "Result " << x << ":" << y << " positional error: " << closest_error << endl;
+            #endif
+
+            total_enthalpy += dr[y*cols+x].total_pose_enthalpy();
+        }
+
+        #if _dbg_entropy
+        cout << endl;
+        #endif
+
+        // Normalize positional errors
+        for (y=0; y<rows; y++)
+        {
+            errors[y] /= maxerr;
+            #if _dbg_entropy
+            cout << "Result " << x << ":" << y << " normalized positional error: " << errors[y] << endl;
+            #endif
+        }
+
+        #if _dbg_entropy
+        cout << endl;
+        #endif
+
+        // Sum the positional errors
+        float n = 0;                    // using a float instead of an int because the number of permutations will be treated as a non-integer.
+        for (y=0; y<rows; y++) n += errors[y];
+
+        #if _dbg_entropy
+        cout << "Number of partial states: " << n << endl;
+        #endif
+
+        // Determine the non-integer value of W.
+        // See: https://en.wikipedia.org/wiki/Boltzmann%27s_entropy_formula
+        float W = 1;
+        j = 1;
+        while (j <= n) W *= j++;
+        W *= (float)j * (n - j + 1);
+
+        // Total entropy for all states.
+        float S = kB * log(W);
+
+        #if _dbg_entropy
+        cout << "kB * log(W " << W << ") = S " << S << endl << endl;
+        #endif
+
+        // The entropy for each state would be proportional to its energy level divided by the sum of all states' energies.
+        for (y=0; y<rows; y++)
+        {
+            dr[y*cols+x].estimated_TDeltaS = S * dr[y*cols+x].total_pose_enthalpy() / total_enthalpy;
+
+            #if _dbg_entropy
+            cout << "Result " << x << ":" << y << " TDeltaS = " << dr[y*cols+x].estimated_TDeltaS << endl;
+            #endif
+        }
+    }
+}
+
 std::ostream& operator<<(std::ostream& output, const DockResult& dr)
 {
     int l;

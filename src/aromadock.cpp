@@ -4986,6 +4986,9 @@ _try_again:
         progb.erase();
     }
 
+    // Estimate the entropy of all results
+    DockResult::entropy(&dr[0][0], pathnodes, poses);
+
     // Output the dr[][] array in order of increasing pose number.
     cout << endl;
     if (output) *output << endl;
