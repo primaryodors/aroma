@@ -120,6 +120,7 @@ Point ligcen_target;
 Vector path[256];
 int pathnodes = 0;				// The pocketcen is the initial node.
 int nodeoff = 0;
+const int pathpad = 16;         // More than enough cushion for node offsets.
 #if enable_vestibules
 ResiduePlaceholder vestibule_holder[MAX_VESTIBULE];
 ResiduePlaceholder vestibule_grabber[MAX_VESTIBULE];
@@ -2741,7 +2742,7 @@ int main(int argc, char** argv)
     if (output) *output << endl;
 
     i = poses*(triesleft+1)+8;
-    j = pathnodes+16;           // more than enough cushion for node offsets
+    j = pathnodes+pathpad;
     DockResult dr[i][j];
 
     float rgnxform_r[i][pathnodes+2][PROT_MAX_RGN], rgnxform_theta[i][pathnodes+2][PROT_MAX_RGN], rgnxform_y[i][pathnodes+2][PROT_MAX_RGN];
@@ -4987,7 +4988,7 @@ _try_again:
     }
 
     // Estimate the entropy of all results
-    DockResult::entropy(&dr[0][0], poses, max(1, pathnodes));
+    DockResult::entropy(&dr[0][0], poses, max(1, pathnodes+pathpad));
 
     // Output the dr[][] array in order of increasing pose number.
     cout << endl;

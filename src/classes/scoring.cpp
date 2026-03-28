@@ -777,13 +777,14 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
             {
                 if (i == y) continue;
                 float e = dr[y*cols+x].ligpos.position_error(&dr[i*cols+x].ligpos);
-                if (e < closest_error) closest_error = e;
+                if (e && e < closest_error) closest_error = e;
             }
+            if (closest_error >= 0.999*Avogadro) closest_error = 0;
             errors[y] = closest_error;
             if (closest_error > maxerr) maxerr = closest_error;
 
             #if _dbg_entropy
-            cout << "Result " << x << ":" << y << " positional error: " << closest_error << endl;
+            cout << "Result " << y << ":" << x << " positional error: " << closest_error << endl;
             #endif
 
             total_enthalpy += dr[y*cols+x].total_pose_enthalpy();
@@ -799,7 +800,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
             {
                 errors[y] /= maxerr;
                 #if _dbg_entropy
-                cout << "Result " << x << ":" << y << " normalized positional error: " << errors[y] << endl;
+                cout << "Result " << y << ":" << x << " normalized positional error: " << errors[y] << endl;
                 #endif
             }
 
@@ -824,7 +825,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
         W *= 1.0 + (float)(j-1) * (n - j + 1);
 
         // Total entropy for all states.
-        float S = kB * log(W);
+        float S = kB_kJmol * log(W);
 
         #if _dbg_entropy
         cout << "kB * log(W " << W << ") = S " << S << endl << endl;
