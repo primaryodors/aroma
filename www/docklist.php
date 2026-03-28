@@ -260,6 +260,7 @@ foreach ($prots as $protid => $p)
             $lsfe = $lsbe = $phfe = $phbe = $ewde = 0;
             $nump = 0;
             $occl = 0;
+            $icd = 0;
             $tds = 0;
             foreach ($lines as $ln) 
             {
@@ -296,6 +297,10 @@ foreach ($prots as $protid => $p)
                 else if (!$occl && substr($ln, 0, 25) == "Ligand pocket occlusion: ")
                 {
                     $occl = floatval(substr($ln, 25));
+                }
+                else if (!$icd && substr($ln, 0, 25) == "Internal contact disruption: ")
+                {
+                    $icd = floatval(substr($ln, 25));
                 }
                 else if (!$tds && substr($ln, 0, 19) == "Estimated T_Delta_S: ")
                 {
@@ -355,7 +360,7 @@ foreach ($prots as $protid => $p)
         }
 
         $rows[$rowid]["benerg_raw_$mode"] = $benerg;
-        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) + $ewde - $tds;
+        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) + $ewde - $icd - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 
@@ -534,8 +539,13 @@ foreach ($prots as $protid => $p)
 
         if ($benerg_inactive > 0) $benerg_inactive = 0;
         if ($occl_active >= 0.6)
-            $prediction = max(0, -$benerg_raw_active) * 3.0
-                * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0);
+        {
+            /* $prediction = max(0, -$benerg_raw_active) * 3.0
+                * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0); */
+
+            $prediction = max(0, 100.0 * equilibrium(0, $benerg_active) * $occl_active
+                * equilibrium(min(0, $benerg_inactive), $benerg_active));
+        }
         else $prediction = 0;
 
         if ($top)
