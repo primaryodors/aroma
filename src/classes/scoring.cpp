@@ -758,7 +758,7 @@ float DockResult::total_pose_enthalpy()
         - ic_disruption_energy;
 }
 
-void DockResult::entropy(DockResult* dr, int rows, int cols)
+void DockResult::entropy(DockResult* dr, int rows, int cols, float S_apo)
 {
     int i, j, x, y;
 
@@ -818,17 +818,13 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
         #endif
 
         // Determine the non-integer value of W.
-        // See: https://en.wikipedia.org/wiki/Boltzmann%27s_entropy_formula
-        float W = 1;
-        j = 1;
-        while (j <= n) W *= j++;
-        W *= 1.0 + (float)(j-1) * (n - j + 1);
+        float W = tgamma(n);
 
         // Total entropy for all states.
-        float S = kB_kJmol * log(W);
+        float S = entropy_from_permutations(W) - S_apo;
 
         #if _dbg_entropy
-        cout << "kB * log(W " << W << ") = S " << S << endl << endl;
+        cout << "kB * log(W " << W << ") - " << S_apo << " = S " << S << endl << endl;
         #endif
 
         // The entropy for each state would be proportional to its energy level divided by the sum of all states' energies.

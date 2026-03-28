@@ -24,7 +24,7 @@ class DockResult
 
     float total_pose_enthalpy();
 
-    static void entropy(DockResult* dr, int rows, int columns);
+    static void entropy(DockResult* dr, int rows, int columns, float S_apo = 0);
 
     protected:
     void initialize(Protein* prot, Molecule* lig,

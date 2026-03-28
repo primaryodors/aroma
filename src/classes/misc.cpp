@@ -183,6 +183,25 @@ double equilibrium(double kJmol1, double kJmol2)
     return lK/(lK+1);
 }
 
+double fractional_factorial(float n)
+{
+    if (n < 1) return n;
+    return tgamma(n+1);
+
+    // Modified n! factorial to use non-integer values of n.
+    float W = 1;
+    int j = 1;
+    while (j <= n) W *= j++;
+    W *= 1.0 + (float)(j-1) * (n - j + 1);
+    return W;
+}
+
+double entropy_from_permutations(float W)
+{
+    // See: https://en.wikipedia.org/wiki/Boltzmann%27s_entropy_formula
+    return kB_kJmol * log(W);
+}
+
 bool equal_or_zero(int a, int b)
 {
     return (!a || !b || (a==b));

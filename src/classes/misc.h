@@ -95,6 +95,8 @@ char _getch(int echo = 0);
 double DeltaG(double K);
 double K(double DeltaG);
 double equilibrium(double kJmol1, double kJmol2);
+double fractional_factorial(float n);
+double entropy_from_permutations(float W);
 
 bool equal_or_zero(int a, int b);           // True if ints are the same or either int is zero.
 
