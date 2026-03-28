@@ -688,7 +688,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     {
         AminoAcid* laa = protein->get_residue(resno);
         if (!laa) continue;
-        if (!laa->been_flexed && !laa->coordmtl)
+        if (!laa->been_flexed && !laa->coordmtl && !laa->is_ic_res)
         {
             if (laa->distance_to(ligand) > 5) continue;
             for (k=0; reaches_spheroid[k]; k++)
