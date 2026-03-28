@@ -821,7 +821,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols, float S_apo)
         float W = tgamma(n);
 
         // Total entropy for all states.
-        float S = entropy_from_permutations(W) - S_apo;
+        float DeltaS = entropy_from_permutations(W) - S_apo;
 
         #if _dbg_entropy
         cout << "kB * log(W " << W << ") - " << S_apo << " = S " << S << endl << endl;
@@ -830,7 +830,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols, float S_apo)
         // The entropy for each state would be proportional to its energy level divided by the sum of all states' energies.
         for (y=0; y<rows; y++)
         {
-            dr[y*cols+x].estimated_TDeltaS = S * dr[y*cols+x].total_pose_enthalpy() / total_enthalpy;
+            dr[y*cols+x].estimated_TDeltaS = DeltaS * temperature * dr[y*cols+x].total_pose_enthalpy() / total_enthalpy;
 
             #if _dbg_entropy
             cout << "Result " << x << ":" << y << " TDeltaS = " << dr[y*cols+x].estimated_TDeltaS << endl;
