@@ -68,19 +68,19 @@ if argc > 2:
     cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
     cmd.extend(cavopts)
     print(" ".join(cmd))
-    subprocess.run(cmd)
+    # subprocess.run(cmd)
 else:
     inppdb = origpdb
 
 legal = ""
 tpls = ""
-with open(origpdb, "rb") as f:
-    c = f.read().__str__()
+with open(origpdb, "r") as f:
+    c = f.read()
     for ln in c.split("\n"):
         if ln[0:11] == "REMARK   1 ":
             legal += ln + "\n"
         elif ln[0:23] == "REMARK 265 HM_TEMPLATES":
-            tpls = ln[24:]
+            tpls = ln[24:].strip()
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
