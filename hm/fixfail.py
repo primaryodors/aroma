@@ -345,7 +345,7 @@ with open(tmpalif, "w") as f:
 
 # directories for input atom files
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-env.io.atom_files_directory = ['.', '../atom_files']
+env.io.atom_files_directory = ['./tpl']
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
                         knowns            = tplfttl,

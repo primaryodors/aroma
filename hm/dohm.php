@@ -78,7 +78,6 @@ $consOR52 = "'8hti'";
 $OR51E2 = "'8f76'";
 $consOR1 = "'8uxy'";
 $consOR2 = "'8uy0'";
-$consOR2b = "'8uy0b'";
 $consOR4 = "'8uyq'";
 $consOR5 = "'9wpm'";
 $OR5V1 = "'9lkb'";
@@ -106,7 +105,7 @@ $restraints_misc = [];
 $fam = family_from_protid($rcpid);
 $sub = subfamily_from_protid($rcpid);
 $famsub = "$fam$sub";
-$atomfiles = "'.'";
+$atomfiles = "'./tpl'";
 $legal = "";
 $refno = 1;
 $usecpl = (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
@@ -339,8 +338,6 @@ if ($knowns)
         else if ($aa4551 == 'N') $atom4551 = "OD1:$rno4551:A";
         else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
         else if ($aa4551 == 'Q') $atom4551 = "OE1:$rno4551:A";
-
-        // if ($aa4551 == 'E' || $aa4551 == 'Q' || $aa4552 == 'E') $knowns = "$consOR2b";
     }
 
     $ipdbfname = "pdbs/$fam/$rcpid.inactive.pdb";
