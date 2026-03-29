@@ -21,13 +21,14 @@ foreach (explode("\n", $exp) as $ln)
         $already[$rcpid] = $rcpid;
         $pettias = explode(':', $ln);
         $pseqid = $pettias[1];
-        $fn = "$pseqid.pdb";
+        $fn = "tpl/$pseqid.pdb";
         if (!file_exists($fn))
         {
             if (preg_match("/^[0-9A-Za-z]{4}$/", $pseqid))
             {
                 $rcsbid = strtoupper($pseqid);
                 $url = "https://files.rcsb.org/download/$rcsbid.pdb";
+                die($url);
                 $c = file_get_contents($url);
                 if (isset($deletions[$pseqid]))
                 {
