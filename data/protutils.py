@@ -78,6 +78,69 @@ def subfamily_from_protid(protid):
     else:
         return ""
 
+def templates_for_hm(protid):
+    consOR51 = ["8uxv"]
+    consOR52 = ["8hti"]
+    OR51E2 = ["8f76"]
+    consOR1 = ["8uxy"]
+    consOR2 = ["8uy0"]
+    consOR4 = ["8uyq"]
+    consOR5 = ["9wpm"]
+    OR5V1 = ["9lkb"]
+    consOR6 = ["9ldv", "9ldw", "9ldx", "9ldz"]
+    bmOR6A2 = ["9le0", "9le1", "9le2"]
+    CLASSI = OR51E2 + consOR51 + consOR52
+    CLASSII = consOR1 + consOR2 + consOR4 + consOR5 + consOR6
+    TAAR1 = ["8jln", "8jlo", "8jlp", "8jlq", "8jlr", "8jso"]
+    mTAAR = ["8iwe", "8iwm", "8itf", "8iw4", "8iw9", "8pm2"]
+    ADORA2A = ["6gdg"]
+    ADRB2 = ["7dhr", "8gej"]
+    LPAR1 = ["7td0", "7yu3"]
+    TAS2R = ["7xp6"]
+    CB = ["5xr8", "5xra"]
+    CHRM1 = ["6oij"]
+
+    fam = family_from_protid(protid)
+    if protid[0:2] == "OR":
+        sub = subfamily_from_protid(protid)
+
+        if fam == "OR1" or fam == "OR3" or fam == "OR7":
+            return consOR1
+
+        if fam == "OR2" or fam == "OR13":
+            return consOR2
+
+        if fam == "OR4" or fam == "OR12":
+            return consOR4
+
+        if fam == "OR5" or fam == "OR8" or fam == "OR9":
+            if protid == "OR5V1": return OR5V1
+            else: return consOR5
+
+        if fam == "OR6" or fam == "OR10" or fam == "OR11":
+            if fam == "OR6" and (sub == 'A' or sub == 'B' or sub == 'P' or sub == 'Y'):
+                return bmOR6A2
+            else: return consOR6
+
+        if fam == "OR14":
+            return CLASSII
+
+        if fam == "OR51":
+            if sub == 'D' or sub == 'E': return OR51E2
+            else: return consOR51
+
+        if fam == "OR52":
+            return consOR52
+
+        if fam == "OR56":
+            return CLASSI
+
+    elif fam == "TAAR":
+        return TAAR1 + mTAAR
+
+    return ADORA2A + ADRB2 + LPAR1 + TAS2R + CB + CHRM1
+
+
 def prepare_coupled(inpfn, outfn, rcpid, remarks):
     fam = family_from_protid(rcpid)
     phew  = f"LOAD \"{inpfn}\" A A\n"

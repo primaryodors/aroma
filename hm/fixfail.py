@@ -336,19 +336,25 @@ alitpl = alitpl.replace("sequence", "structure")
 startres_pad5 = f"{startres:<{5}}"
 alitpl = re.sub(":([0-9]+\\s+):([A-Z]):([0-9]+\\s+):([A-Z])", f":{startres_pad5}:\\2:999  :\\4", alitpl)
 
+with open("experimental.ali", "r") as f:
+    expali = f.read().__str__()
+
 tmpalif = protid + "_tmp.ali"
 with open(tmpalif, "w") as f:
     f.write(f">P1;{protid}\n")
     f.write(alidat + "\n")
     f.write(f">P1;{tplfttl}\n")
     f.write(alitpl + "\n")
+    f.write(f"\n\n{expali}\n\n")
 
 # directories for input atom files
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-env.io.atom_files_directory = ['./tpl']
+env.io.atom_files_directory = ['.', './tpl']
+tplsfttls = (tplfttl,) + tuple(data.protutils.templates_for_hm(protid))
+print(f"Templates: {tplsfttls}")
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
-                        knowns            = tplfttl,
+                        knowns            = tplsfttls,
                         sequence          = protid
                       )
 a.starting_model = 0
@@ -368,11 +374,11 @@ i = 0
 j = 0
 best = 0.0
 for i in range(len(results)):
-    snilevake = results[i]
-    if key in snilevake:
-        if not i or float(snilevake[key]) < best:
+    ophis = results[i]
+    if key in ophis:
+        if not i or float(ophis[key]) < best:
             j = i
-            best = float(snilevake[key])
+            best = float(ophis[key])
     i += 1
 # exit()
 model = results[j]

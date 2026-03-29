@@ -73,26 +73,6 @@ if ($rcpid == "OR51F1" || $rcpid == "OR51F2" || $rcpid == "OR51G2") $mdlcls = "A
 
 exec("php -f build_alignment_file.php");
 
-$consOR51 = "'8uxv'";
-$consOR52 = "'8hti'";
-$OR51E2 = "'8f76'";
-$consOR1 = "'8uxy'";
-$consOR2 = "'8uy0'";
-$consOR4 = "'8uyq'";
-$consOR5 = "'9wpm'";
-$OR5V1 = "'9lkb'";
-$consOR6 = "'9ldv', '9ldw', '9ldx', '9ldz'";
-$bmOR6A2 = "'9le0', '9le1', '9le2'";
-$CLASSII = "$consOR1, $consOR2, $consOR4, $consOR5, $consOR6";
-$TAAR1 = "'8jln', '8jlo', '8jlp', '8jlq', '8jlr', '8jso'";
-$mTAAR = "'8iwe', '8iwm', '8itf', '8iw4', '8iw9', '8pm2'";
-$ADORA2A = "'6gdg'";
-$ADRB2 = "'7dhr', '8gej'";
-$LPAR1 = "'7td0', '7yu3'";
-$TAS2R = "'7xp6'";
-$CB = "'5xr8', '5xra'";
-$CHRM1 = "'6oij'";
-
 $hmrcpstrid = 'A';
 $adjustments = "";
 $mtl539 = $mtl546 = false;
@@ -111,7 +91,7 @@ $refno = 1;
 $usecpl = (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
 if (file_exists("../coupled/$fam/$sub"))
 {
-    $atomfiles = "'../coupled/$fam/$sub'";
+    $atomfiles .= ", '../coupled/$fam/$sub'";
     $usecpl = true;
     $mdlcls = "AutoModel";
 }
@@ -210,115 +190,9 @@ else if ($usecpl)
         $lrfam = $rfam;
         $lrsub = $rsub;
     }
+    norel:
 
     $knowns = "'".implode("', '", $knowns)."'";
-}
-else
-{
-    norel:
-    switch ($fam)
-    {
-        case 'TAAR':
-        if ($rcpid == "TAAR1")
-        {
-            $knowns = $TAAR1;
-            $mdlcls = "AutoModel";
-        }
-        else if ($rcpid == "TAAR9") $knowns = $mTAAR;
-        else $knowns = "$mTAAR"; //, $TAAR1";
-        break;
-
-        case 'VN1R':
-        $knowns = "$TAS2R, $CB";
-        break;
-
-        case 'MS4A':
-        die("No HM templates known for MS4A receptors.\n");
-        break;
-
-        case 'OR1':
-        $knowns = "$consOR1";
-        break;
-
-        case 'OR2':
-        $knowns = "$consOR2";
-        break;
-
-        case 'OR3':
-        $knowns = "$consOR1";
-        break;
-
-        case 'OR4':
-        $knowns = "$consOR4";
-        break;
-
-        case 'OR5':
-        if ($rcpid == "OR5V1") $knowns = "$OR5V1";
-        else $knowns = "$consOR5";
-        break;
-
-        case 'OR6':
-        if ($famsub == "OR6A" || $famsub == "OR6B" || $famsub == "OR6P" || $famsub == "OR6Y")
-        {
-            $knowns = "$bmOR6A2";
-            $restraints_misc[] = "4.60:NZ|5.39:OD2|2.53";
-        }
-        else $knowns = "$consOR6";
-        break;
-
-        case 'OR7':
-        $knowns = "$consOR1";
-        break;
-
-        case 'OR8':
-        $knowns = "$consOR5";
-        break;
-
-        case 'OR9':
-        $knowns = "$consOR5";
-        break;
-
-        case 'OR10':
-        $knowns = "$consOR6";
-        break;
-
-        case 'OR11':
-        $knowns = "$consOR6";
-        break;
-
-        case 'OR12':
-        $knowns = "$consOR4";
-        break;
-
-        case 'OR13':
-        $knowns = "$consOR2";
-        break;
-
-        case 'OR14':
-        $knowns = "$CLASSII";
-        break;
-
-        case 'OR51':
-        if ($rcpid == "OR51E2")
-        {
-            $knowns = false;
-            $pyoutfn = "8f76.pdb";
-            $hmrcpstrid = 'A';
-        }
-        else $knowns = "$consOR51";
-        break;
-
-        case 'OR52':
-        $knowns = "$consOR52";
-        break;
-
-        case 'OR56':
-        $knowns = "$CLASSI";
-        break;
-
-        default:
-        $knowns = "$CLASSI, $CLASSII, $mTAAR, $TAAR1";
-    }
 }
 
 if ($knowns)
@@ -454,11 +328,31 @@ if ($knowns)
 
     if ($hetatms) $hetatmln = "env.io.hetatm = True";
 
+    $knowns = $knowns ? "($knowns) +" : "";
+
     // Generate Python script
     $py = <<<natrixs
 
+import sys
+import os
+import os.path
+
 from modeller import *
 from modeller.automodel import *
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
+sys.path.append(os.getcwd())
+os.chdir("data")
+
+import data.globals
+import data.protutils
+import data.odorutils
+import data.dyncenter
+
+data.protutils.load_prots()
+data.odorutils.load_odors()
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 env = Environ()
 
@@ -481,7 +375,7 @@ env.io.atom_files_directory = [$atomfiles]
 
 a = MyModel(env,
               alnfile  = 'allgpcr.ali',
-              knowns   = ($knowns),
+              knowns   = $knowns tuple(data.protutils.templates_for_hm("$rcpid")),
               sequence = '$rcpid')
 a.starting_model = 0
 a.ending_model   = 9
