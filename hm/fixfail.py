@@ -51,6 +51,7 @@ if not protid in data.protutils.prots.keys():
     print("Protein", protid, "not found.")
     exit()
 fam = data.protutils.family_from_protid(protid)
+origpdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 
 if argc > 2:
     inppdb = sys.argv[2]
@@ -69,7 +70,17 @@ if argc > 2:
     print(" ".join(cmd))
     subprocess.run(cmd)
 else:
-    inppdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
+    inppdb = origpdb
+
+legal = ""
+tpls = ""
+with open(origpdb, "rb") as f:
+    c = f.read().__str__()
+    for ln in c.split("\n"):
+        if ln[0:11] == "REMARK   1 ":
+            legal += ln + "\n"
+        elif ln[0:23] == "REMARK 265 HM_TEMPLATES":
+            tpls = ln[24:]
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
@@ -225,24 +236,6 @@ class AromaReceptorModel(DOPEHRLoopModel):
                         feature=features.Distance(at[atom6_55 +":"+str( bw6_55)+":A"],
                                                   at[atom45_51+":"+str(bw45_51)+":A"]),
                                                   mean=2.5, stdev=0.5))
-                else:
-                    bw45_52 = bw45_51+1
-                    atom45_52 = False
-                    if data.protutils.aalet_at_resno(protid, bw45_52) == 'D':
-                        atom45_52 = "OD1"
-                    elif data.protutils.aalet_at_resno(protid, bw45_52) == 'E':
-                        atom45_52 = "OE1"
-                    elif data.protutils.aalet_at_resno(protid, bw45_52) == 'H':
-                        atom45_52 = "NE2"
-                    elif data.protutils.aalet_at_resno(protid, bw45_52) == 'N':
-                        atom45_52 = "OD1"
-                    elif data.protutils.aalet_at_resno(protid, bw45_52) == 'Q':
-                        atom45_52 = "OE1"
-                    if atom45_52:
-                        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                            feature=features.Distance(at[atom6_55 +":"+str( bw6_55)+":A"],
-                                                      at[atom45_52+":"+str(bw45_52)+":A"]),
-                                                      mean=2.5, stdev=0.5))
 
     def special_patches(self, aln):
         # disulfide bond:
@@ -350,7 +343,15 @@ with open(tmpalif, "w") as f:
 # directories for input atom files
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 env.io.atom_files_directory = ['.', './tpl']
-tplsfttls = (tplfttl,) + tuple(data.protutils.templates_for_hm(protid))
+
+fix8uy0 = ""
+t4hm = data.protutils.templates_for_hm(protid)
+tpls += " " + " ".join(t4hm)
+tpls = " ".join(list(set(tpls.split(" "))))
+print(legal)
+print(tpls)
+tplsfttls = (tplfttl,) + tuple(t4hm)
+if "8uy0" in tplsfttls: fix8uy0 = "BRIDGE DE45.51 Y6.55"
 print(f"Templates: {tplsfttls}")
 a = AromaReceptorModel( env,
                         alnfile           = tmpalif,
@@ -399,29 +400,10 @@ UPRIGHT I
 BWCENTER
 STRAND A
 
-REMARK   1
-REMARK   1 REFERENCE 1
-REMARK   1  AUTH 1 B. Webb, A. Sali.
-REMARK   1  TITL 1 Comparative Protein Structure Modeling Using Modeller.
-REMARK   1  REF  1 Current Protocols in Bioinformatics 54, John Wiley & Sons, Inc., 5.6.1-5.6.37, 2016.
-REMARK   1  DOI  1 10.1002/0471250953.bi0506s15
-REMARK   1  
-REMARK   1  AUTH 2 M.A. Marti-Renom, A. Stuart, A. Fiser, R. Sánchez, F. Melo, A. Sali.
-REMARK   1  TITL 2 Comparative protein structure modeling of genes and genomes.
-REMARK   1  REF  2 Annu. Rev. Biophys. Biomol. Struct. 29, 291-325, 2000.
-REMARK   1  DOI  2 10.1146/annurev.biophys.29.1.291
-REMARK   1
-REMARK   1  AUTH 3 A. Sali & T.L. Blundell.
-REMARK   1  TITL 3 Comparative protein modelling by satisfaction of spatial restraints.
-REMARK   1  REF  3 J. Mol. Biol. 234, 779-815, 1993.
-REMARK   1  DOI  3 10.1006/jmbi.1993.1626
-REMARK   1  
-REMARK   1  AUTH 4 A. Fiser, R.K. Do, & A. Sali.
-REMARK   1  TITL 4 Modeling of loops in protein structures.
-REMARK   1  REF  4 Protein Science 9. 1753-1773, 2000.
-REMARK   1  DOI  4 10.1110/ps.9.9.1753
-REMARK   1  
-REMARK 265 HM_TEMPLATES: custom
+{fix8uy0}
+
+{legal}
+REMARK 265 HM_TEMPLATES: {tpls}
 
 UNCHAIN I
 UNCHAIN O
