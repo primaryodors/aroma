@@ -16426,7 +16426,7 @@
         "full_name": "(1R,2S,5R)-(-)-menthol",
         "name1": "(-)-menthol",
         "name2": "l-menthol",
-        "smiles": "C[C@@H]1CC[C@H]([C@@H](C1)O)C(C)C|rflip:C2",
+        "smiles": "C[C@@H]1CC[C@H]([C@@H](C1)O)C(C)C|rflp:C2",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -22644,7 +22644,7 @@
         "full_name": "(R)-(-)-carvone",
         "name1": "(R)-carvone",
         "name2": "l-carvone",
-        "smiles": "CC(=C)[C@@H]1CC=C(C(=O)C1)C|rflip:C4",
+        "smiles": "CC(=C)[C@@H]1CC=C(C(=O)C1)C|rflp:C4",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":

@@ -25,9 +25,6 @@ if not name: echo_usage()
 smiles = sys.argv[2]
 if not smiles: echo_usage()
 
-canonical = subprocess.run(["obabel", "-:"+smiles, "-ocan"], capture_output=True, text=True).stdout.strip()
-print("Canonical SMILES is "+canonical+"\n")
-
 hash = hashlib.md5(canonical.encode()).hexdigest()
 odors = data.odorutils.odors
 if hash in odors.keys():
@@ -48,16 +45,13 @@ else:
     with open("data/odorant.json", "wb") as f:
         f.write(data.protutils.json_encode_pretty(odors1).encode())
 
+pieces = odors[hash]['smiles'].split('|')
+canonical = subprocess.run(["obabel", "-:"+pieces[0], "-ocan"], capture_output=True, text=True).stdout.strip()
+print("Canonical SMILES is "+canonical+"\n")
+
 nameu = name.replace(" ", "_")
 output_file = f"sdf/{nameu}.sdf"
-data.odorutils.smiles_to_sdf(canonical, output_file)
-
-extras = odors[hash]['smiles'].split('|')
-if len(extras) > 1:
-    for extra in extras:
-        kv = extra.split(':')
-        if len(kv) < 2: continue
-        if kv[0] == "rflip":
-            cmd = [ "bin/ringflip", output_file, kv[1] ]
-            print(" ".join(cmd))
-            subprocess.run(cmd)
+smiles = canonical
+if len(pieces) > 1:
+    smiles += "|" + pieces[1]
+data.odorutils.smiles_to_sdf(smiles, output_file)

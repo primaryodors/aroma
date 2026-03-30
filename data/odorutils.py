@@ -3,6 +3,7 @@ import json
 import re
 import os
 import subprocess
+import traceback
 from rdkit import Chem
 from rdkit.Chem import AllChem
 import data.globals
@@ -163,9 +164,10 @@ def smiles_to_sdf(smiles, output_file):
                 writer.write(mol)
             print(f"Saved {output_file}")
 
-            if 1 in pieces:
-                sub4 = pieces[1][0:4]
-                rest = pieces[1][4:]
+            if len(pieces) > 1:
+                pieces[1] = pieces[1].split(":")
+                sub4 = pieces[1][0]
+                rest = pieces[1][1]
                 if sub4 == "rflp":
                     cmd = ["bin/ringflip", output_file]
                     for larg in rest.strip().split(" "):
