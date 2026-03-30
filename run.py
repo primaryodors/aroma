@@ -61,6 +61,7 @@ if len(sys.argv) > 3:
         if sys.argv[i] == "refresh": onlynew = True
         if sys.argv[i] == "resume": onlymissing = True
 
+processed = 0
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
     sbf = data.protutils.subfamily_from_protid(rcpid)
@@ -315,4 +316,8 @@ for rcpid in data.protutils.prots.keys():
                 if os.path.exists(rmvnm): os.remove(rmvnm)
 
         print("Completed", rcpid, o["full_name"])
+        processed += 1
+
+if processed:
+    cmd = ["which", "sox"]
 

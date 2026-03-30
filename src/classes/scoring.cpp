@@ -373,11 +373,12 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
             cout << reaches_spheroid[i]->get_name() << " sfe = " << sfe << " sbe = " << sbe << endl;
             #endif
             pocket_bound_hydration_energy += sbe;
-            if (sfe < 0 && reaches_spheroid[i]->is_ic_res) pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
+            if (sfe < 0 && reaches_spheroid[i]->is_ic_res)
+                pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
         }
 
-        ligand_h2o_displacement_energy = ligand->get_volume() / global_water.get_volume()
-            * global_water.solvent_free_energy() / 4;               // There's got to be a better way.
+        ligand_h2o_displacement_energy = ligand->get_surface_area() / global_water.get_surface_area()
+            * global_water.solvent_free_energy();                   // still an approximation
         if (isnanf(ligand_h2o_displacement_energy)) ligand_h2o_displacement_energy = 0;
 
         #if compute_clashdirs
