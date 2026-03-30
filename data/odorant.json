@@ -19091,6 +19091,17 @@
                 }
             }
         },
+        "aroma":
+        {
+            "https://labchem-wako.fujifilm.com/us/product/detail/W01W0113-1774.html":
+            [
+                "dirty_rag"
+            ],
+            "https://ja.wikipedia.org/wiki/4-%E3%83%A1%E3%83%81%E3%83%AB-3-%E3%83%98%E3%82%AD%E3%82%BB%E3%83%B3%E9%85%B8":
+            [
+                "damp_cloth"
+            ]
+        },
         "oid": "6f26d469286a8f77c563c268f2759212"
     },
     "6f32ac14a979f2cfeba959f609387f74":
