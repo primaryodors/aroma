@@ -365,11 +365,9 @@ function svg_from_smiles(smiles, w, h)
                 echo "<th colspan=\"3\">&nbsp;</th>";
                 foreach (array_keys($lb) as $bw)
                 {
+                    $bwx = str_replace('.', 'x', $bw);
                     $display = isset($lbsr[$bw]) ? "" : "display: none;";
                     echo "<th style=\"$display\" class=\"show$bwx\">$bw</th>\n";
-                    /* $la = $lbsr[$bw];
-                    $bwx = str_replace('.', 'x', $bw);
-                    echo "<th style=\"$display\" class=\"show$bwx\">$la</th>\n"; */
                 }
                 echo "</tr>\n";
             }
