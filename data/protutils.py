@@ -141,6 +141,69 @@ def templates_for_hm(protid):
 
     return ADORA2A + ADRB2 + LPAR1 + TAS2R + CB + CHRM1
 
+def aa_similarity(a, b):
+    if a == b: return 1.0
+    apol = a in "DSTYHNQKER"
+    bpol = b in "DSTYHNQKER"
+    asml = a in "ACGST"
+    bsml = b in "ACGST"
+    aacd = a in "DE"
+    bacd = b in "DE"
+    aamd = a in "NQ"
+    bamd = b in "NQ"
+    abas = a in "HKR"
+    bbas = b in "HKR"
+    aaro = a in "FHWY"
+    baro = b in "FHWY"
+    aslf = a in "MC"
+    bslf = b in "MC"
+
+    # if both acidic
+    if aacd and bacd: return 0.8
+
+    # if both basic
+    if abas and bbas:
+        if aaro == baro: return 0.8
+        return 0.5
+
+    # if acid and amide
+    if (aacd and bamd) or (bacd and aamd):
+        return 0.75
+
+    # if both polar or both nonpolar
+    if apol == bpol:
+        if asml and bsml: return 0.8
+        if aslf and bslf: return 0.75
+        if aaro == baro: return 0.75
+        return 0.5
+
+    # if both aromatic
+    if aaro and baro: return 0.5
+
+    # if both small
+    if asml and bsml: return 0.333
+
+    # if no match
+    return 0
+
+def aln_similarity(aln1, aln2):
+    aln1 = aln1.strip().upper()
+    aln2 = aln2.strip().upper()
+    len1 = len(aln1)
+    len2 = len(aln2)
+    mlen = min(len1, len2)
+    total = 0
+    ttlsim = 0.0
+    for i in range(0, mlen):
+        a = aln1[i]
+        b = aln2[i]
+        if a < "A" or a > "Z" or b < "A" or b > "Z": continue
+        sim = aa_similarity(a, b)
+        ttlsim += sim
+        total += 1
+
+    if not total: return 0
+    return ttlsim / total
 
 def prepare_coupled(inpfn, outfn, rcpid, remarks):
     fam = family_from_protid(rcpid)
@@ -164,6 +227,50 @@ def prepare_coupled(inpfn, outfn, rcpid, remarks):
         f.write(phew)
     cmd = [ "bin/phew", "tmp/cpl.phew" ]
     subprocess.run(cmd)
+
+def custom_pdb_template(aln):
+    with open("../hm/experimental.ali", "r") as f:
+        c = f.read().__str__()
+
+    # Read in the alignments of the experimental structures.
+    reading_aln = False
+    alns = dict()
+    for ln in c.split("\n"):
+        if ln[0:9] == "structure":
+            reading_aln = True
+            current_aln = ""
+            pdbid = ln.split(':')[1].strip()
+        elif reading_aln:
+            current_aln += ln + "\n"
+            if '*' in ln:
+                reading_aln = False
+                alns[pdbid] = current_aln
+                current_aln = ""
+
+    # TODO: Find the top few closest matches to the input sequence and weight them by similarity.
+    closest_ids = []
+    closest_sim = []
+    for pdbid in alns.keys():
+        simaln = aln_similarity(aln, alns[pdbid])
+        print(f"{pdbid}: {simaln}")
+        for i in range(5):
+            if i >= len(closest_ids):
+                closest_ids.append(pdbid)
+                closest_sim.append(simaln)
+                break
+            else:
+                if simaln > closest_sim[i]:
+                    for j in range(len(closest_ids)-1, i, -1):
+                        closest_ids[j] = closest_ids[j-1]
+                        closest_sim[j] = closest_sim[j-1]
+                    closest_ids[i] = pdbid
+                    closest_sim[i] = simaln
+                    break
+
+    print(closest_ids)
+
+    # TODO: Generate a PDB of 3D coordinates of the weighted average of the closest sequences.
+    # This will necessitate rotating and transposing to align the source PDB coordinates in 3D space.
 
 def json_encode_pretty(array):
     return re.sub(r"(\s*)([^\s]*) ([{[(])\n", r"\1\2\n\1\3\n", json.dumps(array, indent = 4, default=lambda o: o.__dict__)).replace("\n\n", "\n")
