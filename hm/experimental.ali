@@ -467,6 +467,18 @@ structure:9lkb:17   :R:305  :R:Olfr110 Olfactory receptor family 5 subfamily V n
 ------------------------------------------------------------------------------------------------NKDIKEAVKAIG*
 ---------------------------------------------------------------------------------------------------*
 
+>P1;9w45
+structure:9w45:11   :E:308  :E:Mouse olfactory receptor Olfr412 bound to methyl cinnamate:Mus musculus: 3.20: 0.20
+--------------------------------------------------------------------EFLLLGLSEVPEHQRILFWTFLSMYLVTVVGNVLIILAIG----------------------
+--------------------------------------------------------------------------------SDSHLHTPMYFFLANLSFTDLFFVTNTIPKMLVSL---------------
+-----------------------------------------------------------------QNKAISYPGCLTQLFFLVSLVALDNLILAVMAYDRYVAICH------------------------
+-----------------------------------------------------------------------------QSPLHYTTAMSPKLCILLLILCWALSILYGLIHTLLMTRV-------------
+--------------------------------------------------------TFCGSRKIHYIFCEMYVLLRLACSNTHINHMMLIATGCFVFLVPFGFMIMSYICIVRAILKI------------
+--------------------------------------------------------------------------PSASNKYKAFSTCASHLAVVALFYGTLCMVYLKPVHTYSMKD--------------
+------------------------------------------------------------------------------------SVATVMYAVVTPMMNPFIYSLR------------------------
+------------------------------------------------------------------------------------------------NKDMHGALGRLLRKPL*
+---------------------------------------------------------------------------------------------------*
+
 >P1;9wpm
 structure:9wpm:9    :A:304  :A:Consensus olfactory receptor consOR5:Homo sapiens: 2.60: 0.20
 -------------------------------------------------------------------TEFILLGLTDDPELQVPLFLVFLAIYLITLVGNLGMIVLI-----------------------

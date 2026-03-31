@@ -83,6 +83,7 @@ def templates_for_hm(protid):
     consOR52 = ["8hti"]
     OR51E2 = ["8f76"]
     consOR1 = ["8uxy"]
+    OR1D2 = ["9w45"]
     consOR2 = ["8uy0"]
     consOR4 = ["8uyq"]
     consOR5 = ["9wpm"]
@@ -105,7 +106,7 @@ def templates_for_hm(protid):
         sub = subfamily_from_protid(protid)
 
         if fam == "OR1" or fam == "OR3" or fam == "OR7":
-            return consOR1
+            return consOR1 + OR1D2
 
         if fam == "OR2" or fam == "OR13":
             return consOR2
