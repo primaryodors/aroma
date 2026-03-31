@@ -474,6 +474,7 @@
 #define _DBG_TOOLARGE_DIFFNUMS 0
 #define _DBG_TUMBLE_SPHERES 0
 #define _dbg_unreciprocated_bonds 0
+#define _dbg_water_displacement 0
 #define _dbg_worst_energy 0
 #define _dbg_zero_contacts 0
 #define _debug_active_bond_rot 0
