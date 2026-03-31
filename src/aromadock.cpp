@@ -3381,6 +3381,7 @@ _try_again:
                         if (!aac1 || !aac2) continue;
                         aac1->is_ic_res = true;
                         aac2->is_ic_res = true;
+                        // cout << aac1->get_name() << " and " << aac2->get_name() << " are IC residues." << endl;
                     }
                 }
             }

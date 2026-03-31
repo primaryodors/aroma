@@ -331,9 +331,10 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
         float new_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic] - was_hbond;
 
-        if (lb.summed() >= 0 && new_hbond <= -1 && reaches_spheroid[i]->is_ic_res)
+        if (lb.summed() <= 0 && new_hbond <= -1 && reaches_spheroid[i]->is_ic_res)
         {
             ic_disruption_energy += new_hbond;
+            // cout << "IC disruption on " << reaches_spheroid[i]->get_name() << ": " << new_hbond << " of " << -lb.attractive << " kJ/mol." << endl;
         }
 
         #if _dbg_zero_contacts
@@ -377,8 +378,11 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
                 pocket_ic_DeltaG_solvation += (sfe-sbe);     // if sfe is more negative than sbe, ligand stabilizes contact by reducing its solvation effect.
         }
 
-        ligand_h2o_displacement_energy = ligand->get_surface_area() / global_water.get_surface_area()
-            * global_water.solvent_free_energy();                   // still an approximation
+        float waters_displaced = ligand->get_volume() / global_water.get_volume();
+        float dwater_surf = global_water.get_surface_area() * waters_displaced;
+        float surfarea_ratio = ligand->get_surface_area() / dwater_surf;
+        ligand_h2o_displacement_energy = global_water.solvent_free_energy() * waters_displaced * surfarea_ratio;
+
         if (isnanf(ligand_h2o_displacement_energy)) ligand_h2o_displacement_energy = 0;
 
         #if compute_clashdirs
