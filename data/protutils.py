@@ -252,7 +252,7 @@ def custom_pdb_template(aln):
     closest_sim = []
     for pdbid in alns.keys():
         simaln = aln_similarity(aln, alns[pdbid])
-        print(f"{pdbid}: {simaln}")
+        # print(f"{pdbid}: {simaln}")
         for i in range(5):
             if i >= len(closest_ids):
                 closest_ids.append(pdbid)
@@ -268,6 +268,20 @@ def custom_pdb_template(aln):
                     break
 
     print(closest_ids)
+    weights = []
+
+    # Make the highest weight 5 times the lowest weight, and make the weights add up to 1.
+    # Since we want the highest to be 5 times as much as the lowest, that means we want it to be 4 times more.
+    span = closest_sim[0] - closest_sim[4]
+    tosub = closest_sim[4] - span/4
+    for i in range(5):
+        weights.append(closest_sim[i] - tosub)
+
+    divisor = sum(weights)
+    for i in range(5):
+        weights[i] = weights[i] / divisor
+
+    print(weights)
 
     # TODO: Generate a PDB of 3D coordinates of the weighted average of the closest sequences.
     # This will necessitate rotating and transposing to align the source PDB coordinates in 3D space.
