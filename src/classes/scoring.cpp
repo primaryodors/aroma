@@ -379,9 +379,16 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         }
 
         float waters_displaced = ligand->get_volume() / global_water.get_volume();
+        cout << "Ligand displaces " << waters_displaced << " waters..." << endl;
         float dwater_surf = global_water.get_surface_area() * waters_displaced;
+        cout << "Surface area of displaced waters: " << dwater_surf << " sq. A..." << endl;
         float surfarea_ratio = ligand->get_surface_area() / dwater_surf;
+        cout << "Surface area of ligand " << ligand->get_surface_area() << " divided by that of displaced waters: " << surfarea_ratio << " sq. A..." << endl;
         ligand_h2o_displacement_energy = global_water.solvent_free_energy() * waters_displaced * surfarea_ratio;
+        cout << "Displacement energy = " << global_water.solvent_free_energy() 
+            << " * " << waters_displaced 
+            << " * " << surfarea_ratio
+            << " = " << ligand_h2o_displacement_energy << " kJ/mol..." << endl << endl;
 
         if (isnanf(ligand_h2o_displacement_energy)) ligand_h2o_displacement_energy = 0;
 

@@ -7671,8 +7671,8 @@ float Molecule::get_exposed_surface_area(Molecule** neighbors, bool p, bool oaa)
                         if (ca) Aeff -= ca;
                         else
                         {
-                            Aeff -= A * 1.0 - (neighbors[l]->atoms[n]->vdW_radius / atoms[i]->vdW_radius) 
-                                * 1.0/(packed_sphere_ligancy/2) / (r*r);
+                            Aeff -= A * (1.0 - (neighbors[l]->atoms[n]->vdW_radius / atoms[i]->vdW_radius))
+                                / (packed_sphere_ligancy/2) / (r*r);
                         }
                     }
                 }
@@ -7683,7 +7683,7 @@ float Molecule::get_exposed_surface_area(Molecule** neighbors, bool p, bool oaa)
         else Aeff = atoms[i]->molsurf_area;
 
         atoms[i]->molsurf_area = Aeff;
-        result += Aeff * (p ? fabs(atoms[i]->is_polar()) : 1);
+        result += Aeff; // * (p ? fabs(atoms[i]->is_polar()) : 1);
     }
 
     return result;
