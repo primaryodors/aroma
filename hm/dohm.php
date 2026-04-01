@@ -595,7 +595,7 @@ passthru("./bin/phew hm/$rcpid.hm.phew");
 $delcav = "pdbs/$fam/$rcpid.active.cvty";
 if (file_exists($delcav)) unlink($delcav);
 $cavopts = implode(" ", json_decode(file_get_contents("data/cavopts.json"), true));
-exec("./bin/cavity_search -p pdbs/$fam/$rcpid.active.pdb -o $delcav $cavopts");
+passthru("./bin/cavity_search -p pdbs/$fam/$rcpid.active.pdb -o $delcav $cavopts");
 
 chdir(__DIR__);
 // Only delete temporary files if the HM was successful. Few things are more frustrating than finding an unsuccessful HM
