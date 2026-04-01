@@ -359,13 +359,15 @@ def custom_pdb_template(aln, output_fname):
                 gpt3 = pt3
                 gpt6 = pt6
                 gpt7 = pt7
-
-            # Obtain the rotations
-            rot1 = data.geometry.align_points_3d(pt7, gpt7, pt3)
-            pt3 = data.geometry.rotate3D(pt3, gpt3, rot1, rot1[3])              # a trick since rotate3D() only uses the first three members of the axis argument
-            pt6 = data.geometry.rotate3D(pt6, gpt6, rot1, rot1[3])
-            pt7 = data.geometry.rotate3D(pt6, gpt7, rot1, rot1[3])
-            rot2 = data.geometry.align_points_3d(pt6, gpt6, pt3)
+            else:
+                # Obtain the rotations
+                rot1 = data.geometry.align_points_3d(pt7, gpt7, gpt3)
+                pt3 = data.geometry.rotate3D(pt3, gpt3, rot1, rot1[3])              # a trick since rotate3D() only uses the first three members of the axis argument
+                pt6 = data.geometry.rotate3D(pt6, gpt3, rot1, rot1[3])
+                pt7 = data.geometry.rotate3D(pt7, gpt3, rot1, rot1[3])
+                # rot2 = data.geometry.align_points_3d(pt6, gpt6, gpt3)
+                rot2 = data.geometry.subtract_points(pt7, pt3)
+                rot2.append(data.geometry.find_angle_along_vector(pt6, gpt6, gpt3, rot2))
 
             # Rescan and fill in the atom positions, minding the alignments
             lresno = 0
@@ -408,8 +410,9 @@ def custom_pdb_template(aln, output_fname):
 
                             result = [x,y,z]
                             result = data.geometry.add_points(result, xlation)
-                            result = data.geometry.rotate3D(result, pt3, rot1, rot1[3])
-                            result = data.geometry.rotate3D(result, pt3, rot2, rot2[3])
+                            if not frist:
+                                result = data.geometry.rotate3D(result, gpt3, rot1, rot1[3])
+                                result = data.geometry.rotate3D(result, gpt3, rot2, rot2[3])
 
                             atomxyz[pdbid][f"{bwhelix}.{bwmember}:{aname}"] = result
                             # if frist: print(f"atomxyz[{pdbid}][{a3let}{bwhelix}.{bwmember}:{aname}] = {result}")
@@ -425,15 +428,18 @@ def custom_pdb_template(aln, output_fname):
     with open(output_fname, "w") as f:
         pdbid0 = closest_ids[0]
         for aname in atomxyz[pdbid0].keys():
-            xyz = atomxyz[pdbid0][aname]
+            xyz = atomxyz[pdbid0][aname].copy()
             weight = weights[0]
+            xyz[0] *= weight
+            xyz[1] *= weight
+            xyz[2] *= weight
 
             j = -1
             for lpdbid in closest_ids:
                 j += 1
                 if lpdbid == pdbid0: continue
                 if aname in atomxyz[lpdbid]:
-                    newxyz = atomxyz[lpdbid][aname]
+                    newxyz = atomxyz[lpdbid][aname].copy()
                     newxyz[0] *= weights[j]
                     newxyz[1] *= weights[j]
                     newxyz[2] *= weights[j]
@@ -475,6 +481,52 @@ def custom_pdb_template(aln, output_fname):
 
             atno += 1
             lresbw = resbw
+        f.write("TER\n")
+
+        if 0:
+            strord = ord('A')
+            for pdbid in closest_ids:
+                # if pdbid == pdbid0: continue
+                resno = 0
+                lresbw = ""
+                strord += 1
+                strand = chr(strord)
+                for aname in atomxyz[pdbid].keys():
+                    xyz = atomxyz[pdbid][aname]
+
+                    ardata = aname.split(":")
+                    resbw = ardata[0]
+                    aname = ardata[1]
+                    if resbw != lresbw: resno += 1
+
+                    ln = "ATOM  "
+                    ln += str(atno).rjust(5)
+                    ln += "  " + aname.ljust(4)
+                    ln += "ALA " + strand
+                    ln += str(resno).rjust(4)
+                    ln += "    "
+                    x = xyz[0]
+                    ln += "-" if x < 0 else " "
+                    x = math.fabs(x)
+                    ln += f"{x:.3f}".zfill(7)
+                    y = xyz[1]
+                    ln += "-" if y < 0 else " "
+                    y = math.fabs(y)
+                    ln += f"{y:.3f}".zfill(7)
+                    z = xyz[2]
+                    ln += "-" if z < 0 else " "
+                    z = math.fabs(z)
+                    ln += f"{z:.3f}".zfill(7)
+                    ln += "  1.00  0.00           "
+                    ln += aname[0] + "  "
+
+                    f.write(ln+"\n")
+
+                    atno += 1
+                    lresbw = resbw
+                f.write("TER\n")
+        f.write("END\n")
+
 
 def json_encode_pretty(array):
     return re.sub(r"(\s*)([^\s]*) ([{[(])\n", r"\1\2\n\1\3\n", json.dumps(array, indent = 4, default=lambda o: o.__dict__)).replace("\n\n", "\n")

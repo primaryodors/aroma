@@ -2,6 +2,12 @@
 import math
 import data.globals
 
+def find_angle(dx, dy):
+    angle = math.atan2(dy,dx)
+    if angle < 0:
+        angle += 2 * math.pi
+    return angle
+
 def add_points(pt1, pt2):
     result = [0,0,0]
     for i in range(3):
@@ -48,6 +54,26 @@ def find_3d_angle(pt1, pt2, center):
     if param >  1: param =  1
 
     return math.acos(param)
+
+def find_angle_along_vector(pt1, pt2, source, vector):
+    lpt1 = subtract_points(pt1, source)
+    lpt2 = subtract_points(pt2, source)
+
+    cen = [0,0,0]
+    z = [0,0,1]
+    rots = align_points_3d(vector, z, cen)
+    npt1 = rotate3D(lpt1, cen, rots, rots[3])
+    npt2 = rotate3D(lpt2, cen, rots, rots[3])
+
+    npt1[2] = 0
+    npt2[2] = 0
+
+    a1 = find_angle(npt1[0], npt1[1])
+    if a1 > math.pi: a1 -= math.pi*2
+    a2 = find_angle(npt2[0], npt2[1])
+    if a2 > math.pi: a2 -= math.pi*2
+
+    return a2 - a1
 
 def rotate3D(pt, center, axis, theta):
     if not pt_magnitude(axis): return pt
