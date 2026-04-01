@@ -89,7 +89,7 @@ $atomfiles = "'./tpl'";
 $legal = "";
 $refno = 1;
 $usecpl = false; // (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
-if (file_exists("../coupled/$fam/$sub"))
+/* if (file_exists("../coupled/$fam/$sub"))
 {
     $atomfiles .= ", '../coupled/$fam/$sub'";
     $usecpl = true;
@@ -99,11 +99,11 @@ if ($usecpl && file_exists("../coupled/legal.pdb"))
 {
     $legal = file_get_contents("../coupled/legal.pdb");
     $refno += 2;
-}
+} */
 
 if ($usecpl) $mdlcls = "AutoModel";
 
-$path = "../coupled/$fam/$sub";
+/* $path = "../coupled/$fam/$sub";
 if ($usecpl && file_exists($path))
 {
     $allaln = file_get_contents("allgpcr.ali");
@@ -193,7 +193,7 @@ else if ($usecpl)
     norel:
 
     $knowns = "'".implode("', '", $knowns)."'";
-}
+} */
 
 if ($knowns)
 {
