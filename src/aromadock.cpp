@@ -4990,14 +4990,8 @@ _try_again:
         progb.erase();
     }
 
-    // Estimate the apo entropy from permutations of waters displaced.
-    int nH2Odisp = floor(ligand->get_volume() / global_water.get_volume());
-    int permut = 1;
-    for (i=1; i<=nH2Odisp; i++) permut *= i;
-    float S_apo = entropy_from_permutations(permut);
-
-    // Estimate the entropy of all results.
-    DockResult::entropy(&dr[0][0], poses, max(1, pathnodes+pathpad), S_apo);
+    // Estimate the entropy of all results. Should always be negative.
+    DockResult::entropy(&dr[0][0], poses, max(1, pathnodes+pathpad));
 
     // Output the dr[][] array in order of increasing pose number.
     cout << endl;

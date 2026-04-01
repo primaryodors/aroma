@@ -199,7 +199,7 @@ double fractional_factorial(float n)
 double entropy_from_permutations(float W)
 {
     // See: https://en.wikipedia.org/wiki/Boltzmann%27s_entropy_formula
-    return kB_kJmol * log(W);
+    return -kB_kJmol * log(W);
 }
 
 bool equal_or_zero(int a, int b)

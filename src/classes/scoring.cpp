@@ -778,7 +778,7 @@ float DockResult::total_pose_enthalpy()
         - ic_disruption_energy;
 }
 
-void DockResult::entropy(DockResult* dr, int rows, int cols, float S_apo)
+void DockResult::entropy(DockResult* dr, int rows, int cols)
 {
     int i, j, x, y;
 
@@ -841,7 +841,7 @@ void DockResult::entropy(DockResult* dr, int rows, int cols, float S_apo)
         float W = tgamma(n);
 
         // Total entropy for all states.
-        float DeltaS = entropy_from_permutations(W) - S_apo;
+        float DeltaS = entropy_from_permutations(W);
 
         #if _dbg_entropy
         cout << "kB * log(W " << W << ") - " << S_apo << " = S " << S << endl << endl;
