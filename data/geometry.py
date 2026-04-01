@@ -2,6 +2,12 @@
 import math
 import data.globals
 
+def add_points(pt1, pt2):
+    result = [0,0,0]
+    for i in range(3):
+        result[i] = pt1[i] + pt2[i]
+    return result
+
 def subtract_points(pt1, pt2):
     result = [0,0,0]
     for i in range(3):
@@ -14,6 +20,7 @@ def pt_magnitude(pt):
 def scale_point(pt, new_magn):
     m = pt_magnitude(pt)
     if not m: return [0,0,0]
+    m /= new_magn
     return [pt[0] / m, pt[1] / m, pt[2] / m]
 
 def pt_distance(pt1, pt2):
@@ -80,8 +87,8 @@ def align_points_3d(point, align, center):
     n = compute_normal(point, align, center)
 
     if pt_magnitude(n) < 0.000001:
-        lpt = scale_point(point)
-        lan = scale_point(align)
+        lpt = scale_point(point, 1)
+        lan = scale_point(align, 1)
 
         if pt_distance(lpt, lan) < 0.0000001:
             return [0, 0, 0, 0]
@@ -93,8 +100,8 @@ def align_points_3d(point, align, center):
     plus  = rotate3D(point, center, n,  theta)
     minus = rotate3D(point, center, n, -theta)
 
-    rplus  = plus.get_3d_distance(align)
-    rminus = minus.get_3d_distance(align)
+    rplus  = pt_distance(plus, align)
+    rminus = pt_distance(minus, align)
 
     if rplus <= rminus: angle =  theta
     else:               angle = -theta

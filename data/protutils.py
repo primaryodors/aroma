@@ -3,7 +3,11 @@
 import json
 import re
 import subprocess
+import os
+import os.path
+import math
 import data.globals
+import data.geometry
 
 def load_prots():
     global prots
@@ -228,18 +232,38 @@ def prepare_coupled(inpfn, outfn, rcpid, remarks):
     cmd = [ "bin/phew", "tmp/cpl.phew" ]
     subprocess.run(cmd)
 
-def custom_pdb_template(aln):
+def ali_rel_resno(ali: str, helix: int, member: int):
+    lines = ali.split("\n")
+
+    if helix < 1 or helix > 8:
+        raise Exception("Helix out of range")
+
+    result = 0
+    for i in range(helix-1):
+        for c in lines[i]:
+            if c >= 'A' and c <= 'Z': result += 1
+
+    for i in range(100):
+        c = lines[helix-1][i]
+        if c >= 'A' and c <= 'Z': result += 1
+
+    return result + member - 50
+
+def custom_pdb_template(aln, output_fname):
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
 
     # Read in the alignments of the experimental structures.
     reading_aln = False
     alns = dict()
+    strandids = dict()
     for ln in c.split("\n"):
         if ln[0:9] == "structure":
             reading_aln = True
             current_aln = ""
-            pdbid = ln.split(':')[1].strip()
+            pieces = ln.split(':')
+            pdbid = pieces[1].strip()
+            strandids[pdbid] = pieces[3].strip()
         elif reading_aln:
             current_aln += ln + "\n"
             if '*' in ln:
@@ -247,7 +271,7 @@ def custom_pdb_template(aln):
                 alns[pdbid] = current_aln
                 current_aln = ""
 
-    # TODO: Find the top few closest matches to the input sequence and weight them by similarity.
+    # Find the top few closest matches to the input sequence and weight them by similarity.
     closest_ids = []
     closest_sim = []
     for pdbid in alns.keys():
@@ -283,8 +307,174 @@ def custom_pdb_template(aln):
 
     print(weights)
 
-    # TODO: Generate a PDB of 3D coordinates of the weighted average of the closest sequences.
-    # This will necessitate rotating and transposing to align the source PDB coordinates in 3D space.
+    # For each closest structure, grab the locations of 3.50:CA, 7.50:CA, and 6.50:CA.
+    # Then determine the rotation and rescan the PDB, saving rotated atom locations for
+    # backbone and CB atoms of all structures, and all atoms of the zeroth structure.
+    frist = True
+    atomxyz = dict()
+    seq0 = []
+    for pdbid in closest_ids:
+        relres3 = ali_rel_resno(alns[pdbid], 3, 50)
+        relres6 = ali_rel_resno(alns[pdbid], 6, 50)
+        relres7 = ali_rel_resno(alns[pdbid], 7, 50)
+        pt3 = False
+        pt6 = False
+        pt7 = False
+
+        atomxyz[pdbid] = dict()
+
+        # Find the PDB and read through it to obtain the CA atom coordinates.
+        pdbfname = f"../hm/tpl/{pdbid}.pdb"
+        if not os.path.exists(pdbfname): raise Exception(f"File not found {pdbfname}")
+        j = 0
+        with open(pdbfname, "r") as f:
+            c = f.read().__str__()
+            lines = c.split("\n")
+            for ln in lines:
+                if ln[0:5] == "ATOM ":
+                    if strandids[pdbid] == ln[21]:
+                        aname = ln[12:16].strip()
+                        if aname == "CA":
+                            j += 1
+                            if j == relres3 or j == relres6 or j == relres7:
+                                x = float(ln[30:38])
+                                y = float(ln[38:46])
+                                z = float(ln[46:54])
+
+                                if j == relres3: pt3 = [x,y,z]
+                                if j == relres6: pt6 = [x,y,z]
+                                if j == relres7: pt7 = [x,y,z]
+
+            if not pt3: raise Exception(f"Residue 3.50 not found in {pdbid}")
+            if not pt6: raise Exception(f"Residue 6.50 not found in {pdbid}")
+            if not pt7: raise Exception(f"Residue 7.50 not found in {pdbid}")
+
+            # Obtain the translation
+            xlation = [-pt3[0], -pt3[1], -pt3[2]]
+            pt3 = data.geometry.add_points(pt3, xlation)
+            pt6 = data.geometry.add_points(pt6, xlation)
+            pt7 = data.geometry.add_points(pt7, xlation)
+
+            if frist:
+                gpt3 = pt3
+                gpt6 = pt6
+                gpt7 = pt7
+
+            # Obtain the rotations
+            rot1 = data.geometry.align_points_3d(pt7, gpt7, pt3)
+            pt3 = data.geometry.rotate3D(pt3, gpt3, rot1, rot1[3])              # a trick since rotate3D() only uses the first three members of the axis argument
+            pt6 = data.geometry.rotate3D(pt6, gpt6, rot1, rot1[3])
+            pt7 = data.geometry.rotate3D(pt6, gpt7, rot1, rot1[3])
+            rot2 = data.geometry.align_points_3d(pt6, gpt6, pt3)
+
+            # Rescan and fill in the atom positions, minding the alignments
+            lresno = 0
+            j = 0
+            bwhelix = 1
+            bwmember = -49
+            for ln in lines:
+                if ln[0:5] == "ATOM ":
+                    if strandids[pdbid] == ln[21]:
+                        resno = int(ln[22:26].strip())
+                        aname = ln[12:16].strip()
+                        a3let = ln[17:20]
+
+                        if resno != lresno:
+                            j += 1
+                            if alns[pdbid][j] == "\n":
+                                bwhelix += 1
+                                bwmember = -49
+                            else:
+                                bwmember += 1
+
+                            while alns[pdbid][j] < 'A' or alns[pdbid][j] > 'Z':
+                                if alns[pdbid][j] == "\n":
+                                    bwhelix += 1
+                                    bwmember = -49
+                                else:
+                                    bwmember += 1
+                                j += 1
+
+                            if frist:
+                                seq0.append(a3let)
+
+                            if bwmember == 50:
+                                print(f"{bwhelix}.50 = {a3let}{resno}")
+
+                        if frist or aname in ["N", "CA", "CB", "C", "O"]:
+                            x = float(ln[30:38])
+                            y = float(ln[38:46])
+                            z = float(ln[46:54])
+
+                            result = [x,y,z]
+                            result = data.geometry.add_points(result, xlation)
+                            result = data.geometry.rotate3D(result, pt3, rot1, rot1[3])
+                            result = data.geometry.rotate3D(result, pt3, rot2, rot2[3])
+
+                            atomxyz[pdbid][f"{bwhelix}.{bwmember}:{aname}"] = result
+                            # if frist: print(f"atomxyz[{pdbid}][{a3let}{bwhelix}.{bwmember}:{aname}] = {result}")
+
+                        lresno = resno
+
+        frist = False
+
+    # Generate a PDB of transposed and rotated 3D coordinates of the weighted average of the closest sequences.
+    atno = 1
+    resno = 0
+    lresbw = ""
+    with open(output_fname, "w") as f:
+        pdbid0 = closest_ids[0]
+        for aname in atomxyz[pdbid0].keys():
+            xyz = atomxyz[pdbid0][aname]
+            weight = weights[0]
+
+            j = -1
+            for lpdbid in closest_ids:
+                j += 1
+                if lpdbid == pdbid0: continue
+                if aname in atomxyz[lpdbid]:
+                    newxyz = atomxyz[lpdbid][aname]
+                    newxyz[0] *= weights[j]
+                    newxyz[1] *= weights[j]
+                    newxyz[2] *= weights[j]
+                    xyz = data.geometry.add_points(xyz, newxyz)
+                    weight += weights[j]
+
+            if weight:
+                xyz[0] /= weight
+                xyz[1] /= weight
+                xyz[2] /= weight
+
+            ardata = aname.split(":")
+            resbw = ardata[0]
+            aname = ardata[1]
+            if resbw != lresbw: resno += 1
+
+            ln = "ATOM  "
+            ln += str(atno).rjust(5)
+            ln += "  " + aname.ljust(4)
+            ln += seq0[resno-1] + " A"
+            ln += str(resno).rjust(4)
+            ln += "    "
+            x = xyz[0]
+            ln += "-" if x < 0 else " "
+            x = math.fabs(x)
+            ln += f"{x:.3f}".zfill(7)
+            y = xyz[1]
+            ln += "-" if y < 0 else " "
+            y = math.fabs(y)
+            ln += f"{y:.3f}".zfill(7)
+            z = xyz[2]
+            ln += "-" if z < 0 else " "
+            z = math.fabs(z)
+            ln += f"{z:.3f}".zfill(7)
+            ln += "  1.00  0.00           "
+            ln += aname[0] + "  "
+
+            f.write(ln+"\n")
+
+            atno += 1
+            lresbw = resbw
 
 def json_encode_pretty(array):
     return re.sub(r"(\s*)([^\s]*) ([{[(])\n", r"\1\2\n\1\3\n", json.dumps(array, indent = 4, default=lambda o: o.__dict__)).replace("\n\n", "\n")
