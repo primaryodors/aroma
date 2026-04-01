@@ -358,6 +358,40 @@ env = Environ()
 
 $hetatmln
 
+prevln = ""
+p1ln = ""
+alnhdr = ""
+tgtali = ""
+reading_tgtali = False
+with open("allgpcr.ali", "r") as f:
+    c = f.read().__str__()
+    lines = c.split("\\n")
+    for ln in lines:
+        if ln[0:8] == "sequence":
+            pieces = ln.split(':')
+            if pieces[1] == "$rcpid":
+                alnhdr = ln
+                p1ln = prevln
+                reading_tgtali = True
+        elif reading_tgtali:
+            tgtali += ln + "\\n"
+            if '*' in ln:
+                reading_tgtali = False
+                break
+        prevln = ln
+
+print(f"Target ali:\\n{tgtali}\\n\\n")
+
+tplali = data.protutils.custom_pdb_template(tgtali, "{$rcpid}_tpl.pdb")
+
+with open("$rcpid.hm.ali", "w") as f:
+    f.write(f">P1;{$rcpid}_tpl\\n")
+    f.write(f"structure:{$rcpid}_tpl:FIRST:A:LAST :A:Olfactory Receptor template:Rhombopteryx nessiteras: 4.00: 0.25\\n")
+    f.write(f"{tplali}\\n\\n")
+    f.write(f"{p1ln}\\n")
+    f.write(f"{alnhdr}\\n")
+    f.write(f"{tgtali}\\n\\n")
+
 class MyModel($mdlcls):
     def special_restraints(self, aln):
         rsr = self.restraints
@@ -371,11 +405,11 @@ $restraints_misc_str
 $disulfs
 
 # directories for input atom files
-env.io.atom_files_directory = [$atomfiles]
+env.io.atom_files_directory = ['.', $atomfiles]
 
 a = MyModel(env,
-              alnfile  = 'allgpcr.ali',
-              knowns   = $knowns tuple(data.protutils.templates_for_hm("$rcpid")),
+              alnfile  = '$rcpid.hm.ali',
+              knowns   = '{$rcpid}_tpl', # $knowns tuple(data.protutils.templates_for_hm("$rcpid"))
               sequence = '$rcpid')
 a.starting_model = 0
 a.ending_model   = 9
