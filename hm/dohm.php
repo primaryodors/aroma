@@ -380,7 +380,7 @@ with open("allgpcr.ali", "r") as f:
                 break
         prevln = ln
 
-print(f"Target ali:\\n{tgtali}\\n\\n")
+# print(f"Target ali:\\n{tgtali}\\n\\n")
 
 result = data.protutils.custom_pdb_template(tgtali, "{$rcpid}_tpl.pdb").split("\\n", 1)
 tplsused = result[0]
