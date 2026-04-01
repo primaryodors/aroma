@@ -88,7 +88,7 @@ $famsub = "$fam$sub";
 $atomfiles = "'./tpl'";
 $legal = "";
 $refno = 1;
-$usecpl = (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
+$usecpl = false; // (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
 if (file_exists("../coupled/$fam/$sub"))
 {
     $atomfiles .= ", '../coupled/$fam/$sub'";
@@ -382,7 +382,12 @@ with open("allgpcr.ali", "r") as f:
 
 print(f"Target ali:\\n{tgtali}\\n\\n")
 
-tplali = data.protutils.custom_pdb_template(tgtali, "{$rcpid}_tpl.pdb")
+result = data.protutils.custom_pdb_template(tgtali, "{$rcpid}_tpl.pdb").split("\\n", 1)
+tplsused = result[0]
+tplali = result[1]
+
+with open("$rcpid.knowns", "w") as f:
+    f.write(tplsused)
 
 with open("$rcpid.hm.ali", "w") as f:
     f.write(f">P1;{$rcpid}_tpl\\n")
@@ -464,7 +469,8 @@ natrixs;
     else if ($famno == 51 || $famno == 52) $adjustments .= "ATOMTO %6.59 EXTENT @4.57\n";
     else if ($rcpid == "OR56B2") $adjustments .= "ATOMTO %6.58 EXTENT @4.57\n";
 
-    $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
+    // $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
+    $knowns = file_get_contents("$rcpid.knowns");
 }
 
 $refs = <<<refs

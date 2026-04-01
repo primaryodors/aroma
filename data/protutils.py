@@ -249,7 +249,7 @@ def ali_rel_resno(ali: str, helix: int, member: int):
 
     return result + member - 50
 
-def custom_pdb_template(aln, output_fname):                             # Writes a file and returns the .ali block.
+def custom_pdb_template(aln, output_fname):                             # Writes a file and returns the templates and the .ali block.
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
 
@@ -528,7 +528,7 @@ def custom_pdb_template(aln, output_fname):                             # Writes
         f.write("END\n")
 
     # The template's .ali data will be the same as those of the closest match.
-    return alns[closest_ids[0]]
+    return " ".join(closest_ids) + "\n" + alns[closest_ids[0]]
 
 
 def json_encode_pretty(array):
