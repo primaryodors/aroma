@@ -103,235 +103,143 @@ if ($usecpl && file_exists("../coupled/legal.pdb"))
 
 if ($usecpl) $mdlcls = "AutoModel";
 
-/* $path = "../coupled/$fam/$sub";
-if ($usecpl && file_exists($path))
+$knowns = "";
+
+$atom655 = $atom4551 = false;
+$restraint456 = "";
+if (substr($rcpid, 0, 2) == "OR" && intval(substr($fam, 2)) < 50)
 {
-    $allaln = file_get_contents("allgpcr.ali");
+    $rno655 = resno_from_bw($rcpid, "6.55");
+    $aa655 = substr($p['sequence'], $rno655-1, 1);
+    if ($aa655 == 'Y') $atom655 = "OH:$rno655:A";
+    else if ($aa655 == 'H') $atom655 = "NE2:$rno655:A";
 
-    $knowns = [];
-    $relateds = [];
-    $d = dir($path);
-    while (false !== ($entry = $d->read()))
-    {
-        if (substr($entry, -4) != ".pdb") continue;
-        $pieces = explode('~', substr($entry, 0, -4));
-        if (count($pieces) < 2) continue;
-        list($cplrcpid, $gprot) = $pieces;
-
-        if (false!==strpos($allaln, "$cplrcpid~$gprot"))
-        {
-            if ($cplrcpid == $rcpid)
-            {
-                $knowns[] = "$cplrcpid~$gprot";
-            }
-            else
-            {
-                $relateds[] = "$cplrcpid~$gprot";
-            }
-        }
-    }
-
-    if (!count($knowns)) $knowns = $relateds;
-    if (!count($knowns)) goto noaln;
-
-    $knowns = "'".implode("', '", $knowns)."'";
+    $rno4551 = resno_from_bw($rcpid, "45.51");
+    $aa4551 = substr($p['sequence'], $rno4551-1, 1);
+    if ($aa4551 == 'D') $atom4551 = "OD1:$rno4551:A";
+    else if ($aa4551 == 'N') $atom4551 = "OD1:$rno4551:A";
+    else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
+    else if ($aa4551 == 'Q') $atom4551 = "OE1:$rno4551:A";
 }
-else if ($usecpl)
+
+$ipdbfname = "pdbs/$fam/$rcpid.inactive.pdb";
+if (file_exists($ipdbfname))
 {
-    noaln:
-    $btree = $prots[$rcpid]["btree"];
-    while (($btlen = strlen($btree)) > 4)
-    {
-        $btree = substr($btree, 0, -1);
-        $btlen--;
-        // echo "$btree\n";
-        $relatives = [];
-        foreach ($prots as $lrcp => $lp)
-        {
-            if ($lrcp == $rcpid) continue;
-            if (substr(@$lp['btree'], 0, $btlen) == $btree)
-                $relatives[] = $lrcp;
-        }
+    copy($ipdbfname, $ipdbid = "{$rcpid}.i");
+    $knowns .= ", '$ipdbid'";
+}
 
-        if (count($relatives)) break;
-    }
-    // print_r($relatives);
+if ($atom655 && $atom4551)
+    $restraint456 = "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom655'],
+                                                        at['$atom4551']),
+                            mean=2.5, stdev=0.5))";
 
-    if (!count($relatives)) goto norel;
-    natsort($relatives);
+$atom558 = $atom753 = false;
+$restraint57 = "";
 
-    $knowns = [];
-    $lrfam = $lrsub = "";
-    foreach ($relatives as $rel)
-    {
-        $rfam = family_from_protid($rel);
-        $rsub = subfamily_from_protid($rel);
-        $rpath = "../coupled/$rfam/$rsub";
-        if (!file_exists($rpath)) continue;
+$rno558 = resno_from_bw($rcpid, "5.58");
+$aa558 = substr($p['sequence'], $rno558-1, 1);
+if ($aa558 == 'Y') $atom558 = "OH:$rno558:A";
 
-        if ($rfam == $lrfam && $rsub == $lrsub) continue;
+$rno753 = resno_from_bw($rcpid, "7.53");
+$aa753 = substr($p['sequence'], $rno753-1, 1);
+if ($aa753 == 'Y') $atom753 = "OH:$rno753:A";
 
-        $atomfiles .= ", '$rpath'";
-        $d = dir($rpath);
-        while (false !== ($entry = $d->read()))
-        {
-            if (substr($entry, -4) != ".pdb") continue;
-            $pieces = explode('~', substr($entry, 0, -4));
-            if (count($pieces) < 2) continue;
-            list($cplrcpid, $gprot) = $pieces;
-            if ($cplrcpid == $rcpid) continue;
+if ($atom558 && $atom753)
+    $restraint57 = "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom558'],
+                                                        at['$atom753']),
+                            mean=4.6, stdev=1.2))";
 
-            if (in_array($cplrcpid, $relatives))
-            {
-                $knowns[] = "$cplrcpid~$gprot";
-            }
-        }
-
-        $lrfam = $rfam;
-        $lrsub = $rsub;
-    }
-    norel:
-
-    $knowns = "'".implode("', '", $knowns)."'";
-} */
-
-if ($knowns)
+$restraintmtl = "";
+if ($famsub == "OR2M" || $famsub == "OR2T")
 {
-    $atom655 = $atom4551 = false;
-    $restraint456 = "";
-    if (substr($rcpid, 0, 2) == "OR" && intval(substr($fam, 2)) < 50)
+    $rno539 = resno_from_bw($rcpid, "5.39");
+    $rno542 = resno_from_bw($rcpid, "5.42");
+    $rno543 = resno_from_bw($rcpid, "5.43");
+    $rno546 = resno_from_bw($rcpid, "5.46");
+
+    $aa539 = substr($p['sequence'], $rno539-1, 1);
+    $aa542 = substr($p['sequence'], $rno542-1, 1);
+    $aa543 = substr($p['sequence'], $rno543-1, 1);
+    $aa546 = substr($p['sequence'], $rno546-1, 1);
+
+    if ($aa542 == 'C' && $aa543 == 'C')
     {
-        $rno655 = resno_from_bw($rcpid, "6.55");
-        $aa655 = substr($p['sequence'], $rno655-1, 1);
-        if ($aa655 == 'Y') $atom655 = "OH:$rno655:A";
-        else if ($aa655 == 'H') $atom655 = "NE2:$rno655:A";
-
-        $rno4551 = resno_from_bw($rcpid, "45.51");
-        $aa4551 = substr($p['sequence'], $rno4551-1, 1);
-        if ($aa4551 == 'D') $atom4551 = "OD1:$rno4551:A";
-        else if ($aa4551 == 'N') $atom4551 = "OD1:$rno4551:A";
-        else if ($aa4551 == 'E') $atom4551 = "OE1:$rno4551:A";
-        else if ($aa4551 == 'Q') $atom4551 = "OE1:$rno4551:A";
-    }
-
-    $ipdbfname = "pdbs/$fam/$rcpid.inactive.pdb";
-    if (file_exists($ipdbfname))
-    {
-        copy($ipdbfname, $ipdbid = "{$rcpid}.i");
-        $knowns .= ", '$ipdbid'";
-    }
-
-    if ($atom655 && $atom4551)
-        $restraint456 = "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom655'],
-                                                          at['$atom4551']),
-                                mean=2.5, stdev=0.5))";
-
-    $atom558 = $atom753 = false;
-    $restraint57 = "";
-
-    $rno558 = resno_from_bw($rcpid, "5.58");
-    $aa558 = substr($p['sequence'], $rno558-1, 1);
-    if ($aa558 == 'Y') $atom558 = "OH:$rno558:A";
-
-    $rno753 = resno_from_bw($rcpid, "7.53");
-    $aa753 = substr($p['sequence'], $rno753-1, 1);
-    if ($aa753 == 'Y') $atom753 = "OH:$rno753:A";
-
-    if ($atom558 && $atom753)
-        $restraint57 = "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom558'],
-                                                          at['$atom753']),
-                                mean=4.6, stdev=1.2))";
-
-    $restraintmtl = "";
-    if ($famsub == "OR2M" || $famsub == "OR2T")
-    {
-        $rno539 = resno_from_bw($rcpid, "5.39");
-        $rno542 = resno_from_bw($rcpid, "5.42");
-        $rno543 = resno_from_bw($rcpid, "5.43");
-        $rno546 = resno_from_bw($rcpid, "5.46");
-
-        $aa539 = substr($p['sequence'], $rno539-1, 1);
-        $aa542 = substr($p['sequence'], $rno542-1, 1);
-        $aa543 = substr($p['sequence'], $rno543-1, 1);
-        $aa546 = substr($p['sequence'], $rno546-1, 1);
-
-        if ($aa542 == 'C' && $aa543 == 'C')
+        $cmdist = 4.7;
+        $atom542 = "SG:$rno542:A";
+        $atom543 = "SG:$rno543:A";
+        if ($aa539 == 'M')
         {
-            $cmdist = 4.7;
-            $atom542 = "SG:$rno542:A";
-            $atom543 = "SG:$rno543:A";
-            if ($aa539 == 'M')
-            {
-                $mtl539 = true;
-                $atom539 = "SD:$rno539:A";
-                $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom539'],
-                                                            at['$atom542']),
-                                mean=$cmdist, stdev=0.25))\n\n";
-                $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom539'],
-                                                            at['$atom543']),
-                                mean=$cmdist, stdev=0.25))\n\n";
-            }
-            if ($aa546 == 'M')
-            {
-                $mtl546 = true;
-                $atom546 = "SD:$rno546:A";
-                $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom546'],
-                                                            at['$atom542']),
-                                mean=$cmdist, stdev=0.25))\n\n";
-                $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom546'],
-                                                            at['$atom543']),
-                                mean=$cmdist, stdev=0.25))\n\n";
-            }
-            if ($mtl539 || $mtl546)
-            {
-                $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$atom542'],
-                                                            at['$atom543']),
-                                mean=3.8, stdev=0.2))\n\n";
-            }
+            $mtl539 = true;
+            $atom539 = "SD:$rno539:A";
+            $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom539'],
+                                                        at['$atom542']),
+                            mean=$cmdist, stdev=0.25))\n\n";
+            $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom539'],
+                                                        at['$atom543']),
+                            mean=$cmdist, stdev=0.25))\n\n";
+        }
+        if ($aa546 == 'M')
+        {
+            $mtl546 = true;
+            $atom546 = "SD:$rno546:A";
+            $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom546'],
+                                                        at['$atom542']),
+                            mean=$cmdist, stdev=0.25))\n\n";
+            $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom546'],
+                                                        at['$atom543']),
+                            mean=$cmdist, stdev=0.25))\n\n";
+        }
+        if ($mtl539 || $mtl546)
+        {
+            $restraintmtl .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$atom542'],
+                                                        at['$atom543']),
+                            mean=3.8, stdev=0.2))\n\n";
         }
     }
+}
 
-    $restraints_misc_str = "";
-    foreach ($restraints_misc as $rm)
-    {
-        list($bw1, $bw2, $rmr) = explode('|',$rm);
-        if (false!==strpos($bw1, ":")) list($bw1, $a1) = explode(':', $bw1);
-        else $a1 = "CA";
-        if (false!==strpos($bw2, ":")) list($bw2, $a2) = explode(':', $bw2);
-        else $a2 = "CA";
-        $rno1 = resno_from_bw($rcpid, $bw1);
-        $rno2 = resno_from_bw($rcpid, $bw2);
-        if (!$rno1 || !$rno2) continue;
-        $rmr = floatval($rmr);
-        $restraints_misc_str .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                feature=features.Distance(at['$a1:$rno1:A'],
-                                                          at['$a2:$rno2:A']),
-                                mean=$rmr, stdev=1.2))\n";
-    }
+$restraints_misc_str = "";
+foreach ($restraints_misc as $rm)
+{
+    list($bw1, $bw2, $rmr) = explode('|',$rm);
+    if (false!==strpos($bw1, ":")) list($bw1, $a1) = explode(':', $bw1);
+    else $a1 = "CA";
+    if (false!==strpos($bw2, ":")) list($bw2, $a2) = explode(':', $bw2);
+    else $a2 = "CA";
+    $rno1 = resno_from_bw($rcpid, $bw1);
+    $rno2 = resno_from_bw($rcpid, $bw2);
+    if (!$rno1 || !$rno2) continue;
+    $rmr = floatval($rmr);
+    $restraints_misc_str .= "        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at['$a1:$rno1:A'],
+                                                        at['$a2:$rno2:A']),
+                            mean=$rmr, stdev=1.2))\n";
+}
 
-    if ($riglig)
-    {
-        if (file_exists("riglig.pdb")) unlink("riglig.pdb");
-        $rigpdb = "../pdbs/$fam/$rcpid.riglig.pdb";
-        if (!file_exists($rigpdb)) die("ERROR: No riglig file for $rcpid.\n\nTo create a riglig file:\n1.) Run the prediction for a known agonist in a receptor, allowing the prediction to fail, or you can interrupt it when the splash graphic appears;\n2.) You will see the exact AromaDock command-line call used, located immediately above the splash graphic;\n3.) Copy-paste this command (it will begin with \"bin/aromadock\") and add the --movie argument, then run it and allow it to finish;\n4.) Using the 3D viewer (viewer.htm) in a web browser, click \"Choose File\" at upper left;\n5.) Navigate to the aromadock/tmp folder and open _iters.dock;\n6.) Look through all poses and nodes to find the best ligand positioning, either by visual examination or by the energies given by clicking the Stats (".mb_chr(0x1f4ca).") icon;\n7.) Remembering the pose and node numbers of the best positioning, open the tmp/_iters.dock file in a text editor and find the right section of the file.\n\tFor example, if the desired pose is number 10 and the node is number 3, look for Pose: 10 followed by Node: 3 in the _iters.dock.\n\tHint: It will probably be easier to skip ahead to the next section, e.g. Pose: 10 Node: 4 in this example, and scroll up.\n8.) Find the collection of lines that start with HETATM; this is your best-positioned ligand;\n9.) Copy-paste the HETATM lines to a new text file and replace all occurrences of \"LIG     0\" (five spaces between LIG and 0) with \"LIG A   1\" (three spaces between A and 1);\n10.) Add a newline followed by TER then another newline then END and one last newline at the end of the text file and save it in aromadock/pdbs/{family}/{receptor}.riglig.pdb\n\tFor example, if this is for OR1A1 then you would save the riglig file as aromadock/pdbs/OR1/OR1A1.riglig.pdb\n11.) Rerun this script for that receptor with the riglig argument.\n\n");
-        copy($rigpdb, "riglig.pdb");
-        $knowns .= ", 'riglig'";
-        $hetatms = true;
-    }
+if ($riglig)
+{
+    if (file_exists("riglig.pdb")) unlink("riglig.pdb");
+    $rigpdb = "../pdbs/$fam/$rcpid.riglig.pdb";
+    if (!file_exists($rigpdb)) die("ERROR: No riglig file for $rcpid.\n\nTo create a riglig file:\n1.) Run the prediction for a known agonist in a receptor, allowing the prediction to fail, or you can interrupt it when the splash graphic appears;\n2.) You will see the exact AromaDock command-line call used, located immediately above the splash graphic;\n3.) Copy-paste this command (it will begin with \"bin/aromadock\") and add the --movie argument, then run it and allow it to finish;\n4.) Using the 3D viewer (viewer.htm) in a web browser, click \"Choose File\" at upper left;\n5.) Navigate to the aromadock/tmp folder and open _iters.dock;\n6.) Look through all poses and nodes to find the best ligand positioning, either by visual examination or by the energies given by clicking the Stats (".mb_chr(0x1f4ca).") icon;\n7.) Remembering the pose and node numbers of the best positioning, open the tmp/_iters.dock file in a text editor and find the right section of the file.\n\tFor example, if the desired pose is number 10 and the node is number 3, look for Pose: 10 followed by Node: 3 in the _iters.dock.\n\tHint: It will probably be easier to skip ahead to the next section, e.g. Pose: 10 Node: 4 in this example, and scroll up.\n8.) Find the collection of lines that start with HETATM; this is your best-positioned ligand;\n9.) Copy-paste the HETATM lines to a new text file and replace all occurrences of \"LIG     0\" (five spaces between LIG and 0) with \"LIG A   1\" (three spaces between A and 1);\n10.) Add a newline followed by TER then another newline then END and one last newline at the end of the text file and save it in aromadock/pdbs/{family}/{receptor}.riglig.pdb\n\tFor example, if this is for OR1A1 then you would save the riglig file as aromadock/pdbs/OR1/OR1A1.riglig.pdb\n11.) Rerun this script for that receptor with the riglig argument.\n\n");
+    copy($rigpdb, "riglig.pdb");
+    $knowns .= ", 'riglig'";
+    $hetatms = true;
+}
 
-    if ($hetatms) $hetatmln = "env.io.hetatm = True";
+if ($hetatms) $hetatmln = "env.io.hetatm = True";
 
-    $knowns = $knowns ? "($knowns) +" : "";
+$knowns = $knowns ? "($knowns) +" : "";
 
-    // Generate Python script
-    $py = <<<natrixs
+// Generate Python script
+$py = <<<natrixs
 
 import sys
 import os
@@ -414,7 +322,7 @@ env.io.atom_files_directory = ['.', $atomfiles]
 
 a = MyModel(env,
               alnfile  = '$rcpid.hm.ali',
-              knowns   = '{$rcpid}_tpl', # $knowns tuple(data.protutils.templates_for_hm("$rcpid"))
+              knowns   = '{$rcpid}_tpl',
               sequence = '$rcpid')
 a.starting_model = 0
 a.ending_model   = 9
@@ -425,53 +333,53 @@ a.make()
 
 natrixs;
 
-    if (file_exists("$rcpid.hm.py"))
-    {
-        $result = [];
-        exec("ps -ef | grep -E \"python[0-9] $rcpid.hm.py\" | grep -v grep", $result);
-        if (count($result)) die("Already running.\n");
-    }
-
-    $fp = fopen("$rcpid.hm.py", "w");
-    fwrite($fp, $py);
-    fclose($fp);
-
-    @unlink("hm.out");
-    passthru("python3 $rcpid.hm.py | tee $rcpid.hm.out");
-    $c = file_get_contents("$rcpid.hm.out");
-    $best_energy = 1e9;
-    $pyoutfn = false;
-    $mode = false;
-    foreach (explode("\n", $c) as $ln)
-    {
-        if (false !== strpos($ln, "Summary of successfully produced models:")) $mode = true;
-        if (false !== strpos($ln, "Summary of successfully produced loop models:")) $mode = true;
-        if (preg_match("/Filename\\s+molpdf/i", $ln)) $mode = true;
-        if (!$mode) continue;
-
-        $ln = preg_replace("/\\s+/", " ", $ln);
-        $pieces = explode(" ", $ln);
-        if (count($pieces) < 2) continue;
-        if (!is_numeric($pieces[1])) continue;
-        $e = floatval($pieces[1]);
-        if ($e < $best_energy)
-        {
-            $best_energy = $e;
-            $pyoutfn = $pieces[0];
-        }
-    }
-
-    if (!$pyoutfn) die("FAIL.\n");
-
-    $famno = intval(preg_replace("/[^0-9]/", "", $fam));
-    $adjustments = "";
-    if ($famno < 50) $adjustments .= "IF $3.37 != \"G\" THEN ATOMTO %3.37 EXTENT @6.48\n";
-    else if ($famno == 51 || $famno == 52) $adjustments .= "ATOMTO %6.59 EXTENT @4.57\n";
-    else if ($rcpid == "OR56B2") $adjustments .= "ATOMTO %6.58 EXTENT @4.57\n";
-
-    // $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
-    $knowns = file_get_contents("$rcpid.knowns");
+if (file_exists("$rcpid.hm.py"))
+{
+    $result = [];
+    exec("ps -ef | grep -E \"python[0-9] $rcpid.hm.py\" | grep -v grep", $result);
+    if (count($result)) die("Already running.\n");
 }
+
+$fp = fopen("$rcpid.hm.py", "w");
+fwrite($fp, $py);
+fclose($fp);
+
+@unlink("hm.out");
+passthru("python3 $rcpid.hm.py | tee $rcpid.hm.out");
+$c = file_get_contents("$rcpid.hm.out");
+$best_energy = 1e9;
+$pyoutfn = false;
+$mode = false;
+foreach (explode("\n", $c) as $ln)
+{
+    if (false !== strpos($ln, "Summary of successfully produced models:")) $mode = true;
+    if (false !== strpos($ln, "Summary of successfully produced loop models:")) $mode = true;
+    if (preg_match("/Filename\\s+molpdf/i", $ln)) $mode = true;
+    if (!$mode) continue;
+
+    $ln = preg_replace("/\\s+/", " ", $ln);
+    $pieces = explode(" ", $ln);
+    if (count($pieces) < 2) continue;
+    if (!is_numeric($pieces[1])) continue;
+    $e = floatval($pieces[1]);
+    if ($e < $best_energy)
+    {
+        $best_energy = $e;
+        $pyoutfn = $pieces[0];
+    }
+}
+
+if (!$pyoutfn) die("FAIL.\n");
+
+$famno = intval(preg_replace("/[^0-9]/", "", $fam));
+$adjustments = "";
+if ($famno < 50) $adjustments .= "IF $3.37 != \"G\" THEN ATOMTO %3.37 EXTENT @6.48\n";
+else if ($famno == 51 || $famno == 52) $adjustments .= "ATOMTO %6.59 EXTENT @4.57\n";
+else if ($rcpid == "OR56B2") $adjustments .= "ATOMTO %6.58 EXTENT @4.57\n";
+
+// $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
+$knowns = file_get_contents("$rcpid.knowns");
+
 
 $refs = <<<refs
 $legal
