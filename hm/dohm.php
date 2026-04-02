@@ -494,6 +494,8 @@ chdir(__DIR__);
 chdir("..");
 passthru("./bin/phew hm/$rcpid.hm.phew");
 
+passthru("./bin/ic pdbs/$fam/$rcpid.active.pdb 5.0 save minc");
+
 /*
 $delcav = "pdbs/$fam/$rcpid.active.cvty";
 if (file_exists($delcav)) unlink($delcav);
