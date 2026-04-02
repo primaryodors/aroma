@@ -236,6 +236,12 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr
                         if (can_clash[i]->get_charge() >  hydrophilicity_cutoff) working.chargedp = true;
                         if (can_clash[i]->pi_stackability() >= 0.2) working.pi = true;
                         if (fabs(can_clash[i]->hydrophilicity()) > hydrophilicity_cutoff) working.polar = true;
+                        else if (can_clash[i]->is_tyrosine_like())
+                        {
+                            Atom *tya = can_clash[i]->get_nearest_heavy_atom(pt);
+                            if (tya && fabs(tya->is_polar()) >= hydrophilicity_cutoff)
+                                working.polar = true;
+                        }
                         if (can_clash[i]->count_atoms_by_element("S")) working.thio = true;
                     }
                 }

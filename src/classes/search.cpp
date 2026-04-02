@@ -2015,7 +2015,7 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
     if (ipol && jpol && ((ihba && jhbd) || (ihbd && jhba))) 
     {
         score += ipol*jpol*35;
-        if (pri_res->is_amide() && ichg <= 0) score += 10;
+        if (pri_res->is_amide() && ichg <= 0) score += amide_extra_importance_in_search;
     }
     if (!ipol && !jpol) score += 0.2 * sqrt(1.0 + icen.get_3d_distance(ligcen));
     if ((!ipol || !jpol) && ipi && jpi) score += 0.333*ipi*jpi; 
@@ -2027,7 +2027,7 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
         if (lpol && kpol && ((khba && lhbd) || (khbd && lhba))) 
         {
             score += kpol*lpol*35;
-            if (sec_res->is_amide() && kchg <= 0) score += 10;
+            if (sec_res->is_amide() && kchg <= 0) score += amide_extra_importance_in_search;
         } 
         if (!kpol && !lpol) score += 0.2 * sqrt(1.0 + kcen.get_3d_distance(ligcen));
         if ((!lpol || !kpol) && kpi && lpi) score += 0.333*kpi*lpi;
@@ -2040,7 +2040,7 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
         if (mpol && npol && ((mhba && nhbd) || (mhbd && nhba))) 
         {
             score += mpol*npol*35;
-            if (tert_res->is_amide() && mchg <= 0) score += 10;
+            if (tert_res->is_amide() && mchg <= 0) score += amide_extra_importance_in_search;
         }
         if (!mpol && !npol) score += 0.2 * sqrt(1.0 + mcen.get_3d_distance(ligcen));
         if ((!mpol || !npol) && mpi && npi) score += 0.333*mpi*npi;
