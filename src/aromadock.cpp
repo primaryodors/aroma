@@ -3943,7 +3943,7 @@ _try_again:
                         do
                         {
                             i = rand() % j;
-                            if (frand(0,1) < 1e-7)                                // just in case there are no polar side chains.
+                            if (frand(0,1) < 1e-9)                                // just in case there are no polar side chains.
                             {
                                 #if _dbg_randhyd_probs
                                 cout << "Randomly selected " << lrs[i]->get_name() << " for " << bh->name << endl;
@@ -3951,21 +3951,35 @@ _try_again:
                                 break;
                             }
                             float lrhyd = fabs(lrs[i]->hydrophilicity());
-                            bool lrharom = lrs[i]->ring_is_aromatic(0);
+                            bool lrharom = lrs[i]->ring_is_aromatic(0), lrhtyr = lrs[i]->is_tyrosine_like();
+
+                            if (lrhtyr)
+                            {
+                                Atom *a, *b, *OH;
+                                OH = lrs[i]->get_atom("OH");
+                                ligand->mutual_closest_atoms(lrs[i], &a, &b);
+                                if (a && b && OH && b != OH)
+                                {
+                                    if (a->distance_to(OH) > 1.25 * a->distance_to(b))
+                                        lrhtyr = false;
+                                }
+                            }
+
                             if ((bhyd >= hydrophilicity_cutoff) == (lrhyd >= hydrophilicity_cutoff)
                                 || lrs[i]->coordmtl
                                 || (lrs[i]->is_thiol() && (lrharom || frand(0,1) < 0.1))
+                                || lrhtyr
                                 )
                             {
                                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
-                                float probability = 0;
+                                float probability = 1e-7;
                                 Atom *ra;
 
                                 // HYDROPHILIC CALCULATION
-                                if ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH))
+                                if (bhyd && ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH)))
                                 {
-                                    probability = 0.1 * lrhyd;
-                                    if (bhpi) probability *= (1.0 - 0.2 * lrs[i]->pi_stackability());
+                                    probability = 0.1 * (lrhtyr ? 0.8 : lrhyd);
+                                    if (bhpi) probability *= (1.0 + 0.2 * lrs[i]->pi_stackability());
                                     ra = lrs[i]->get_reach_atom();
                                     if (ra->get_charge()) probability = pow(probability, 0.2);
                                     #if _dbg_randhyd_probs
@@ -4045,6 +4059,12 @@ _try_again:
                                         break;
                                     }
                                 }
+                                #if _dbg_randhyd_probs
+                                else
+                                {
+                                    cout << lrs[i]->get_name() << " has probability zero." << endl;
+                                }
+                                #endif
 
                                 #if _dbg_randhyd_probs
                                 cout << endl;
