@@ -7522,9 +7522,16 @@ Atom *Molecule::get_most_polar()
             ;
         }
 
+        int abc = atoms[i]->get_bonded_atoms_count(), geo = atoms[i]->get_geometry();
+        h *= 1.0 + (float)(8-abc) / 8;
+        if (abc < geo)
+        {
+            h *= 1.0 + (float)(geo-abc) / 6;
+        }
+
         #if _dbg_most_polar
-        colorize(-h);
-        cout << atoms[i]->name << " polarity: " << h << endl;
+        colorize(-h*25);
+        cout << atoms[i]->name << " abc=" << abc << " geo=" << geo << " polarity: " << h << endl;
         colorless();
         #endif
 
