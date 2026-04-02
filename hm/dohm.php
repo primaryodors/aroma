@@ -494,16 +494,12 @@ chdir(__DIR__);
 chdir("..");
 passthru("./bin/phew hm/$rcpid.hm.phew");
 
-/* if ($famsub == "OR5K")
-{
-    passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb 4 7");
-    passthru("./bin/phew hm/fivewinder.phew pdbs/$fam/$rcpid.active.pdb -3 6");
-} */
-
+/*
 $delcav = "pdbs/$fam/$rcpid.active.cvty";
 if (file_exists($delcav)) unlink($delcav);
 $cavopts = implode(" ", json_decode(file_get_contents("data/cavopts.json"), true));
 passthru("./bin/cavity_search -p pdbs/$fam/$rcpid.active.pdb -o $delcav $cavopts");
+*/
 
 chdir(__DIR__);
 // Only delete temporary files if the HM was successful. Few things are more frustrating than finding an unsuccessful HM
