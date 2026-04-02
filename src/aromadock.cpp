@@ -3953,14 +3953,16 @@ _try_again:
                             float lrhyd = fabs(lrs[i]->hydrophilicity());
                             bool lrharom = lrs[i]->ring_is_aromatic(0), lrhtyr = lrs[i]->is_tyrosine_like();
 
-                            if (lrhtyr)
+                            Atom *nessaml, *nessamr, *OH;
+                            ligand->mutual_closest_atoms(lrs[i], &nessaml, &nessamr);
+                            if (nessaml && nessamr)
                             {
-                                Atom *a, *b, *OH;
-                                OH = lrs[i]->get_atom("OH");
-                                ligand->mutual_closest_atoms(lrs[i], &a, &b);
-                                if (a && b && OH && b != OH)
+                                nessaml = nessaml->get_heavy_atom();
+                                nessamr = nessamr->get_heavy_atom();
+                                if (lrhtyr)
                                 {
-                                    if (a->distance_to(OH) > 1.25 * a->distance_to(b))
+                                    OH = lrs[i]->get_atom("OH");
+                                    if (nessamr != OH && nessaml->distance_to(OH) > 1.25 * nessaml->distance_to(nessamr))
                                         lrhtyr = false;
                                 }
                             }
@@ -4047,6 +4049,18 @@ _try_again:
                                     #endif
                                 }
 
+                                // ECLIPSING EFFECT
+                                if (bh != nessaml)
+                                {
+                                    float rbh = bh->distance_to(nessamr);
+                                    float rnes = nessaml->distance_to(nessamr);
+                                    if (rbh > rnes)
+                                    {
+                                        float r = (rbh-rnes)+1;
+                                        probability /= (r*r);
+                                    }
+                                }
+
                                 // PROBABILITY OF ATOM SELECTION
                                 if (probability) 
                                 {
@@ -4054,7 +4068,7 @@ _try_again:
                                     if (frand(0,1) < probability)
                                     {
                                         #if _dbg_randhyd_probs
-                                        cout << lrs[i]->get_name() << " SELECTED." << endl;
+                                        cout << lrs[i]->get_name() << " SELECTED." << endl << endl;
                                         #endif
                                         break;
                                     }

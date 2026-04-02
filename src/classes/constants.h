@@ -62,7 +62,7 @@
 
 // Progressbar colors
 #define pbrc_dock_nopose 160, 168, 176
-#define pbrc_dock_activepose 96, 216, 128
+#define pbrc_dock_activepose 32, 224, 96
 #define pbrc_dock_inactivepose 98, 176, 224
 #define pbrc_cavfit_genconf 192, 64, 224
 #define pbrc_cavfit_goodfit 160, 64, 224
