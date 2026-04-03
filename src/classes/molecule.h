@@ -187,6 +187,7 @@ public:
     float occlusion(Molecule* ligand);
     Point polar_barycenter();
     float contained_by_space(Space* container);
+    float space_filling(Space* container);
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
@@ -277,13 +278,13 @@ public:
         void (*callback)(int, Molecule**) = nullptr,
         void (*progress)(float) = nullptr,
         int min_iter = 0,
-        Space* container = nullptr
+        Space* cavity = nullptr
         );
     
     static void conform_molecules(Molecule** molecules, Molecule** background, int iterations = 50,
         void (*callback)(int, Molecule**) = nullptr,
         void (*progress)(float) = nullptr,
-        Space* container = nullptr
+        Space* cavity = nullptr
         );
 
     void quick_conform(Molecule** background, int iterations = 25);
@@ -415,7 +416,8 @@ protected:
     float get_atom_error(int atom_idx, LocatedVector* best_lv, bool hemispherical = true);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash);
-    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr, Space* container = nullptr);
+    static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr,
+        Space* cavity = nullptr);
     bool faces_any_ligand(Molecule** ligands);
     float surface_occlusion(Molecule** ligands);
     float octant_occlusion(Molecule** ligands);

@@ -1467,6 +1467,31 @@ float Molecule::contained_by_space(Space *c)
     return i ? (result/i) : 1;
 }
 
+float Molecule::space_filling(Space *c)
+{
+    if (!atoms) return 0;
+    int i;
+    float result = 0, j = 0, l;
+    SPartial *sp;
+    for (i=0; sp = c->get_partial_by_idx(i); i++)
+    {
+        Atom *a = get_nearest_atom(sp->s.center);
+        if (a)
+        {
+            float f = sphere_intersection(a->vdW_radius, sp->s.radius, a->loc.get_3d_distance(sp->s.center));
+            f /= sp->s.volume();
+
+            if (sp->polar) l = 0.1;
+            else l = 1;
+
+            result += f*l;
+            j += l;
+        }
+    }
+
+    return j ? (result/j) : 1;
+}
+
 float Molecule::occlusion(Molecule *ligand)
 {
     Molecule* tmp[2];
@@ -5499,7 +5524,11 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* self
         }
     }
 
-    if (cav) result.clash += 100.0 * (1.0 - a->contained_by_space(cav));
+    if (cav)
+    {
+        result.clash += cavity_docking_containment * (1.0 - a->contained_by_space(cav));
+        result.attractive += cavity_docking_incentive * a->space_filling(cav);
+    }
 
     return result;
 }
@@ -5719,7 +5748,8 @@ Interaction Molecule::total_intermol_binding(Molecule** l)
     return f;
 }
 
-void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molecule**), void (*progress)(float), int mi, Space *cav)
+void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molecule**), void (*progress)(float),
+    int mi, Space *cav)
 {
     if (!mm) return;
     int i, imer, j, l, n, iter;
@@ -5745,7 +5775,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
         #if _dbg_infinite_loops
         cout << "Calling recursive Molecule::conform_molecules()..." << endl << flush;
         #endif
-        return conform_molecules(lmm, iters, cb, progress, mi);             // RECURSION!
+        return conform_molecules(lmm, iters, cb, progress, mi, cav);             // RECURSION!
     }
 
     end_iterations = false;

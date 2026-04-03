@@ -150,7 +150,7 @@ bool do_output_colors = false;
 
 LigandTarget* g_ligtargs;
 BestBindingResult g_bbr[16];
-Cavity* gcav = nullptr;
+Cavity *gcav = nullptr;
 
 MCoord mtlcoords[16];
 int nmtlcoords;

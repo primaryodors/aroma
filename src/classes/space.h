@@ -27,7 +27,7 @@ class Space
     void add_partial(SPartial p);
     void output_ngl_js(FILE* fp);
     int count_partials();
-    SPartial* get_partial_by_idx(int idx) { return &spartials[idx]; }
+    SPartial* get_partial_by_idx(int idx) { return (idx>=pallocd) ? nullptr : &spartials[idx]; }
     Point get_center();
     float get_volume();
     SPartial* point_inside_pocket(Point pt);

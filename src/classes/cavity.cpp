@@ -981,7 +981,3 @@ int Cavity::estimate_multiplicity(Molecule* ligand)
     float lv = ligand->get_volume();
     return this->get_volume() / lv / 3;
 }
-
-
-
-
