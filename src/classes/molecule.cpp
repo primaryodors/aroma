@@ -7720,7 +7720,7 @@ float Molecule::get_exposed_surface_area(Molecule** neighbors, bool p, bool oaa)
         else Aeff = atoms[i]->molsurf_area;
 
         atoms[i]->molsurf_area = Aeff;
-        result += Aeff; // * (p ? fabs(atoms[i]->is_polar()) : 1);
+        result += Aeff * (p ? fabs(atoms[i]->is_polar()) : 1);
     }
 
     return result;
