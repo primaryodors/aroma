@@ -6,6 +6,7 @@ import subprocess
 import os
 import os.path
 import math
+from natsort import natsorted
 import data.globals
 import data.geometry
 
@@ -312,7 +313,7 @@ def custom_pdb_template(aln, output_fname):                             # Writes
     # backbone and CB atoms of all structures, and all atoms of the zeroth structure.
     frist = True
     atomxyz = dict()
-    seq0 = []
+    seq0 = dict()
     for pdbid in closest_ids:
         relres3 = ali_rel_resno(alns[pdbid], 3, 50)
         relres6 = ali_rel_resno(alns[pdbid], 6, 50)
@@ -398,10 +399,10 @@ def custom_pdb_template(aln, output_fname):                             # Writes
                                 j += 1
 
                             if frist:
-                                seq0.append(a3let)
+                                seq0[f"{bwhelix}.{bwmember}"] = a3let
 
                             if bwmember == 50:
-                                print(f"{bwhelix}.50 = {a3let}{resno}")
+                                print(f"{pdbid} {bwhelix}.50 = {a3let}{resno}")
 
                         if frist or aname in ["N", "CA", "CB", "C", "O"]:
                             x = float(ln[30:38])
@@ -421,12 +422,34 @@ def custom_pdb_template(aln, output_fname):                             # Writes
 
         frist = False
 
+    # The OR5V1 cryo-EM is missing the EXR2 helix, but accurate predictions require that helix, so we'll fill it in from the consOR5 structure.
+    pdbid0 = closest_ids[0]
+    pdbid1 = closest_ids[1]
+    outali = alns[closest_ids[0]]
+    h = 5
+    for m in range(19, 58):
+        aname = f"{h}.{m}:CA"
+        seqkey = f"{h}.{m}"
+        if not aname in atomxyz[pdbid0]:
+            if aname in atomxyz[pdbid1]:
+                atomxyz[pdbid0][aname] = atomxyz[pdbid1][aname].copy()
+                seq0[seqkey] = "GLY"
+
+                mstr = m+49
+                outalilns = outali.split("\n")
+                outalilns[h-1] = outalilns[h-1][0:mstr] + "G" + outalilns[h-1][mstr+1:]
+                outali = "\n".join(outalilns)
+            else:
+                print(f"WARNING: {aname} not found in {pdbid1}")
+
+    atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
+    seq0 = dict(natsorted(seq0.items()))
+
     # Generate a PDB of transposed and rotated 3D coordinates of the weighted average of the closest sequences.
     atno = 1
     resno = 0
     lresbw = ""
     with open(output_fname, "w") as f:
-        pdbid0 = closest_ids[0]
         for aname in atomxyz[pdbid0].keys():
             xyz = atomxyz[pdbid0][aname].copy()
             weight = weights[0]
@@ -456,30 +479,30 @@ def custom_pdb_template(aln, output_fname):                             # Writes
             aname = ardata[1]
             if resbw != lresbw: resno += 1
 
-            ln = "ATOM  "
-            ln += str(atno).rjust(5)
-            ln += "  " + aname.ljust(4)
-            ln += seq0[resno-1] + " A"
-            ln += str(resno).rjust(4)
-            ln += "    "
-            x = xyz[0]
-            ln += "-" if x < 0 else " "
-            x = math.fabs(x)
-            ln += f"{x:.3f}".zfill(7)
-            y = xyz[1]
-            ln += "-" if y < 0 else " "
-            y = math.fabs(y)
-            ln += f"{y:.3f}".zfill(7)
-            z = xyz[2]
-            ln += "-" if z < 0 else " "
-            z = math.fabs(z)
-            ln += f"{z:.3f}".zfill(7)
-            ln += "  1.00  0.00           "
-            ln += aname[0] + "  "
+            if resbw in seq0.keys():
+                ln = "ATOM  "
+                ln += str(atno).rjust(5)
+                ln += "  " + aname.ljust(4)
+                ln += seq0[resbw] + " A"
+                ln += str(resno).rjust(4)
+                ln += "    "
+                x = xyz[0]
+                ln += "-" if x < 0 else " "
+                x = math.fabs(x)
+                ln += f"{x:.3f}".zfill(7)
+                y = xyz[1]
+                ln += "-" if y < 0 else " "
+                y = math.fabs(y)
+                ln += f"{y:.3f}".zfill(7)
+                z = xyz[2]
+                ln += "-" if z < 0 else " "
+                z = math.fabs(z)
+                ln += f"{z:.3f}".zfill(7)
+                ln += "  1.00  0.00           "
+                ln += aname[0] + "  "
+                f.write(ln+"\n")
+                atno += 1
 
-            f.write(ln+"\n")
-
-            atno += 1
             lresbw = resbw
         f.write("TER\n")
 
@@ -528,7 +551,7 @@ def custom_pdb_template(aln, output_fname):                             # Writes
         f.write("END\n")
 
     # The template's .ali data will be the same as those of the closest match.
-    return " ".join(closest_ids) + "\n" + alns[closest_ids[0]]
+    return " ".join(closest_ids) + "\n" + outali
 
 
 def json_encode_pretty(array):
