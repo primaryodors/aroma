@@ -4664,7 +4664,7 @@ _try_again:
             dr[drcount][nodeno].display_clash_atoms = display_clash_atoms;
             dr[drcount][nodeno].out_mc = out_mc;
             dr[drcount][nodeno].out_vdw_repuls = out_vdw_repuls;
-            dr[drcount][nodeno].mbbr = &g_bbr[0];
+            if (pdpst == pst_best_binding) dr[drcount][nodeno].mbbr = &g_bbr[0];
             dr[drcount][nodeno].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
 
             #if occlusion_as_disqualify_reason
