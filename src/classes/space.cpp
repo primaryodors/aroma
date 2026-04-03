@@ -41,14 +41,14 @@ float Space::partial_intersects_cavity(SPartial p)
 
 void Space::add_partial(SPartial p)
 {
+    if (!p.s.center.x && !p.s.center.y && !p.s.center.z) return;
+
     if (!pallocd)
     {
         pallocd = 256;
         spartials = new SPartial[pallocd+4];
         priority = false;
     }
-
-    if (!p.s.center.x && !p.s.center.y && !p.s.center.z) return;
 
     int i, j;
     for (i=0; i<pallocd; i++) if (spartials[i].s.radius < min_partial_radius) break;             // Get count.

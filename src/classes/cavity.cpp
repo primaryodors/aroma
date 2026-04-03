@@ -856,6 +856,7 @@ int Cavity::resnos_as_array(Protein *p, int *output)
 
     for (i=0; i<n; i++) included[i] = false;
 
+    if (!partials) partials = (CPartial*)spartials;
     for (i=0; i<pallocd; i++)
     {
         if (partials[i].s.radius)

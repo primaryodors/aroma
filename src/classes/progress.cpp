@@ -17,7 +17,7 @@ void Progressbar::update(float value)
     // value = value/(poses) + (float)(pose-1)*100.0/poses;
     float percentage = (value-minimum)/(maximum-minimum)*width;
     if (percentage > width) percentage = width;
-    if (drawn) cout << "\033[A|";
+    if (drawn) cout << "\033[A";
     int i;
     bool grayyet = false;
     for (i=0; i<width; i++)
