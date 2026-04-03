@@ -4096,6 +4096,10 @@ _try_again:
                         throw 0xbadc0de;
                     }
 
+                    if (fabs(bh->is_polar()) >= hydrophilicity_cutoff && fabs(rh->is_polar()) >= hydrophilicity_cutoff
+                        && !bH && !lrs[i]->has_hbond_donors())
+                        lrs[i]->protonate();
+
                     #if _dbg_rh_selection
                     cout << "Selected ligand:" << bh->name << " ... " << lrs[i]->get_name() << ":" << rh->name
                         << " hydro = " << lrs[i]->hydrophilicity()
