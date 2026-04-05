@@ -3611,62 +3611,33 @@ float Molecule::hydrophilicity()
     return count ? (total / count) : 0;
 }
 
-float Molecule::solvent_free_energy(float epsilon, float kappa, bool csa)
+double Molecule::solvation_from_surface_areas(double totalsurf, double polsurf)
 {
-    if (!atoms) return 0;
+    double DeltaGsurf = (totalsurf - polsurf) * _solve_CH4 / _surfarea_CH4,
+           DeltaGGB = polsurf * _solve_water / global_water.get_surface_area(false);
 
-    // Sources:
-    // https://doi.org/10.1002/prot.20033
-    // https://doi.org/10.1126/science.2011744
-    // https://en.wikipedia.org/wiki/Implicit_solvation#Generalized_Born_model
-    float DeltaGsurf = get_surface_area(false, csa) * _solve_nonpol;
-    double DeltaGGB = 0;
-
-    #if 1
-    double polsurf = get_surface_area(true, csa);
-    DeltaGGB = polsurf * (epsilon/80) * _solve_np2pol;
-    #else
-    // Hoping someone with a solid math background can find out why the following is not giving accurate numbers at all.
-    // Everyone knows not to help the uneducated disgraced former code monkey.
-    int i, j;
-    for (i=0; atoms[i]; i++)
-    {
-        float Ri = atoms[i]->vdW_radius;
-        for (j=0; atoms[j]; j++)
-        {
-            if (j==i) continue;
-            if (!atoms[i]->is_bonded_to(atoms[j])) continue;
-
-            float rij = atoms[i]->distance_to(atoms[j]);
-            float Rj = atoms[j]->vdW_radius;
-            float aij = sqrt(Ri*Rj);
-            float D = pow(rij/(2*aij), 2);
-            double fGB = sqrt(rij*rij + aij*aij * exp(-D));
-
-            double qi = fabs(atoms[i]->is_polar());
-            double qj = fabs(atoms[j]->is_polar());
-            double lDeltaGGB = -0.5 * (qi*qj / fGB) * (1.0 - exp(-kappa*fGB)/epsilon) * 48.4;
-            #if 1
-            if (fabs(lDeltaGGB) > 0.1) cout << atoms[i]->name << " (" << qi << ") "
-                << "~"
-                << atoms[j]->name << " (" << qj << ") "
-                << ": " << (lDeltaGGB * _kcal_per_kJ) << endl;
-            #endif
-            DeltaGGB += lDeltaGGB;
-        }
-    }
+    #if _dbg_solvent_free_energy
+    cout << "# " << name << " DeltaGsurf = " << DeltaGsurf << endl;
+    cout << "# " << name << " DeltaGGB = " << DeltaGGB << endl;
+    cout << endl;
     #endif
 
-    // cout << "# DeltaGsurf = " << (DeltaGsurf * _kcal_per_kJ) << endl;
-    // cout << "# DeltaGGB = " << (DeltaGGB * _kcal_per_kJ) << endl;
     return DeltaGGB + DeltaGsurf;
+}
+
+float Molecule::solvent_free_energy(float epsilon, float kappa, bool csa)
+{
+    if (!atoms || !atoms[0]) return 0;
+    double totalsurf = get_surface_area(false, csa);
+    double polsurf = get_surface_area(true, csa);
+    return solvation_from_surface_areas(totalsurf, polsurf);
 }
 
 float Molecule::solvent_bound_energy(Molecule **neighbors)
 {
-    float DeltaGsurf = get_exposed_surface_area(neighbors, false, true) * _solve_nonpol;
-    double DeltaGGB = get_exposed_surface_area(neighbors, true, true) * _solve_np2pol;
-    return 0.0f;
+    double totalsurf = get_exposed_surface_area(neighbors, false, true);
+    double polsurf = get_exposed_surface_area(neighbors, true, true);
+    return solvation_from_surface_areas(totalsurf, polsurf);
 }
 
 Bond** Molecule::get_all_bonds(bool unidirectional)

@@ -467,6 +467,7 @@
 #define _dbg_rock_pic 0
 #define _dbg_rshpm_apply 0
 #define _dbg_Schiff_internal_clashes 0
+#define _dbg_solvent_free_energy 0
 #define _dbg_soft 0
 #define _dbg_soft_metal 0
 #define _dbg_soft_motions 0

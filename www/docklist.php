@@ -360,7 +360,7 @@ foreach ($prots as $protid => $p)
         }
 
         $rows[$rowid]["benerg_raw_$mode"] = $benerg;
-        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) + $ewde - $icd - $tds;
+        $rows[$rowid]["benerg_$mode"] = $benerg + ($lsbe - $lsfe) + ($phbe - $phfe) /* + $ewde */ - $icd - $tds;
         $rows[$rowid]["nump_$mode"] = $nump;
         $rows[$rowid]["occl_$mode"] = $occl;
 

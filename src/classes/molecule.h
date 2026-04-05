@@ -9,8 +9,15 @@
 #include "progress.h"
 #include "space.h"
 
-#define _solve_nonpol 2.1 / 84.5 / _kcal_per_kJ
-#define _solve_np2pol -6.9 / 19.9 / _kcal_per_kJ
+// #define _solve_nonpol 2.1 / 84.5 / _kcal_per_kJ
+// #define _solve_np2pol -6.9 / 19.9 / _kcal_per_kJ
+
+// water solvation free energy
+#define _solve_water -26.5
+
+// methane solvation free energy
+#define _solve_CH4 8.5
+#define _surfarea_CH4 17.3
 
 struct SMILES_Parenthetical
 {
@@ -422,6 +429,7 @@ protected:
     float surface_occlusion(Molecule** ligands);
     float octant_occlusion(Molecule** ligands);
     float ray_occlusion(Molecule** ligands);
+    double solvation_from_surface_areas(double totalsurf, double polsurf);
 
     public:
     const int& num_monomers = nmonomers;
