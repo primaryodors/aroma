@@ -472,6 +472,7 @@ SAVE $outf
     cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"]]
     subprocess.run(cmd)
 
+    dock_success = False
     dockfile = f"out/{fam}/{protid}/{protid}~{odor['full_name']}.{mode}.dock"
     if os.path.exists(dockfile):
         with open(dockfile, "r") as f:
@@ -490,7 +491,11 @@ SAVE $outf
 
                 if poses > 0 and total < 0 and not disqo:
                     print("SUCCESS")
+                    dock_success = True
                     break
+
+    if dock_success:
+        break
 
     if tries >= 100:
         print("FAILED after 100 tries.")
