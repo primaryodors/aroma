@@ -37163,10 +37163,10 @@
     "d82092024d31025a415db09dab4d6982":
     {
         "full_name": "arborone",
-        "smiles": "CC(=O)[C@@]1(C)CC=C2[C@H]([C@@H]1C)C(C)(C)CCC2",
+        "smiles": "CC(=O)[C@@]1(C)CC=C2[C@H]([C@@H]1C)C(C)(C)CCC2|rflp C4",
         "notes":
         {
-            "text": "This is the active impurity in the otherwise odorless Iso-E-Super."
+            "text": "This is the olfactive impurity in the otherwise odorless Iso-E-Super."
         },
         "aroma":
         {
