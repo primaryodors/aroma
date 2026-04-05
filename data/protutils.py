@@ -260,6 +260,8 @@ def custom_pdb_template(aln, output_fname):                             # Writes
     strandids = dict()
     for ln in c.split("\n"):
         if ln[0:9] == "structure":
+            if "inactive" in ln or "apo " in ln:
+                continue
             reading_aln = True
             current_aln = ""
             pieces = ln.split(':')

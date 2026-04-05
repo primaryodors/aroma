@@ -23,7 +23,7 @@ structure:8hti:8    :R:310  :R:Olfactory Receptor family 52 consensus:Homo sapie
 ---------------------------------------------------------------------------------------------------*
 
 >P1;8w77
-structure:8w77:11   :A:294  :A:Olfactory Receptor family 52 consensus:Homo sapiens: 3.61: 0.20
+structure:8w77:11   :A:294  :A:Olfactory Receptor family 52 consensus, apo state:Homo sapiens: 3.61: 0.20
 -------------------------------------------------------------------PSSFLLVIPGLESVHIWISIPFCAMYLIALLGNSTLLFVIK----------------------
 ------------------------------------------------------------------------------------LHEPMYYFLAMLAATDLVLSTSTIPKMLAIF---------------
 ---------------------------------------------------------------WFNLKEISFDACLTQMFFIHSFTGMESGVLLAMAFDRYVAICY------------------------
@@ -191,7 +191,7 @@ structure:8pm2:49   :R:337  :R:Trace amine-associated receptor 7f:Mus musculus: 
 ---------------------------------------------------------------------------------------------------*
 
 >P1;3ny9
-structure:3ny9:32   :A:342  :A:Beta-2 adrenergic receptor:Homo sapiens: 2.84: 0.222
+structure:3ny9:32   :A:342  :A:Beta-2 adrenergic receptor inactive:Homo sapiens: 2.84: 0.222
 --------------------------------------------------------------------------------WVVGMGIVMSLIVLAIVFGNVLVITAIAKF--------------------
 ----------------------------------------------------------------------------------ERLQTVTNYFITSLACADLVMGLAVVPFGAAHILMKMWT---------
 ---------------------------------------------------------------------FGNFWCEFWTSIDVLCVTASIWTLCVIAVDRYFAITS------------------------
