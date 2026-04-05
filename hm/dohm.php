@@ -68,7 +68,7 @@ foreach ($xlinx as $xl)
 
 if ($disulfs) $disulfs = "    def special_patches(self, aln):\n$disulfs";
 
-$mdlcls = "DOPEHRLoopModel";
+$mdlcls = "AutoModel"; // "DOPEHRLoopModel";
 if ($rcpid == "OR51F1" || $rcpid == "OR51F2" || $rcpid == "OR51G2") $mdlcls = "AutoModel";
 
 exec("php -f build_alignment_file.php");
