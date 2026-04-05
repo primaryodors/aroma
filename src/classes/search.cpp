@@ -1631,6 +1631,321 @@ void Search::clear_candidates()
     }
 }
 
+void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen, Cavity *gcav, AminoAcid **bsres)
+{
+    int i, j;
+    bool require_opposite_charge = false, require_condbas = false;
+
+    Molecule* llig = ligand->get_monomer(0);
+    int maxlt = ligand->get_heavy_atom_count()+8;
+    LigandTarget* targs = new LigandTarget[maxlt];
+    int ltargs = Search::identify_ligand_pairing_targets(llig, targs, maxlt);
+
+    AminoAcid** lrs = new AminoAcid*[SPHREACH_MAX];
+    memset(lrs, 0, SPHREACH_MAX*sizeof(AminoAcid**));
+
+    #if _dbg_rh_selection
+    cout << endl << "Residues for randhyd";
+    #endif
+    ligand->movability = MOV_ALL;
+    ligand->recenter(nodecen);
+    if (gcav)
+    {
+        ligand->recenter(gcav->get_center());
+        gcav->find_best_containment(ligand, true);
+        j = gcav->resnos(protein, lrs);
+        lrs[j] = nullptr;
+        lrs[SPHREACH_MAX-1] = nullptr;
+        #if _dbg_rh_selection
+        cout << " from global cavity";
+        #endif
+    }
+    else if (bsres)
+    {
+        memcpy(lrs, bsres, sizeof(AminoAcid**)*SPHREACH_MAX);
+        for (j=0; lrs[j]; j++);
+        #if _dbg_rh_selection
+        cout << " from reaches_spheroid[]";
+        #endif
+    }
+    else throw 0xbadc0de;
+
+    #if _dbg_rh_selection
+    cout << ":" << endl;
+    for (i=0; lrs[i]; i++)
+    {
+        float lrh = lrs[i]->hydrophilicity();
+        colorize(-lrh*40);
+        cout << lrs[i]->get_name() << " hydro = " << lrh << endl;
+        colorless();
+    }
+    cout << endl;
+    #endif
+
+    Atom *rhmet = nullptr;
+    for (i=0; lrs[i]; i++)
+    {
+        if (lrs[i]->coordmtl)
+        {
+            rhmet = lrs[i]->coordmtl;
+            break;
+        }
+    }
+
+    Atom *bh = rhmet ? llig->get_most_metal_coord(rhmet) : llig->get_most_polar();
+    if (!bh)
+    {
+        cerr << "Molecule::get_most_polar() failed." << endl;
+        throw 0xbadc0de;
+    }
+    bh = bh->get_heavy_atom();
+    Atom *bH = bh->is_bonded_to("H");
+    if (rhmet && bH)
+    {
+        if (llig->deprotonate(bH)) bH = nullptr;
+    }
+
+    int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry(), bhfam = bh->get_family();
+    float bhyd = fabs(bh->is_polar());
+    bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi(), bhthi = bh->is_thio();
+    float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
+
+    if (!rhmet)
+    {
+        float lchg = ligand->get_charge();
+        if (lchg)
+        {
+            for (i=0; lrs[i]; i++)
+            {
+                float rchg = lrs[i]->get_charge();
+                if (sgn(rchg) == -sgn(lchg))
+                {
+                    require_opposite_charge = true;
+                    #if _dbg_randhyd_probs || _dbg_rh_selection
+                    cout << "Requiring opposite charge." << endl;
+                    #endif
+                    break;
+                }
+            }
+            if (!require_opposite_charge) for (i=0; lrs[i]; i++)
+            {
+                if (lchg < 0 && lrs[i]->conditionally_basic())
+                {
+                    require_condbas = true;
+                    #if _dbg_randhyd_probs || _dbg_rh_selection
+                    cout << "Requiring conditional basicity." << endl;
+                    #endif
+                    break;
+                }
+            }
+        }
+
+        i = -1;
+        do
+        {
+            i = rand() % j;
+
+            if (require_opposite_charge && sgn(lrs[i]->get_charge()) != -sgn(lchg)) continue;
+            if (require_opposite_charge && lrs[i]->conditionally_basic()) continue;
+            if (require_condbas && !lrs[i]->conditionally_basic()) continue;
+
+            if (frand(0,1) < 1e-9)                                // just in case there are no polar side chains.
+            {
+                #if _dbg_randhyd_probs
+                cout << "Randomly selected " << lrs[i]->get_name() << " for " << bh->name << endl;
+                #endif
+                break;
+            }
+            float lrhyd = fabs(lrs[i]->hydrophilicity());
+            bool lrharom = lrs[i]->ring_is_aromatic(0), lrhtyr = lrs[i]->is_tyrosine_like();
+
+            Atom *nessaml, *nessamr, *OH;
+            ligand->mutual_closest_atoms(lrs[i], &nessaml, &nessamr);
+            if (nessaml && nessamr)
+            {
+                nessaml = nessaml->get_heavy_atom();
+                nessamr = nessamr->get_heavy_atom();
+                if (lrhtyr)
+                {
+                    OH = lrs[i]->get_atom("OH");
+                    if (nessamr != OH && nessaml->distance_to(OH) > 1.25 * nessaml->distance_to(nessamr))
+                        lrhtyr = false;
+                }
+            }
+
+            if ((bhyd >= hydrophilicity_cutoff) == (lrhyd >= hydrophilicity_cutoff)
+                || lrs[i]->coordmtl
+                || (lrs[i]->is_thiol() && (lrharom || frand(0,1) < 0.1))
+                || lrhtyr
+                )
+            {
+                if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
+                float probability = 1e-7;
+                Atom *ra;
+
+                // HYDROPHILIC CALCULATION
+                if (bhyd && ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH)))
+                {
+                    probability = 0.1 * (lrhtyr ? 0.8 : lrhyd);
+                    if (bhpi) probability *= (1.0 + 0.2 * lrs[i]->pi_stackability());
+                    ra = lrs[i]->get_reach_atom();
+                    if (ra->is_conjugated_to_charge()) probability = pow(probability, 0.2);
+                    #if _dbg_randhyd_probs
+                    cout << lrs[i]->get_name();
+                    if (lrs[i]->has_hbond_donors() && bhbt < bhg)
+                        cout << " has hbond donors and " << bh->name << " bt " << bhbt << " < geo " << bhg;
+                    if (lrs[i]->has_hbond_acceptors() && bH)
+                        cout << " has hbond acceptors and " << bH->name << " exists";
+                    if (ra->is_conjugated_to_charge()) cout << "; " << ra->name << " is conjugated to charge";
+                    cout << "; probability = " << probability;
+                    cout << endl;
+                    #endif
+                }
+
+                // THIOL-PI CALCULATION
+                else if (bhthi && lrharom)
+                {
+                    probability = 0.25;
+                    #if _dbg_randhyd_probs
+                    cout << bh->name << " is thiol and " << lrs[i]->get_name() << " is aromatic";
+                    cout << "; probability = " << probability;
+                    cout << endl;
+                    #endif
+                }
+
+                // HYDROPHOBIC CALCULATION
+                else if (bhfam == TETREL)
+                {
+                    lrhyd = 1.0 - lrhyd;
+                    probability = 0.1 * lrhyd;
+                    if (bhpi) probability += 0.2 * lrs[i]->pi_stackability();
+                    ra = lrs[i]->get_reach_atom();
+                    #if _dbg_randhyd_probs
+                    cout << bh->name << " is tetrel and " 
+                        << lrs[i]->get_name() << " hydrophilicity = " << (1.0 - lrhyd);
+                    if (bhpi) cout << " and is pi = " << lrs[i]->pi_stackability();
+                    cout << "; probability = " << probability;
+                    cout << endl;
+                    #endif
+                }
+
+                // EFFECT OF PRIORITY
+                if (probability && lrs[i]->priority)
+                {
+                    probability *= 5;
+                    #if _dbg_randhyd_probs
+                    cout << lrs[i]->get_name() << " has priority";
+                    cout << "; probability now = " << probability;
+                    cout << endl;
+                    #endif
+                }
+
+                // DISTANCE ADJUSTMENT
+                if (ra && probability)
+                {
+                    float rhcendist = ra->loc.get_3d_distance(nodecen);
+                    float anomaly = rhcendist - bhcendist;
+                    if (anomaly > 0) anomaly = fmax(0, anomaly-3.5);
+                    probability += 0.25 * lrhyd / (1.0 + anomaly/2.5);
+                    #if _dbg_randhyd_probs
+                    cout << bh->name << " is " << bhcendist << "A from ligand barycenter";
+                    cout << "; " << lrs[i]->get_name() << ":" << ra->name << " is " << rhcendist << "A from pocket center";
+                    cout << "; probability now = " << probability;
+                    cout << endl;
+                    #endif
+                }
+
+                // ECLIPSING EFFECT
+                if (bh != nessaml)
+                {
+                    float rbh = bh->distance_to(nessamr);
+                    float rnes = nessaml->distance_to(nessamr);
+                    if (rbh > rnes)
+                    {
+                        float r = (rbh-rnes)+1;
+                        probability /= (r*r);
+                    }
+                }
+
+                // PROBABILITY OF ATOM SELECTION
+                if (probability) 
+                {
+                    probability *= frand(0.08, 0.13);         // stochastic
+                    if (frand(0,1) < probability)
+                    {
+                        #if _dbg_randhyd_probs
+                        cout << lrs[i]->get_name() << " SELECTED." << endl << endl;
+                        #endif
+                        break;
+                    }
+                }
+                #if _dbg_randhyd_probs
+                else
+                {
+                    cout << lrs[i]->get_name() << " has probability zero." << endl;
+                }
+                #endif
+
+                #if _dbg_randhyd_probs
+                cout << endl;
+                #endif
+            }
+        } while (1);
+    }
+
+    // cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl << endl;
+
+    Atom *rh = rhmet ? rhmet : lrs[i]->get_most_polar();
+    if (!rh)
+    {
+        cerr << "AminoAcid::get_most_polar() failed." << endl;
+        throw 0xbadc0de;
+    }
+
+    if (fabs(bh->is_polar()) >= hydrophilicity_cutoff && fabs(rh->is_polar()) >= hydrophilicity_cutoff
+        && !bH && !lrs[i]->has_hbond_donors())
+        lrs[i]->protonate();
+
+    #if _dbg_rh_selection
+    cout << "Selected ligand:" << bh->name << " ... " << lrs[i]->get_name() << ":" << rh->name
+        << " hydro = " << lrs[i]->hydrophilicity()
+        << endl << endl;
+    #endif
+
+    float ropt = InteratomicForce::optimal_distance(bh, rh);
+    LocRotation lrot = align_points_3d(bh->loc, rh->loc, ligand->get_barycenter());
+    lrot.origin = ligand->get_barycenter();
+    ligand->rotate(lrot);
+    Vector v = rh->loc.subtract(bh->loc);
+    v.r -= ropt;
+    ligand->move(v);
+
+    float theta, bthet = 0, step = hexagonal/10;
+    Interaction be = 0;
+    LocatedVector lv = (Vector)(rh->loc.subtract(nodecen));
+    lv.origin = rh->loc;
+    for (theta = 0; theta<M_PI*2; theta+=step)
+    {
+        ligand->rotate(lv, step);
+        Interaction e = ligand->get_intermol_binding((Molecule**)lrs);
+        if (e.improved(be))
+        {
+            be = e;
+            bthet = theta;
+        }
+    }
+    ligand->rotate(lv, bthet);
+
+    ligand->stay_close_mine = bh;
+    ligand->stay_close_other = rh;
+    ligand->stay_close_mol = lrs[i];
+    ligand->stay_close_optimal = ropt;
+    ligand->stay_close_tolerance = 0.1 * ropt;
+    ligand->stay_close2_mine = nullptr;
+    ligand->stay_close2_mol = nullptr;
+    ligand->stay_close2_other = nullptr;
+}
+
 float Search::stays_rotate_byinter(Protein *p, Molecule *l, Atom *sc, Atom *ls)
 {
     LocatedVector lv = (Vector)sc->loc.subtract(ls->loc);

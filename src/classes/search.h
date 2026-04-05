@@ -76,6 +76,8 @@ class Search
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);
     static void clear_candidates();
 
+    static void do_randhyd_search(Molecule* ligand, Protein* protein, Point pocketcen, Cavity* cav = nullptr, AminoAcid** bsres = nullptr);
+
     static float stays_rotate_byinter(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
     static float stays_rotate_headtotail(Protein* protein, Molecule* ligand, Atom* sidechain_stay, Atom* ligand_stay);
 

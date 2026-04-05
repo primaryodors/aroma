@@ -186,7 +186,7 @@
                 "stcr": "H3.33 FWY4.57 5.47 6.51 #R6.59",
                 "flxr": "MIL4.57 45.53 5.43",
                 "appears": "0",
-                "search": "BB",
+                "# search": "BB",
                 "# iexcl": 
                 [
                     "6.58 6.60"
@@ -215,7 +215,7 @@
     "TAAR*":
     {
         "pocket": "3.32 3.37 5.43 6.48 7.43",
-        "search": "BB",
+        "# search": "BB",
         "appears": "0"
     }
 }
