@@ -320,4 +320,3 @@ for rcpid in data.protutils.prots.keys():
 
 if processed:
     cmd = ["which", "sox"]
-

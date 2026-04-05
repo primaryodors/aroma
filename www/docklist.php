@@ -721,4 +721,4 @@ if ($right + $wrong)
 
 <?php }
 
-output_dlmenu_div();
+// output_dlmenu_div();
