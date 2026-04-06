@@ -1867,6 +1867,8 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
                     }
                 }
 
+                if (lrs[i]->is_ic_res) probability /= 3;
+
                 // PROBABILITY OF ATOM SELECTION
                 if (probability) 
                 {
