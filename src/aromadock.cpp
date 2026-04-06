@@ -4548,7 +4548,7 @@ _try_again:
                         + (std::string)(cfmols[i]->clash1 ? cfmols[i]->clash1->name : "(null)")
                         + (std::string)"..."
                         + (std::string)(cfmols[i]->clash2 ? cfmols[i]->clash2->name : "(null)")
-                        + (std::string)". ";
+                        + (std::string)"). ";
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason
                         += reason;
