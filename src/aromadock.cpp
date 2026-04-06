@@ -2490,22 +2490,6 @@ int main(int argc, char** argv)
 
     int l, j1, i2, miter;
 
-    #if 0
-    if (nmtlcoords)
-    {
-        protein->pocketcen = pocketcen;
-        protein->coordinate_metal(mtlcoords, nmtlcoords);
-        metald_prot = protein;
-
-        if (temp_pdb_file.length()) std::remove(temp_pdb_file.c_str());
-        temp_pdb_file = (std::string)"tmp/" + std::to_string(pid) + (std::string)"_metal.pdb";
-
-        pf = fopen(temp_pdb_file.c_str(), "wb");
-        protein->save_pdb(pf, protein->metals_as_molecule());
-        fclose(pf);
-    }
-    #endif
-
     if (bridges.size())
     {
         reconnect_bridges();
@@ -4943,7 +4927,7 @@ _exitposes:
             if (output) *output << "python3 hm/fixfail.py " << protid << " " << out_pdb_fn << endl << endl;
         }
     }
-    else 
+    else
     {
         cout << found_poses << " pose(s) found." << endl;
         if (output) *output << found_poses << " pose(s) found." << endl;

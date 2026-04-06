@@ -4,7 +4,7 @@ import os
 import os.path
 import json
 import subprocess
-import pprint
+from collections.abc import Iterable
 
 if len(sys.argv) < 3:
     print("Both a protein and a ligand are required.")
@@ -282,8 +282,13 @@ for rcpid in data.protutils.prots.keys():
                         newcfg.append("VESTIBULE " + vb)
                         print("VESTIBULE " + vb)
                 if "mcoord" in pocket:
-                    print(pocket["mcoord"])
-                    newcfg.append("MCOORD " + pocket["mcoord"])
+                    if isinstance(pocket["mcoord"], Iterable):
+                        for mcoord in pocket["mcoord"]:
+                            print(mcoord)
+                            newcfg.append("MCOORD " + mcoord)
+                    else:
+                        print(pocket["mcoord"])
+                        newcfg.append("MCOORD " + pocket["mcoord"])
 
             newcfga = "\n".join(newcfg)
 
