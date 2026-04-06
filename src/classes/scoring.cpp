@@ -35,6 +35,11 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     int* addl_resno, int drcount, Molecule** waters, bool is_movie)
 {
     int i, li, j, k, l, n;
+    if (!global_water.get_atom_count())
+    {
+        global_water.from_smiles("O{O1}");
+        global_water.obtain_vdW_surface(vdw_surface_density);
+    }
 
     // This step doesn't actually do anything useful, but without it, the compiler has some kind of weird bug where it optimizes
     // something out (yes even without -O) and we end up with a dock result that's all zeros and no PDB output.
@@ -80,11 +85,6 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         ligand_solvation_energy = ligand->solvent_free_energy();
         ligand_pocket_wet_energy = ligand_solvation_energy;
         ligand_waters_energy = 0;
-        if (!global_water.get_atom_count())
-        {
-            global_water.from_smiles("O{O1}");
-            global_water.obtain_vdW_surface(vdw_surface_density);
-        }
         Atom* polarH = global_water.get_atom(1);
         Atom* polarO = global_water.get_atom(0);
 
