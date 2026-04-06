@@ -284,6 +284,7 @@ for rcpid in data.protutils.prots.keys():
                 if "mcoord" in pocket:
                     if isinstance(pocket["mcoord"], Iterable):
                         for mcoord in pocket["mcoord"]:
+                            if mcoord[0:1] == '#': continue
                             print(mcoord)
                             newcfg.append("MCOORD " + mcoord)
                     else:

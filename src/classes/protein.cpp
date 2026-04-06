@@ -2838,22 +2838,29 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
 
     n = count;
 
-    k=m=0;
+    m = 0;
     for (i=0; i<n; i++)
     {
+        k = 0;
         int ncr = mtlcoords[i].ncoordres;
 
         // Obtain the alpha center.
         Point pt4avg[ncr+2];
         l=0;
+        bool skip_mcoord = false;
         for (j=0; j<ncr; j++)
         {
             if (!mtlcoords[i].coordres[j].resno) mtlcoords[i].coordres[j].resolve_resno(this);
-            if (!mtlcoords[i].coordres[j].resno) return nullptr;                                // if any one res not found, return fail condition
+            if (!mtlcoords[i].coordres[j].resno)
+            {
+                skip_mcoord = true;
+                break;
+            }
             Point respt = get_atom_location(mtlcoords[i].coordres[j].resno, "CA");
             respt.weight = 1;
             pt4avg[l++] = respt;
         }
+        if (skip_mcoord) continue;
         Point alpcen = find_equidistant_point(pt4avg, l);
 
         // Obtain the beta center.
