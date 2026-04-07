@@ -296,7 +296,7 @@
 // #define cavity_min_occlusion 0.53
 #define cavity_occlusion_threshold_mult 0.7
 #define default_cavity_stuffing 0.03
-#define flexional_give_coefficient 0.4
+#define flexional_give_coefficient 0.75
 #define min_cavmatch_ctainmt 0.6
 #define min_cvty_ctnmt 0.25
 #define min_dist_bounding_box 0.5

@@ -204,7 +204,8 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr
                     {
                         // Add a slight "give" for side chains of aminos with greater flexional probability.
                         float aafp = can_clash[i]->get_aa_definition()->flexion_probability;
-                        if (aafp >= 0.075) r += aafp * flexional_give_coefficient * max(0, a->get_Greek()-2);
+                        if (aafp >= 0.075) r += aafp * flexional_give_coefficient * max(0, a->get_Greek()-2)
+                            * (can_clash[i]->ring_is_aromatic(0) ? 0.4 : 1);
                     }
 
                     if (r < rmin || !i)
