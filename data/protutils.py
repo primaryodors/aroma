@@ -250,9 +250,27 @@ def ali_rel_resno(ali: str, helix: int, member: int):
 
     return result + member - 50
 
-def custom_pdb_template(aln, output_fname):                             # Writes a file and returns the templates and the .ali block.
+def custom_pdb_template(aln, rcpid, output_fname):                             # Writes a file and returns the templates and the .ali block.
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
+
+    # Choose experimental structures by grouping.
+    fam = family_from_protid(rcpid)
+    exclude = []
+    if fam == "OR1" or fam == "OR3" or fam == "OR7":
+        exclude.extend(["8f76", "8hti", "8uxv", "8uy0", "8uyq", "9wpm", "9lkb", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
+    elif fam == "OR2" or fam == "OR13":
+        exclude.extend(["8f76", "8hti", "8uxv", "9wpm", "9lkb", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
+    elif fam == "OR4" or fam == "OR12":
+        exclude.extend(["8f76", "8hti", "8uxv", "9wpm", "9lkb", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
+    elif fam == "OR5" or fam == "OR8" or fam == "OR9":
+        exclude.extend(["8f76", "8hti", "8uxv", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
+    elif fam == "OR6" or fam == "OR10" or fam == "OR11":
+        exclude.extend(["8f76", "8hti", "8uxv", "8uy0", "9wpm", "9lkb"])
+    elif fam == "OR14":
+        exclude.extend(["8f76", "8hti", "8uxv", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
+    elif fam == "OR51" or fam == "OR52" or fam == "OR56":
+        exclude.extend(["8uxy", "9w45", "8uy0", "8uyq", "9wpm", "9lkb", "9ldv", "9ldw", "9ldx", "9ldz", "9le0", "9le1", "9le2"])
 
     # Read in the alignments of the experimental structures.
     reading_aln = False
@@ -300,7 +318,7 @@ def custom_pdb_template(aln, output_fname):                             # Writes
     # Make the highest weight 5 times the lowest weight, and make the weights add up to 1.
     # Since we want the highest to be 5 times as much as the lowest, that means we want it to be 4 times more.
     span = closest_sim[0] - closest_sim[4]
-    tosub = closest_sim[4] - span/4
+    tosub = closest_sim[4]; # - span/4
     for i in range(5):
         weights.append(closest_sim[i] - tosub)
 
