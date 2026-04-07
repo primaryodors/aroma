@@ -2270,6 +2270,19 @@ int main(int argc, char** argv)
     strcpy(protid, slash ? slash+1 : protfname );
     char* dot = strchr(protid, '.');
     if (dot) *dot = 0;
+    
+    for (i=1; i<argc; i++)
+    {
+        if (argv[i][0] == '-' && argv[i][1] == '-')
+        {
+            argv[i] += 2;
+            for (j=0; argv[i][j]; j++) if (argv[i][j] >= 'a' && argv[i][j] <= 'z') argv[i][j] &= 0x5f;
+            j = interpret_config_line(&argv[i]);
+            if (optsecho.size()) cout << optsecho << endl;
+            argv[i] -= 2;
+            i += j;
+        }
+    }
 
     Protein pose_proteins[poses+1];
     Molecule pose_ligands[poses+1];
@@ -2333,19 +2346,6 @@ int main(int argc, char** argv)
             }
             colorless();
             cout << endl << endl << endl;
-        }
-    }
-
-    for (i=1; i<argc; i++)
-    {
-        if (argv[i][0] == '-' && argv[i][1] == '-')
-        {
-            argv[i] += 2;
-            for (j=0; argv[i][j]; j++) if (argv[i][j] >= 'a' && argv[i][j] <= 'z') argv[i][j] &= 0x5f;
-            j = interpret_config_line(&argv[i]);
-            if (optsecho.size()) cout << optsecho << endl;
-            argv[i] -= 2;
-            i += j;
         }
     }
 

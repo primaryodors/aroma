@@ -2008,6 +2008,7 @@ int Molecule::from_sdf(char const *sdf_dat)
     int na, nb;
     int added=0;
     char** words;
+    atoms = nullptr;
 
     for (j=3; j<lncount; j++)
     {
@@ -2018,7 +2019,7 @@ int Molecule::from_sdf(char const *sdf_dat)
         if (!words || !words[0] || !words[1]) break;
         if (!strcmp(words[1], "END")) break;
 
-        if (!strcmp(words[1], "CHG"))
+        if (!strcmp(words[1], "CHG") && atoms)
         {
             for (i=3; words[i] && words[i+1]; i+=2)
             {
@@ -2034,32 +2035,35 @@ int Molecule::from_sdf(char const *sdf_dat)
 
             atoms = new Atom*[na+4];
         }
-        else if (added < na)
+        else if (atoms)
         {
-            Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
-            if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
-            Atom* a = new Atom(words[3], loc);
-            a->mol = reinterpret_cast<void*>(this);
-            delete loc;
-            a->name = new char[16];
-            sprintf(a->name, "%s%d", words[3], added+1);
-            a->residue = 0;
-            atoms[atcount++] = a;
-            atoms[atcount] = nullptr;
-            added++;
-        }
-        else
-        {
-            int a1i = atoi(words[0]);
-            int a2i = atoi(words[1]);
+            if (added < na)
+            {
+                Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
+                if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
+                Atom* a = new Atom(words[3], loc);
+                a->mol = reinterpret_cast<void*>(this);
+                delete loc;
+                a->name = new char[16];
+                sprintf(a->name, "%s%d", words[3], added+1);
+                a->residue = 0;
+                atoms[atcount++] = a;
+                atoms[atcount] = nullptr;
+                added++;
+            }
+            else
+            {
+                int a1i = atoi(words[0]);
+                int a2i = atoi(words[1]);
 
-            if (!a1i || !a2i) break;
-            atoms[a1i-1]->bond_to(atoms[a2i-1], atof(words[2]));
+                if (!a1i || !a2i) break;
+                atoms[a1i-1]->bond_to(atoms[a2i-1], atof(words[2]));
+            }
         }
 
         if (words) delete[] words;
     }
-    atoms[atcount] = 0;
+    if (atoms) atoms[atcount] = 0;
     if (words) delete[] words;
 
     identify_conjugations();
