@@ -2271,7 +2271,7 @@ int main(int argc, char** argv)
     char* dot = strchr(protid, '.');
     if (dot) *dot = 0;
 
-    Protein pose_proteins[poses];
+    Protein pose_proteins[poses+1];
     Molecule pose_ligands[poses+1];
     protein = &pose_proteins[0]; // new Protein(protid);
     pf = fopen(protfname, "r");

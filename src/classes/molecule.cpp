@@ -2738,7 +2738,7 @@ int Molecule::add_ring(Atom** atoms)
 
     Ring** ringstmp = new Ring*[ringcount+4];
 
-    if (rings)
+    if (rings && rings[0])
     {
         for (i=0; i<ringcount; i++) ringstmp[i] = rings[i];
         delete[] rings;
