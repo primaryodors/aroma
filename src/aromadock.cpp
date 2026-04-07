@@ -1074,8 +1074,11 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_
         n1 = nmtlcoords;
         for (j1=0; j1 < n1; j1++)
         {
-            mtlcoords[j1].mtl->move(tmp_pdb_metal_loc[j1]);
-            mtlcoords[j1].mtl->save_pdb_line(pfout, ++atno_offset);
+            if (mtlcoords[j1].mtl)
+            {
+                mtlcoords[j1].mtl->move(tmp_pdb_metal_loc[j1]);
+                mtlcoords[j1].mtl->save_pdb_line(pfout, ++atno_offset);
+            }
         }
 
         protein->end_pdb(pfout);
@@ -2489,22 +2492,6 @@ int main(int argc, char** argv)
     }
 
     int l, j1, i2, miter;
-
-    #if 0
-    if (nmtlcoords)
-    {
-        protein->pocketcen = pocketcen;
-        protein->coordinate_metal(mtlcoords, nmtlcoords);
-        metald_prot = protein;
-
-        if (temp_pdb_file.length()) std::remove(temp_pdb_file.c_str());
-        temp_pdb_file = (std::string)"tmp/" + std::to_string(pid) + (std::string)"_metal.pdb";
-
-        pf = fopen(temp_pdb_file.c_str(), "wb");
-        protein->save_pdb(pf, protein->metals_as_molecule());
-        fclose(pf);
-    }
-    #endif
 
     if (bridges.size())
     {
@@ -4336,7 +4323,8 @@ _try_again:
                 n = nmtlcoords;
                 for (j=0; j < n; j++)
                 {
-                    tmp_pdb_metal_locs[pose][j] = mtlcoords[j].mtl->loc;
+                    if (mtlcoords[j].mtl)
+                        tmp_pdb_metal_locs[pose][j] = mtlcoords[j].mtl->loc;
                 }
                 tmp_pdb_ligand[pose].copy_state(ligand);
             }
@@ -4943,7 +4931,7 @@ _exitposes:
             if (output) *output << "python3 hm/fixfail.py " << protid << " " << out_pdb_fn << endl << endl;
         }
     }
-    else 
+    else
     {
         cout << found_poses << " pose(s) found." << endl;
         if (output) *output << found_poses << " pose(s) found." << endl;
