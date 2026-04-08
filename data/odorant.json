@@ -2744,7 +2744,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-5.21"
+                    "ec50": "-4.21"
                 }
             },
             "https://doi.org/10.1002/anie.201309508":
@@ -3595,7 +3595,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.28"
+                    "ec50": "-3.28"
                 }
             }
         },
@@ -7651,7 +7651,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.27"
+                    "ec50": "-3.27"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -9845,7 +9845,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-5.01"
+                    "ec50": "-4.01"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -22957,7 +22957,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.75"
+                    "ec50": "-3.75"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -24025,7 +24025,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.26"
+                    "ec50": "-3.26"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2014/12/2015-Functional-characterization-of-human-olfactory-receptors-responding-to-pyrazine-odorants.pdf":
@@ -24462,7 +24462,7 @@
                 "OR5K1":
                 {
                     "type": "sa",
-                    "ec50": "-5.99"
+                    "ec50": "-4.99"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -26138,7 +26138,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-5.03"
+                    "ec50": "-4.03"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2014/12/2015-Functional-characterization-of-human-olfactory-receptors-responding-to-pyrazine-odorants.pdf":
@@ -26253,7 +26253,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.86"
+                    "ec50": "-3.86"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -31093,8 +31093,7 @@
             {
                 "OR5K1":
                 {
-                    "type": "ma",
-                    "ec50": "-4.52"
+                    "type": "ma"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -32458,7 +32457,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.27"
+                    "ec50": "-3.27"
                 }
             }
         },
@@ -33728,7 +33727,7 @@
                 "OR5K1":
                 {
                     "type": "ma",
-                    "ec50": "-4.84"
+                    "ec50": "-3.84"
                 }
             },
             "http://chemcom.be/wp-content/uploads/2016/12/2016-%E2%80%9CSensorial-Chemistry%E2%80%9D-functional-characterization-and-structure-activity-relationship-understanding-of-OR5K1-and-OR2AG1-allow-to-design-and-synthetize-new-selective-compounds.pdf":
@@ -40960,7 +40959,7 @@
                 "OR5K1":
                 {
                     "type": "sa",
-                    "ec50": "-5.83"
+                    "ec50": "-4.83"
                 }
             }
         },
