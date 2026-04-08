@@ -3580,17 +3580,70 @@ _try_again:
 
                 protein->set_conditional_basicities();
 
-                float cvr = Avogadro;
                 gcav = nullptr;
-                if (ncvtys) for (i=0; i<ncvtys; i++)
+                if (ncvtys)
                 {
-                    if (!cvtys[i].point_inside_pocket(nodecen)) continue;
-                    float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
-                    r *= frand(0.8, 1.3);
-                    if (r < cvr)
+                    #if _dbg_cavsel_probs
+                    cout << ncvtys << " cavity/ies." << endl;
+                    #endif
+                    int* cvres[ncvtys+4];
+                    for (i=0; i<ncvtys; i++) cvres[i] = nullptr;
+                    while (!gcav)
                     {
-                        gcav = &cvtys[i];
-                        cvr = r;
+                        for (i=0; i<ncvtys; i++)
+                        {
+                            // if (!cvtys[i].point_inside_pocket(nodecen)) continue;
+                            float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
+                            r *= frand(0.8, 1.3);
+                            double probs = 1e-3 / (r+1);
+                            if (!cvtys[i].point_inside_pocket(nodecen)) probs /= 3;
+
+                            if (!cvres[i])
+                            {
+                                cvres[i] = new int[protein->get_end_resno()+4];
+                                cvtys[i].resnos_as_array(protein, cvres[i]);
+                            }
+
+                            int numres = 0, numbsr = 0, numpri = 0, numpolpri = 0;
+
+                            for (j=0; cvres[i][j]; j++)
+                            {
+                                numres++;
+                                AminoAcid *aa = protein->get_residue(cvres[i][j]);
+                                if (!aa) continue;
+                                if (std::find(center_resnos.begin(), center_resnos.end(), cvres[i][j]) != center_resnos.end())
+                                    numbsr++;
+                                if (aa->priority)
+                                {
+                                    numpri++;
+                                    if (fabs(aa->hydrophilicity()) >= hydrophilicity_cutoff)
+                                        numpolpri++;
+                                }
+                            }
+
+                            probs += 1e-4 * numres;
+                            probs += 1e-3 * numbsr;
+                            probs += 3e-3 * numpri;
+                            probs += 1e-2 * numpolpri;
+
+                            #if _dbg_cavsel_probs
+                            cout << "Pocket " << cvtys[i].resnos_as_string(protein)
+                                << " numres=" << numres
+                                << " numbsr=" << numbsr
+                                << " numpri=" << numpri
+                                << " numpolpri=" << numpolpri
+                                << " probability = " << probs << endl;
+                            #endif
+
+                            if (frand(0,1) < probs)
+                            {
+                                gcav = &cvtys[i];
+                                #if _dbg_cavsel_probs
+                                cout << "Pocket " << cvtys[i].resnos_as_string(protein) << " chosen." << endl << endl;
+                                #endif
+                                break;
+                            }
+                        }
                     }
                 }
 

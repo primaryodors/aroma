@@ -882,6 +882,7 @@ int Cavity::resnos_as_array(Protein *p, int *output)
         {
             if (included[i]) output[l++] = i;
         }
+        output[l] = 0;
     }
     return l;
 }

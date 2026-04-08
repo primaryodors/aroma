@@ -400,6 +400,7 @@
 #define _dbg_bconstr 0
 #define _dbg_bridges 0
 #define _dbg_can_rotate 0
+#define _dbg_cavsel_probs 0
 #define _dbg_chirality_detection 0
 #define _dbg_cond_basic 0
 #define _dbg_cond_basic_acd_lig 0
