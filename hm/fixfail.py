@@ -350,12 +350,12 @@ while True:
     env.io.atom_files_directory = ['.', './tpl']
 
     fix8uy0 = ""
-    t4hm = data.protutils.templates_for_hm(protid)
-    tpls += " " + " ".join(t4hm)
-    tpls = " ".join(list(set(tpls.split(" "))))
-    print(legal)
-    print(tpls)
-    tplsfttls = (tplfttl,) + tuple(t4hm)
+    # t4hm = data.protutils.templates_for_hm(protid)
+    # tpls += " " + " ".join(t4hm)
+    # tpls = " ".join(list(set(tpls.split(" "))))
+    # print(legal)
+    # print(tpls)
+    tplsfttls = (tplfttl,) # + tuple(t4hm)
     if "8uy0" in tplsfttls: fix8uy0 = "BRIDGE DE45.51 Y6.55"
     print(f"Templates: {tplsfttls}")
     a = AromaReceptorModel( env,
