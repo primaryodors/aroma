@@ -782,7 +782,6 @@ void iteration_callback(int iter, Molecule** mols)
                     before.summed(), before.attractive, before.clash, after.summed(), after.attractive, after.clash);
             }
         }
-
     }
     #endif
 
@@ -2270,7 +2269,7 @@ int main(int argc, char** argv)
     strcpy(protid, slash ? slash+1 : protfname );
     char* dot = strchr(protid, '.');
     if (dot) *dot = 0;
-    
+
     for (i=1; i<argc; i++)
     {
         if (argv[i][0] == '-' && argv[i][1] == '-')
