@@ -154,6 +154,7 @@ for rcpid in data.protutils.prots.keys():
         # pprint.pprint(pocket)
 
         for suff in runsuff:
+            pdbfn = f"{pdbdir}/{rcpid}.{suff}.pdb"
             conffn = f"{rcpid}~{lignu}.{suff}.config"
             if not os.path.exists("out"): os.mkdir("out")
             if not os.path.exists("out/" + fam): os.mkdir("out/" + fam)
@@ -166,7 +167,7 @@ for rcpid in data.protutils.prots.keys():
                     fmt = os.path.getmtime(outfn)
                     if fmt > os.path.getmtime("data/binding_pocket.json") \
                     and fmt > os.path.getmtime(f"sdf/{lignu}.sdf") \
-                    and fmt > os.path.getmtime(f"{pdbdir}/{rcpid}.{suff}.pdb") \
+                    and fmt > os.path.getmtime(pdbfn) \
                     and fmt > os.path.getmtime("bin/aromadock"):
                         continue
 
@@ -181,7 +182,7 @@ for rcpid in data.protutils.prots.keys():
                     if not ln: continue
                     if ln[0:1] == '#': continue
                     if ln[0:5] == "PROT ":
-                        ln = f"PROT {pdbdir}/{rcpid}.{suff}.pdb"
+                        ln = f"PROT {pdbfn}"
                     elif ln[0:4] == "LIG ":
                         ln = "LIG sdf/" + lignu + ".sdf"
                         if isomers and len(isomers):
@@ -218,7 +219,7 @@ for rcpid in data.protutils.prots.keys():
             # newcfg.append("MOVIE")
 
             if not skipdock:
-                cmd = ["bin/ic", f"{pdbdir}/{rcpid}.{suff}.pdb", "-3.0", "nooil"]
+                cmd = ["bin/ic", pdbfn, "-3.0", "nooil"]
                 print(" ".join(cmd))
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
                 for ln in proc.stdout.decode().split('\n'):
@@ -232,10 +233,10 @@ for rcpid in data.protutils.prots.keys():
                     if ln: newcfg.append("CNTCT "+ln)
 
             cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
-            if not os.path.exists(cavfn):
+            if not os.path.exists(cavfn) or os.path.getmtime(cavfn) < os.path.getmtime(pdbfn):
                 with open('data/cavopts.json', 'r') as file:
                     cavopts = json.load(file)
-                cmd = ["bin/cavity_search", "-p", f"{pdbdir}/{rcpid}.{suff}.pdb", "-o", cavfn]
+                cmd = ["bin/cavity_search", "-p", pdbfn, "-o", cavfn]
                 cmd.extend(cavopts)
                 print(" ".join(cmd))
                 subprocess.run(cmd)
