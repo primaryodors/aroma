@@ -290,7 +290,7 @@ with open("allgpcr.ali", "r") as f:
 
 # print(f"Target ali:\\n{tgtali}\\n\\n")
 
-result = data.protutils.custom_pdb_template(tgtali, "{$rcpid}_tpl.pdb").split("\\n", 1)
+result = data.protutils.custom_pdb_template(tgtali, "{$rcpid}", "{$rcpid}_tpl.pdb").split("\\n", 1)
 tplsused = result[0]
 tplali = result[1]
 
