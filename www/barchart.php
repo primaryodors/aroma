@@ -172,7 +172,7 @@ $escale = floatval($h-$ybuf) / ($maxe-$mine);
 $pscale = floatval($h-$ybuf) / $maxp;
 
 $red   = imagecolorallocate($im,255,96,80);
-$wine  = imagecolorallocate($im,128,32,48);
+$wine  = imagecolorallocate($im,64,32,48);
 $green = imagecolorallocate($im,64,144,96);
 $brown = imagecolorallocate($im,96,80,64);
 $yellow= imagecolorallocate($im,192,160,96);
@@ -219,24 +219,24 @@ imageline($im, 0,$base, $w,$base, $blue);
 
 if (count($t))
 {
-    imagestring($im, 3, 2, 0, "Rel.", $red);
-    imagestring($im, 3, 2,15, "Top" , $red);
+    // imagestring($im, 3, 2, 0, "Rel.", $red);
+    // imagestring($im, 3, 2,15, "Top" , $red);
 }
 else if (count($p))
 {
-    imagestring($im, 3, 2,0, "Dock", $azure);
-    imagestring($im, 3, 2,15, "Score" , $azure);
+    // imagestring($im, 3, 2,0, "Dock", $azure);
+    // imagestring($im, 3, 2,15, "Score" , $azure);
 }
 
 if (count($t) || count($e))
 {
-    for ($top = 1; $top <= floor($maxt); $top += 2)
+    for ($top = 1; $top <= floor($maxt); $top += 1)
     {
         $dy = intval($base-1 - $tscale*$top);
 
         imageline($im, $xbuf/3,$dy, $w-$xbuf/3,$dy, $wine );
-        imagestring($im, 3, $w-$xbuf/6,$dy-8, $top, $red);
-        imagestring($im, 3, 2,$dy-8, $top, $red);
+        // imagestring($im, 3, $w-$xbuf/6,$dy-8, $top, $red);
+        // imagestring($im, 3, 2,$dy-8, $top, $red);
     }
 }
 
