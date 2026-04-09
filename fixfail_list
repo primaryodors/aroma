@@ -1,0 +1,100 @@
+
+Predictions that will require fixfail
+
+
+Fail:
+
+Molecular docker did not produce any successful output poses. With the --nofail switch active, output model 1 is used to template a fixfail.
+
+OR2A1 farnesol
+OR2H2 tridecanal 
+OR2L13 1-dodecanol
+OR2M2 grapefruit_mercaptan
+OR2T34 floralozone
+OR4D6 beta-ionone
+OR4P4 habanolide
+OR5K1 hazelnut pyrazine
+OR6M1 anthraquinone
+OR7D4 androstenone
+OR8D2 muguet propanol
+OR10J5 lyral
+OR10Q1 exaltolide
+OR10S1 lilial
+OR51B4 troenan
+OR51E1 pelargonic_acid
+
+
+Efficacy:
+
+Too few output poses were generated, generally 3 or fewer for a known strong agonist. Output model 1 is used to template a fixfail.
+
+OR1A2 	nerolidol
+OR1D2 	bourgeonal 
+OR1G1 	2-undecanone 
+OR1N2 	ambrettolide 
+OR2A5 	rosyfolia 
+OR2A25 	peony acetonitrile 
+OR2M4 	estragole 
+OR2T2 	3-mercapto-1-hexanol 
+OR2T11 	diallyl disulfide 
+OR2W1 	allyl phenylacetate 
+OR2AT4 	sandalore 
+OR4D1 	pi-23472 
+OR4D9 	beta-ionone
+OR4Q3 	diallyl disulfide 
+OR5B17 	floralozone 
+OR5AC2 	fructone 
+OR5AN1 	musk ketone 
+OR6A2 	octanal 
+OR7C1 	ambermax 
+OR8B2 	4-chromanone 
+OR8B8 	(1R,2S,5R)-(-)-menthol 
+OR8K3 	beta-damascenone 
+OR10A5 	cinnamaldehyde 
+OR10A6 	(Z)-4-undecenal 
+OR10G7 	eugenol 
+OR10H1 	sandranol 
+OR10H2 	cascalone 
+OR10H5 	calone 
+OR10K1 	azurone 
+OR51T1  oranger_crystals
+OR52A5 	4-ethyloctanoic acid 
+OR52D1 	delta-decalactone 
+
+
+Precedence:
+
+Multiple poses were output, however the top pose is deficient in some way, for example producing excessive ic disruption or the ligand's position causing poor solvation or hydration deltas. An output model other than 1 is used to template a fixfail, and the binding site JSON is updated with priority residues.
+
+OR1A1 ~ 3-methyl-2,4-nonanedione
+OR1C1 ~ linalool
+OR1E3 ~ acetophenone
+OR1J2 ~ heptanal
+OR2A7 ~ lilial
+OR2J3 ~ (Z)-3-hexen-1-ol
+OR2L3 ~ alpha-terpineol
+OR2M3 ~ 3-mercapto-2-methylpentan-1-ol
+OR2V1 ~ (R)-3-mercapto-3-methylhexan-1-ol
+OR2W3 ~ citralva
+OR3A4 ~ 2-methylisoborneol
+OR4D11 ~ 2-ethyl-1-hexanol
+OR4N5 ~ decanal
+OR5A1 ~ ambrinol
+OR5M3 ~ ethyl_maltol
+OR8B3 ~ oranger_crystals
+OR8B12 ~ (1R,2S,5R)-(-)-menthol
+OR8D1 ~ sotolone
+OR10A3 ~ gamma-decalactone
+OR10D3 ~ isoeugenol
+OR11H4 ~ phenethyl_alcohol
+
+
+Miss:
+
+Multiple poses were output and pose 1 is well positioned, however a side chain failed to make a polar connection with the ligand. Output model 1 is used to template a fixfail, and the binding site JSON is updated with ATOMTO directives.
+
+OR1L3 ~ alpha-damascone
+OR2B11 ~ coumarin
+OR5B12 ~ dihydrojasmone
+OR6C70 ~ (E)-anethole
+OR9Q2 ~ p-cresol
