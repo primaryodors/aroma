@@ -178,6 +178,8 @@
 #define _allow_Schiff_from_ketones 0
 #define allow_stay_close_flexions 0
 #define allow_tethered_rotations 0
+#define attempt_optimize_hbonds_in_post 1
+#define attempt_opthb_in_post_iters 5
 #define auto_pK_protonation 0
 #define conj_charge_as_polarity 0
 #define _dock_result_in_iter 1

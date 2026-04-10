@@ -61,6 +61,9 @@ OR10K1 	azurone
 OR51T1  oranger_crystals
 OR52A5 	4-ethyloctanoic acid 
 OR52D1 	delta-decalactone 
+OR52I2 	benzyl salicylate 
+OR52L1 	delta-decalactone
+OR52N5 	delta-decalactone
 
 
 Precedence:
@@ -87,6 +90,7 @@ OR8B12 ~ (1R,2S,5R)-(-)-menthol
 OR8D1 ~ sotolone
 OR10A3 ~ gamma-decalactone
 OR10D3 ~ isoeugenol
+OR10AG1 ~ cinnamaldehyde
 OR11H4 ~ phenethyl_alcohol
 
 

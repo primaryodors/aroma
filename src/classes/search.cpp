@@ -1906,7 +1906,23 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
 
     if (fabs(bh->is_polar()) >= hydrophilicity_cutoff && fabs(rh->is_polar()) >= hydrophilicity_cutoff
         && !bH && !lrs[i]->has_hbond_donors())
+    {
         lrs[i]->protonate();
+        if (!rh->is_bonded_to("H") && rh->is_pi() && rh->get_family() == CHALCOGEN)
+        {
+            Atom *C = rh->is_bonded_to(TETREL);
+            if (C)
+            {
+                Atom *O2 = C->is_bonded_to("O", rh);
+                if (O2)
+                {
+                    Bond *cb = C->get_bond_by_idx(0);
+                    if (cb->can_rotate || cb->can_flip)
+                        cb->rotate(M_PI);
+                }
+            }
+        }
+    }
 
     #if _dbg_rh_selection
     cout << "Selected ligand:" << bh->name << " ... " << lrs[i]->get_name() << ":" << rh->name

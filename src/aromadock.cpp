@@ -4316,6 +4316,34 @@ _try_again:
             }
             #endif
 
+            #if attempt_optimize_hbonds_in_post
+            for (j=0; j<attempt_opthb_in_post_iters; j++)
+                for (i=0; i<sphres; i++)
+                {
+                    if (fabs(reaches_spheroid[nodeno][i]->get_charge()) >= 0.75) continue;
+
+                    Atom *chbra = reaches_spheroid[nodeno][i]->get_most_polar();
+                    if (!chbra) continue;
+                    if (fabs(chbra->is_polar()) < hydrophilicity_cutoff) continue;
+                    if (chbra->Z < 2) chbra = chbra->get_heavy_atom();
+
+                    Atom *chbla = ligand->get_nearest_atom(chbra->loc, hbond);
+                    if (!chbla) continue;
+                    if (fabs(chbla->is_polar()) < hydrophilicity_cutoff) continue;
+                    if (chbla->Z < 2) chbla = chbla->get_heavy_atom();
+
+                    Pose chbpib(reaches_spheroid[nodeno][i]);
+                    Interaction ebefore = ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(ligand)
+                        + ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(reaches_spheroid[nodeno][i]->mclashables);
+                    reaches_spheroid[nodeno][i]->conform_atom_to_location(chbra, chbla, 20, 3.5, true);
+                    Interaction eafter = ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(ligand)
+                        + ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(reaches_spheroid[nodeno][i]->mclashables);
+
+                    if (!eafter.accept_change(ebefore))
+                        chbpib.restore_state(((Molecule*)reaches_spheroid[nodeno][i]));
+                }
+            #endif
+
             #if optimize_internal_contacts_post_iterations
             if (nsoftrgn)
             {
