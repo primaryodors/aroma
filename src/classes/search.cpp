@@ -1781,7 +1781,7 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
             {
                 if (bhal && lrs[i]->get_charge() > 0.8 && lrs[i]->pi_stackability() < 0.1) break;
                 float probability = 1e-7;
-                Atom *ra;
+                Atom *ra = nullptr;
 
                 // HYDROPHILIC CALCULATION
                 if (bhyd && ((lrs[i]->has_hbond_donors() && bhbt < bhg) || (lrs[i]->has_hbond_acceptors() && bH)))
