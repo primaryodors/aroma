@@ -489,7 +489,7 @@ SAVE $outf
                 elif "pose(s) found." in ln:
                     poses = int(ln.split(' ')[0].trim())
 
-                if poses > 0 and total < 0 and not disqo:
+                if poses >= 4 and total < 0 and not disqo:
                     print("SUCCESS")
                     dock_success = True
                     break
