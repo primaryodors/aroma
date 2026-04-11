@@ -1388,7 +1388,7 @@ body.whtbk option.unknown
 	color: #000;
 }
 
-#clip, #bbvis, #lght
+#clip, #bbvis, #pktvis, #lght
 {
     width: 503px;
 }
@@ -1639,8 +1639,8 @@ function rotate3D(point, source, axis, theta)
 	<!-- a id="ptbbbtn" class="nodebtn clickme symbol" onclick="show_hide_gmdl();" title="Protein Backbone">&#xAA5C;</a -->
 	<a id="sdchbtn" class="nodebtn clickme symbol" onclick="show_seqdd();" title="Side Chains">&#x232C;</a>
 </div>
-<a id="whtbk" title="Switch to Light Background" class="nodebtn clickme symbol smaller" onclick="whtbk=true; stage.setParameters({'backgroundColor': '#fff0e8'}); $(document.body).addClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#blkbk').show(); $('#bkbnsld').hide();">&#x2600;&#xFE0F;</a>
-<a id="blkbk" title="Switch to Dark Background" class="nodebtn clickme symbol smaller" onclick="whtbk=false; stage.setParameters({'backgroundColor': '#020408'}); $(document.body).removeClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#whtbk').show(); $('#bkbnsld').show();" style="display: none; background-color: #000;">&#x1F319;</a>
+<a id="whtbk" title="Switch to Light Background" class="nodebtn clickme symbol smaller" onclick="whtbk=true; stage.setParameters({'backgroundColor': '#fff0e8'}); $(document.body).addClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#blkbk').show(); $('#bkbnsld').hide(); set_pkt_opacity();">&#x2600;&#xFE0F;</a>
+<a id="blkbk" title="Switch to Dark Background" class="nodebtn clickme symbol smaller" onclick="whtbk=false; stage.setParameters({'backgroundColor': '#020408'}); $(document.body).removeClass('whtbk'); if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } refreshSideChainsVisible(); showNode(gnode); $(this).hide(); $('#whtbk').show(); $('#bkbnsld').show(); set_pkt_opacity();" style="display: none; background-color: #000;">&#x1F319;</a>
 
 <a id="nohyd" title="Turn Off Hydrogens" class="nodebtn clickme symbol smaller" onclick="hydrogens=false; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } update_hydrogens(); $(this).hide(); $('#hydro').show();">&#x1f3dc;&#xFE0F;</a>
 <a id="hydro" title="Turn On Hydrogens" class="nodebtn clickme symbol smaller" onclick="hydrogens=true; if (sfenable) { spcfill ? spaceFill() : ballAndStick(); } update_hydrogens(); $(this).hide(); $('#nohyd').show();" style="display: none;">&#x1F6b0;</a>
@@ -1688,6 +1688,11 @@ Clip:
 <span id="bkbnsld">
 Backbone:
 <input type="range" id="bbvis" min="0" max="100" step="1" value="10" class="slider" onkeyup="this.blur();">
+<br>
+</span>
+<span id="pktsld">
+Pocket:
+<input type="range" id="pktvis" min="0" max="100" step="1" value="10" class="slider" onkeyup="this.blur();">
 <br>
 </span>
 Lighting:
@@ -2618,6 +2623,7 @@ var mtlcoord = [];
 var sequence = ["-"];
 var pocket = [0,0,0];
 var cavities = [];
+var cavparams = [];
 var last_clicked_cavity = false;
 var lsrbdata = [];
 var lsrbshapes = [];
@@ -2640,6 +2646,7 @@ function initialize_arrays()
 	reaspos = ligapos = [];
 	visinter = [];
 	$('#pockets').hide();
+	$('#pktsld').hide();
 	cavities = [];
 	$('#lsrbbtn').hide();
 	lsrbdata = [];
@@ -2752,6 +2759,27 @@ function set_gmdl_opacity()
 			if (whtbk) p.opacity = 1;
 			if (!hydrogens) p.sele = "* and not hydrogen";
 			gmodel[i].addRepresentation( "cartoon", p);
+		}
+	}
+}
+
+function set_pkt_opacity()
+{
+	if (typeof cavities[0] == 'undefined') return;
+	var opc = parseFloat($("#pktvis")[0].value) / 100;
+	var i;
+	for (i=0; i<cavities.length; i++)
+	{
+		if (typeof cavities[i]['shapeComp'] != 'undefined'
+			&& typeof cavities[i]['shown'] != 'undefined'
+			&& cavities[i]['shown']
+		)
+		{
+			cavities[i]['shapeComp'].removeAllRepresentations();			// TODO: This line does not seem to be working.
+			cavparams[i].opacity = opc;
+			var p = cavparams[i];
+			if (whtbk) p.opacity = 1;
+			cavities[i]['shapeComp'].addRepresentation( "buffer", p);
 		}
 	}
 }
@@ -3871,8 +3899,13 @@ function finish_cavity_lines()
 		cavities.sort(function(a, b){ return b['residues'].length - a['residues'].length; });
 
 		$('#pockets').show();
+		// $('#pktsld').show(); // TODO: fix set_pkt_opacity() then uncomment this line and remove comment.
 	}
-	else $('#pockets').hide();
+	else
+	{
+		$('#pockets').hide();
+		$('#pktsld').hide();
+	}
 }
 
 function process_lsrb_ln(ln, poseno, nodeno)
@@ -4735,12 +4768,14 @@ function show_cavity(cavno, cmode=1)
 	var shapeComp = stage.addComponentFromObject(shape);
 	cavities[cavno]['shapeComp'] = shapeComp;
 
-	cavities[cavno]['shapeComp'].addRepresentation("buffer", { opacity: cavities[cavno]['residues'].length ? 0.1 : 0.53 });
+	cavparams[cavno] = { opacity: cavities[cavno]['residues'].length ? 0.1 : 0.53 };
+	// cavities[cavno]['shapeComp'].addRepresentation("buffer", cavparams[cavno]);
 	cavities[cavno]['shown'] = true;
 	last_clicked_cavity = cavities[cavno];
 	$('#cavtgl'+cavno).addClass('hilite');
 
 	set_gmdl_opacity();
+	set_pkt_opacity();
 }
 
 function hide_cavity(cavno)
@@ -4850,6 +4885,11 @@ $("#clip").on("input", function (e, obj)
 $("#bbvis").on("input", function (e, obj)
 {
 	set_gmdl_opacity();
+});
+
+$("#pktvis").on("input", function (e, obj)
+{
+	set_pkt_opacity();
 });
 
 $("#lght").on("input", function (e, obj)
