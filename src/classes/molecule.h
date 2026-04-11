@@ -313,7 +313,7 @@ public:
     void reset_conformer_momenta();
     Atom** get_most_bindable(int max_num = 3);						// Return the atoms with the greatest potential intermol binding.
     Atom** get_most_bindable(int max_num, Atom* for_atom);
-    Atom* get_most_polar();
+    Atom* get_most_polar(int sgn_polarity = -1);                    // <0 means hb acceptor, >0 means hb donor, 0 means any.
     Atom* get_most_metal_coord(Atom *metal);
 
     float similar_atom_proximity(Molecule* other);

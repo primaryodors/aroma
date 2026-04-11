@@ -31,7 +31,8 @@ Too few output poses were generated, generally 3 or fewer for a known strong ago
 
 OR1A2 	nerolidol
 OR1D2 	bourgeonal 
-OR1G1 	2-undecanone 
+OR1G1 	2-undecanone
+OR1L3 alpha-damascone
 OR1N2 	ambrettolide 
 OR2A5 	rosyfolia 
 OR2A25 	peony acetonitrile 
@@ -70,36 +71,35 @@ Precedence:
 
 Multiple poses were output, however the top pose is deficient in some way, for example producing excessive ic disruption or the ligand's position causing poor solvation or hydration deltas. An output model other than 1 is used to template a fixfail, and the binding site JSON is updated with priority residues.
 
-OR1A1 ~ 3-methyl-2,4-nonanedione
-OR1C1 ~ linalool
-OR1E3 ~ acetophenone
-OR1J2 ~ heptanal
-OR2A7 ~ lilial
-OR2J3 ~ (Z)-3-hexen-1-ol
-OR2L3 ~ alpha-terpineol
-OR2M3 ~ 3-mercapto-2-methylpentan-1-ol
-OR2V1 ~ (R)-3-mercapto-3-methylhexan-1-ol
-OR2W3 ~ citralva
-OR3A4 ~ 2-methylisoborneol
-OR4D11 ~ 2-ethyl-1-hexanol
-OR4N5 ~ decanal
-OR5A1 ~ ambrinol
-OR5M3 ~ ethyl_maltol
-OR8B3 ~ oranger_crystals
-OR8B12 ~ (1R,2S,5R)-(-)-menthol
-OR8D1 ~ sotolone
-OR10A3 ~ gamma-decalactone
-OR10D3 ~ isoeugenol
-OR10AG1 ~ cinnamaldehyde
-OR11H4 ~ phenethyl_alcohol
+OR1A1 3-methyl-2,4-nonanedione
+OR1C1 linalool
+OR1E3 acetophenone
+OR1J2 heptanal
+OR2A7 lilial
+OR2J3 (Z)-3-hexen-1-ol
+OR2L3 alpha-terpineol
+OR2M3 3-mercapto-2-methylpentan-1-ol
+OR2V1 (R)-3-mercapto-3-methylhexan-1-ol
+OR2W3 citralva
+OR3A4 2-methylisoborneol
+OR4D11 2-ethyl-1-hexanol
+OR4N5 decanal
+OR5A1 ambrinol
+OR5M3 ethyl_maltol
+OR8B3 oranger_crystals
+OR8B12 (1R,2S,5R)-(-)-menthol
+OR8D1 sotolone
+OR9Q2 p-cresol
+OR10A3 gamma-decalactone
+OR10D3 isoeugenol
+OR10AG1 cinnamaldehyde
+OR11H4 phenethyl_alcohol
 
 
 Miss:
 
 Multiple poses were output and pose 1 is well positioned, however a side chain failed to make a polar connection with the ligand. Output model 1 is used to template a fixfail, and the binding site JSON is updated with ATOMTO directives.
 
-OR1L3 ~ alpha-damascone
-OR2B11 ~ coumarin
-OR5B12 ~ dihydrojasmone
-OR6C70 ~ (E)-anethole
-OR9Q2 ~ p-cresol
+OR2B11 coumarin
+OR5B12 dihydrojasmone
+OR6C70 (E)-anethole

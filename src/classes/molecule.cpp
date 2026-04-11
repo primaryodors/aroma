@@ -7500,16 +7500,18 @@ Atom** Molecule::get_most_bindable(int max_num, Atom* for_atom)
     return bba;
 }
 
-Atom *Molecule::get_most_polar()
+Atom *Molecule::get_most_polar(int sp)
 {
     if (!atoms) return nullptr;
     Atom *result = atoms[0];            // if no polar atoms, e.g. H2, default to the first atom. Note even alkanes have polar atoms since the C-H bond 
                                         // is very weakly polar (electronegativity = 2.55 vs. 2.20).
     float hbest = 0;
     int i;
+    sp = sgn(sp);
     for (i=0; atoms[i]; i++)
     {
-        if (atoms[i]->Z < 2) continue;
+        // if (atoms[i]->Z < 2) continue;
+        if (sp && sgn(atoms[i]->is_polar()) != sp) continue;
         if (atoms[i]->is_backbone) continue;
         float h = fabs(atoms[i]->is_polar());
 

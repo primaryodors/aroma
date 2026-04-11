@@ -4322,15 +4322,17 @@ _try_again:
                 {
                     if (fabs(reaches_spheroid[nodeno][i]->get_charge()) >= 0.75) continue;
 
-                    Atom *chbra = reaches_spheroid[nodeno][i]->get_most_polar();
+                    Atom *chbla = ligand->get_nearest_atom(reaches_spheroid[nodeno][i]->get_CA_location(), hbond);
+                    if (!chbla) continue;
+                    if (fabs(chbla->is_polar()) < hydrophilicity_cutoff) continue;
+                    // if (chbla->Z < 2) chbla = chbla->get_heavy_atom();
+                    Atom *H = chbla->is_bonded_to("H");
+                    if (H) chbla = H;
+
+                    Atom *chbra = reaches_spheroid[nodeno][i]->get_most_polar(-sgn(chbla->is_polar()));
                     if (!chbra) continue;
                     if (fabs(chbra->is_polar()) < hydrophilicity_cutoff) continue;
                     if (chbra->Z < 2) chbra = chbra->get_heavy_atom();
-
-                    Atom *chbla = ligand->get_nearest_atom(chbra->loc, hbond);
-                    if (!chbla) continue;
-                    if (fabs(chbla->is_polar()) < hydrophilicity_cutoff) continue;
-                    if (chbla->Z < 2) chbla = chbla->get_heavy_atom();
 
                     Pose chbpib(reaches_spheroid[nodeno][i]);
                     Interaction ebefore = ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(ligand)
