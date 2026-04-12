@@ -80,6 +80,7 @@ else:
 ligcontacts = []
 if argc > 4:
     for i in range(3, argc-1):
+        if sys.argv[i] == "loop": continue
         if re.match("[A-Za-z]+[0-9]+$", sys.argv[i]):
             j = i+1
             print(f"Matched {sys.argv[i]}")
