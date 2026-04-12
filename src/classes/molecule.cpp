@@ -1504,7 +1504,8 @@ void Molecule::optimize()
     {
         if (b[i]->atom1->Z < 2) continue;
         thbest = rbest = 0;
-        step = b[i]->can_rotate ? hexagonal/10 : b[i]->flip_angle;
+        step = b[i]->can_rotate ? (hexagonal/10) : b[i]->flip_angle;
+        if (!step) step = M_PI;
         Bond* d = b[i]->get_reversed();
         memset(mwa, 0, atcount*sizeof(Atom*));
         memset(mw0, 0, atcount*sizeof(Atom*));
