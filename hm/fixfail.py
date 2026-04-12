@@ -75,6 +75,17 @@ if argc > 2:
 else:
     inppdb = origpdb
 
+# Ex.: python3 hm/fixfail.py OR5K1 hazelnut_pyrazine N7 279:OG2 C10 255:CG C1 104:CG
+ligcontacts = []
+if argc > 4:
+    for i in range(3, argc-1):
+        if re.match("[A-Za-z]+[0-9]+$", sys.argv[i]):
+            j = i+1
+            print(f"Matched {sys.argv[i]}")
+            if re.match("[A-Za-z]{0,3}[0-9]+[:][0-9]?[A-Z]+[0-9]?$", sys.argv[j]):
+                ligcontacts.append([sys.argv[i], sys.argv[j]])
+                i=j
+
 tries = 0
 while True:
     legal = ""
@@ -204,6 +215,20 @@ while True:
                         feature=features.Distance(at["SG:"+str(bw3_25)+":A"],
                                                 at["SG:"+str(bw45_50)+":A"]),
                                                 mean=2.05, stdev=0.2))
+
+            rigresno = self.residues[-1].intnum
+            rigb = RigidBody(self.residue_range(f"{rigresno}:A", f"{rigresno}:A"))
+            rsr.rigid_bodies.append(rigb)
+
+            # Ligand-receptor contacts
+            if len(ligcontacts):
+                for lc in ligcontacts:
+                    liga = lc[0]
+                    resno, resa = lc[1].split(':')
+                    rsr.add(forms.Gaussian(group=physical.xy_distance,
+                        feature=features.Distance(at[f"{resa}:{resno}:A"],
+                                                  at[f"{liga}:{rigresno}:A"]),
+                                                  mean=3.5, stdev=0.5))
 
             # 5-7 tyrosine link
             bw5_58 = data.protutils.resno_from_bw(protid, "5.58")
