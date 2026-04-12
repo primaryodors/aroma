@@ -75,7 +75,8 @@ if argc > 2:
 else:
     inppdb = origpdb
 
-# Ex.: python3 hm/fixfail.py OR5K1 hazelnut_pyrazine N7 279:OG2 C10 255:CG C1 104:CG
+# Ex.: python3 hm/fixfail.py OR5K1 hazelnut_pyrazine N7 279:OG1 C10 255:CG C1 104:CG
+# Note: Thr must specify OG1, not OG2, or MODELLER will complain!
 ligcontacts = []
 if argc > 4:
     for i in range(3, argc-1):
