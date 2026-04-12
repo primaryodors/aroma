@@ -1492,6 +1492,69 @@ float Molecule::space_filling(Space *c)
     return j ? (result/j) : 1;
 }
 
+void Molecule::optimize()
+{
+    // Place all heavy atoms as far apart as possible.
+    Bond** b = get_rotatable_bonds();
+    if (!b) return;
+    int i, j, l;
+    float theta, thbest, step, lr, r, rbest;
+    Atom *mwa[atcount+4], *mw0[atcount+4];
+    for (i=0; b[i]; i++)
+    {
+        if (b[i]->atom1->Z < 2) continue;
+        thbest = rbest = 0;
+        step = b[i]->can_rotate ? hexagonal/10 : b[i]->flip_angle;
+        Bond* d = b[i]->get_reversed();
+        memset(mwa, 0, atcount*sizeof(Atom*));
+        memset(mw0, 0, atcount*sizeof(Atom*));
+        b[i]->fetch_moves_with_atom2(mwa);
+        d->fetch_moves_with_atom2(mw0);
+        if (!mwa[0] || !mw0[0]) continue;
+        for (theta=0; theta<M_PI*2; theta += step)
+        {
+            b[i]->rotate(step);
+
+            r = 0;
+            for (j=0; mwa[j]; j++)
+            {
+                // TODO: intramolecular attractions e.g. hydrogen bonds, ionic bonds, etc.
+                if (mwa[j]->Z < 2) continue;
+
+                lr = 0;
+                Atom *a = nullptr;
+                for (l=0; mw0[l]; l++)
+                {
+                    if (mw0[l]->Z < 2) continue;
+                    if (mw0[l] == b[i]->atom1) continue;
+                    float mwr = mw0[l]->distance_to(mwa[j]);
+                    if (!lr || mwr < lr)
+                    {
+                        lr = mwr;
+                        a = mw0[l];
+                    }
+                }
+
+                if (!a) continue;
+
+                lr = mwa[j]->distance_to(a);
+                r = r ? fmin(lr, r) : lr;
+            }
+
+            if (r > rbest)
+            {
+                rbest = r;
+                thbest = theta+step;
+            }
+
+            if (!b[i]->can_rotate && theta) break;
+        }
+        b[i]->rotate(thbest);
+    }
+
+    // TODO: Ring flips
+}
+
 float Molecule::occlusion(Molecule *ligand)
 {
     Molecule* tmp[2];
