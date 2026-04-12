@@ -6,10 +6,10 @@ Fail:
 
 Molecular docker did not produce any successful output poses. With the --nofail switch active, output model 1 is used to template a fixfail.
 
-OR2A1 farnesol
-OR2H2 tridecanal 
+OR2A1 farnesol FIXED
+OR2H2 tridecanal  FIXED
 OR2L13 1-dodecanol
-OR2M2 grapefruit_mercaptan
+OR2M2 grapefruit_mercaptan FIXED
 OR4P4 habanolide
 OR5K1 hazelnut pyrazine
 OR6M1 anthraquinone

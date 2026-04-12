@@ -14,7 +14,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
-	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit
+	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix
 all: $(DIRS) \
 	 $(OBJS) \
 	 $(DOBJ) \
@@ -32,7 +32,7 @@ CPL=g++
 CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14
 
 # Debug CFLAGS - allows gdb, valgrind
-# CFLAGS+=-g
+CFLAGS+=-g
 
 # Development CFLAGS for tracking down memory problems
 # CFLAGS+=-fsanitize=address -fsanitize=undefined -Wall -Wextra
@@ -251,3 +251,6 @@ $(BIN)/ringflip: src/ringflip.cpp $(OBJS)
 
 $(BIN)/molsurf: src/molsurf.cpp $(OBJS)
 	$(CPL) src/molsurf.cpp $(OBJS) -o $(BIN)/molsurf $(CFLAGS)
+
+$(BIN)/molfix: src/molfix.cpp $(OBJS)
+	$(CPL) src/molfix.cpp $(OBJS) -o $(BIN)/molfix $(CFLAGS)
