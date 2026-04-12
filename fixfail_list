@@ -10,8 +10,6 @@ OR2A1 farnesol
 OR2H2 tridecanal 
 OR2L13 1-dodecanol
 OR2M2 grapefruit_mercaptan
-OR2T34 floralozone
-OR4D6 beta-ionone
 OR4P4 habanolide
 OR5K1 hazelnut pyrazine
 OR6M1 anthraquinone
@@ -79,9 +77,11 @@ OR2A7 lilial
 OR2J3 (Z)-3-hexen-1-ol
 OR2L3 alpha-terpineol
 OR2M3 3-mercapto-2-methylpentan-1-ol
+OR2T34 floralozone
 OR2V1 (R)-3-mercapto-3-methylhexan-1-ol
 OR2W3 citralva
 OR3A4 2-methylisoborneol
+OR4D6 beta-ionone
 OR4D11 2-ethyl-1-hexanol
 OR4N5 decanal
 OR5A1 ambrinol
