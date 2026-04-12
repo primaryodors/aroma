@@ -2627,6 +2627,7 @@ int main(int argc, char** argv)
             return 0xbadf12e;
         }
 
+        ligand->optimize();
         ligand->minimize_internal_clashes();
         if (estimate_copylig)
         {
