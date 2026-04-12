@@ -10,9 +10,6 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#if _WIN32
-#include <Windows.h>
-#endif
 #include "classes/protein.h"
 #include "classes/dynamic.h"
 
@@ -95,10 +92,7 @@ VarType type_from_name(const char* varname)
 
 bool download_file(std::string url, std::string destination)
 {
-    #if _WIN32
-    URLDownloadToFile(NULL, url.c_str(), destination.c_str(), 0, NULL);
-
-    #elif defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
+    #if defined(__linux__) || defined(__sun) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
     pid_t child_pid = fork();
     if (child_pid == -1)
     {
