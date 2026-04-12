@@ -1840,6 +1840,12 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
                     #endif
                 }
 
+                // EFFECT OF INTERNAL CONTACT
+                if (probability && lrs[i]->is_ic_res)
+                {
+                    probability /= 5;
+                }
+
                 // DISTANCE ADJUSTMENT
                 if (ra && probability)
                 {
