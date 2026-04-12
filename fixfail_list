@@ -8,7 +8,7 @@ Molecular docker did not produce any successful output poses. With the --nofail 
 
 OR2A1 farnesol FIXED
 OR2H2 tridecanal  FIXED
-OR2L13 1-dodecanol
+OR2L13 1-dodecanol  FIXED
 OR2M2 grapefruit_mercaptan FIXED
 OR4P4 habanolide
 OR5K1 hazelnut pyrazine
