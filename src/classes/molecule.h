@@ -195,6 +195,7 @@ public:
     Point polar_barycenter();
     float contained_by_space(Space* container);
     float space_filling(Space* container);
+    void optimize();
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
