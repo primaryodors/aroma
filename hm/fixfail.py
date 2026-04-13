@@ -161,12 +161,15 @@ while True:
         print("No reshape file exists for this receptor.")
         exit()
 
-    # shutil.copyfile(inppdb, tplpdb)
-    cmd = ["bin/poslig", inppdb, tplpdb]
-    for lc in ligcontacts:
-        cmd.extend(lc)
-    print(" ".join(cmd))
-    subprocess.run(cmd)
+    if len(ligcontacts):
+        cmd = ["bin/poslig", inppdb, tplpdb]
+        for lc in ligcontacts:
+            cmd.extend(lc)
+        print(" ".join(cmd))
+        subprocess.run(cmd)
+    else:
+        shutil.copyfile(inppdb, tplpdb)
+
     cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
     print(" ".join(cmd))
     subprocess.run(cmd)
