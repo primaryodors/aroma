@@ -501,7 +501,7 @@ SAVE $outf
         break
     else: tries += 1
 
-    cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"]]
+    cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
     subprocess.run(cmd)
 
     dock_success = False

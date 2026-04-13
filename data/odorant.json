@@ -26164,6 +26164,12 @@
         },
         "oid": "9258a8a4b4ada348d97f257b3346ccfd"
     },
+    "92f4285f7a81f0d0581bd16054ca78bd":
+    {
+        "full_name": "squaric acid",
+        "smiles": "[O-]C1=C([O-])C(=O)C1=O",
+        "oid": "92f4285f7a81f0d0581bd16054ca78bd"
+    },
     "9374d0d9c132647f38c6d00e4afa01e0":
     {
         "full_name": "cyclopentadecane",

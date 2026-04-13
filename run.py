@@ -142,7 +142,10 @@ for rcpid in data.protutils.prots.keys():
         if len(runsuff):
             pdbdir = f"cpllocal/{fam}/{sbf}"
         else:
-            runsuff = [ "active", "inactive" ]
+            if not "noa" in sys.argv:
+                runsuff.append("active")
+            if not "noi" in sys.argv:
+                runsuff.append("inactive")
             pdbdir = f"pdbs/{fam}"
 
         lignu = o["full_name"].replace(' ', '_')
