@@ -9,15 +9,15 @@ nohup python3 hm/fixfail.py OR2T34 floralozone loop &
 nohup python3 hm/fixfail.py OR4D6 beta-ionone O13 272:OG loop &
 nohup python3 hm/fixfail.py OR5K1 hazelnut_pyrazine N7 279:OG1 C10 255:CG C1 104:CG loop &
 nohup python3 hm/fixfail.py OR6M1 anthraquinone O1 252:NE2 O10 102:OH loop &
+nohup python3 hm/fixfail.py OR7C1 ambermax loop &
 nohup python3 hm/fixfail.py OR7D4 androstenone O18 203:CB C9 104:CD2 loop &
+nohup python3 hm/fixfail.py OR8B2 4-chromanone O11 159:NE2 loop &
 nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 206:ND2 loop &
 
 IN PROGRESS:
 nohup python3 hm/fixfail.py OR4P4 habanolide loop &
-nohup python3 hm/fixfail.py OR10J5 lyral loop &
+nohup python3 hm/fixfail.py OR10J5 lyral O14 198:ND2 O15 111:OD1 loop &
 nohup python3 hm/fixfail.py OR10Q1 exaltolide O11 113:OG O9 162:NE2 C1 282:CB loop &
-nohup python3 hm/fixfail.py OR7C1 ambermax loop &
-nohup python3 hm/fixfail.py OR8B2 4-chromanone O11 159:NE2 loop &
 nohup python3 hm/fixfail.py OR10S1 lilial O15 123:OG C10 290:CA loop &
 
 TODO:
