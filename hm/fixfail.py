@@ -497,7 +497,7 @@ SAVE $outf
     cmd = ["bin/phew", phewfn]
     subprocess.run(cmd)
 
-    if not "loop" in sys.argv:
+    if not "loop" in sys.argv and not "dock" in sys.argv:
         break
     else: tries += 1
 
@@ -526,7 +526,7 @@ SAVE $outf
                     dock_success = True
                     break
 
-    if dock_success:
+    if dock_success or not "loop" in sys.argv:
         break
 
     if tries >= 100:
