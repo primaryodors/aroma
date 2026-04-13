@@ -12,12 +12,14 @@ nohup python3 hm/fixfail.py OR7D4 androstenone O18 203:CB C9 104:CD2 loop &
 
 IN PROGRESS:
 nohup python3 hm/fixfail.py OR4D6 beta-ionone O13 272:OG loop &
-nohup python3 hm/fixfail.py OR4P4 habanolide loop &
-nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 206:NE2 loop &
-nohup python3 hm/fixfail.py OR10J5 lyral O14 198:ND2 O15 111:OD1 loop &
+nohup python3 hm/fixfail.py OR4P4 habanolide O10 201:OG C17 106:CA loop &
+nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 206:ND2 loop &
+nohup python3 hm/fixfail.py OR10J5 lyral O14 262:NZ O15 111:OD1 loop &
 nohup python3 hm/fixfail.py OR10Q1 exaltolide O11 113:OG O9 162:NE2 C1 282:CB loop &
 
 TODO:
+nohup python3 hm/fixfail.py OR7C1 ambermax loop &
+nohup python3 hm/fixfail.py OR8B2 4-chromanone O11 159:NE2 loop &
 nohup python3 hm/fixfail.py OR10S1 lilial O15 123:OG C10 290:CA loop &
 nohup python3 hm/fixfail.py OR51B4 troenan loop &
 nohup python3 hm/fixfail.py OR51E1 pelargonic_acid loop &
@@ -33,11 +35,30 @@ nohup python3 hm/fixfail.py OR2T2 3-mercapto-1-hexanol O7 105:OH S8 204:SG C1 18
 nohup python3 hm/fixfail.py OR2T11 diallyl disulfide loop &
 nohup python3 hm/fixfail.py OR5B17 floralozone O14 179:NZ C2 110:CB loop &
 nohup python3 hm/fixfail.py OR6A2 C8 164:NZ C1 283:CB loop &
+nohup python3 hm/fixfail.py OR8K3 beta-damascenone loop &
+nohup python3 hm/fixfail.py OR10A5 cinnamaldehyde loop &
+nohup python3 hm/fixfail.py OR10A6 "(Z)-4-undecenal" O12 203:OG1 C1 77:CD1 loop &
+nohup python3 hm/fixfail.py OR10G7 eugenol O12 158:OE1 C11 251:CB O2 108:OG loop &
+nohup python3 hm/fixfail.py OR10H1 sandranol O15 104:OG C4 208:CD2 loop &
+nohup python3 hm/fixfail.py OR10H2 cascalone loop &
+nohup python3 hm/fixfail.py OR10H5 calone O1 186:NZ C13 73:OH O7 182:CG loop &
+nohup python3 hm/fixfail.py OR10K1 azurone loop &
+nohup python3 hm/fixfail.py OR52A5 4-ethyloctanoic_acid loop &
+nohup python3 hm/fixfail.py OR52D1 delta-decalactone O11 266:NH1 C1 210:CB loop &
+nohup python3 hm/fixfail.py OR52I2 benzyl_salicylate loop &
+nohup python3 hm/fixfail.py OR52L1 delta-decalactone O11 281:NH2 C1 130:CB loop &
+nohup python3 hm/fixfail.py OR52N5 delta-decalactone loop &
+nohup python3 hm/fixfail.py OR56A4 undecanal loop &
+nohup python3 hm/fixfail.py OR56A5 undecanoic_acid loop &
+nohup python3 hm/fixfail.py OR56B4 delta-decalactone O12 284:NE2 C1 115:CB loop &
 
 REQUIRES LIGAND BONDROT AND/OR SIDECHAIN BONDROT:
 nohup python3 hm/fixfail.py OR4D1 pi-23472 rot C13 C15 O17 203:OG loop &
 nohup python3 hm/fixfail.py OR4D9 beta-ionone flex 203 ND2 LIG:O13 loop &
 nohup python3 hm/fixfail.py OR5AN1 musk_ketone flex 160 CG CD NE2 LIG:O20 rot C3 C19 O20 160:NE2 loop &
+nohup python3 hm/fixfail.py OR51T1 oranger_crystals flex 183 CB CG ND1 LIG:O3 loop &
 
+REQUIRES STRUCTURE CORRECTION:
+nohup python3 hm/fixfail.py OR8B8 "(1R,2S,5R)-(-)-menthol" loop &
 
 
