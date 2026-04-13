@@ -80,14 +80,25 @@ else:
 ligcontacts = []
 if argc > 4:
     for i in range(3, argc-1):
-        if sys.argv[i] == "loop": continue
-        if sys.argv[i] == "dock": continue
         if re.match("[A-Za-z]+[0-9]+$", sys.argv[i]):
             j = i+1
             print(f"Matched {sys.argv[i]}")
             if re.match("[A-Za-z]{0,3}[0-9]+[:][0-9]?[A-Z]+[0-9]?$", sys.argv[j]):
                 ligcontacts.append([sys.argv[i], sys.argv[j]])
                 i=j
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+os.chdir("..")
+
+# If PDB files get too wonky, you can kill the fixfail.py process and rerun it with the reset argument.
+if "reset" in sys.argv:
+    # Rebuild the unmodified HM structure.
+    cmd = ["php", "-f", "hm/dohm.php", protid]
+    subprocess.run(cmd)
+
+    # Perform an active-state dock on the new model, then proceed normally to model refinement with rigid-body ligand.
+    cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+    subprocess.run(cmd)
 
 tries = 0
 while True:
