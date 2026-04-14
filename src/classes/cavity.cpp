@@ -463,7 +463,7 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
 float Cavity::cavity_filling(Molecule *m)
 {
     float empties = 0.0f;
-    int filleds = 0;
+    float filleds = 0;
     float x, y, z;
     float step = 0.5;
 
@@ -478,8 +478,9 @@ float Cavity::cavity_filling(Molecule *m)
                 if (part)
                 {
                     Atom* a = m->get_nearest_atom(pt);
-                    if (a && a->loc.get_3d_distance(pt) <= a->vdW_radius)
-                        filleds++;
+                    float r = a->loc.get_3d_distance(pt);
+                    if (a && r <= a->vdW_radius)
+                        filleds += 1;
                     else
                     {
                         if (part->chargedn || part->chargedp) empties += 0.05;
@@ -488,6 +489,42 @@ float Cavity::cavity_filling(Molecule *m)
                         else if (part->thio) empties += 0.75;
                         else if (part->pi) empties += 0.9;
                         else empties += 1;
+                    }
+                }
+            }
+
+    if (!empties && !filleds) return 0;
+    return (float)filleds / (empties+filleds);
+}
+
+float Cavity::polarity_match(Molecule *m)
+{
+    float empties = 0.0f;
+    float filleds = 0;
+    float x, y, z;
+    float step = 0.5;
+
+    Box b = boundingbox();
+
+    for (x=b.x1; x<=b.x2; x+=step)
+        for (y=b.y1; y<=b.y2; y+=step)
+            for (z=b.z1; z<=b.z2; z+=step)
+            {
+                Point pt(x,y,z);
+                CPartial* part = (CPartial*)point_inside_pocket(pt);
+                if (part)
+                {
+                    Atom* a = m->get_nearest_atom(pt);
+                    float r = a->loc.get_3d_distance(pt);
+
+                    bool apol = fabs(a->is_polar()) >= hydrophilicity_cutoff;
+                    bool ppol = part->chargedn || part->chargedp || part->polar;
+
+                    if (apol == ppol)
+                        filleds += fabs(a->is_polar());
+                    else
+                    {
+                        empties += 1;
                     }
                 }
             }
