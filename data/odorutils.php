@@ -328,7 +328,9 @@ function check_isomers($ligname, $randomize=true)
 
 function ensure_sdf_exists($ligname)
 {
-	global $odors;
+	$cmd = "python3 -c \"import data.globals; import data.odorutils; data.odorutils.load_odors(); data.odorutils.ensure_sdf_exists('$ligname')\"";
+	exec($cmd);
+	return;
 
 	$o = find_odorant($ligname);
 	if (!$o) die("Odorant not found $ligname.\n");
@@ -403,7 +405,7 @@ function ensure_sdf_exists($ligname)
 	}
 
 	chdir($pwd);
-	return;	
+	return;
 }
 
 function get_at_wt($element)
