@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 
     bool save_tmp_pdbs = false;
 
-    int i, j, l, n, nligconf = 8192, iters = 200;
+    int i, j, l, n, nligconf = 5381, iters = 123;
     float minimal_fit_threshold = 0.25, reasonable_fit_threshold = 0.8;
     for (i=0; i<256; i++) priorities[i] = false;
 
@@ -68,12 +68,34 @@ int main(int argc, char** argv)
             // Load all partials from the cavity file into a single cavity object.
             cout << "Reading " << argv[i] << "..." << endl;
             char buffer[1024];
+            int bins[256];
+            memset(bins, 0, 256*sizeof(int));
             while (!feof(fp))
             {
                 char* got = fgets(buffer, 1022, fp);
                 if (!got) break;
                 CPartial cp;
                 int cno = cp.from_cvty_line(buffer);
+                if (cno < 0 || cno > 255) continue;
+                bins[cno]++;
+            }
+            j=l=0;
+            for (n=0; bins[n] && n<256; n++)
+            {
+                if (bins[n] > j)
+                {
+                    j = bins[n];
+                    l = n;
+                }
+            }
+            rewind(fp);
+            while (!feof(fp))
+            {
+                char* got = fgets(buffer, 1022, fp);
+                if (!got) break;
+                CPartial cp;
+                int cno = cp.from_cvty_line(buffer);
+                if (cno != l) continue;
                 cvty.add_partial(cp);
             }
             fclose(fp);
@@ -131,7 +153,7 @@ int main(int argc, char** argv)
     }
 
 
-    // TODO: Facility for metal coordination.
+    // TODO: Facilities for metal coordination and Schiff base extrapolation.
 
     // Generate a large number of randomized ligand conformers.
     Pose  ligconf[nligconf+2];
@@ -140,7 +162,7 @@ int main(int argc, char** argv)
 
     Bond** rotb = m.get_rotatable_bonds(true);
 
-    cout << "Generating conformers..." << endl << endl << flush;
+    cout << "Generating conformers..." << endl << flush;
     Progressbar pb;
     pb.set_color(pbrc_cavfit_genconf);
     pb.minimum = 0;
@@ -148,6 +170,7 @@ int main(int argc, char** argv)
     for (i=0; i<nligconf; i++)
     {
         // Straighten the ligand.
+        m.optimize();
         m.minimize_internal_clashes();
 
         // Center the conformer in a random partial.
@@ -205,7 +228,7 @@ int main(int argc, char** argv)
     pb.erase();
 
     // Narrow down the ligand conformers to those that meet a minimal threshold of molecule_inside_pocket().
-    cout << "Filtering by goodness of fit..." << endl << endl << flush;
+    cout << "Filtering by goodness of fit..." << endl << flush;
     pb.set_color(pbrc_cavfit_goodfit);
     j = 0;
     for (i=0; i<nligconf; i++)
@@ -247,7 +270,7 @@ int main(int argc, char** argv)
     int npolarat = j;
 
     // Perform translations, rotations, and flexions to try to optimize each conformer's cavity fit.
-    cout << "Optimizing fit..." << endl << endl << flush;
+    cout << "Optimizing fit..." << endl << flush;
     pb.set_color(pbrc_cavfit_optfit);
     pb.maximum = nmatches;
     for (i=0; i<nmatches; i++)
@@ -269,7 +292,7 @@ int main(int argc, char** argv)
                 {
                     mov = ptp.subtract(pta);
                     mov.r /= 2.5;
-                    
+
                     Rotation rot = align_points_3d(pta, ptp, ptc);
                     m.rotate(&rot.v, rot.a, false);
                 }
@@ -342,7 +365,7 @@ int main(int argc, char** argv)
     int mostfit = 0;
 
     // Narrow the conformers further to those that meet a reasonable threshold.
-    cout << "Selecting output conformers..." << endl << endl << flush;
+    cout << "Selecting output conformers..." << endl << flush;
     pb.set_color(pbrc_cavfit_outconf_sel);
     j = 0;
     for (i=0; i<nmatches; i++)
@@ -368,23 +391,37 @@ int main(int argc, char** argv)
     cout << "Cavity can hold up to " << mostfit << " ligands." << endl;
 
     // Sort the conformers by their cavity fit scores.
-    cout << "Sorting..." << endl << endl << flush;
+    cout << "Sorting..." << endl << flush;
     pb.set_color(pbrc_cavfit_sort);
     pb.maximum = nmatches;
+    Pose pssorted[nmatches+1];
+    float cfsorted[nmatches+1];
+    bool taken[nmatches+1];
+    for (i=0; i<nmatches; i++) taken[i] = false;
     for (i=0; i<nmatches; i++)
     {
-        for (j=1; j<nmatches; j++)
+        l = -1;
+        float f = 0;
+        for (j=0; j<nmatches; j++)
         {
-            if (cfscore[j-1] < cfscore[j])
+            if (taken[j]) continue;
+
+            if (cfscore[j] > f)
             {
-                float f = cfscore[j-1];
-                Pose ps = ligconf[j-1];
-                cfscore[j-1] = cfscore[j];
-                ligconf[j-1] = ligconf[j];
-                cfscore[j] = f;
-                ligconf[j] = ps;
+                f = cfscore[j];
+                l = j;
             }
         }
+
+        if (l < 0)
+        {
+            cerr << "Error." << endl;
+            break;
+        }
+
+        pssorted[i] = ligconf[l];
+        cfsorted[i] = f;
+        taken[l] = true;
 
         if (frand(0,1) < 0.5) pb.update(i);
     }
@@ -415,8 +452,10 @@ int main(int argc, char** argv)
     l = 0;
     for (i=0; i<nmatches && i<15; i++)
     {
-        fprintf(fp, "REMARK CFSCORE %f\n", cfscore[i]);
-        ligconf[i].restore_state(&m);
+        fprintf(fp, "REMARK CFSCORE %f\n", cfsorted[i]);
+        pssorted[i].restore_state(&m);
+        float cf = cvty.cavity_filling(&m);
+        cout << "Conformer " << i << " score: " << cfsorted[i] << " fill: " << cf << endl;
         n = m.get_atom_count();
         for (j=0; j<n; j++)
         {
@@ -428,6 +467,8 @@ int main(int argc, char** argv)
         m.save_pdb(fp, l);
         l += n;
     }
+
+    cout << "Best score: " << cfsorted[0] << endl;
 
     fclose(fp);
     cout << "Saved " << outfname << endl;
