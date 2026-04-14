@@ -4492,7 +4492,8 @@ _try_again:
                 {
                     AminoAcid* aa2 = protein->get_residue(j);
                     if (!aa2) continue;
-                    if (!aa1->been_flexed && !aa2->been_flexed) continue;
+                    if (!aa1->been_flexed || !aa2->been_flexed) continue;
+                    if (aa1->is_thiol() && aa2->is_thiol()) continue;
 
                     float f = aa1->get_intermol_clashes(aa2) - aa1->get_base_mclashes();
                     if (f > clash_limit_per_aa*2 && aa1->clash1 && aa1->clash1->Z > 1 && aa1->clash2 && aa1->clash2->Z > 1)
