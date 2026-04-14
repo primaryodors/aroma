@@ -3904,11 +3904,12 @@ _try_again:
                 }
                 else if (pdpst == pst_randhyd)
                 {
+                    progb.erase();
                     Search::do_randhyd_search(ligand, protein, nodecen, gcav, reaches_spheroid[nodeno]);
 
-                    /* g_bbr->pri_res = lrs[i];
+                    g_bbr->pri_res = (AminoAcid*)(ligand->stay_close_mol);
                     g_bbr->pri_tgt = new LigandTarget();
-                    g_bbr->pri_tgt->single_atom = bh; */
+                    g_bbr->pri_tgt->single_atom = ligand->stay_close_mine;
                 }
                 else if (pdpst == pst_cavfit)
                 {
@@ -4130,10 +4131,8 @@ _try_again:
                     }
                 }
 
-                if (pose == 1)
-                {
-                    cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl << endl;
-                }
+                progb.erase();
+                cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl << endl;
                 ligand->stay_close_mine = ligand->stay_close2_mine = nullptr;
                 ligand->stay_close_other = ligand->stay_close2_other = nullptr;
             }
@@ -5084,23 +5083,7 @@ _exitposes:
     if (met) delete met;
 
     time_t finished = time(NULL);
-    int seconds = finished-began;
-    int minutes = seconds/60;
-    seconds -= 60*minutes;
-    int hours = minutes/60;
-    minutes -= 60*hours;
-
-    std::string elapsed;
-    if (hours)
-    {
-        elapsed += std::to_string(hours);
-        elapsed += (std::string)":";
-        if (minutes < 10) elapsed += (std::string)"0";
-    }
-    elapsed += std::to_string(minutes);
-    elapsed += (std::string)":";
-    if (seconds < 10) elapsed += (std::string)"0";
-    elapsed += std::to_string(seconds);
+    std::string elapsed = elapsed_time(began, finished);
 
     cout << "\nCalculation time: " << elapsed << "." << endl;
     if (output) *output << "\nCalculation time: " << elapsed << "." << endl;

@@ -295,14 +295,12 @@
 #define cavity_docking_containment 100.0
 #define cavity_docking_incentive 10.0
 #define cavity_intersect_threshold 1e2
-// #define cavity_min_occlusion 0.53
 #define cavity_occlusion_threshold_mult 0.7
 #define default_cavity_stuffing 0.03
 #define flexional_give_coefficient 0.75
 #define min_cavmatch_ctainmt 0.6
 #define min_cvty_ctnmt 0.25
 #define min_dist_bounding_box 0.5
-// #define min_partial_radius ((1.7+1.1)/2)
 #define min_partial_radius (1.7+1.1/2)
 #define occlusion_as_disqualify_reason 0
 #define ray_occlusion_density 81

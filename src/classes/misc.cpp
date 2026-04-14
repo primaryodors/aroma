@@ -202,6 +202,37 @@ double entropy_from_permutations(float W)
     return -kB_kJmol * log(W);
 }
 
+std::string elapsed_time(time_t start, time_t end)
+{
+    int seconds = end-start;
+    int minutes = seconds/60;
+    seconds -= 60*minutes;
+    int hours = minutes/60;
+    minutes -= 60*hours;
+    int days = hours/24;
+    hours -= 24*days;
+
+    std::string elapsed;
+    if (days)
+    {
+        if (days < 10) elapsed += (std::string)"0";
+        elapsed += std::to_string(days);
+        elapsed += (std::string)":";
+    }
+    if (hours)
+    {
+        if (hours < 10) elapsed += (std::string)"0";
+        elapsed += std::to_string(hours);
+        elapsed += (std::string)":";
+    }
+    if (minutes < 10) elapsed += (std::string)"0";
+    elapsed += std::to_string(minutes);
+    elapsed += (std::string)":";
+    if (seconds < 10) elapsed += (std::string)"0";
+    elapsed += std::to_string(seconds);
+    return elapsed;
+}
+
 bool equal_or_zero(int a, int b)
 {
     return (!a || !b || (a==b));

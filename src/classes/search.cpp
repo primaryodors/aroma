@@ -1934,6 +1934,8 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
     cout << "Selected ligand:" << bh->name << " ... " << lrs[i]->get_name() << ":" << rh->name
         << " hydro = " << lrs[i]->hydrophilicity()
         << endl << endl;
+    #else
+    cout << "Assigning ligand:" << bh->name << " to proximity with " << lrs[i]->get_name() << ":" << rh->name << "." << endl;
     #endif
 
     float ropt = InteratomicForce::optimal_distance(bh, rh);

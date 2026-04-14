@@ -18,6 +18,7 @@ class Progressbar
     int spinchr = 0;
     float hueoffset = 0;
     bool drawn = false;
+    time_t began = 0;
 };
 
 #endif

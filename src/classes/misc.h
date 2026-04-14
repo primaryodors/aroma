@@ -98,6 +98,8 @@ double equilibrium(double kJmol1, double kJmol2);
 double fractional_factorial(float n);
 double entropy_from_permutations(float W);
 
+std::string elapsed_time(time_t start, time_t end);
+
 bool equal_or_zero(int a, int b);           // True if ints are the same or either int is zero.
 
 // From here: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c

@@ -42,7 +42,8 @@ void Progressbar::update(float value)
         }
     }
     colorless();
-    cout << ("|/-\\")[spinchr % 4] << " " << (int)percentage << "%.               " << endl;
+    if (!began || !value) began = time(NULL);
+    cout << ("|/-\\")[spinchr % 4] << " " << (int)percentage << "%  " << elapsed_time(began, time(NULL)) << "               " << endl;
     spinchr++;
     hueoffset += 0.1;
     drawn = true;
