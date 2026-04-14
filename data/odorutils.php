@@ -332,6 +332,11 @@ function ensure_sdf_exists($ligname)
 	chdir(__DIR__);
 	chdir("..");
 	$cmd = "python3 -c \"import data.globals; import data.odorutils; data.odorutils.load_odors(); data.odorutils.ensure_sdf_exists('$ligname')\"";
+	if (file_exists("venvname"))
+	{
+		$venvname = file_get_contents("venvname");
+		$cmd = "source $venvname/bin/activate; $cmd; deactivate";
+	}
 	exec($cmd);
 	return;
 
