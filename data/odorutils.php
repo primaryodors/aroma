@@ -328,6 +328,9 @@ function check_isomers($ligname, $randomize=true)
 
 function ensure_sdf_exists($ligname)
 {
+	$pwd = getcwd();
+	chdir(__DIR__);
+	chdir("..");
 	$cmd = "python3 -c \"import data.globals; import data.odorutils; data.odorutils.load_odors(); data.odorutils.ensure_sdf_exists('$ligname')\"";
 	exec($cmd);
 	return;
@@ -337,7 +340,6 @@ function ensure_sdf_exists($ligname)
 	$isomers = check_isomers($ligname);
 	$lignamei = $isomers ? $isomers[0] : $ligname;
 
-	$pwd = getcwd();
 	chdir(__DIR__);
 	chdir("..");
 
