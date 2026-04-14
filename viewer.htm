@@ -4236,7 +4236,7 @@ function load_remote_sdf(sdfurl)
 		{
 		    if (result.length < 100 && result.indexOf('not found') >= 0)
 		    {
-		        alert('Please make sure openbabel is installed and the compound\'s SMILES string is correct. Also make sure the web server has access to write to the sdf/ folder.');
+		        alert('Please make sure python rdkit is installed and the compound\'s SMILES string is correct. If you have a venv, create a file in aroma root named venvname containing only the name of your venv. Also make sure the web server has access to write to the sdf/ folder.');
 				$('#pleasewait')[0].innerText = 'Failed to load molecule.';
 		        return;
 		    }
