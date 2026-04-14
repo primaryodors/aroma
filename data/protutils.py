@@ -83,6 +83,10 @@ def subfamily_from_protid(protid):
     else:
         return ""
 
+def build_pdb_fname(protid, suffix="active"):
+    fam = family_from_protid(protid)
+    return f"pdbs/{fam}/{protid}.{suffix}.pdb"
+
 def templates_for_hm(protid):
     consOR51 = ["8uxv"]
     consOR52 = ["8hti"]
