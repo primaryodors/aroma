@@ -382,12 +382,12 @@ int main(int argc, char** argv)
         ligconf[i].restore_state(&m);
         float f = cvty.molecule_inside_pocket(&m, true), fl = cvty.cavity_filling(&m), pm = cvty.polarity_match(&m);
         // cout << f << ", " << fl << ", " << pm << endl;
-        // f -= 0.0001 * (m.get_internal_clashes() + m.total_eclipses());
+        f -= 0.0001 * (m.get_internal_clashes() + m.total_eclipses());
         if (f >= reasonable_fit_threshold)
         {
             cfvalid[j] = true;
             ligconf[j] = ligconf[i];
-            cfscore[j] = f; // +fl*pm;
+            cfscore[j] = f + 0.01*fl + 0.03*pm;
             j++;
 
             int mult = cvty.estimate_multiplicity(ligand);
@@ -406,6 +406,7 @@ int main(int argc, char** argv)
     pb.maximum = nmatches;
     Pose pssorted[nmatches+1];
     float cfsorted[nmatches+1];
+    memset(cfsorted, 0, nmatches*sizeof(float));
     bool taken[nmatches+1];
     for (i=0; i<nmatches; i++) taken[i] = false;
     for (i=0; i<nmatches; i++)
