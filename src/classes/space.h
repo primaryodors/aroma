@@ -17,6 +17,7 @@ class SPartial
     bool priority = false;
 
     float atom_match_score(Atom* a);
+    bool point_inside_partial(Point pt);
 };
 
 class Space

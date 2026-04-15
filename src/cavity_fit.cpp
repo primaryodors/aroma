@@ -15,8 +15,9 @@ int main(int argc, char** argv)
 
     bool save_tmp_pdbs = false;
 
-    int i, j, l, n, nligconf = 5381, iters = 123;
+    int i, j, l, n, nligconf = 8192, iters = 200, nout = 15;
     float minimal_fit_threshold = 0.25, reasonable_fit_threshold = 0.8;
+    bool appendprot = false;
     for (i=0; i<256; i++) priorities[i] = false;
 
     FILE* fp;
@@ -127,6 +128,15 @@ int main(int argc, char** argv)
         {
             i++;
             reasonable_fit_threshold = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nout"))
+        {
+            i++;
+            nout = atoi(argv[i]);
+        }
+        else if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "--appendprot"))
+        {
+            appendprot = true;
         }
         else cout << "Warning: unknown command argument " << argv[i] << endl;
     }
@@ -245,7 +255,6 @@ int main(int argc, char** argv)
 
     int nmatches = j;
     for (; j<nligconf; j++) cfvalid[j] = false;
-    cout << endl;
 
     n = cvty.count_partials();
     CPartial* polar_partials[n+4];
@@ -372,13 +381,13 @@ int main(int argc, char** argv)
     {
         ligconf[i].restore_state(&m);
         float f = cvty.molecule_inside_pocket(&m, true), fl = cvty.cavity_filling(&m), pm = cvty.polarity_match(&m);
-        cout << f << ", " << fl << ", " << pm << endl;
+        // cout << f << ", " << fl << ", " << pm << endl;
         // f -= 0.0001 * (m.get_internal_clashes() + m.total_eclipses());
         if (f >= reasonable_fit_threshold)
         {
             cfvalid[j] = true;
             ligconf[j] = ligconf[i];
-            cfscore[j] = f*fl*pm;
+            cfscore[j] = f; // +fl*pm;
             j++;
 
             int mult = cvty.estimate_multiplicity(ligand);
@@ -389,7 +398,7 @@ int main(int argc, char** argv)
     pb.erase();
     nmatches = j;
 
-    cout << "Cavity can hold up to " << mostfit << " ligands." << endl;
+    // cout << "Cavity can hold up to " << mostfit << " ligands." << endl;
 
     // Sort the conformers by their cavity fit scores.
     cout << "Sorting..." << endl << flush;
@@ -427,7 +436,6 @@ int main(int argc, char** argv)
         if (frand(0,1) < 0.5) pb.update(i);
     }
     pb.erase();
-    cout << endl;
 
     // for (i=0; i<nmatches; i++) cout << cfscore[i] << endl;
     cout << "Found " << nmatches << " matches." << endl;
@@ -448,15 +456,19 @@ int main(int argc, char** argv)
         fprintf(fp, "%s", buffer);
     }
 
-    // Write the top 15 conformers as PDB data, giving each the letter code LIG and its own residue number.
+    // Write the top conformers as PDB data, giving each the letter code LIG and its own residue number.
     cout << "Writing data..." << endl << flush;
     l = 0;
-    for (i=0; i<nmatches && i<15; i++)
+    float polsum = 0;
+    int polqty = 0;
+    for (i=0; i<nmatches && i<nout; i++)
     {
         fprintf(fp, "REMARK CFSCORE %f\n", cfsorted[i]);
         pssorted[i].restore_state(&m);
-        float cf = cvty.cavity_filling(&m);
-        cout << "Conformer " << i << " score: " << cfsorted[i] << " fill: " << cf << endl;
+        float cf = cvty.cavity_filling(&m), pm = cvty.polarity_match(&m);
+        polsum += pm;
+        polqty++;
+        cout << "Conformer " << i << " score: " << cfsorted[i] << " fill: " << cf << " polar: " << pm << endl;
         n = m.get_atom_count();
         for (j=0; j<n; j++)
         {
@@ -465,11 +477,15 @@ int main(int argc, char** argv)
             a->residue = i+1;
             if (!i) strcpy(a->aa3let, "LIG");
         }
-        m.save_pdb(fp, l);
+        m.save_pdb(fp, l, false);
         l += n;
     }
 
     cout << "Best score: " << cfsorted[0] << endl;
+    cout << "Average polarity match: " << (polsum / max(1, polqty)) << endl;
+
+    p.save_pdb(fp);
+    p.end_pdb(fp);
 
     fclose(fp);
     cout << "Saved " << outfname << endl;

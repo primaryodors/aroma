@@ -440,15 +440,15 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
 
             if (p->metallic && acm) partial *= 5;
             else if (p->thio && amet) partial *= 5;
-            else if (p->chargedn && apos) partial *= 1.3;
+            else if (p->chargedn && apos) partial *= 2.5;
             else if (p->chargedn && aneg) partial *= 0.6;
-            else if (p->chargedp && aneg) partial *= 1.3;
+            else if (p->chargedp && aneg) partial *= 2.5;
             else if (p->chargedp && apos) partial *= 0.6;
             else if (p->thio && acm) partial *= 1.1;
             // else if (!p->thio && !acm && p->polar != apol) partial *= 0.5;
 
             if (p->pi && api) partial *= 1.3;
-            if (p->polar && apol) partial *= 1.7;
+            if (p->polar && apol) partial *= 2;
 
             // if (p->thio) cout << " now " << partial << endl;
         }
@@ -499,8 +499,9 @@ float Cavity::cavity_filling(Molecule *m)
 
 float Cavity::polarity_match(Molecule *m)
 {
-    float empties = 0.0f;
+    float empties = 0;
     float filleds = 0;
+    float extras = 0;
     float x, y, z;
     float step = 0.5;
 
@@ -511,8 +512,8 @@ float Cavity::polarity_match(Molecule *m)
             for (z=b.z1; z<=b.z2; z+=step)
             {
                 Point pt(x,y,z);
-                CPartial* part = (CPartial*)point_inside_pocket(pt);
-                if (part)
+                CPartial* part = (CPartial*)get_nearest_partial(pt);
+                if (part && part->point_inside_partial(pt))
                 {
                     Atom* a = m->get_nearest_atom(pt);
                     float r = a->loc.get_3d_distance(pt);
@@ -526,11 +527,20 @@ float Cavity::polarity_match(Molecule *m)
                     {
                         empties += 1;
                     }
+
+                    float achg = a->is_conjugated_to_charge();
+                    if (achg > 0 && part->chargedn)
+                        extras += 2.5 * fabs(achg);
+                    if (achg < 0 && part->chargedp)
+                        extras += 2.5 * fabs(achg);
+
+                    if (a->is_pi() && part->pi)
+                        extras += 0.1;
                 }
             }
 
     if (!empties && !filleds) return 0;
-    return (float)filleds / (empties+filleds);
+    return (filleds+extras) / (empties+filleds);
 }
 
 const Point* ligand_vertices;

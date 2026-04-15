@@ -394,3 +394,9 @@ float SPartial::atom_match_score(Atom* a)
 
     return result;
 }
+
+bool SPartial::point_inside_partial(Point pt)
+{
+    float r = pt.get_3d_distance(s.center);
+    return (r < s.radius);
+}

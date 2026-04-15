@@ -64,11 +64,11 @@
 #define pbrc_dock_nopose 160, 168, 176
 #define pbrc_dock_activepose 32, 224, 96
 #define pbrc_dock_inactivepose 98, 176, 224
-#define pbrc_cavfit_genconf 192, 64, 224
-#define pbrc_cavfit_goodfit 160, 64, 224
-#define pbrc_cavfit_optfit 128, 64, 224
-#define pbrc_cavfit_outconf_sel 96, 64, 224
-#define pbrc_cavfit_sort 64, 64, 224
+#define pbrc_cavfit_genconf 160, 64, 224
+#define pbrc_cavfit_goodfit 128, 64, 224
+#define pbrc_cavfit_optfit 96, 64, 224
+#define pbrc_cavfit_outconf_sel 64, 64, 224
+#define pbrc_cavfit_sort 32, 64, 224
 #define pbrc_cavsearch 224, 48, 32
 #define pbrc_ic_hxopt 192, 24, 156
 #define pbrc_olfph_tumble 192, 80, 64
