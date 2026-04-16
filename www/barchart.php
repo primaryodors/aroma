@@ -11,6 +11,13 @@ function lum($r, $g, $b)
     return $rcontrib*$r + $gcontrib*$g + $bcontrib*$b;
 }
 
+function sgn($n)
+{
+	if ($n > 0) return 1
+	if ($n < 0) return -1;
+	return 0;
+}
+
 $dispcolors = json_decode(file_get_contents("../data/dispcolor.json"), true);
 
 $bkcolor = [0x15, 0x1a, 0x37];
