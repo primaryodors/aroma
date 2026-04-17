@@ -115,9 +115,12 @@ def ensure_sdf_exists(odorant):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
     o = find_odorant(odorant)
-    if not "sdfname" in o:
+    if "sdfname" in o:
+        result = o["sdfname"]
+    else:
         output_file = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
         smiles_to_sdf(o['smiles'], output_file)
+        o["sdfname"] = result = output_file
 
     isomers = check_isomers(o['full_name'])
     forms = check_forms(o['full_name'])
@@ -141,6 +144,7 @@ def ensure_sdf_exists(odorant):
                     fname = ("sdf/" + form + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
                 if not os.path.exists(fname):
                     smiles_to_sdf(o["forms"][form], fname)
+    return result
 
 def smiles_to_sdf(smiles, output_file):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))

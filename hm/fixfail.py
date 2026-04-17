@@ -8,6 +8,16 @@ import subprocess
 from modeller import *
 from modeller.automodel import *
 
+if "help" in sys.argv:
+    print("Usage:\npython3 hm/fixfail.py [receptor] [docked PDB or ligand_name] ([options]...)\n")
+    print("Available options:")
+    print("  help\tShow this message.")
+    print("  reset\tCreate a new homology model, using dohm.php, to use for processing, before performing any other function.")
+    print("  fit\tConduct a best-fit search for placing the ligand into one of the receptor's cavities. Requires a ligand name instead of a docked PDB.")
+    print("  predock\tCreate a new docked PDB by attempting to dock a named ligand in the receptor before processing.")
+    print("  loop\tAfter creating a fixed-fail model, attempt to dock the ligand and, if less that three output poses, go back and try the fixfail procedure again for a maximum of 100 attempts.")
+    print("  dock\tAfter creating a fixed-fail model, attempt to dock the ligand and then exit.")
+
 argc = len(sys.argv)
 if argc < 2:
     # print("Both a protein ID and a PDB file are required.")
@@ -74,6 +84,9 @@ if argc > 2:
     # subprocess.run(cmd)
 else:
     inppdb = origpdb
+    odor = False
+
+delete_inppdb = False
 
 # Ex.: python3 hm/fixfail.py OR5K1 hazelnut_pyrazine N7 279:OG1 C10 255:CG C1 104:CG
 # Note: Thr must specify OG1, not OG2, or MODELLER will complain!
@@ -96,7 +109,22 @@ if "reset" in sys.argv:
     cmd = ["php", "-f", "hm/dohm.php", protid]
     subprocess.run(cmd)
 
+if "fit" in sys.argv:
+    # Perform a cavity fitting calculation on the ligand and receptor model.
+    if not odor:
+        print("An odorant is required for cavity prefit.")
+        exit()
+    origcvty = origpdb.replace(".pdb", ".cvty")
+    sdfname = data.odorutils.ensure_sdf_exists(odor["full_name"])
+    inppdb = f"tmp/{protid}.fit.pdb"
+    delete_inppdb = True
+    cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
+    subprocess.run(cmd)
+    # TODO: If no result from cavity_fit, error out and exit.
+
+if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
     # Perform an active-state dock on the new model, then proceed normally to model refinement with rigid-body ligand.
+    # TODO: If both fit and predock, use the fitted model's ligand as the pre-placement, no RH/BB/TS.
     cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
     subprocess.run(cmd)
 
@@ -190,14 +218,13 @@ while True:
 
     with open(inppdb, 'r') as fin:
         cin = fin.read()
-        # cout = ""
         for ln in cin.split("\n"):
             if ln[0:6] == "REMARK":
                 cout = ln + "\n" + cout
-            if ln[0:6] == "ATOM  ":
-                resno = int(ln[22:28].strip())
-                if resno < 1 or resno > len(is_helix): continue
-                if is_helix[resno-1] == '-': continue
+            # if ln[0:6] == "ATOM  ":
+              #  resno = int(ln[22:28].strip())
+               # if resno < 1 or resno > len(is_helix): continue
+                #if is_helix[resno-1] == '-': continue
                 # if not startres or (resno and resno<startres): startres = resno
             if ln[0:6] == "HETATM":
                 ln = ln[0:23] + "999" + ln[26:]
@@ -205,6 +232,9 @@ while True:
                 haslig = True
         with open(tplpdb, "w") as fout:
             fout.write(cout)
+
+        if delete_inppdb:
+            os.remove(inppdb)
 
     env = Environ()
     if haslig:

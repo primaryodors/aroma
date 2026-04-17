@@ -376,6 +376,7 @@ int main(int argc, char** argv)
     // Narrow the conformers further to those that meet a reasonable threshold.
     cout << "Selecting output conformers..." << endl << flush;
     pb.set_color(pbrc_cavfit_outconf_sel);
+    float most_reasonable_score = 0;
     j = 0;
     for (i=0; i<nmatches; i++)
     {
@@ -383,6 +384,7 @@ int main(int argc, char** argv)
         float f = cvty.molecule_inside_pocket(&m, true), fl = cvty.cavity_filling(&m), pm = cvty.polarity_match(&m);
         // cout << f << ", " << fl << ", " << pm << endl;
         f -= 0.0001 * (m.get_internal_clashes() + m.total_eclipses());
+        if (f > most_reasonable_score) most_reasonable_score = f;
         if (f >= reasonable_fit_threshold)
         {
             cfvalid[j] = true;
@@ -482,7 +484,7 @@ int main(int argc, char** argv)
         l += n;
     }
 
-    cout << "Best score: " << cfsorted[0] << endl;
+    cout << "Best score: " << most_reasonable_score << endl;
     cout << "Average polarity match: " << (polsum / max(1, polqty)) << endl;
 
     p.save_pdb(fp);
