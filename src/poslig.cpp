@@ -109,6 +109,9 @@ int main(int argc, char** argv)
             LocatedVector axis = (Vector)(alnloc[1].subtract(alnloc[0]));
             float theta = find_angle_along_vector(alnloc[2], a->loc, alnloc[0], axis);
             axis.origin = alnloc[0];
+            Point plus = rotate3D(a->loc, axis.origin, axis, theta),
+                  minus = rotate3D(a->loc, axis.origin, axis, -theta);
+            if (minus.get_3d_distance(alnloc[2]) < plus.get_3d_distance(alnloc[2])) theta = -theta;
             m.rotate(axis, theta);
         }
         else
