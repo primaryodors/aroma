@@ -86,6 +86,11 @@ int main(int argc, char** argv)
     m.minimize_internal_clashes();
 
     fp = fopen(filename.c_str(), "w");
+    if (!fp)
+    {
+        cerr << "FAILED to open " << filename << " for writing." << endl;
+        return -1;
+    }
     m.save_sdf(fp);
     fclose(fp);
 }
