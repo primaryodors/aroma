@@ -564,7 +564,7 @@ SAVE $outf
                 elif ln[0:22] == "Disqualified because: ":
                     disqo = True
                 elif "pose(s) found." in ln:
-                    poses = int(ln.split(' ')[0].trim())
+                    poses = int(ln.split(' ')[0].strip())
 
                 if poses >= 4 and total < 0 and not disqo:
                     print("SUCCESS")
