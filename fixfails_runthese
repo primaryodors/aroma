@@ -14,17 +14,17 @@ nohup python3 hm/fixfail.py OR7D4 androstenone O18 203:CB C9 104:CD2 loop &
 nohup python3 hm/fixfail.py OR8B2 4-chromanone O11 159:NE2 loop &
 nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 206:ND2 loop &
 nohup python3 hm/fixfail.py OR4P4 habanolide loop &
+nohup python3 hm/fixfail.py OR51B4 troenan loop &
 
 IN PROGRESS:
 nohup python3 hm/fixfail.py OR10J5 lyral loop &
 nohup python3 hm/fixfail.py OR10Q1 exaltolide loop &
 nohup python3 hm/fixfail.py OR10S1 lilial loop &
+nohup python3 hm/fixfail.py OR51E1 pelargonic_acid loop &
 
 TODO:
-nohup python3 hm/fixfail.py OR51B4 troenan loop &
-nohup python3 hm/fixfail.py OR51E1 pelargonic_acid loop &
-nohup python3 hm/fixfail.py OR52E8 3-hydroxy-3-methyl_heptanoic_acid O9 268:NH2 C1 110:CD1 O10 263:OG loop &
 
+nohup python3 hm/fixfail.py OR52E8 3-hydroxy-3-methyl_heptanoic_acid O9 268:NH2 C1 110:CD1 O10 263:OG loop &
 nohup python3 hm/fixfail.py OR1A2 nerolidol loop &
 nohup python3 hm/fixfail.py OR1D2 bourgeonal O14 155:OH C2 256:CB loop &
 nohup python3 hm/fixfail.py OR1G1 2-undecanone O11 206:OG1 C1 183:CD loop &
