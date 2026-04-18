@@ -288,6 +288,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
             current_aln = ""
             pieces = ln.split(':')
             pdbid = pieces[1].strip()
+            if pdbid in exclude: continue
             strandids[pdbid] = pieces[3].strip()
         elif reading_aln:
             current_aln += ln + "\n"
@@ -300,6 +301,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     closest_ids = []
     closest_sim = []
     for pdbid in alns.keys():
+        if pdbid in exclude: continue
         simaln = aln_similarity(aln, alns[pdbid])
         # print(f"{pdbid}: {simaln}")
         for i in range(5):
@@ -339,6 +341,8 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     atomxyz = dict()
     seq0 = dict()
     for pdbid in closest_ids:
+        if pdbid in exclude: continue
+        if not pdbid in strandids: continue
         relres3 = ali_rel_resno(alns[pdbid], 3, 50)
         relres6 = ali_rel_resno(alns[pdbid], 6, 50)
         relres7 = ali_rel_resno(alns[pdbid], 7, 50)
