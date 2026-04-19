@@ -4290,17 +4290,17 @@ function update_visinters()
 
 	if (typeof visinter[gpose] != 'undefined') if (typeof visinter[gpose][gnode] != 'undefined') visinter[gpose][gnode].forEach(function(value)
 	{
-		var max_opacity = 0.4;
+		var max_opacity = 0.8;
 		var color = [0,0,1];
 		var opacity = max_opacity;
 
-		var cidx = Math.min(Math.sqrt(-value[2]/20), 1) * 3.14;
+		var cidx = Math.min(Math.sqrt(-value[2]/15), 1) * 3.14;
 		var rgb = firegrad(cidx);
 
-		color = [parseFloat(rgb[0])/255, parseFloat(rgb[1])/255, parseFloat(rgb[2])/255];
+		color = [parseFloat(rgb[1])/255, parseFloat(rgb[0])/255, parseFloat(rgb[2])/255];
 
 		var shape = new NGL.Shape("shape");
-		shape.addCylinder( value[0].slice(0, 3), value[1].slice(0, 3), color, 0.0666 );
+		shape.addCylinder( value[0].slice(0, 3), value[1].slice(0, 3), color, 0.0333 );
 		var shapeComp = stage.addComponentFromObject(shape);
 		shapeComp.addRepresentation("buffer", {"opacity": opacity});
 		visicomp.push(shapeComp);
