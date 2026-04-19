@@ -418,13 +418,26 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
                             else:
                                 bwmember += 1
 
-                            while alns[pdbid][j] < 'A' or alns[pdbid][j] > 'Z':
-                                if alns[pdbid][j] == "\n":
-                                    bwhelix += 1
-                                    bwmember = -49
+                            try:
+                                while alns[pdbid][j] < 'A' or alns[pdbid][j] > 'Z':
+                                    if alns[pdbid][j] == "\n":
+                                        bwhelix += 1
+                                        bwmember = -49
+                                    else:
+                                        bwmember += 1
+                                    j += 1
+                                    if j >= len(alns[pdbid]):
+                                        alns[pdbid] += "*"
+                            except:
+                                if not pdbid in alns:
+                                    print(f"No {pdbid} in alns.")
                                 else:
-                                    bwmember += 1
-                                j += 1
+                                    print("Index out of range")
+                                    print(pdbid)
+                                    print(alns[pdbid])
+                                    print(len(alns[pdbid]))
+                                print(j)
+                                exit()
 
                             if frist:
                                 seq0[f"{bwhelix}.{bwmember}"] = a3let
