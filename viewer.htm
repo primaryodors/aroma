@@ -73,6 +73,11 @@ var complex_spcfill_skeleton = "ball+stick";
 var molid = getParameterByName('mol') ? getParameterByName('mol') : 'rand';
 var protid = getParameterByName('prot') ? getParameterByName('prot') : false;
 
+const quaternion = new NGL.Quaternion();
+quaternion.setFromAxisAngle( new NGL.Vector3( 0, 1, 0 ), 144 * Math.PI / 180 );
+const vector = new NGL.Vector3( 1, 0, 0 );
+vector.applyQuaternion( quaternion );
+
 function loadFile(fileData, fileName = "", custom_color_scheme = false)
 {
 	$("#pleasewait").show();
@@ -410,6 +415,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 							gmrparams.push(rp);
 
 							comp.autoView();
+							stage.viewerControls.rotate(quaternion);
 						}
 
 						if (fext == 'pdb')
@@ -478,6 +484,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 							});
 
 							stage.autoView();
+							stage.viewerControls.rotate(quaternion);
 							if (!hydrogens) $("#nohyd").click();
 						}
 					} );
@@ -911,6 +918,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 										showPose(1);
 										if (!hydrogens) $("#nohyd").click();
 										// curr_ligand.autoView();
+										// stage.viewerControls.rotate(quaternion);
 									}, 259);
 								}
 
@@ -969,6 +977,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
                 {
                     showPose(1);
                     // curr_ligand.autoView();
+					// stage.viewerControls.rotate(quaternion);
                 }, 259);
                 $("#affichage").show();
                 break;
@@ -982,6 +991,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
                 if (curr_ligand)
 				{
 					curr_ligand.autoView();
+					stage.viewerControls.rotate(quaternion);
 				}
             	$('#clip').trigger("input");
 				showPose(1);
@@ -4260,6 +4270,7 @@ function load_remote_sdf(sdfurl)
 				gmrep.push(reptype);
 				gmrparams.push(rparam);
 		        comp.autoView();
+				stage.viewerControls.rotate(quaternion);
 				$("#pleasewait").hide();
 		    } );
 		}
