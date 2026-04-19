@@ -412,6 +412,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
 
                         if resno != lresno:
                             j += 1
+                            if j >= len(alns[pdbid]): break
                             if alns[pdbid][j] == "\n":
                                 bwhelix += 1
                                 bwmember = -49
@@ -426,9 +427,9 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
                                     else:
                                         bwmember += 1
                                     j += 1
-                                    if j >= len(alns[pdbid]):
-                                        alns[pdbid] += "*"
+                                    if j >= len(alns[pdbid]): break
                             except:
+                                print(ln)
                                 if not pdbid in alns:
                                     print(f"No {pdbid} in alns.")
                                 else:
