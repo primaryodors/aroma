@@ -980,22 +980,26 @@ _btyp_unassigned:
     if (dr.mcoord_charge_repulsion) output << "Metal-coordinated charge repulsion: " << dr.mcoord_charge_repulsion << endl;
     if (dr.stay_close_ligand)
     {
-        output << "Maintained " << dr.stay_close_ligand->name;
+        float r = dr.stay_close_protein->distance_to(dr.stay_close_ligand);
+        const char* maintained = (r < 0.5*_INTERA_R_CUTOFF) ? "Maintained " : "Failed to maintain ";
+        output << maintained << dr.stay_close_ligand->name;
         Atom* heavy = nullptr;
         if (dr.stay_close_ligand->Z == 1 && dr.stay_close_ligand->get_bonded_heavy_atoms_count()) heavy = dr.stay_close_ligand->get_bond_by_idx(0)->atom2;
         if (heavy) output << " (" << heavy->name << ")"; 
         output << " ~ "
             << dr.stay_close_protein->aa3let << dr.stay_close_protein->residue << ":" << dr.stay_close_protein->name
-            << " at " << dr.stay_close_protein->distance_to(dr.stay_close_ligand) << " A." << endl;
+            << " at " << r << " A." << endl;
         if (dr.stay_close2_ligand)
         {
-            output << "Maintained " << dr.stay_close2_ligand->name;
+            r = dr.stay_close2_protein->distance_to(dr.stay_close2_ligand);
+            maintained = (r < 0.5*_INTERA_R_CUTOFF) ? "Maintained " : "Failed to maintain ";
+            output << maintained << dr.stay_close2_ligand->name;
             Atom* heavy = nullptr;
             if (dr.stay_close2_ligand->Z == 1 && dr.stay_close2_ligand->get_bonded_heavy_atoms_count()) heavy = dr.stay_close2_ligand->get_bond_by_idx(0)->atom2;
             if (heavy) output << " (" << heavy->name << ")"; 
             output << " ~ "
                 << dr.stay_close2_protein->aa3let << dr.stay_close2_protein->residue << ":" << dr.stay_close2_protein->name
-                << " at " << dr.stay_close2_protein->distance_to(dr.stay_close2_ligand) << " A." << endl;
+                << " at " << r << " A." << endl;
         }
     }
 
