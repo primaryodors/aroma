@@ -49,7 +49,7 @@ for a in sys.argv[2:]:
     elif a == 'ta':
         show_top_agonist = True
     else:
-        bwnos.append(a)
+        bwnos.append(re.sub("[A-Za-z]", "", a.replace('!', '')))
 
 print("         ", end="")
 for bw in bwnos:
