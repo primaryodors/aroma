@@ -95,13 +95,14 @@ if (file_exists($dbsrfn)) $dockbsr = json_decode(file_get_contents($dbsrfn), tru
 $args = [];
 foreach ($_REQUEST as $k => $v)
 {
-    if ($k != 'e') $args[] = "$k=$v";
+    if ($k != 'e' && $k != 'f') $args[] = "$k=$v";
 }
 $args = implode("&", $args);
 ?>
 
 <a href="docklist.php?<?php echo $args; ?>">All</a>
 <a href="docklist.php?e=1&<?php echo $args; ?>">Only empirical</a>
+<a href="docklist.php?f=1&<?php echo $args; ?>">Only fails</a>
 
 <?php if (isset($_REQUEST['r']) || isset($_REQUEST['o'])) { ?>
 <a href="docklist.php">Clear filters</a>
@@ -410,6 +411,12 @@ foreach ($prots as $protid => $p)
 
     foreach ($rows as $k => $r)
     {
+        // print_r($r);
+        if (@$_REQUEST['f'])
+        {
+            if (@$r["benerg_active"] < 100) continue;
+        }
+
         list($protid, $odor) = explode("~", $k);
         $benerg_active = 0;
         // print_r($r);
