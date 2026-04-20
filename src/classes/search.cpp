@@ -1755,11 +1755,18 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
             i = rand() % j;
 
             #if require_randhyd_priority
-            if (require_priority && !lrs[i]->priority) continue;
+            if (require_priority && !lrs[i]->priority)
+                if (frand(0,1) >= randhyd_priority_escape)
+                    continue;
+            else
+            {
             #endif
             if (require_opposite_charge && sgn(lrs[i]->get_charge()) != -sgn(lchg)) continue;
             if (require_opposite_charge && lrs[i]->conditionally_basic()) continue;
             if (require_condbas && !lrs[i]->conditionally_basic()) continue;
+            #if require_randhyd_priority
+            }
+            #endif
 
             if (frand(0,1) < 1e-9)                                // just in case there are no polar side chains.
             {

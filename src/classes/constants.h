@@ -306,6 +306,7 @@
 #define ray_occlusion_density 81
 
 // Random Hydrophilic search constants.
+#define randhyd_priority_escape 0.001
 #define require_randhyd_priority 1
 
 // Soft docking constants.
