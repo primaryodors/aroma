@@ -589,7 +589,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 					{
 						reading_benerg = true;
 					}
-					if (lines[i].trim() == "Atom-level interactions:")
+					else if (lines[i].trim() == "Atom-level interactions:")
 					{
 						reading_atomlvl = true;
 					}
@@ -612,7 +612,6 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 								reading_benerg = false;
 								continue;
 							}
-							// continue;
 
 							var resno = pieces[0];
 							if (!resno.match(/^[A-Za-z]{3}[0-9 ]{1,4}/))
@@ -622,7 +621,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 							}
 
 							resno = parseInt(resno.substr(3));
-							var energy = parseFloat(pieces[1]);
+							var energy = parseFloat(pieces[0]);
 							if (energy > -0.08) continue;
 
 							if (typeof resapos[lpose] == 'undefined') continue;
@@ -659,7 +658,9 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 							var res2no = parseInt(" 0" + aa2name.replace(/\(.+\)/g, "").replace(/_.+/g, "").replace(/[0-9]+[,]/g, "").replace(/[0-9]+-/g, "").replace(/[^0-9]/g, ""));
 							var atom2name = morceaux[1];
 
-							var venergy = parseFloat(morceaux[2]);
+							var kwezdis = morceaux[2].trim().split(' ');
+							var venergy = parseFloat(kwezdis[0]);
+							var vtype = kwezdis[1];
 							if (res1no && res2no) continue;
 							if (venergy > -0.3) continue;
 
@@ -706,7 +707,7 @@ function loadFile(fileData, fileName = "", custom_color_scheme = false)
 								}
 							}
 
-							var pettia = [a1pos, a2pos, venergy, resno];
+							var pettia = [a1pos, a2pos, venergy, resno, vtype];
 							if (already)
 							{
 								if (visinter[lpose][lnode][already][2] > venergy)
@@ -4290,6 +4291,7 @@ function update_visinters()
 
 	if (typeof visinter[gpose] != 'undefined') if (typeof visinter[gpose][gnode] != 'undefined') visinter[gpose][gnode].forEach(function(value)
 	{
+		if (isNaN(value[2])) return;
 		var max_opacity = 0.8;
 		var color = [0,0,1];
 		var opacity = max_opacity;
@@ -4298,7 +4300,19 @@ function update_visinters()
 		var rgb = firegrad(cidx);
 
 		// who wants bath
-		color = [parseFloat(rgb[1])/255, parseFloat(rgb[0])/255, parseFloat(rgb[2])/255];
+		switch (value[4])
+		{
+			case "hbond": case "mcoord": case "polarpi":
+			color = [parseFloat(rgb[1])/255, parseFloat(rgb[0])/255, parseFloat(rgb[2])/255];
+			break;
+
+			case "ionic":
+			color = [parseFloat(rgb[0])/255, parseFloat(rgb[0])/255, parseFloat(rgb[2])/255];
+			break;
+
+			default:
+			color = [parseFloat(rgb[0])/255, parseFloat(rgb[1])/255, parseFloat(rgb[2])/255];
+		}
 
 		var shape = new NGL.Shape("shape");
 		shape.addCylinder( value[0].slice(0, 3), value[1].slice(0, 3), color, 0.0333 );
