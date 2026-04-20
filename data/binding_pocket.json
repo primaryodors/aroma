@@ -44,7 +44,14 @@
     },
     "OR2*":
     {
-        "pocket": "STNQ3.29! 3.33 STNQ3.37! 3.40 4.60 STNQ5.42! STNQ5.43! 6.55 K6.59! ST7.42!",
+        "odorophores":
+        {
+            "C=O":
+            {
+                "pocket": "STNQ3.29 3.33 3.37 3.40 4.60 5.42 5.43 6.55 K6.59! 7.42"
+            }
+        },
+        "pocket": "STNQ3.29! 3.33 STNQ3.37! 3.40 4.60 STNQ5.42! STNQ5.43! 6.55 ST7.42!",
         "stcr": "YH6.55 DE45.51",
         "flxr": "NDT3.37 ST7.42",
         "bridge": "Q4.60 K6.59"
@@ -90,9 +97,13 @@
     },
     "OR6*":
     {
-        "pocket": "STNQ3.37! STNQ4.56! SHTNQ5.43! 5.47 6.55",
+        "pocket": "STNQ3.37! STNQ4.56! SHTNQ5.43! 5.47 6.55 ST7.42!",
         "stcr": "YH6.55 DE45.51",
-        "flxr": "NDT3.37"
+        "flxr": "NDT3.37",
+        "atomto":
+        [
+            "ST7.42 EXTENT 3.37"
+        ]
     },
     "OR7D*":
     {
