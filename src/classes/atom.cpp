@@ -3715,6 +3715,22 @@ std::ostream& operator<<(std::ostream& os, const Ring& r)
     return os;
 }
 
+std::string to_string(intera_type it)
+{
+    switch (it)
+    {
+        case covalent: return (std::string)"covalent";
+        case ionic: return (std::string)"ionic";
+        case hbond: return (std::string)"hbond";
+        case pi: return (std::string)"pi";
+        case polarpi: return (std::string)"polarpi";
+        case mcoord: return (std::string)"mcoord";
+        case vdW: return (std::string)"vdW";
+        default:
+        return std::string();
+    }
+}
+
 float Atom::similarity_to(Atom* b)
 {
     float similarity = 0;

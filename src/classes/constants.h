@@ -305,6 +305,9 @@
 #define occlusion_as_disqualify_reason 0
 #define ray_occlusion_density 81
 
+// Random Hydrophilic search constants.
+#define require_randhyd_priority 1
+
 // Soft docking constants.
 #define initial_soft_contact_elasticity 0.03
 #define move_ligand_with_soft_motion 1

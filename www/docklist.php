@@ -411,7 +411,6 @@ foreach ($prots as $protid => $p)
 
     foreach ($rows as $k => $r)
     {
-        // print_r($r);
         if (@$_REQUEST['f'])
         {
             if (@$r["benerg_active"] < 100) continue;

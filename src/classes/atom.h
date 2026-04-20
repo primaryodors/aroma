@@ -426,6 +426,8 @@ std::ostream& operator<<(std::ostream& os, const Atom& a);
 std::ostream& operator<<(std::ostream& os, const Bond& b);
 std::ostream& operator<<(std::ostream& os, const Ring& r);
 
+std::string to_string(intera_type it);
+
 extern float (*conj_get_charge)(void* lconjugation);
 extern float (*preflex_cb)(void*);
 extern bool (*postflex_cb)(void*,float);

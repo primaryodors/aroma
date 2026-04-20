@@ -5027,6 +5027,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             && latoms[i]->is_bonded_to(ligands[l]->atoms[j]))
                         {
                             abind.attractive = InteratomicForce::covalent_bond_energy(latoms[i], ligands[l]->atoms[j], 1);     // Cystine kludge.
+                            abind.dominant_type = covalent;
                             abind.clash = 0;
                         }
                         else abind = InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j]);
@@ -5074,6 +5075,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
 
                             interall_a1[ninterall] = heavy1;
                             interall_a2[ninterall] = heavy2;
+                            interall_t[ninterall] = abind.dominant_type;
                             interall[ninterall++] = asum;
 
                             if (ninterall >= MAX_INTERALL-1)

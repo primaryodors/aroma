@@ -16,6 +16,7 @@ class Interaction
     float clash = 0;
     float worst_atom_clash = 0;
     bool stays_met = true;
+    intera_type dominant_type = vdW;
 
     float summed() { return clash+repulsive-attractive; }
 
@@ -110,6 +111,7 @@ extern float mc_bpotential;
 extern float interall[MAX_INTERALL];
 extern Atom* interall_a1[MAX_INTERALL];
 extern Atom* interall_a2[MAX_INTERALL];
+extern intera_type interall_t[MAX_INTERALL];
 extern int ninterall;
 extern bool compute_interall;
 

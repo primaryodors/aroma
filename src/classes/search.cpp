@@ -1635,6 +1635,9 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
 {
     int i, j;
     bool require_opposite_charge = false, require_condbas = false;
+    #if require_randhyd_priority
+    bool require_priority = false;
+    #endif
 
     Molecule* llig = ligand->get_monomer(0);
     int maxlt = ligand->get_heavy_atom_count()+8;
@@ -1688,8 +1691,14 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
         if (lrs[i]->coordmtl)
         {
             rhmet = lrs[i]->coordmtl;
+            #if !require_randhyd_priority
             break;
+            #endif
         }
+
+        #if require_randhyd_priority
+        if (lrs[i]->priority) require_priority = true;
+        #endif
     }
 
     Atom *bh = rhmet ? llig->get_most_metal_coord(rhmet) : llig->get_most_polar();
@@ -1745,6 +1754,9 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
         {
             i = rand() % j;
 
+            #if require_randhyd_priority
+            if (require_priority && !lrs[i]->priority) continue;
+            #endif
             if (require_opposite_charge && sgn(lrs[i]->get_charge()) != -sgn(lchg)) continue;
             if (require_opposite_charge && lrs[i]->conditionally_basic()) continue;
             if (require_condbas && !lrs[i]->conditionally_basic()) continue;

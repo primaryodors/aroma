@@ -22,6 +22,7 @@ bool only_closest_conj_charge = false;
 float interall[MAX_INTERALL];
 Atom* interall_a1[MAX_INTERALL];
 Atom* interall_a2[MAX_INTERALL];
+intera_type interall_t[MAX_INTERALL];
 int ninterall = 0;
 bool compute_interall = false;
 
@@ -819,6 +820,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
         {
             partial = forces[i]->get_kJmol();
             j=i;
+            kJmol.dominant_type = forces[i]->type;
         }
     }
     if (j < 0)
@@ -967,7 +969,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
         #endif
 
         // if (current_type == covalent) continue;
-        
+
         float rdecayed;
         float asum=0, bsum=0, aniso=1;
 
@@ -1365,6 +1367,7 @@ Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
             #endif
         }
 
+        if (partial > kJmol.attractive) kJmol.dominant_type = forces_by_type[i]->type;
         kJmol.attractive += partial;
         if (partial > 0.5 && forces_by_type[i]->distance < rbind) 
         {

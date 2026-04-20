@@ -106,7 +106,7 @@ SH      S      hbond    0.25  2.8?        4?          5
 FH      F      hbond    0.5   2.0?      161.5         ?
 
 # https://doi.org/10.1074/jbc.R112.418574
-CH      O      hbond    0.25  1.6?        2.1         1.6?
+CH      O      hbond    0.25  1.6?        2.1         5?
 
 # https://doi.org/10.1021/jz502150d?source=cen
 OH      P      hbond    0.5   2.6        18           11?
