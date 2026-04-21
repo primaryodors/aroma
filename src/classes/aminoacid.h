@@ -41,6 +41,7 @@ struct AADef
     int charged = 0;
     bool loaded = false;
     bool isoleucine_fix = false;
+    bool xflx = false;
     float sidechain_pKa = nanf("n/a");
     float sidechain_hydration_free_energy = nanf("dunno");
     float flexion_probability = 0;
@@ -106,6 +107,7 @@ public:
     bool is_amide();
     bool is_amine();
     bool conditionally_basic() const;
+    bool is_xflx() { return aadef ? aadef->xflx : false; }
     float sc_pKa() const;
     float sc_hfe() const;
     float get_reach() const

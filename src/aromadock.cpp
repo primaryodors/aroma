@@ -3398,7 +3398,15 @@ _try_again:
                 for (i=protein->get_start_resno(); i<=j; i++)
                 {
                     AminoAcid* mvaa = protein->get_residue(i);
-                    if (mvaa && !(mvaa->movability & MOV_PINNED)) mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
+                    if (mvaa && !(mvaa->movability & MOV_PINNED))
+                    {
+                        if (mvaa->is_ic_res)
+                            mvaa->movability = MOV_PINNED;
+                        else if (mvaa->is_xflx())
+                            mvaa->movability = frand(0,1) < 0.75 ? MOV_FORCEFLEX : MOV_FLXDESEL;
+                        else
+                            mvaa->movability = min(MOV_FLXDESEL, mvaa->movability);
+                    }
                 }
 
                 #if _dbg_null_flexions
@@ -3417,10 +3425,9 @@ _try_again:
                         for (i=0; i<sphres; i++)
                         {
                             if (reaches_spheroid[nodeno][i]->movability != MOV_FLXDESEL) continue;
+                            if (reaches_spheroid[nodeno][i]->is_ic_res) continue;
                             float weight = reaches_spheroid[nodeno][i]->get_aa_definition()->flexion_probability;
                             if (!weight) continue;
-
-                            if (reaches_spheroid[nodeno][i]->is_ic_res) weight /= 2;
 
                             // Multiply weight by unrealized ligand binding potential.
                             float potential = reaches_spheroid[nodeno][i]->get_intermol_potential(ligand, true);

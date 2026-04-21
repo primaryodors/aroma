@@ -1632,9 +1632,18 @@ void AminoAcid::load_aa_defs()
                                 if (words[6])
                                 {
                                     aa_defs[idx].alpha_helix_penalty = atof(words[6]);
+
+                                    if (words[7])
+                                    {
+                                        aa_defs[idx].sidechain_hydration_free_energy = atof(words[7]);
+
+                                        if (words[8])
+                                        {
+                                            if (words[8][0] == 'Y') aa_defs[idx].xflx = true;
+                                        }
+                                    }
                                 }
                             }
-                            if (words[7]) aa_defs[idx].sidechain_hydration_free_energy = atof(words[7]);
                         }
                     }
 
