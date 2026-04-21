@@ -979,7 +979,7 @@ _btyp_unassigned:
     #if compute_lsrb
     output << "Ligand surface receptor binding: " << dr.ligand_surface_receptor_binding << endl;
     #endif
-    if (dr.mcoord_charge_repulsion) output << "Metal-coordinated charge repulsion: " << dr.mcoord_charge_repulsion << endl;
+    if (dr.mcoord_charge_repulsion) output << "Metal-coordinated charge repulsion: " << dr.mcoord_charge_repulsion * dr.energy_mult << endl;
     if (dr.stay_close_ligand)
     {
         float r = dr.stay_close_protein->distance_to(dr.stay_close_ligand);
