@@ -1750,6 +1750,7 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
         }
 
         i = -1;
+        int k = 0;
         do
         {
             i = rand() % j;
@@ -1917,7 +1918,8 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
                 cout << endl;
                 #endif
             }
-        } while (1);
+            k++;
+        } while (k < 1000);
     }
 
     // cout << "Pairing " << bh->name << " with " << lrs[i]->get_name() << "..." << endl << endl;

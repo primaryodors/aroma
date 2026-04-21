@@ -2327,6 +2327,9 @@ int main(int argc, char** argv)
         j = todolist.size();
         if (j)
         {
+            float binc = frand(0.04, 0.12),
+                  ginc = binc * frand(1.25, 2.5),
+                  rinc = ginc * frand(1.25, 2.5);
             i = rand() % j;
             cout << endl << endl;
             std::string mesg = "While you wait for the dock to finish, why not consider tackling an item from your to-do list? Perhaps this one:\n\n";
@@ -2336,9 +2339,9 @@ int main(int argc, char** argv)
             float offset = frand(0, 1000);
             for (l=0; msg[l]; l++)
             {
-                int r = 176 + 79 * sin(0.19*offset),
-                    g = 176 + 79 * sin(0.13*offset),
-                    b = 176 + 79 * sin(0.08*offset);
+                int r = 176 + 79 * sin(rinc*offset),
+                    g = 176 + 79 * sin(ginc*offset),
+                    b = 176 + 79 * sin(binc*offset);
                 colorrgb(r, g, b);
                 cout << msg[l];
                 offset += frand(0.5, 1.5);
@@ -4476,7 +4479,7 @@ _try_again:
             dr[drcount][nodeno].estimated_TDeltaS = g_bbr[0].estimate_DeltaS() * temperature;
 
             #if occlusion_as_disqualify_reason
-            if (dr[drcount][nodeno].ligand_pocket_occlusion < 0.65)
+            if (dr[drcount][nodeno].ligand_pocket_occlusion < occlusion_threshold_for_disquo)
             {
                 dr[drcount][nodeno].disqualified = true;
                 std::string reason = "Insufficient occlusion ";
@@ -4911,6 +4914,9 @@ _try_again:
                 {
                     if (dr[j][nodeoff].proximity > search_size.magnitude()) continue;
                     if (dr[j][nodeoff].worst_nrg_aa > clash_limit_per_aa) continue;
+                    #if occlusion_as_disqualify_reason
+                    if (dr[j][nodeoff].ligand_pocket_occlusion > occlusion_threshold_for_disquo) continue;
+                    #endif
                     protein = &pose_proteins[j];
 
                     auths += (std::string)" " + std::to_string(dr[j][0].auth);

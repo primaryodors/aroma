@@ -302,7 +302,8 @@
 #define min_cvty_ctnmt 0.25
 #define min_dist_bounding_box 0.5
 #define min_partial_radius (1.7+1.1/2)
-#define occlusion_as_disqualify_reason 0
+#define occlusion_as_disqualify_reason 1
+#define occlusion_threshold_for_disquo 0.3
 #define ray_occlusion_density 81
 
 // Random Hydrophilic search constants.
