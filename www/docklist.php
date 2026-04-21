@@ -549,7 +549,7 @@ foreach ($prots as $protid => $p)
             /* $prediction = max(0, -$benerg_raw_active) * 3.0
                 * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0); */
 
-            $prediction = max(0, 100.0 * equilibrium(0, $benerg_active) * $occl_active
+            $prediction = max(0, 100.0 * equilibrium(0, $benerg_active) // * $occl_active
                 * equilibrium(min(0, $benerg_inactive), $benerg_active));
         }
         else $prediction = 0;
