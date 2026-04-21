@@ -1556,6 +1556,48 @@ void Molecule::optimize()
     // TODO: Ring flips
 }
 
+Space *Molecule::to_space()
+{
+    if (!atoms) return nullptr;
+    Space* result = new Space();
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        SPartial p;
+        p.s = atoms[i]->get_sphere();
+        float achg = atoms[i]->get_charge();
+        p.chargedn = achg < -0.75;
+        p.chargedp = achg >  0.75;
+        p.metallic = atoms[i]->is_metal();
+        p.pi = atoms[i]->is_pi();
+        p.polar = fabs(atoms[i]->is_polar()) >= hydrophilicity_cutoff;
+        p.priority = !is_residue();
+        p.thio = fabs(atoms[i]->is_thio());
+        result->add_partial(p);
+    }
+
+    return result;
+}
+
+Space **Molecule::mols_to_spaces(Molecule **ligands)
+{
+    if (!ligands) return nullptr;
+    int i, n;
+    for (n=0; ligands[n]; n++)
+    {
+        if (n >= 512) throw 0xbadc0de;
+    }
+
+    Space** result = new Space*[n+4];
+    for (i=0; i<n; i++)
+    {
+        result[i] = ligands[i]->to_space();
+    }
+    result[n] = nullptr;
+
+    return result;
+}
+
 float Molecule::occlusion(Molecule *ligand)
 {
     Molecule* tmp[2];
@@ -1569,37 +1611,10 @@ float Molecule::occlusion(Molecule **ligands)
     return octant_occlusion(ligands);
 }
 
-float Molecule::surface_occlusion(Molecule **ligands)
-{
-    int i, j, l, n=0;
-    const Point* surf = obtain_vdW_surface(vdw_surface_density);
-    float sum_occlusions = 0;
-
-    for (i=0; surf[i].magnitude(); i++)
-    {
-        float rbest = Avogadro;
-        for (j=0; ligands[j]; j++)
-        {
-            if (ligands[j] == this) continue;
-            Atom* a = ligands[j]->get_nearest_atom(surf[i]);
-            if (!a) continue;
-            float r = fmax(0, a->loc.get_3d_distance(surf[i]) - a->vdW_radius);
-            if (r < rbest) rbest = r;
-        }
-        sum_occlusions += 1.0 / pow(rbest+1, 1);
-        n++;
-    }
-
-    return n ? (sum_occlusions / n) : 0;
-}
-
 float Molecule::octant_occlusion(Molecule **ligands)
 {
     if (!atoms) return 0;
     int h, i, j, l, pduj;
-
-    float Helecn = Atom::electronegativity_from_Z(1);
-    float Oelecn = Atom::electronegativity_from_Z(8);
 
     #if per_atom_occlusions
     float worst_occlusion = 1835;
@@ -1802,44 +1817,6 @@ float Molecule::octant_occlusion(Molecule **ligands)
 
     return total_occlusions;
     #endif
-}
-
-float Molecule::ray_occlusion(Molecule **ligands)
-{
-    if (!atoms) return 0;
-    int i, j, l, n = 0;
-    float result = 0;
-    for (i=0; atoms[i]; i++)
-    {
-        if (atoms[i]->Z < 2) continue;
-        for (j=0; j<ray_occlusion_density; j++)
-        {
-            Vector v = Vector::Fibonacci_sphere_vertex(j, ray_occlusion_density);
-            v.r = _INTERA_R_CUTOFF;
-            Point pt = atoms[i]->loc.add(v);
-            Atom* neddamon = get_nearest_heavy_atom(pt);
-            if (neddamon != atoms[i]) continue;
-
-            float partial = 0;
-            for (l=0; ligands[l]; l++)
-            {
-                neddamon = ligands[l]->get_nearest_heavy_atom_to_line(atoms[i]->loc, pt);
-                if (!neddamon) continue;
-                if (neddamon->loc.get_distance_to_line(atoms[i]->loc, pt) > neddamon->vdW_radius) continue;
-
-                float vdW = atoms[i]->vdW_radius + neddamon->vdW_radius;
-                float r = fmax(0, neddamon->distance_to(atoms[i]) - vdW);
-
-                float f = sqrt(fmax(0, 1.0 - (r / vdW)));
-                if (f > partial) partial = f;
-            }
-
-            result += partial;
-            n++;
-        }
-    }
-
-    return n ? (result/n) : 0;
 }
 
 float Molecule::bindability_by_type(intera_type t, bool ib)

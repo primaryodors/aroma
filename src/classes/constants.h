@@ -303,8 +303,8 @@
 #define min_dist_bounding_box 0.5
 #define min_partial_radius (1.7+1.1/2)
 #define occlusion_as_disqualify_reason 1
+#define occlusion_threshold_for_cavsearch 0.773
 #define occlusion_threshold_for_disquo 0.3
-#define ray_occlusion_density 81
 
 // Random Hydrophilic search constants.
 #define randhyd_priority_escape 0.001
@@ -454,6 +454,7 @@
 #define _dbg_multiflex 0
 #define _dbg_null_flexions 0
 #define _dbg_octant_occlusion 0
+#define _dbg_octant_space_occlusion 0
 #define _dbg_optimize_hydrogens 0
 #define _dbg_optimize_hydrogens_resno 260
 #define _dbg_output_something_even_if_it_is_wrong 0

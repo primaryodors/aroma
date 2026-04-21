@@ -196,6 +196,8 @@ public:
     float contained_by_space(Space* container);
     float space_filling(Space* container);
     void optimize();
+    Space* to_space();
+    static Space** mols_to_spaces(Molecule** ligands);
 
     // Atom functions.
     Atom* add_atom(const char* elemsym, const char* aname, Atom* bond_to, const float bcard);
@@ -427,9 +429,7 @@ protected:
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr,
         Space* cavity = nullptr);
     bool faces_any_ligand(Molecule** ligands);
-    float surface_occlusion(Molecule** ligands);
     float octant_occlusion(Molecule** ligands);
-    float ray_occlusion(Molecule** ligands);
     double solvation_from_surface_areas(double totalsurf, double polsurf);
 
     public:

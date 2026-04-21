@@ -35,11 +35,14 @@ class Space
     float sphere_inside_pocket(Sphere s, SPartial** partial = nullptr);
     float atom_inside_pocket(Atom* a, bool match_attributes = false);
     float space_intersection(Space* other);
+    float occlusion(Space** ligands);
+    float occlusion(Space* ligand);
     Box boundingbox();
 
     protected:
     void compute_vdW_surface(float d);
     Point nearest_surface_vertex(Point pt);
+    float octant_occlusion(Space** ligands);
 
     SPartial* spartials = nullptr;
     int pallocd = 0;

@@ -262,6 +262,7 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr
 
     // Now consolidate all partials into glommed cavities.
     Cavity tmpcav[4096];
+    float tmpcavoccl[4096];
     int pmax = j;
     float pbrscale;
     j=0;
@@ -351,6 +352,20 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr
     // if (any_priority) cout << "Priority residues found." << endl;
     j=0;
     pbrscale = 0.333/(l*pqty);
+    float best_cav_occl = 0;
+    for (i=0; i<l; i++)
+    {
+
+        AminoAcid* sres[256];
+        int nres = tmpcav[i].resnos(p, sres);
+        sres[nres] = nullptr;
+        Space** sligs = Molecule::mols_to_spaces((Molecule**)sres);
+        tmpcavoccl[i] = tmpcav[i].occlusion(sligs);
+        if (tmpcavoccl[i] > best_cav_occl) best_cav_occl = tmpcavoccl[i];
+    }
+
+    if (pbr) pbr->erase();
+
     for (i=0; i<l; i++)
     {
         tmpcav[i].prot = p;
@@ -393,15 +408,15 @@ int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr
         if (tmpcav[i].count_partials() >= cav_min_partials
             && tmpcav[i].resnos_as_array(p, nullptr) >= cav_min_residues
             && (!any_priority || tmpcav[i].priority)
+            && (any_priority || tmpcavoccl[i] >= best_cav_occl*occlusion_threshold_for_cavsearch)
             )
         {
             cavs[j++] = tmpcav[i];
-            // cout << "Accepted " << i << endl;
+            // cout << "Accepted " << i << " residues " << tmpcav[i].resnos_as_string(p) << " occlusion " << tmpcavoccl[i] << endl;
         }
         if (j >= cmax-1) break;
     }
 
-    if (pbr) pbr->erase();
     // cout << cavs[4].cavity_intersection(&cavs[6]) << endl;
 
     return j;

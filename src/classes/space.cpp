@@ -51,7 +51,7 @@ void Space::add_partial(SPartial p)
     }
 
     int i, j;
-    for (i=0; i<pallocd; i++) if (spartials[i].s.radius < min_partial_radius) break;             // Get count.
+    for (i=0; i<pallocd; i++) if (!spartials[i].s.radius) break;             // Get count.
 
     if (i >= pallocd-4)
     {
@@ -210,6 +210,88 @@ Point Space::nearest_surface_vertex(Point pt)
     return result;
 }
 
+float Space::octant_occlusion(Space **ligands)
+{
+    if (!spartials) return 0;
+    int h, i, j, l, n, octi, pduj;
+
+    float total_occlusions = 0;
+    Sphere octant_atoms[8];
+    int octant_ligid[8];
+    float octant_atom_pol[8];
+
+    for (i=0; i<8; i++)
+    {
+        octant_atoms[i].radius = octant_atom_pol[i] = 0;
+        octant_ligid[i] = -1;
+    }
+
+    for (i=0; ligands[i]; i++)
+    {
+        if (ligands[i] == this) continue;
+        SPartial* a;
+        for (n=0; n<ligands[i]->pallocd; n++)
+            if (!ligands[i]->spartials[n].s.radius) break;
+        for (j=0; j<n; j++)
+        {
+            a = &ligands[i]->spartials[j];
+            SPartial* b = get_nearest_partial(a->s.center);
+
+            Vector rel = a->s.center.subtract(b->s.center);
+            int octi = rel.octant_idx();
+            float oim = octant_atoms[octi].center.magnitude();
+
+            float r = rel.r;
+            if (r > _INTERA_R_CUTOFF) continue;
+
+            if (!oim || r < oim)
+            {
+                bool skip = false;
+                for (pduj=0; pduj<8; pduj++)
+                {
+                    if (pduj!=octi && octant_ligid[pduj] == i) skip = true;
+                }
+                if (skip) continue;
+
+                octant_atoms[octi].center = rel;
+                octant_atoms[octi].radius = a->s.radius + b->s.radius;
+                octant_atom_pol[octi] = a->polar ? 1 : 0;
+                octant_ligid[octi] = i;
+            }
+        }
+    }
+
+    Point zero(0,0,0);
+    for (i=0; i<4; i++)
+    {
+        int j = 7-i;
+        if (octant_atoms[i].radius && octant_atoms[j].radius)
+        {
+            float theta = find_3d_angle(octant_atoms[i].center, octant_atoms[j].center, zero);
+            #if _dbg_octant_space_occlusion
+            cout << " theta " << (theta*fiftyseven);
+            #endif
+            float partial = pow(cos(fmin(theta-M_PI, square)), 0.333);
+            #if _dbg_octant_space_occlusion
+            cout << " partial " << partial;
+            #endif
+            float r = fmax((octant_atoms[i].center.magnitude()-octant_atoms[i].radius)/octant_atoms[i].radius, 0) + 1;
+            partial /= pow(r, 0.5);
+            #if _dbg_octant_space_occlusion
+            cout << " / " << r;
+            #endif
+            r = fmax((octant_atoms[j].center.magnitude()-octant_atoms[j].radius)/octant_atoms[j].radius, 0) + 1;
+            partial /= pow(r, 0.5);
+            #if _dbg_octant_space_occlusion
+            cout << " / " << r << " = " << partial << endl;
+            #endif
+            total_occlusions += partial/4;
+        }
+    }
+
+    return total_occlusions;
+}
+
 SPartial* Space::get_nearest_partial(Point pt)
 {
     if (!pallocd || !spartials) return nullptr;
@@ -354,6 +436,19 @@ float Space::atom_inside_pocket(Atom *a, bool match_attributes)
         if (f > best) best = f;
     }
     return best;
+}
+
+float Space::occlusion(Space **ligands)
+{
+    return octant_occlusion(ligands);
+}
+
+float Space::occlusion(Space *ligand)
+{
+    Space* tmp[2];
+    tmp[0] = ligand;
+    tmp[1] = nullptr;
+    return occlusion(tmp);
 }
 
 float SPartial::atom_match_score(Atom* a)
