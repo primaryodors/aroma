@@ -544,7 +544,7 @@ foreach ($prots as $protid => $p)
         echo @"<td>$agonist $dec50/$dtop</td>\n";
 
         if ($benerg_inactive > 0) $benerg_inactive = 0;
-        if ($occl_active >= 0.6)
+        if ($occl_active >= 0.3)
         {
             /* $prediction = max(0, -$benerg_raw_active) * 3.0
                 * equilibrium(-$benerg_active * $occl_active, $nump_inactive ? (-$benerg_inactive * $occl_inactive) : 0); */
