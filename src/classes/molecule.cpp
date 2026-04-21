@@ -1710,7 +1710,6 @@ float Molecule::octant_occlusion(Molecule **ligands)
     #endif
 
     return total_occlusions;
-    #endif
 }
 
 float Molecule::bindability_by_type(intera_type t, bool ib)
