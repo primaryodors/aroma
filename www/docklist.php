@@ -664,10 +664,10 @@ file_put_contents($dbsrfn, json_encode_pretty($dockbsr));
 <?php 
 if ($right + $wrong)
 {
-    echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%<br>";
-    echo "Correlations:";
+    if (!@$_REQUEST["f"]) echo "<p>Accuracy: " . round(100.0 * floatval($right) / ($right+$wrong), 2) . "%<br>";
+    /* echo "Correlations:";
     if (count($topxy['x']) > 3) echo " Top = " . round(correlationCoefficient($topxy['x'], $topxy['y']), 4);
-    if (count($ec50xy['x']) > 3) echo " EC<sub>50</sub> = " . round(correlationCoefficient($ec50xy['x'], $ec50xy['y']), 4);
+    if (count($ec50xy['x']) > 3) echo " EC<sub>50</sub> = " . round(correlationCoefficient($ec50xy['x'], $ec50xy['y']), 4); */
     echo "</p>"; 
 }
 ?>
