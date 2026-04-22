@@ -55,7 +55,7 @@ def wait_cool_cpu():
                 if diff >= offset:
                     print("Processor too hot; waiting...")
                     waited = True
-                    time.sleep(300)
+                    time.sleep(60)
 
         # If all clear, go for it.
         if not waited: break
