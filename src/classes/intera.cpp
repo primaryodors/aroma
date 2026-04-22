@@ -1747,25 +1747,13 @@ std::ostream& operator<<(std::ostream& os, const intera_type& it)
     switch (it)
     {
     case covalent:
-        os << "covalent";
-        break;
     case ionic:
-        os << "ionic";
-        break;
     case hbond:
-        os << "hbond";
-        break;
     case pi:
-        os << "pi";
-        break;
     case polarpi:
-        os << "polarpi";
-        break;
     case mcoord:
-        os << "mcoord";
-        break;
     case vdW:
-        os << "vdW";
+        os << to_string(it);
         break;
     default:
         os << "unknown";
