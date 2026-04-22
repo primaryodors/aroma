@@ -35,7 +35,7 @@ def wait_cool_cpu():
                     offset = -20
 
             # Another style.
-            elif re.search("CPU Temperature:\\s+[+-]?[0-9.]+"):
+            elif re.search("CPU Temperature:\\s+[+-]?[0-9.]+", ln):
                 condensed = re.sub("\\s+", ' ', ln).replace("CPU Temperature", "CPU_Temperature")
                 pieces = condensed.split(' ')
                 temp = float(re.sub("[^0-9.-]", "", pieces[1]))
