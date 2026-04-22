@@ -2856,7 +2856,7 @@ int Bond::count_moves_rigidly_with_atom2()
 
 int Bond::count_heavy_moves_with_atom2()
 {
-    // if (!check_moves_with_cache()) return 0;         TODO: Why is this an asshole? Oh yeah, I should clarify. Why does moves_with_atom2[0] keep getting overwritten with bullshit? Deleted objects, values out of range...
+    // if (!check_moves_with_cache()) return 0;         TODO: Why does moves_with_atom2[0] keep getting overwritten with garbage? Deleted objects, values out of range...
     fill_moves_with_cache();
     int i, j=0;
     for (i=0; moves_with_atom2[i]; i++)

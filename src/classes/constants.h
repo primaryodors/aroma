@@ -292,7 +292,7 @@
 #define cav_min_partials 4
 #define cav_min_residues 7
 #define cav_linking_threshold 2.5
-#define cavity_docking_containment 100.0
+#define cavity_docking_containment 10.0
 #define cavity_docking_incentive 10.0
 #define cavity_intersect_threshold 1e2
 #define cavity_occlusion_threshold_mult 0.7

@@ -4498,12 +4498,21 @@ _try_again:
             {
                 AminoAcid* aa1 = reaches_spheroid[nodeno][i];
                 if (!aa1) continue;
+                Atom *la, *ra;
+                la = ra = nullptr;
+                aa1->mutual_closest_atoms(ligand, &ra, &la);
+                if (!la || !ra) continue;
+                if (la->distance_to(ra) >= _INTERA_R_CUTOFF) continue;
                 for (j=aa1->get_residue_no()+2; j<=n; j++)
                 {
                     AminoAcid* aa2 = protein->get_residue(j);
                     if (!aa2) continue;
-                    if (!aa1->been_flexed || !aa2->been_flexed) continue;
+                    if (!aa1->been_flexed && !aa2->been_flexed) continue;
                     if (aa1->is_thiol() && aa2->is_thiol()) continue;
+                    la = ra = nullptr;
+                    aa2->mutual_closest_atoms(ligand, &ra, &la);
+                    if (!la || !ra) continue;
+                    if (la->distance_to(ra) >= _INTERA_R_CUTOFF) continue;
 
                     float f = aa1->get_intermol_clashes(aa2) - aa1->get_base_mclashes();
                     if (f > clash_limit_per_aa*2 && aa1->clash1 && aa1->clash1->Z > 1 && aa1->clash2 && aa1->clash2->Z > 1)
@@ -4597,6 +4606,8 @@ _try_again:
                 else if ((anomaly + dr[drcount][nodeno].kJmol) > 0)
                 {
                     std::string reason = (std::string)"Soft anomaly greater than ligand binding energy. ";
+                    /* reason += std::to_string(dr[drcount][nodeno].kJmol * energy_mult) 
+                        + (std::string)" / " + std::to_string(anomaly * energy_mult) + (std::string)" "; */
                     dr[drcount][nodeno].disqualified = true;
                     dr[drcount][nodeno].disqualify_reason += reason;
 
@@ -4802,7 +4813,7 @@ _try_again:
                 #endif
             }
 
-            if (btot <= kJmol_cutoff && !dr[drcount][0].disqualified) success_sofar = true;
+            if (btot <= kJmol_cutoff && !dr[drcount][nodeno].disqualified) success_sofar = true;
 
             // if (dr[drcount][0].disqualified) cout << dr[drcount][nodeno].disqualify_reason << endl << endl;
 
@@ -4915,7 +4926,7 @@ _try_again:
                     if (dr[j][nodeoff].proximity > search_size.magnitude()) continue;
                     if (dr[j][nodeoff].worst_nrg_aa > clash_limit_per_aa) continue;
                     #if occlusion_as_disqualify_reason
-                    if (dr[j][nodeoff].ligand_pocket_occlusion > occlusion_threshold_for_disquo) continue;
+                    if (dr[j][nodeoff].ligand_pocket_occlusion < occlusion_threshold_for_disquo) continue;
                     #endif
                     protein = &pose_proteins[j];
 
@@ -5001,6 +5012,8 @@ _exitposes:
         {
             #if _dbg_output_something_even_if_it_is_wrong
             cout << "Candidate: " << dr[l][0].kJmol << " kJ/mol";
+            if (dr[l][0].disqualified)
+                cout << " DISQUO'd " << dr[l][0].disqualify_reason;
             #endif
             if (dr[l][0].kJmol && dr[l][0].kJmol < leastbad)
             {
