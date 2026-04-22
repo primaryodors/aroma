@@ -81,6 +81,7 @@ if argc > 2:
     cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
     cmd.extend(cavopts)
     print(" ".join(cmd))
+    # data.globals.wait_cool_cpu()
     # subprocess.run(cmd)
 else:
     inppdb = origpdb
@@ -107,6 +108,7 @@ os.chdir("..")
 if "reset" in sys.argv:
     # Rebuild the unmodified HM structure.
     cmd = ["php", "-f", "hm/dohm.php", protid]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
 if "fit" in sys.argv:
@@ -119,6 +121,7 @@ if "fit" in sys.argv:
     inppdb = f"tmp/{protid}.fit.pdb"
     delete_inppdb = True
     cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
     # TODO: If no result from cavity_fit, error out and exit.
 
@@ -126,6 +129,7 @@ if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
     # Perform an active-state dock on the new model, then proceed normally to model refinement with rigid-body ligand.
     # TODO: If both fit and predock, use the fitted model's ligand as the pre-placement, no RH/BB/TS.
     cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
 tries = 0
@@ -144,6 +148,7 @@ while True:
     os.chdir("..")
 
     cmd = ["make", "apps"]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
     print(f"Protein: {protid}\nInput PDB: {inppdb}")
@@ -194,12 +199,14 @@ while True:
         for lc in ligcontacts:
             cmd.extend(lc)
         print(" ".join(cmd))
+        data.globals.wait_cool_cpu()
         subprocess.run(cmd)
     else:
         shutil.copyfile(inppdb, tplpdb)
 
     cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
     print(" ".join(cmd))
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
     haslig = False
@@ -354,6 +361,7 @@ while True:
 
     os.chdir("hm")
     cmd = ["php", "-f", "build_alignment_file.php"]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
     # scan ali file for protid
@@ -445,6 +453,7 @@ while True:
     a.library_schedule = autosched.slow
     a.max_var_iterations = 300
 
+    data.globals.wait_cool_cpu()
     a.make()
 
     # Find the best output file from MODELLER. If no output to use, exit the script.
@@ -540,6 +549,7 @@ SAVE $outf
     with open(phewfn, "w") as f:
         f.write(phewcode)
     cmd = ["bin/phew", phewfn]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
     if not "loop" in sys.argv and not "dock" in sys.argv:
@@ -547,6 +557,7 @@ SAVE $outf
     else: tries += 1
 
     cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+    data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
     dock_success = False

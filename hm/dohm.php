@@ -329,6 +329,7 @@ a.ending_model   = 9
 a.library_schedule = autosched.slow
 a.max_var_iterations = 300
 $mdlevel
+data.globals.wait_cool_cpu()
 a.make()
 
 natrixs;

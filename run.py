@@ -22,6 +22,8 @@ import data.dyncenter
 data.protutils.load_prots()
 data.odorutils.load_odors()
 
+data.globals.wait_cool_cpu()
+
 onlynew = False
 onlymissing = False
 skipdock = False
@@ -224,6 +226,7 @@ for rcpid in data.protutils.prots.keys():
             if not skipdock:
                 cmd = ["bin/ic", pdbfn, "-3.0", "nooil"]
                 print(" ".join(cmd))
+                data.globals.wait_cool_cpu()
                 proc = subprocess.run(cmd, stdout=subprocess.PIPE)
                 for ln in proc.stdout.decode().split('\n'):
                     # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
@@ -242,6 +245,7 @@ for rcpid in data.protutils.prots.keys():
                 cmd = ["bin/cavity_search", "-p", pdbfn, "-o", cavfn]
                 cmd.extend(cavopts)
                 print(" ".join(cmd))
+                data.globals.wait_cool_cpu()
                 subprocess.run(cmd)
             newcfg.append(f"VCVTY {cavfn}")
 
@@ -316,6 +320,7 @@ for rcpid in data.protutils.prots.keys():
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             cmd = ["bin/aromadock", "tmp/" + conffn]
             print(" ".join(cmd))
+            data.globals.wait_cool_cpu()
             subprocess.run(cmd)
 
         if os.path.exists("tmp/nodelete"):
@@ -328,5 +333,3 @@ for rcpid in data.protutils.prots.keys():
         print("Completed", rcpid, o["full_name"])
         processed += 1
 
-if processed:
-    cmd = ["which", "sox"]
