@@ -1,0 +1,1870 @@
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:77:A']),
+                               mean=5.033432, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:77:A']),
+                               mean=4.333519, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:104:A']),
+                               mean=7.528382, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:104:A']),
+                               mean=8.720615, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CG:104:A']),
+                               mean=8.983780, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:108:A']),
+                               mean=7.526526, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:108:A']),
+                               mean=8.037609, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CG:108:A']),
+                               mean=9.331293, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CD:108:A']),
+                               mean=10.039286, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['OE1:108:A']),
+                               mean=9.959404, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:251:A']),
+                               mean=14.473941, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:251:A']),
+                               mean=13.133682, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:252:A']),
+                               mean=15.132994, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:252:A']),
+                               mean=15.909757, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:255:A']),
+                               mean=16.776690, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:255:A']),
+                               mean=15.257226, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CG:255:A']),
+                               mean=14.982325, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:276:A']),
+                               mean=12.816852, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:276:A']),
+                               mean=12.948622, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CD1:276:A']),
+                               mean=13.997952, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:279:A']),
+                               mean=10.603234, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:279:A']),
+                               mean=10.927782, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['OG1:279:A']),
+                               mean=10.818374, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CG2:279:A']),
+                               mean=12.396543, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CA:280:A']),
+                               mean=7.749697, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:73:A'],
+                                                         at['CB:280:A']),
+                               mean=7.841950, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:77:A']),
+                               mean=6.119067, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:77:A']),
+                               mean=5.172470, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:104:A']),
+                               mean=7.952991, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:104:A']),
+                               mean=9.137833, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CG:104:A']),
+                               mean=9.223199, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:108:A']),
+                               mean=6.781799, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:108:A']),
+                               mean=7.402804, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CG:108:A']),
+                               mean=8.573111, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CD:108:A']),
+                               mean=9.396406, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['OE1:108:A']),
+                               mean=9.503527, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:251:A']),
+                               mean=13.043691, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:251:A']),
+                               mean=11.670097, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:252:A']),
+                               mean=13.771575, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:252:A']),
+                               mean=14.526062, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:255:A']),
+                               mean=15.746763, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:255:A']),
+                               mean=14.249715, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CG:255:A']),
+                               mean=14.097964, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:276:A']),
+                               mean=12.068625, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:276:A']),
+                               mean=12.361444, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CD1:276:A']),
+                               mean=13.665196, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:279:A']),
+                               mean=9.385175, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:279:A']),
+                               mean=9.795296, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['OG1:279:A']),
+                               mean=9.839136, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CG2:279:A']),
+                               mean=11.241169, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CA:280:A']),
+                               mean=6.698570, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:73:A'],
+                                                         at['CB:280:A']),
+                               mean=7.054288, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:77:A']),
+                               mean=5.723696, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:77:A']),
+                               mean=4.545928, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:104:A']),
+                               mean=7.136280, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:104:A']),
+                               mean=8.143591, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CG:104:A']),
+                               mean=7.976881, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:108:A']),
+                               mean=6.073178, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:108:A']),
+                               mean=6.388493, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CG:108:A']),
+                               mean=7.409471, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CD:108:A']),
+                               mean=8.063168, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['OE1:108:A']),
+                               mean=8.200079, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:251:A']),
+                               mean=11.884739, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:251:A']),
+                               mean=10.611237, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:252:A']),
+                               mean=12.537354, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:252:A']),
+                               mean=13.407351, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:255:A']),
+                               mean=14.077585, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:255:A']),
+                               mean=12.568086, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CG:255:A']),
+                               mean=12.368809, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:276:A']),
+                               mean=10.309268, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:276:A']),
+                               mean=10.574766, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CD1:276:A']),
+                               mean=11.923072, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:279:A']),
+                               mean=7.879796, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:279:A']),
+                               mean=8.190155, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['OG1:279:A']),
+                               mean=8.124324, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CG2:279:A']),
+                               mean=9.662480, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CA:280:A']),
+                               mean=5.273167, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['SG:73:A'],
+                                                         at['CB:280:A']),
+                               mean=5.564487, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:104:A']),
+                               mean=5.600773, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:104:A']),
+                               mean=6.077757, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CG:104:A']),
+                               mean=6.357314, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:108:A']),
+                               mean=9.421735, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:108:A']),
+                               mean=9.107888, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CG:108:A']),
+                               mean=10.282497, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CD:108:A']),
+                               mean=10.270459, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['OE1:108:A']),
+                               mean=9.695271, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:251:A']),
+                               mean=16.626762, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:251:A']),
+                               mean=15.586083, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:252:A']),
+                               mean=16.998278, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:252:A']),
+                               mean=18.006493, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:255:A']),
+                               mean=16.850576, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:255:A']),
+                               mean=15.337176, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CG:255:A']),
+                               mean=14.628443, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:276:A']),
+                               mean=12.112309, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:276:A']),
+                               mean=11.647876, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CD1:276:A']),
+                               mean=11.790462, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:279:A']),
+                               mean=11.948698, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:279:A']),
+                               mean=11.873172, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['OG1:279:A']),
+                               mean=11.166159, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CG2:279:A']),
+                               mean=13.300714, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CA:280:A']),
+                               mean=9.163932, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:77:A'],
+                                                         at['CB:280:A']),
+                               mean=8.438722, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:104:A']),
+                               mean=4.607780, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:104:A']),
+                               mean=5.274405, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CG:104:A']),
+                               mean=5.470969, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:108:A']),
+                               mean=7.902705, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:108:A']),
+                               mean=7.587585, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CG:108:A']),
+                               mean=8.765649, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CD:108:A']),
+                               mean=8.815939, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['OE1:108:A']),
+                               mean=8.300774, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:251:A']),
+                               mean=15.364618, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:251:A']),
+                               mean=14.313797, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:252:A']),
+                               mean=15.582108, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:252:A']),
+                               mean=16.551130, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:255:A']),
+                               mean=15.671420, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:255:A']),
+                               mean=14.142942, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CG:255:A']),
+                               mean=13.467309, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:276:A']),
+                               mean=11.244390, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:276:A']),
+                               mean=10.865067, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CD1:276:A']),
+                               mean=11.298917, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:279:A']),
+                               mean=10.737352, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:279:A']),
+                               mean=10.604357, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['OG1:279:A']),
+                               mean=9.969357, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CG2:279:A']),
+                               mean=12.020535, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CA:280:A']),
+                               mean=8.191185, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:77:A'],
+                                                         at['CB:280:A']),
+                               mean=7.640240, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:108:A']),
+                               mean=6.282581, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:108:A']),
+                               mean=5.480787, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CG:108:A']),
+                               mean=6.562646, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CD:108:A']),
+                               mean=6.294429, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['OE1:108:A']),
+                               mean=5.307644, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:251:A']),
+                               mean=15.864765, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:251:A']),
+                               mean=14.986037, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:252:A']),
+                               mean=14.934185, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:252:A']),
+                               mean=15.691135, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:255:A']),
+                               mean=14.848382, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:255:A']),
+                               mean=13.388285, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CG:255:A']),
+                               mean=12.436301, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:276:A']),
+                               mean=11.836340, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:276:A']),
+                               mean=11.237356, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CD1:276:A']),
+                               mean=11.781796, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:279:A']),
+                               mean=11.506207, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:279:A']),
+                               mean=10.790564, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['OG1:279:A']),
+                               mean=10.157862, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CG2:279:A']),
+                               mean=11.875217, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CA:280:A']),
+                               mean=10.394241, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:104:A'],
+                                                         at['CB:280:A']),
+                               mean=10.137964, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:108:A']),
+                               mean=7.336894, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:108:A']),
+                               mean=6.292421, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CG:108:A']),
+                               mean=7.107298, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CD:108:A']),
+                               mean=6.505475, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['OE1:108:A']),
+                               mean=5.404633, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:251:A']),
+                               mean=16.197916, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:251:A']),
+                               mean=15.440637, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:252:A']),
+                               mean=15.201281, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:252:A']),
+                               mean=16.029860, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:255:A']),
+                               mean=14.484960, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:255:A']),
+                               mean=13.069067, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CG:255:A']),
+                               mean=11.984065, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:276:A']),
+                               mean=11.421355, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:276:A']),
+                               mean=10.644036, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CD1:276:A']),
+                               mean=10.933794, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:279:A']),
+                               mean=11.740647, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:279:A']),
+                               mean=10.910598, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['OG1:279:A']),
+                               mean=10.116204, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CG2:279:A']),
+                               mean=11.916704, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CA:280:A']),
+                               mean=10.788865, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:104:A'],
+                                                         at['CB:280:A']),
+                               mean=10.377557, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:108:A']),
+                               mean=7.333142, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:108:A']),
+                               mean=6.105723, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CG:108:A']),
+                               mean=6.668348, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CD:108:A']),
+                               mean=5.849108, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['OE1:108:A']),
+                               mean=4.821398, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:251:A']),
+                               mean=15.145493, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:251:A']),
+                               mean=14.481777, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:252:A']),
+                               mean=14.207932, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:252:A']),
+                               mean=15.127582, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:255:A']),
+                               mean=13.109640, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:255:A']),
+                               mean=11.703351, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CG:255:A']),
+                               mean=10.586330, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:276:A']),
+                               mean=9.961553, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:276:A']),
+                               mean=9.138293, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CD1:276:A']),
+                               mean=9.439862, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:279:A']),
+                               mean=10.629925, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:279:A']),
+                               mean=9.740262, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['OG1:279:A']),
+                               mean=8.843998, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CG2:279:A']),
+                               mean=10.706592, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CA:280:A']),
+                               mean=9.872923, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:104:A'],
+                                                         at['CB:280:A']),
+                               mean=9.402050, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:251:A']),
+                               mean=11.592467, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:251:A']),
+                               mean=10.539283, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:252:A']),
+                               mean=10.306862, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:252:A']),
+                               mean=10.682630, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:255:A']),
+                               mean=12.627528, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:255:A']),
+                               mean=11.234660, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CG:255:A']),
+                               mean=10.897842, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:276:A']),
+                               mean=11.372123, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:276:A']),
+                               mean=11.549659, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CD1:276:A']),
+                               mean=13.302321, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:279:A']),
+                               mean=8.562351, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:279:A']),
+                               mean=8.006960, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['OG1:279:A']),
+                               mean=8.250572, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CG2:279:A']),
+                               mean=8.878685, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CA:280:A']),
+                               mean=8.674289, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:108:A'],
+                                                         at['CB:280:A']),
+                               mean=9.400068, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:251:A']),
+                               mean=11.553452, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:251:A']),
+                               mean=10.646075, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:252:A']),
+                               mean=10.118602, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:252:A']),
+                               mean=10.624103, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:255:A']),
+                               mean=11.704760, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:255:A']),
+                               mean=10.295864, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CG:255:A']),
+                               mean=9.793866, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:276:A']),
+                               mean=10.404075, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:276:A']),
+                               mean=10.438446, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CD1:276:A']),
+                               mean=12.096223, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:279:A']),
+                               mean=8.200253, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:279:A']),
+                               mean=7.422746, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['OG1:279:A']),
+                               mean=7.458942, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CG2:279:A']),
+                               mean=8.254671, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CA:280:A']),
+                               mean=8.502268, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:108:A'],
+                                                         at['CB:280:A']),
+                               mean=9.056728, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:251:A']),
+                               mean=10.671671, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:251:A']),
+                               mean=9.916349, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:252:A']),
+                               mean=8.891724, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:252:A']),
+                               mean=9.386549, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:255:A']),
+                               mean=10.405266, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:255:A']),
+                               mean=9.054940, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CG:255:A']),
+                               mean=8.577154, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:276:A']),
+                               mean=9.766411, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:276:A']),
+                               mean=9.857965, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CD1:276:A']),
+                               mean=11.670625, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:279:A']),
+                               mean=7.604545, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:279:A']),
+                               mean=6.636733, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.745207, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CG2:279:A']),
+                               mean=7.240521, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CA:280:A']),
+                               mean=8.595189, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:108:A'],
+                                                         at['CB:280:A']),
+                               mean=9.216887, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:251:A']),
+                               mean=11.001750, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:251:A']),
+                               mean=10.413012, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:252:A']),
+                               mean=9.131259, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:252:A']),
+                               mean=9.752846, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:255:A']),
+                               mean=9.699138, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:255:A']),
+                               mean=8.354416, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CG:255:A']),
+                               mean=7.655223, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:276:A']),
+                               mean=9.040882, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:276:A']),
+                               mean=8.948120, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CD1:276:A']),
+                               mean=10.617595, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:279:A']),
+                               mean=7.692192, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:279:A']),
+                               mean=6.517327, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.357160, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CG2:279:A']),
+                               mean=7.029449, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CA:280:A']),
+                               mean=8.819340, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD:108:A'],
+                                                         at['CB:280:A']),
+                               mean=9.239280, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:251:A']),
+                               mean=12.150126, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:251:A']),
+                               mean=11.554397, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:252:A']),
+                               mean=10.345407, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:252:A']),
+                               mean=10.983878, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:255:A']),
+                               mean=10.498634, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:255:A']),
+                               mean=9.153188, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CG:255:A']),
+                               mean=8.294188, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:276:A']),
+                               mean=9.474175, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:276:A']),
+                               mean=9.187673, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CD1:276:A']),
+                               mean=10.590276, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:279:A']),
+                               mean=8.598111, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:279:A']),
+                               mean=7.430757, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['OG1:279:A']),
+                               mean=7.086722, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CG2:279:A']),
+                               mean=8.014732, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CA:280:A']),
+                               mean=9.373914, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OE1:108:A'],
+                                                         at['CB:280:A']),
+                               mean=9.624231, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CA:252:A']),
+                               mean=3.878036, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CB:252:A']),
+                               mean=4.927278, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CA:255:A']),
+                               mean=7.406217, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CB:255:A']),
+                               mean=6.989297, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CG:255:A']),
+                               mean=8.332009, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CA:276:A']),
+                               mean=8.653153, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CB:276:A']),
+                               mean=10.102240, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CD1:276:A']),
+                               mean=12.646145, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CA:279:A']),
+                               mean=4.898508, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CB:279:A']),
+                               mean=5.541645, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.788682, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.921989, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CA:280:A']),
+                               mean=8.027917, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:251:A'],
+                                                         at['CB:280:A']),
+                               mean=9.227025, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CA:252:A']),
+                               mean=4.390253, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CB:252:A']),
+                               mean=5.331358, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CA:255:A']),
+                               mean=8.340028, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CB:255:A']),
+                               mean=7.672248, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CG:255:A']),
+                               mean=8.851097, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CA:276:A']),
+                               mean=8.803572, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CB:276:A']),
+                               mean=10.216692, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CD1:276:A']),
+                               mean=12.764167, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CA:279:A']),
+                               mean=4.352657, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CB:279:A']),
+                               mean=5.210259, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.540057, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.990073, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CA:280:A']),
+                               mean=7.079157, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:251:A'],
+                                                         at['CB:280:A']),
+                               mean=8.421204, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CA:255:A']),
+                               mean=6.192959, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CB:255:A']),
+                               mean=5.865490, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CG:255:A']),
+                               mean=7.021266, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CA:276:A']),
+                               mean=9.345911, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CB:276:A']),
+                               mean=10.466513, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CD1:276:A']),
+                               mean=13.034996, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CA:279:A']),
+                               mean=6.097786, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CB:279:A']),
+                               mean=5.742774, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.937377, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.647476, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CA:280:A']),
+                               mean=9.738286, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:252:A'],
+                                                         at['CB:280:A']),
+                               mean=10.881365, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CA:255:A']),
+                               mean=7.408318, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CB:255:A']),
+                               mean=7.199735, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CG:255:A']),
+                               mean=8.283056, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CA:276:A']),
+                               mean=10.871817, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CB:276:A']),
+                               mean=11.950811, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CD1:276:A']),
+                               mean=14.506651, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CA:279:A']),
+                               mean=7.488164, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CB:279:A']),
+                               mean=7.141158, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['OG1:279:A']),
+                               mean=8.351132, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CG2:279:A']),
+                               mean=6.123954, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CA:280:A']),
+                               mean=10.996161, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:252:A'],
+                                                         at['CB:280:A']),
+                               mean=12.208684, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CA:276:A']),
+                               mean=6.085021, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CB:276:A']),
+                               mean=6.756338, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CD1:276:A']),
+                               mean=8.806690, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CA:279:A']),
+                               mean=7.029089, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CB:279:A']),
+                               mean=6.061663, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.056042, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.721532, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CA:280:A']),
+                               mean=10.438636, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:255:A'],
+                                                         at['CB:280:A']),
+                               mean=10.784553, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CA:276:A']),
+                               mean=5.009560, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CB:276:A']),
+                               mean=5.699894, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CD1:276:A']),
+                               mean=7.949009, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CA:279:A']),
+                               mean=5.768016, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CB:279:A']),
+                               mean=4.661910, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['OG1:279:A']),
+                               mean=4.572107, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CG2:279:A']),
+                               mean=3.431674, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CA:280:A']),
+                               mean=9.089335, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:255:A'],
+                                                         at['CB:280:A']),
+                               mean=9.431716, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CA:276:A']),
+                               mean=4.783845, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CB:276:A']),
+                               mean=5.052860, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CD1:276:A']),
+                               mean=7.092397, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CA:279:A']),
+                               mean=6.348616, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CB:279:A']),
+                               mean=5.043955, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['OG1:279:A']),
+                               mean=4.582111, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.142754, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CA:280:A']),
+                               mean=9.286901, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG:255:A'],
+                                                         at['CB:280:A']),
+                               mean=9.450355, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['CA:279:A']),
+                               mean=5.060169, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['CB:279:A']),
+                               mean=4.606198, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['OG1:279:A']),
+                               mean=3.484942, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['CG2:279:A']),
+                               mean=4.880663, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['CA:280:A']),
+                               mean=6.289293, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:276:A'],
+                                                         at['CB:280:A']),
+                               mean=5.856579, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['CA:279:A']),
+                               mean=6.295033, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['CB:279:A']),
+                               mean=5.646540, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['OG1:279:A']),
+                               mean=4.339176, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['CG2:279:A']),
+                               mean=5.976571, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['CA:280:A']),
+                               mean=7.129836, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:276:A'],
+                                                         at['CB:280:A']),
+                               mean=6.467569, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['CA:279:A']),
+                               mean=8.784543, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['CB:279:A']),
+                               mean=8.194986, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['OG1:279:A']),
+                               mean=6.841448, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['CG2:279:A']),
+                               mean=8.576712, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['CA:280:A']),
+                               mean=8.945539, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CD1:276:A'],
+                                                         at['CB:280:A']),
+                               mean=7.932793, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:279:A'],
+                                                         at['CA:280:A']),
+                               mean=3.830518, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CA:279:A'],
+                                                         at['CB:280:A']),
+                               mean=4.814355, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:279:A'],
+                                                         at['CA:280:A']),
+                               mean=4.780860, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CB:279:A'],
+                                                         at['CB:280:A']),
+                               mean=5.529651, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OG1:279:A'],
+                                                         at['CA:280:A']),
+                               mean=4.754310, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['OG1:279:A'],
+                                                         at['CB:280:A']),
+                               mean=5.104249, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG2:279:A'],
+                                                         at['CA:280:A']),
+                               mean=6.197251, stdev=0.1))
+
+        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                               feature=features.Distance(at['CG2:279:A'],
+                                                         at['CB:280:A']),
+                               mean=6.930408, stdev=0.1))
+

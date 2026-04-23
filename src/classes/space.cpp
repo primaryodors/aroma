@@ -213,16 +213,16 @@ Point Space::nearest_surface_vertex(Point pt)
 float Space::octant_occlusion(Space **ligands)
 {
     if (!spartials) return 0;
-    int h, i, j, l, n, octi, pduj;
+    int h, i, j, l, n, octi, pvyo;
 
     float total_occlusions = 0;
-    Sphere octant_atoms[8];
+    Sphere octant_spheres[8];
     int octant_ligid[8];
-    float octant_atom_pol[8];
+    float octant_sphere_pol[8];
 
     for (i=0; i<8; i++)
     {
-        octant_atoms[i].radius = octant_atom_pol[i] = 0;
+        octant_spheres[i].radius = octant_sphere_pol[i] = 0;
         octant_ligid[i] = -1;
     }
 
@@ -239,7 +239,7 @@ float Space::octant_occlusion(Space **ligands)
 
             Vector rel = a->s.center.subtract(b->s.center);
             int octi = rel.octant_idx();
-            float oim = octant_atoms[octi].center.magnitude();
+            float oim = octant_spheres[octi].center.magnitude();
 
             float r = rel.r;
             if (r > _INTERA_R_CUTOFF) continue;
@@ -247,15 +247,15 @@ float Space::octant_occlusion(Space **ligands)
             if (!oim || r < oim)
             {
                 bool skip = false;
-                for (pduj=0; pduj<8; pduj++)
+                for (pvyo=0; pvyo<8; pvyo++)
                 {
-                    if (pduj!=octi && octant_ligid[pduj] == i) skip = true;
+                    if (pvyo!=octi && octant_ligid[pvyo] == i) skip = true;
                 }
                 if (skip) continue;
 
-                octant_atoms[octi].center = rel;
-                octant_atoms[octi].radius = a->s.radius + b->s.radius;
-                octant_atom_pol[octi] = a->polar ? 1 : 0;
+                octant_spheres[octi].center = rel;
+                octant_spheres[octi].radius = a->s.radius + b->s.radius;
+                octant_sphere_pol[octi] = a->polar ? 1 : 0;
                 octant_ligid[octi] = i;
             }
         }
@@ -265,9 +265,9 @@ float Space::octant_occlusion(Space **ligands)
     for (i=0; i<4; i++)
     {
         int j = 7-i;
-        if (octant_atoms[i].radius && octant_atoms[j].radius)
+        if (octant_spheres[i].radius && octant_spheres[j].radius)
         {
-            float theta = find_3d_angle(octant_atoms[i].center, octant_atoms[j].center, zero);
+            float theta = find_3d_angle(octant_spheres[i].center, octant_spheres[j].center, zero);
             #if _dbg_octant_space_occlusion
             cout << " theta " << (theta*fiftyseven);
             #endif
@@ -275,12 +275,12 @@ float Space::octant_occlusion(Space **ligands)
             #if _dbg_octant_space_occlusion
             cout << " partial " << partial;
             #endif
-            float r = fmax((octant_atoms[i].center.magnitude()-octant_atoms[i].radius)/octant_atoms[i].radius, 0) + 1;
+            float r = fmax((octant_spheres[i].center.magnitude()-octant_spheres[i].radius)/octant_spheres[i].radius, 0) + 1;
             partial /= pow(r, 0.5);
             #if _dbg_octant_space_occlusion
             cout << " / " << r;
             #endif
-            r = fmax((octant_atoms[j].center.magnitude()-octant_atoms[j].radius)/octant_atoms[j].radius, 0) + 1;
+            r = fmax((octant_spheres[j].center.magnitude()-octant_spheres[j].radius)/octant_spheres[j].radius, 0) + 1;
             partial /= pow(r, 0.5);
             #if _dbg_octant_space_occlusion
             cout << " / " << r << " = " << partial << endl;

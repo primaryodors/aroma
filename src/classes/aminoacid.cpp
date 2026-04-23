@@ -636,7 +636,7 @@ AminoAcid::AminoAcid(const char letter, AminoAcid* prevaa, bool minintc, Protein
                         aabd[n]->can_rotate = false;
                         aabd[n]->can_flip = true;
                     }
-                    
+
                     aabd[n]->can_rotate =
                         (	aabd[n]->cardinality <= 1.1
                             &&
@@ -1295,14 +1295,12 @@ int AminoAcid::from_pdb(FILE* is, int rno)
 
                     if (aaa->_1let == 'T')
                     {
-                        // Have to hard code this because the side chain's chirality forces the numbering system to differ from both
-                        // AlphaFold and ZhangLab, even though they agree.
-                        if (!strcmp(a->name, "CG2" )) strcpy(a->name, "CG1" );
-                        if (!strcmp(a->name, "OG1" )) strcpy(a->name, "OG2" );
-                        if (!strcmp(a->name, "HG1" )) strcpy(a->name, "HG2" );
-                        if (!strcmp(a->name, "1HG2")) strcpy(a->name, "1HG1");
-                        if (!strcmp(a->name, "2HG2")) strcpy(a->name, "2HG1");
-                        if (!strcmp(a->name, "3HG2")) strcpy(a->name, "3HG1");
+                        if (!strcmp(a->name, "CG1" )) strcpy(a->name, "CG2" );
+                        if (!strcmp(a->name, "OG2" )) strcpy(a->name, "OG1" );
+                        if (!strcmp(a->name, "HG2" )) strcpy(a->name, "HG1" );
+                        if (!strcmp(a->name, "1HG1")) strcpy(a->name, "1HG2");
+                        if (!strcmp(a->name, "2HG1")) strcpy(a->name, "2HG2");
+                        if (!strcmp(a->name, "3HG1")) strcpy(a->name, "3HG2");
                     }
 
                     if (aaa->_1let == 'I')

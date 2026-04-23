@@ -13,7 +13,7 @@ if (!$rcpid) die("Usage:\nphp -f hm/dohm.php PROTID\n\n");
 $riglig = $hetatms = false;
 if (in_array("riglig", $argv)) $riglig = true;
 
-$disulfs = $hb = $hetatmln = $restraint345 = $helices = "";
+$disulfs = $hb = $hetatmln = $restraint345 = $restraint_atomr = $helices = "";
 $do_tmr_helix_restraints = true;
 $do_tmr6_helix_restraints = false;              // TMR6 is highly variable among ORs.
 $do_exr2_helix_restraint = true;
@@ -88,18 +88,12 @@ $famsub = "$fam$sub";
 $atomfiles = "'./tpl'";
 $legal = "";
 $refno = 1;
-$usecpl = false; // (substr($fam, 0, 2) == "OR" || $fam == "TAAR"); // false;
-/* if (file_exists("../coupled/$fam/$sub"))
+$usecpl = false;
+
+if (file_exists("atomr_$rcpid"))
 {
-    $atomfiles .= ", '../coupled/$fam/$sub'";
-    $usecpl = true;
-    $mdlcls = "AutoModel";
+    $restraint_atomr = file_get_contents("atomr_$rcpid");
 }
-if ($usecpl && file_exists("../coupled/legal.pdb"))
-{
-    $legal = file_get_contents("../coupled/legal.pdb");
-    $refno += 2;
-} */
 
 if ($usecpl) $mdlcls = "AutoModel";
 
@@ -314,6 +308,7 @@ $restraint345
 $restraint456
 $restraint57
 $restraintmtl
+$restraint_atomr
 $restraints_misc_str
 $disulfs
 
@@ -377,6 +372,8 @@ $adjustments = "";
 if ($famno < 50) $adjustments .= "IF $3.37 != \"G\" THEN ATOMTO %3.37 EXTENT @6.48\n";
 else if ($famno == 51 || $famno == 52) $adjustments .= "ATOMTO %6.59 EXTENT @4.57\n";
 else if ($rcpid == "OR56B2") $adjustments .= "ATOMTO %6.58 EXTENT @4.57\n";
+
+if ($famsub == "OR5K") $adjustments .= "ATOMTO %45.49 EXTENT @2.58\n";
 
 // $knowns = preg_replace("/[^0-9a-zA-Z_~ ]/", "", $knowns);
 $knowns = file_get_contents("$rcpid.knowns");
