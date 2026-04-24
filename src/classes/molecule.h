@@ -253,7 +253,7 @@ public:
     void identify_cages();
 
     // Interaction functions.
-    float get_internal_clashes(bool subtract_baseline = false);
+    float get_internal_clashes(bool subtract_baseline = false, bool include_backbone = true);
     void minimize_internal_clashes();
     float get_base_clashes() { return base_internal_clashes; }
     float get_base_mclashes() { return base_intermol_clashes; }

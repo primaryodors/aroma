@@ -3611,7 +3611,7 @@ Bond** Molecule::get_all_bonds(bool unidirectional)
 }
 
 
-float Molecule::get_internal_clashes(bool sb)
+float Molecule::get_internal_clashes(bool sb, bool ib)
 {
     int i, j;
     float r;
@@ -3638,6 +3638,10 @@ float Molecule::get_internal_clashes(bool sb)
                 cout << "K159 internal clash between " << atoms[i]->name << " and " << atoms[j]->name << endl << endl;
             }
             #endif
+
+            if (!ib)
+                if (atoms[i]->is_backbone && atoms[j]->is_backbone) continue;
+
             if (atoms[i]->residue && atoms[i]->residue == atoms[j]->residue)
             {
                 if (!strcmp(atoms[i]->name, atoms[j]->name)) continue;

@@ -5,8 +5,8 @@ nohup python3 hm/fixfail.py OR2AT4 sandalore dock &
 nohup python3 hm/fixfail.py OR8B3 oranger_crystals dock &
 nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 207:OG1 C8 278:CZ dock &
 nohup python3 hm/fixfail.py OR10A5 cinnamaldehyde O10 160:NE2 C1 252:CB dock &
-nohup python3 hm/fixfail.py OR10H1 sandranol dock &
-nohup python3 hm/fixfail.py OR10J5 lyral dock &
+nohup python3 hm/fixfail.py OR10H1 sandranol O15 280:OG1 dock &
+nohup python3 hm/fixfail.py OR10J5 lyral O14 274:OG O15 109:OG1 dock &
 nohup python3 hm/fixfail.py OR10K1 azurone dock &
 nohup python3 hm/fixfail.py OR10Q1 exaltolide dock &
 nohup python3 hm/fixfail.py OR10AG1 cinnamaldehyde dock &

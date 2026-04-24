@@ -4628,7 +4628,7 @@ _try_again:
                     if (cfmolsilett == 'P') continue;
                     if (ligand->glued_to_mol() == cfmols[i]) continue;      // sad that it had to come to this.
                 }
-                float cfmi = cfmols[i]->get_internal_clashes();
+                float cfmi = cfmols[i]->get_internal_clashes(false, false);
                 if (!cfmols[i]->clash1 && !cfmols[i]->clash2) cfmi = 0;     // prevent false internal clash on musk ketone
                 if (cfmolsilett == 'H') cfmi = 0;                           // CAN'T TRUST YOU! sick of the same bullshit error over and over
                 if (cfmi > clash_limit_per_aa*10)
