@@ -235,7 +235,16 @@ function equilibrium($kJmol1, $kJmol2)
     return $result;
 }
 
+function protK($pK, $pH)
+{
+    return pow(10, $pK - $pH);
+}
 
+function protonation($pK, $pH)
+{
+    $K = protK($pK, $pH);
+    return $K/($K+1);
+}
 
 
 

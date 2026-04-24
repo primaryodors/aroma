@@ -3652,6 +3652,19 @@
         },
         "oid": "141340a1a1dab5d100281266f6a89929"
     },
+    "144f534ca8f57ebc468eb7cb8cc2bb2e":
+    {
+        "full_name": "(+)-dictyopterene A",
+        "smiles": "CCCC/C=C/[C@H]1C[C@@H]1C=C",
+        "aroma":
+        {
+            "https://doi.org/10.25439/rmt.27575625":
+            [
+                "seawater"
+            ]
+        },
+        "oid": "144f534ca8f57ebc468eb7cb8cc2bb2e"
+    },
     "149dd7f514f1163b7c8c0fd31b14b380":
     {
         "full_name": "fish thiol",
@@ -13938,6 +13951,20 @@
         },
         "soluble": "w",
         "oid": "53c0eb17a8ac0498e4d08eb65800591a"
+    },
+    "53ccea664dd4eae47a8f5411af452179":
+    {
+        "full_name": "ectocarpene",
+        "smiles": "CC/C=C\\C1C=CCC=CC1",
+        "aroma":
+        {
+            "https://doi.org/10.25439/rmt.27575625":
+            [
+                "green",
+                "tomato_leaf"
+            ]
+        },
+        "oid": "53ccea664dd4eae47a8f5411af452179"
     },
     "53debd97098d3b4e8eef7391d2992f6c":
     {
@@ -32362,6 +32389,19 @@
         },
         "soluble": "w",
         "oid": "bb8530a74cc86139f0d537364d8225d7"
+    },
+    "bcc55965ae0cdfdd174612df27ba4338":
+    {
+        "full_name": "giffordene",
+        "smiles": "CC/C=C\\C=C\\C=C/C=C\\C",
+        "aroma":
+        {
+            "https://doi.org/10.25439/rmt.27575625":
+            [
+                "sea_algae"
+            ]
+        },
+        "oid": "bcc55965ae0cdfdd174612df27ba4338"
     },
     "bd0579a8b4feab86a461267155ea4890":
     {
