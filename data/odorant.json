@@ -21506,6 +21506,11 @@
                 }
             }
         },
+        "pK":
+        {
+            "a": "8.6",
+            "ref": "https://pubchem.ncbi.nlm.nih.gov/compound/Maltol"
+        },
         "soluble": "w",
         "oid": "7ad206d6541a8887a21771ea3534119c"
     },
