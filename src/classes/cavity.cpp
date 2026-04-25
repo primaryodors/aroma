@@ -1045,3 +1045,15 @@ int Cavity::estimate_multiplicity(Molecule* ligand)
     float lv = ligand->get_volume();
     return this->get_volume() / lv / 3;
 }
+
+bool Cavity::has_priority()
+{
+    if (!pallocd) return false;
+    int i;
+    for (i=0; i<pallocd; i++)
+    {
+        if (!partials[i].s.radius) break;
+        if (partials[i].priority) return true;
+    }
+    return false;
+}

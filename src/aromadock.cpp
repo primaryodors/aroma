@@ -3598,11 +3598,20 @@ _try_again:
                     cout << ncvtys << " cavity/ies." << endl;
                     #endif
                     int* cvres[ncvtys+4];
-                    for (i=0; i<ncvtys; i++) cvres[i] = nullptr;
+                    bool any_priority = false;
+                    for (i=0; i<ncvtys; i++)
+                    {
+                        cvres[i] = nullptr;
+                        if (cvtys[i].has_priority()) any_priority = true;
+                    }
                     while (!gcav)
                     {
                         for (i=0; i<ncvtys; i++)
                         {
+                            if (any_priority && !cvtys[i].has_priority())
+                            {
+                                if (frand(0,1) >= 0.01) continue;
+                            }
                             // if (!cvtys[i].point_inside_pocket(nodecen)) continue;
                             float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
                             r *= frand(0.8, 1.3);
