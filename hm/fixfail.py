@@ -552,6 +552,11 @@ SAVE $outf
     data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
+    cmd = ["bin/ic", f"pdbs/{fam}/{protid}.{mode}.pdb", "minc", "save"]
+    print(" ".join(cmd))
+    data.globals.wait_cool_cpu()
+    subprocess.run(cmd)
+
     if not "loop" in sys.argv and not "dock" in sys.argv:
         break
     else: tries += 1
