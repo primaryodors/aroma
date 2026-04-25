@@ -72,13 +72,14 @@ if argc > 2:
         exit()
 
 # If PDB files get too wonky, you can kill the fixfail.py process and rerun it with the reset argument.
+doreset = False
 if "reset" in sys.argv:
     # Rebuild the unmodified HM structure.
     cmd = ["php", "-f", "hm/dohm.php", protid]
     data.globals.wait_cool_cpu()
     print(" ".join(cmd))
     subprocess.run(cmd)
-    inppdb = origpdb
+    doreset = True
 
 if argc > 2:
     odor = data.odorutils.find_odorant(inppdb.split('~')[1].split('.')[0])
@@ -91,7 +92,7 @@ if odor:
         os.unlink(delcav)
     with open('data/cavopts.json', 'r') as file:
         cavopts = json.load(file)
-    cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
+    cmd = ["bin/cavity_search", "-p", origpdb if doreset else inppdb, "-o", delcav]
     cmd.extend(cavopts)
     print(" ".join(cmd))
     data.globals.wait_cool_cpu()
