@@ -71,8 +71,21 @@ if argc > 2:
         print(f"Input file not found: {sys.argv[2]}")
         exit()
 
-    odor = data.odorutils.find_odorant(inppdb.split('~')[1].split('.')[0])
+# If PDB files get too wonky, you can kill the fixfail.py process and rerun it with the reset argument.
+if "reset" in sys.argv:
+    # Rebuild the unmodified HM structure.
+    cmd = ["php", "-f", "hm/dohm.php", protid]
+    data.globals.wait_cool_cpu()
+    print(" ".join(cmd))
+    subprocess.run(cmd)
+    inppdb = origpdb
 
+if argc > 2:
+    odor = data.odorutils.find_odorant(inppdb.split('~')[1].split('.')[0])
+else:
+    odor = False
+
+if odor:
     delcav = inppdb[0:-3]+"cvty"
     if os.path.exists(delcav):
         os.unlink(delcav)
@@ -81,8 +94,8 @@ if argc > 2:
     cmd = ["bin/cavity_search", "-p", inppdb, "-o", delcav]
     cmd.extend(cavopts)
     print(" ".join(cmd))
-    # data.globals.wait_cool_cpu()
-    # subprocess.run(cmd)
+    data.globals.wait_cool_cpu()
+    subprocess.run(cmd)
 else:
     inppdb = origpdb
     odor = False
@@ -103,14 +116,6 @@ if argc > 4:
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 os.chdir("..")
-
-# If PDB files get too wonky, you can kill the fixfail.py process and rerun it with the reset argument.
-if "reset" in sys.argv:
-    # Rebuild the unmodified HM structure.
-    cmd = ["php", "-f", "hm/dohm.php", protid]
-    data.globals.wait_cool_cpu()
-    print(" ".join(cmd))
-    subprocess.run(cmd)
 
 if "fit" in sys.argv:
     # Perform a cavity fitting calculation on the ligand and receptor model.
