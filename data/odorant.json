@@ -32263,6 +32263,23 @@
         },
         "oid": "ba119fa996e35d7222b5582a8060a940"
     },
+    "ba3ac0d3da9bb8612f55a88284ba3a63":
+    {
+        "full_name": "ethyl 2-furoate",
+        "smiles": "CCOC(=O)c1ccco1",
+        "aroma":
+        {
+            "http://www.thegoodscentscompany.com":
+            [
+                "balsamic",
+                "fruity",
+                "floral",
+                "orchid",
+                "burnt"
+            ]
+        },
+        "oid": "ba3ac0d3da9bb8612f55a88284ba3a63"
+    },
     "ba88d20fd21b3bd86b170d613b8ebe73":
     {
         "full_name": "cyclotene hydrate",
@@ -36646,6 +36663,12 @@
         },
         "oid": "d719fac5dce4f2b13e317f21dc7975e7"
     },
+    "d72dc6452e5588e0e86290fd035c937c":
+    {
+        "full_name": "muscopyridine",
+        "smiles": "C[C@@H]1CCCCCCCCc2nc(C1)ccc2",
+        "oid": "d72dc6452e5588e0e86290fd035c937c"
+    },
     "d7315752c49d5c0473c6c0b5e24613f3":
     {
         "full_name": "aniline",
@@ -38037,6 +38060,12 @@
             }
         },
         "oid": "dec3a04b5aaf4d5a7ac7b7582b6c095c"
+    },
+    "df2b4fc456a1866978005a1d25e3b956":
+    {
+        "full_name": "luminide",
+        "smiles": "CC1(C)[C@H]2CC[C@@]3(C1c1ncncc1CC3(C)C)C2",
+        "oid": "df2b4fc456a1866978005a1d25e3b956"
     },
     "df4fe852469e7e94b4cd651bfd541372":
     {
@@ -41024,7 +41053,8 @@
     "f10914e0806d450de259145ca2c3294b":
     {
         "full_name": "isolongifolanone",
-        "smiles": "CC1[C@@H]2[C@H]3[C@H]([C@@]1(CCCC3(C)C)C)CC2=O",
+        "name1": "Piconia",
+        "smiles": "CC1(CCC(=O)C2[C@@]13CC[C@@H](C3)C2(C)C)C",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -42531,6 +42561,12 @@
             }
         },
         "oid": "f832f428744849896cda1f5c695ad7f5"
+    },
+    "f852e3d14c569f699a27c50b1422062f":
+    {
+        "full_name": "oceanol",
+        "smiles": "COC(=O)c1ccc(c(c1O)C)O",
+        "oid": "f852e3d14c569f699a27c50b1422062f"
     },
     "f8fee0134119589ab63b6e7b8f8b61f5":
     {
