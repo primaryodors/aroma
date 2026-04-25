@@ -109,6 +109,7 @@ if "reset" in sys.argv:
     # Rebuild the unmodified HM structure.
     cmd = ["php", "-f", "hm/dohm.php", protid]
     data.globals.wait_cool_cpu()
+    print(" ".join(cmd))
     subprocess.run(cmd)
 
 if "fit" in sys.argv:
@@ -122,6 +123,7 @@ if "fit" in sys.argv:
     delete_inppdb = True
     cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
     data.globals.wait_cool_cpu()
+    print(" ".join(cmd))
     subprocess.run(cmd)
     # TODO: If no result from cavity_fit, error out and exit.
 
@@ -130,6 +132,7 @@ if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
     # TODO: If both fit and predock, use the fitted model's ligand as the pre-placement, no RH/BB/TS.
     cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
     data.globals.wait_cool_cpu()
+    print(" ".join(cmd))
     subprocess.run(cmd)
 
 tries = 0
