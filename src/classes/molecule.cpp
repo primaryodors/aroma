@@ -1492,14 +1492,81 @@ float Molecule::space_filling(Space *c)
     return j ? (result/j) : 1;
 }
 
+float atom_distances_thingie(Atom **mwa, Atom **mw0, Bond *b)
+{
+    // Roommate is doom scrolling in the next room and my ADHD is so effing bad...
+    int j, l;
+    float r = 0, lr;
+    for (j=0; mwa[j]; j++)
+    {
+        // TODO: intramolecular attractions e.g. hydrogen bonds, ionic bonds, etc.
+        if (mwa[j]->Z < 2) continue;
+
+        lr = 0;
+        Atom *a = nullptr;
+        for (l=0; mw0[l]; l++)
+        {
+            if (mw0[l]->Z < 2) continue;
+            if (mw0[l] == b->atom1) continue;
+            float mwr = mw0[l]->distance_to(mwa[j]);
+            if (!lr || mwr < lr)
+            {
+                lr = mwr;
+                a = mw0[l];
+            }
+        }
+
+        if (!a) continue;
+
+        lr = mwa[j]->distance_to(a);
+        r = r ? fmin(lr, r) : lr;
+    }
+
+    return r;
+}
+
 void Molecule::optimize()
 {
+    int i, j, l, m, n;
+    Atom *mwa[atcount+4], *mw0[atcount+4];
+
     // Place all heavy atoms as far apart as possible.
+    if (rings && rings[0])
+    {
+        Pose putitback(this);
+        for (i=0; rings[i]; i++)
+        {
+            if (rings[i]->is_coplanar()) continue;
+            if (rings[i]->is_conjugated()) continue;
+            n = rings[i]->get_atom_count();
+            if (n)
+            {
+                for (j=0; j<n; j++)
+                {
+                    memset(mwa, 0, atcount*sizeof(Atom*));
+                    memset(mw0, 0, atcount*sizeof(Atom*));
+                    putitback.copy_state(this);
+
+                    Atom *a = rings[i]->get_atom(j);
+                    if (!a) continue;
+
+                    Bond *b = a->get_bond_by_idx(0);
+                    b->fetch_moves_with_atom2(mwa);
+                    b->get_reversed()->fetch_moves_with_atom2(mw0);
+                    float rbefore = atom_distances_thingie(mwa, mw0, b);
+
+                    rings[i]->flip_atom(a);
+
+                    float rafter = atom_distances_thingie(mwa, mw0, b);
+                    if (rafter < rbefore) putitback.restore_state(this);
+                }
+            }
+        }
+    }
+
     Bond** b = get_rotatable_bonds();
     if (!b) return;
-    int i, j, l;
     float theta, thbest, step, lr, r, rbest;
-    Atom *mwa[atcount+4], *mw0[atcount+4];
     for (i=0; b[i]; i++)
     {
         if (b[i]->atom1->Z < 2) continue;
@@ -1516,31 +1583,7 @@ void Molecule::optimize()
         {
             b[i]->rotate(step);
 
-            r = 0;
-            for (j=0; mwa[j]; j++)
-            {
-                // TODO: intramolecular attractions e.g. hydrogen bonds, ionic bonds, etc.
-                if (mwa[j]->Z < 2) continue;
-
-                lr = 0;
-                Atom *a = nullptr;
-                for (l=0; mw0[l]; l++)
-                {
-                    if (mw0[l]->Z < 2) continue;
-                    if (mw0[l] == b[i]->atom1) continue;
-                    float mwr = mw0[l]->distance_to(mwa[j]);
-                    if (!lr || mwr < lr)
-                    {
-                        lr = mwr;
-                        a = mw0[l];
-                    }
-                }
-
-                if (!a) continue;
-
-                lr = mwa[j]->distance_to(a);
-                r = r ? fmin(lr, r) : lr;
-            }
+            r = atom_distances_thingie(mwa, mw0, b[i]);
 
             if (r > rbest)
             {
@@ -1552,8 +1595,6 @@ void Molecule::optimize()
         }
         b[i]->rotate(thbest);
     }
-
-    // TODO: Ring flips
 }
 
 Space *Molecule::to_space()
