@@ -1,10 +1,6 @@
-nohup python3 hm/fixfail.py OR2A1 farnesol O1 195:CD C12 274:CZ dock &
-nohup python3 hm/fixfail.py OR2H2 tridecanal O14 196:NE2 C1 281:CD dock &
-nohup python3 hm/fixfail.py OR2L13 1-dodecanol O13 201:OG C1 80:CB dock &
-nohup python3 hm/fixfail.py OR8B3 oranger_crystals dock &
-nohup python3 hm/fixfail.py OR10A5 cinnamaldehyde O10 160:NE2 C1 252:CB dock &
-nohup python3 hm/fixfail.py OR10J5 lyral O14 274:OG O15 109:OG1 dock &
-nohup python3 hm/fixfail.py OR10Q1 exaltolide dock &
+nohup python3 hm/fixfail.py OR2H2 tridecanal reset O14 196:NE2 C1 281:CD dock &
+nohup python3 hm/fixfail.py OR10Q1 exaltolide reset O11 113:OG C2 264:CZ dock &
+nohup python3 hm/fixfail.py OR10S1 lilial fit dock &
 nohup python3 hm/fixfail.py OR56A3 2-methylundecanoic_acid dock &
 nohup python3 hm/fixfail.py OR56A5 undecanoic_acid dock &
 
@@ -12,16 +8,21 @@ FIXED:
 nohup python3 hm/fixfail.py OR1A2 nerolidol dock &
 nohup python3 hm/fixfail.py OR1G1 2-undecanone dock &
 nohup python3 hm/fixfail.py OR1N2 ambrettolide dock &
+nohup python3 hm/fixfail.py OR2A1 farnesol O1 195:CD C12 274:CZ dock &
 nohup python3 hm/fixfail.py OR2A5 rosyfolia dock &
 nohup python3 hm/fixfail.py OR2A25 peony acetonitrile dock &
 nohup python3 hm/fixfail.py OR2AT4 sandalore dock &
+nohup python3 hm/fixfail.py OR2L13 1-dodecanol O13 201:OG C1 80:CB dock &
 nohup python3 hm/fixfail.py OR4P4 habanolide dock &
 nohup python3 hm/fixfail.py OR6M1 anthraquinone dock &
 nohup python3 hm/fixfail.py OR7A5 myrac aldehyde dock &
 nohup python3 hm/fixfail.py OR7D4 androstenone dock &
 nohup python3 hm/fixfail.py OR7E24 "(-)-ambroxide" dock &
+nohup python3 hm/fixfail.py OR8B3 oranger_crystals dock &
 nohup python3 hm/fixfail.py OR8D2 muguet_propanol O12 207:OG1 C8 278:CZ dock &
+nohup python3 hm/fixfail.py OR10A5 cinnamaldehyde O10 160:NE2 C1 252:CB dock &
 nohup python3 hm/fixfail.py OR10H1 sandranol O15 280:OG1 dock &
+nohup python3 hm/fixfail.py OR10J5 lyral O14 274:OG O15 109:OG1 dock &
 nohup python3 hm/fixfail.py OR10K1 azurone dock &
 nohup python3 hm/fixfail.py OR10AG1 cinnamaldehyde dock &
 nohup python3 hm/fixfail.py OR51B5 farnesol dock &

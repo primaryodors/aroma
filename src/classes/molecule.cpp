@@ -1595,6 +1595,8 @@ void Molecule::optimize()
         }
         b[i]->rotate(thbest);
     }
+
+    refine_structure();
 }
 
 Space *Molecule::to_space()
@@ -7492,9 +7494,12 @@ Atom *Molecule::get_most_polar(int sp)
     for (i=0; atoms[i]; i++)
     {
         // if (atoms[i]->Z < 2) continue;
-        if (sp && sgn(atoms[i]->is_polar()) != sp) continue;
+        float spol = atoms[i]->is_polar();
+        float schg = atoms[i]->is_conjugated_to_charge();
+        if (fabs(schg) > fabs(spol)) spol = schg;
+        if (sp && sgn(spol) != sp) continue;
         if (atoms[i]->is_backbone) continue;
-        float h = fabs(atoms[i]->is_polar());
+        float h = fabs(spol);
 
         switch (atoms[i]->get_family())
         {

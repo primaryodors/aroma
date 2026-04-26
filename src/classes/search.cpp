@@ -1701,7 +1701,8 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
         #endif
     }
 
-    Atom *bh = rhmet ? llig->get_most_metal_coord(rhmet) : llig->get_most_polar();
+    Atom *bh = rhmet ? llig->get_most_metal_coord(rhmet) : llig->get_most_polar(0);
+    float lchg = bh->is_conjugated_to_charge();
     if (!bh)
     {
         cerr << "Molecule::get_most_polar() failed." << endl;
@@ -1715,13 +1716,12 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
     }
 
     int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry(), bhfam = bh->get_family();
-    float bhyd = fabs(bh->is_polar());
+    float bhyd = fabs(bh->is_polar()) + fabs(lchg);
     bool bhal = bh->is_aldehyde(), bhpi = bh->is_pi(), bhthi = bh->is_thio();
     float bhcendist = bh->loc.get_3d_distance(ligand->get_barycenter());
 
     if (!rhmet)
     {
-        float lchg = ligand->get_charge();
         if (lchg)
         {
             for (i=0; lrs[i]; i++)

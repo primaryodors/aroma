@@ -1075,6 +1075,7 @@ Bond* Atom::bond_to(Atom* latom2, float lcard)
     int i;
 
     geometry_dirty = true;
+    polar_calcd = false;
     picache = -1;
     if (!mol && latom2->mol)
     {

@@ -209,6 +209,7 @@ public:
     {
         charge += lcharge;
         origchg = charge;
+        polar_calcd = false;
     }
 
     // Bond functions.
