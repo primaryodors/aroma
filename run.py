@@ -190,7 +190,7 @@ for rcpid in data.protutils.prots.keys():
                 else "inverse agonist" if isinv \
                 else "non-agonist" if isemp \
                 else "unknown activity"
-            print(f"Beginning {rcpid} ~ {o["full_name"]} ({acvmsg})...")
+            print(f"Beginning {rcpid}:{suff} ~ {o["full_name"]} ({acvmsg})...")
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             with open("example.config", "r") as f:
                 cfg = f.read()
