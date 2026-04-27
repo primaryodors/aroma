@@ -4592,7 +4592,7 @@ _try_again:
                         if (aac1 && aac2) dr[drcount][nodeno].miscdata += (std::string)"Contact anomaly for "
                             + (std::string)"region " + std::to_string(i) + (std::string)" "
                             + (std::string)aac1->get_name() + (std::string)"..." + (std::string)aac2->get_name()
-                            + (std::string)": " + std::to_string(canom)
+                            + (std::string)": " + std::to_string(canom * energy_mult)
                             + (std::string)"\n";
                     }
                 }
