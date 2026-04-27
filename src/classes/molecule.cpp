@@ -1534,6 +1534,17 @@ void Molecule::optimize()
     if (rings && rings[0])
     {
         Pose putitback(this);
+
+        for (i=0; rings[i]; i++)                    // CAN'T TRUST YOU!
+        {
+            n = rings[i]->get_atom_count();
+            for (j=0; j<n; j++)
+            {
+                Atom *a = rings[i]->get_atom(j);
+                if (!a->is_in_ring(rings[i])) throw 0x12e7a12d;
+            }
+        }
+
         for (i=0; rings[i]; i++)
         {
             if (rings[i]->is_coplanar()) continue;
