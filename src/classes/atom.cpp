@@ -2150,6 +2150,12 @@ bool Bond::is_equivalent(Bond* cmp_to)
         fabs(mw_cardsum - cmp_to->mw_cardsum) < 0.001;
 }
 
+bool Bond::is_ring_bond()
+{
+    if (!atom1 || !atom2) return false;
+    return atom1->in_same_ring_as(atom2);
+}
+
 #if _dbg_moves_with
 const char *Bond::str_moves_with()
 {

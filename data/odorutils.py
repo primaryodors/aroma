@@ -55,7 +55,7 @@ def find_odorant(aroma):
         retval['oid'] = aroma
         return retval
 
-    aroma1 = re.sub("/[^a-z0-9_+-]/", "", aroma.lower().replace(' ', '_'))
+    aroma1 = re.sub("[^a-z0-9+-]", "", aroma.lower().replace(' ', '_'))
     for oid, o in odors.items():
         namematch = False
         i = 1
@@ -64,10 +64,10 @@ def find_odorant(aroma):
                 namematch = True
             i += 1
 
-        if (o['smiles'] == aroma
-            or re.sub( "/[^a-z0-9_+-]/", "", o['full_name'].lower().replace(' ', '_') ) == aroma1
-            or ("iupac" in o.keys() and o['iupac'] == aroma)
-            or namematch):
+        if o['smiles'] == aroma \
+            or ("iupac" in o.keys() and o['iupac'] == aroma) \
+            or namematch \
+            or re.sub( "[^a-z0-9+-]", "", o['full_name'].lower().replace(' ', '_') ) == aroma1:
             retval = o
             retval['oid'] = oid
 

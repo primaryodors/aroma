@@ -79,6 +79,7 @@ public:
     void swing(Vector newdir);		// Rotate atom2, and all its moves_with atoms, about atom1 so that the bond points to newdir.
 
     bool is_equivalent(Bond* cmp_to);
+    bool is_ring_bond();
 
     #if _dbg_moves_with
     const char* str_moves_with();

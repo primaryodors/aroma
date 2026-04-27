@@ -209,6 +209,11 @@
         "short_name": "Correia (2012)",
         "citation": "Correia, J. N. (2012). Novel modulators of human sperm motility and migration (Doctoral dissertation, University of Birmingham)."
     },
+    "https://ctdbase.org/":
+    {
+        "short_name": "CTD",
+        "citation": "Davis AP, Wiegers TC, Sciaky D, Barkalow F, Strong M, Wyatt B, Wiegers J, McMorran R, Abrar S, Mattingly CJ Comparative Toxicogenomics Database’s 20th anniversary: update 2025. Nucleic Acids Res. 2024 Oct 10."
+    },
     "https://www.researchgate.net/publication/291986200_Modeling_the_molecular_mechanism_of_the_perception_of_smell":
     {
         "short_name": "de March (2015)",

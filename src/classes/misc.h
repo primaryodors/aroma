@@ -21,8 +21,8 @@ enum PoseSearchType
 };
 
 // Default search algorithm if not specified by config file or command line args.
-// #define default_search_algorithm pst_best_binding
-#define default_search_algorithm pst_randhyd
+#define default_search_algorithm pst_best_binding
+// #define default_search_algorithm pst_randhyd
 // #define default_search_algorithm pst_cavfit
 
 struct Vector;

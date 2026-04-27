@@ -1570,6 +1570,7 @@ void Molecule::optimize()
     for (i=0; b[i]; i++)
     {
         if (b[i]->atom1->Z < 2) continue;
+        if (b[i]->is_ring_bond()) continue;
         thbest = rbest = 0;
         step = b[i]->can_rotate ? (hexagonal/10) : b[i]->flip_angle;
         if (!step) step = M_PI;
@@ -3364,6 +3365,7 @@ void Molecule::crumple(float theta)
     int i;
     for (i=0; b[i]; i++)
     {
+        if (b[i]->is_ring_bond()) continue;
         if (b[i]->can_rotate)
         {
             float ltheta = frand(-theta, theta)*pow(frand(0,1),2);
@@ -3924,6 +3926,9 @@ Interaction Molecule::optimize_intermol_contact(Molecule *ligand)
     if (b1) b1 = b1->get_reversed();
     b2 = b->get_bond_by_idx(0);
     if (b2) b2 = b2->get_reversed();
+
+    if (b1->is_ring_bond()) return result;
+    if (b2->is_ring_bond()) return result;
 
     bool dorot1 = !a->is_pi() && a->get_bonded_heavy_atoms_count() <= 1;
     bool dorot2 = !b->is_pi() && b->get_bonded_heavy_atoms_count() <= 1;
@@ -4660,7 +4665,7 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
         Atom* heavy = stay_close_mine->get_heaviest_bonded_atom_that_isnt(nullptr);
         Bond* b = heavy->get_bond_by_idx(0);
         if (b) b = b->get_reversed();
-        if (b && b->can_rotate && b->atom1)
+        if (b && b->can_rotate && b->atom1 && !b->is_ring_bond())
         {
             LocatedVector lv = b->get_axis();
             lv.origin = b->atom1->loc;
@@ -5210,6 +5215,7 @@ void Molecule::minimize_internal_clashes()
 
     for (i=0; i<numrb; i++)
     {
+        if (b[i]->is_ring_bond()) continue;
         float step = hexagonal / 20;
         float theta = 0;
         for (j=0; step*j < M_PI*2; j++)
@@ -5237,6 +5243,7 @@ void Molecule::minimize_internal_clashes()
     {
         for (i=0; i<numrb; i++)
         {
+            if (b[i]->is_ring_bond()) continue;
             b[i]->rotate(angle[i]);
             #if stretch_out_molecules_by_interatomic_distance
             float clash1 = -sum_interatomic_distances();
@@ -5608,6 +5615,7 @@ void Molecule::conform_atom_to_location(Atom *a, Atom *target, int iters, float 
         float r;
         for (j=0; b[j]; j++)
         {
+            if (b[j]->is_ring_bond()) continue;
             if (!b[j]->can_rotate)
             {
                 if (b[j]->can_flip) circdiv = 2;
@@ -5660,6 +5668,7 @@ void Molecule::conform_atom_to_location(int i, Point t, int iters, float od)
         float r;
         for (j=0; b[j]; j++)
         {
+            if (b[j]->is_ring_bond()) continue;
             if (!b[j]->can_rotate)
             {
                 if (b[j]->can_flip) circdiv = 2;
@@ -6136,6 +6145,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                     for (qiter=0; qiter<flexion_sub_iterations; qiter++) for (q=0; bb[q]; q++)
                     {
                         if (!bb[q]->atom1 || !bb[q]->atom2) continue;         // Sanity check, otherwise we're sure to get random foolish segfaults.
+                        if (bb[q]->is_ring_bond()) continue;
                         if (bb[q]->atom1->get_Greek() > bb[q]->atom2->get_Greek()) bb[q] = bb[q]->get_reversed();
                         if (!bb[q]->count_moves_with_atom2()) continue;
                         if (bb[q]->atom1->is_backbone && strcmp(bb[q]->atom1->name, "CA")) continue;
@@ -7224,7 +7234,6 @@ float Molecule::close_loop(Atom** path, float lcard)
                 rotatables[i]->atom2->move(bloc);
             }
 
-            // issue_5
             if (rotatables[i]->rotate(bondrot[i], true))
             {
                 float newanom = fsb_lsb_anomaly(first, last, lcard, bond_length);

@@ -44,9 +44,14 @@ function trim_prefixes($what)
 
 function odorcmp($a, $b)
 {
-	$A = strtolower(trim_prefixes($a["full_name"]));
-	$B = strtolower(trim_prefixes($b["full_name"]));
+	$A = strtolower(preg_replace("/[^a-zA-Z]/", '', trim_prefixes($a["full_name"])));
+	$B = strtolower(preg_replace("/[^a-zA-Z]/", '', trim_prefixes($b["full_name"])));
 
+	if ($A == $B)
+	{
+		$A = strtolower(preg_replace("/[^a-zA-Z0-9+-]/", '', trim_prefixes($a["full_name"])));
+		$B = strtolower(preg_replace("/[^a-zA-Z0-9+-]/", '', trim_prefixes($b["full_name"])));		
+	}
 	if ($A == $B)
 	{
 		$A = $a["full_name"];
@@ -478,7 +483,7 @@ function find_odorant($aroma)
 		return $retval;
 	}
 
-	$aroma1 = preg_replace( "/[^a-z0-9_+-]/", "", str_replace(' ', '_', strtolower($aroma)) );
+	$aroma1 = preg_replace( "/[^a-z0-9+-]/", "", str_replace(' ', '_', strtolower($aroma)) );
 	foreach ($odors as $oid => $o)
 	{
 		$namematch = false;
@@ -488,9 +493,9 @@ function find_odorant($aroma)
 		}
 
 		if ( $o['smiles'] == $aroma
-			 || preg_replace( "/[^a-z0-9_+-]/", "", str_replace(' ', '_', strtolower($o['full_name'])) ) == $aroma1
 			 || @$o['iupac'] == $aroma
 			 || $namematch
+			 || preg_replace( "/[^a-z0-9+-]/", "", str_replace(' ', '_', strtolower($o['full_name'])) ) == $aroma1
 			)
 		{
 			$retval = $o;

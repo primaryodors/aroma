@@ -10344,7 +10344,7 @@
     },
     "3a511c741b673968d7d3106dde5d8a4f":
     {
-        "full_name": "(methylthio)methanethiol",
+        "full_name": "(methylthio)-methanethiol",
         "smiles": "CSCS",
         "pK":
         {
@@ -10467,7 +10467,7 @@
     },
     "3aab417e945376034389c6b65069a0b4":
     {
-        "full_name": "tris-(methylthio)methane",
+        "full_name": "tris-(methylthio)-methane",
         "smiles": "CSC(SC)SC",
         "aroma":
         {
@@ -11849,7 +11849,7 @@
     },
     "43ab755478b4df3ad6ec5c06208fe6f5":
     {
-        "full_name": "(ethylthio-)methanethiol",
+        "full_name": "(ethylthio)-methanethiol",
         "smiles": "CCSCS",
         "oid": "43ab755478b4df3ad6ec5c06208fe6f5"
     },
@@ -15578,6 +15578,13 @@
                 "OR7A17":
                 {
                     "type": "na"
+                }
+            },
+            "https://ctdbase.org/detail.go?type=gene&acc=26693&view=ixn":
+            {
+                "OR2V1":
+                {
+                    "type": "a"
                 }
             }
         },
