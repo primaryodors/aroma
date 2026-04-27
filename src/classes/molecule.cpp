@@ -1538,6 +1538,11 @@ void Molecule::optimize()
         {
             if (rings[i]->is_coplanar()) continue;
             if (rings[i]->is_conjugated()) continue;
+
+            // Fix for molecules like geosmin and 2-ethyl fenchol that get ripped apart by this section of code.
+            // TODO: Allow rings with only spiro joinings.
+            if (rings[i]->is_joined()) continue;
+
             n = rings[i]->get_atom_count();
             if (n)
             {

@@ -3447,6 +3447,17 @@ bool Ring::is_conjugated()
     return atoms_are_conjugated(atoms);
 }
 
+bool Ring::is_joined()
+{
+    if (!atoms) return false;
+    int i;
+    for (i=0; atoms[i]; i++)
+    {
+        if (atoms[i]->num_rings() > 1) return true;
+    }
+    return false;
+}
+
 bool Ring::is_coplanar()
 {
     if (type != UNKNOWN)

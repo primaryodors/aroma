@@ -135,6 +135,7 @@ public:
     LocatedVector get_center_and_normal();
     bool is_coplanar();
     bool is_conjugated();
+    bool is_joined();
     bool Huckel();						// Compiler doesn't allow ü in an identifier - boo hiss!
     Atom* traverse_ring(Atom* from, Atom* away_from = nullptr);     // If away_from is null, traverse in either direction.
     float flip_atom(Atom* which_atom);
