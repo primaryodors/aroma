@@ -12,7 +12,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
-	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test
+	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
 all: $(DIRS) \
@@ -180,6 +180,9 @@ test/bond_rotation_test: src/test/bond_rotation_test.cpp $(OBJS) $(OBJ)/molecule
 
 test/flexion_test: src/test/flexion_test.cpp $(OBJS)
 	$(CPL) src/test/flexion_test.cpp $(OBJS) -o test/flexion_test $(CFLAGS)
+
+test/flexibility_test: src/test/flexibility_test.cpp $(OBJS)
+	$(CPL) src/test/flexibility_test.cpp $(OBJS) -o test/flexibility_test $(CFLAGS)
 
 test/histidine_test: src/test/histidine_test.cpp $(OBJS)
 	$(CPL) src/test/histidine_test.cpp $(OBJS) -o test/histidine_test $(CFLAGS)

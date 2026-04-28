@@ -46,6 +46,9 @@ struct AADef
     float sidechain_hydration_free_energy = nanf("dunno");
     float flexion_probability = 0;
     float alpha_helix_penalty = 0;
+    float mean_helix_bend = 0;
+    float min_helix_bend = 0;
+    float max_helix_bend = 0;
 };
 
 struct AABridge

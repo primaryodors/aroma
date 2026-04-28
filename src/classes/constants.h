@@ -30,6 +30,7 @@
 #define charge_attraction 60.0
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8
+#define straight_chain_CA_to_CA_distance 3.8
 
 // Warning - increasing these constants significantly above the maximal 35.0, 60.0 values
 // will cause docking fails in the unit tests.

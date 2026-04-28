@@ -2832,6 +2832,33 @@ float Protein::get_empty_space_between_residues(int resno1, int resno2)
     return result;
 }
 
+float Protein::CA_to_CA_distance(int resno1, int resno2)
+{
+    AminoAcid *aa1 = get_residue(resno1),
+              *aa2 = get_residue(resno2);
+
+    if (!aa1 || !aa2) return 0.0f;
+
+    return CA_to_CA_distance(aa1, aa2);
+}
+
+float Protein::CA_to_CA_distance(ResiduePlaceholder res1, ResiduePlaceholder res2)
+{
+    res1.resolve_resno(this);
+    res2.resolve_resno(this);
+
+    if (!res1.resno || !res2.resno)
+        return 0.0f;
+
+    return CA_to_CA_distance(res1.resno, res2.resno);
+}
+
+float Protein::CA_to_CA_distance(AminoAcid *aa1, AminoAcid *aa2)
+{
+    if (!aa1 || !aa2) return 0.0f;
+    return aa1->get_CA_location().get_3d_distance(aa2->get_CA_location());
+}
+
 MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
 {
     int i, j, k, l, m, n, q, miter, i2, j1;
@@ -3160,6 +3187,30 @@ float Protein::orient_helix(int startres, int endres, int stopat, float angle, i
     cout << " ";
 
     return ha;
+}
+
+float Protein::max_stretch(int startres, int endres)
+{
+    int i;
+    for (i=startres+1; i<endres; i++)
+    {
+        AminoAcid *aa = get_residue(i);
+        if (aa && aa->is_alpha_helix()) return 0;           // Only disordered loops can stretch.
+    }
+
+    float current_distance = CA_to_CA_distance(startres, endres);
+    float max_distance = straight_chain_CA_to_CA_distance * abs(endres-startres);
+    return max_distance - current_distance;
+}
+
+float Protein::max_stretch(ResiduePlaceholder startres, ResiduePlaceholder endres)
+{
+    startres.resolve_resno(this);
+    endres.resolve_resno(this);
+
+    if (!startres.resno || !endres.resno) return 0;
+
+    return max_stretch(startres.resno, endres.resno);
 }
 
 Vector Protein::get_region_axis(int startres, int endres)

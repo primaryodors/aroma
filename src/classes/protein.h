@@ -202,6 +202,9 @@ public:
     Point get_region_bounds(int startres, int endres);
     float optimize_hydrogens(int start_resno = 1, int end_resno = INT_MAX, int* force_resnos = nullptr);
     float get_empty_space_between_residues(int resno1, int resno2);
+    float CA_to_CA_distance(int resno1, int resno2);
+    float CA_to_CA_distance(ResiduePlaceholder res1, ResiduePlaceholder res2);
+    float CA_to_CA_distance(AminoAcid* res1, AminoAcid* res2);
 
     // Motion functions
     void upright();
@@ -238,6 +241,9 @@ public:
         float angle,									// 0 = horizontal; positive = ascending (+Y) with increasing resno.
         int iterations
     );
+
+    float max_stretch(int startres, int endres);
+    float max_stretch(ResiduePlaceholder startres, ResiduePlaceholder endres);
 
     // Homology
     void homology_conform(Protein* target_structure, Protein* reference_structure);

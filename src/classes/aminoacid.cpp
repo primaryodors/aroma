@@ -1584,6 +1584,9 @@ void AminoAcid::load_aa_defs()
                             words[i] = lastwords[i];
                         }
 
+                    int wordcount;
+                    for (wordcount=0; words[wordcount]; wordcount++);
+
                     int idx = words[0][0];
                     if (idx == 'X')
                     {
@@ -1614,39 +1617,26 @@ void AminoAcid::load_aa_defs()
                         if (!strcmp(aa_defs[idx].name, "isoleucine")) aa_defs[idx].isoleucine_fix = true;
                     }
 
-                    if (words[3])
+                    if (wordcount > 3)
                     {
                         aa_defs[idx].SMILES = words[3];
                         if (strstr(aa_defs[idx].SMILES.c_str(), "N1")) aa_defs[idx].proline_like = proline_like = true;
-
-                        if (words[4])
-                        {
-                            aa_defs[idx].sidechain_pKa = atof(words[4]);
-                            if (words[5])
-                            {
-                                aa_defs[idx].flexion_probability = atof(words[5]);
-                                if (aa_defs[idx].flexion_probability < 0 || aa_defs[idx].flexion_probability > 1) throw 0xbadf1ec5;
-
-                                if (words[6])
-                                {
-                                    aa_defs[idx].alpha_helix_penalty = atof(words[6]);
-
-                                    if (words[7])
-                                    {
-                                        aa_defs[idx].sidechain_hydration_free_energy = atof(words[7]);
-
-                                        if (words[8])
-                                        {
-                                            if (words[8][0] == 'Y') aa_defs[idx].xflx = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
 
-                    tbdctr++;
+                    if (wordcount > 4) aa_defs[idx].sidechain_pKa = atof(words[4]);
+                    if (wordcount > 5)
+                    {
+                        aa_defs[idx].flexion_probability = atof(words[5]);
+                        if (aa_defs[idx].flexion_probability < 0 || aa_defs[idx].flexion_probability > 1) throw 0xbadf1ec5;
+                    }
+                    if (wordcount > 6) aa_defs[idx].alpha_helix_penalty = atof(words[6]);
+                    if (wordcount > 7) aa_defs[idx].sidechain_hydration_free_energy = atof(words[7]);
+                    if (wordcount > 8) aa_defs[idx].xflx = (words[8][0] == 'Y');
+                    if (wordcount > 9) aa_defs[idx].mean_helix_bend = atof(words[9]);
+                    if (wordcount > 10) aa_defs[idx].min_helix_bend = atof(words[10]);
+                    if (wordcount > 11) aa_defs[idx].max_helix_bend = atof(words[11]);
 
+                    tbdctr++;
                     lastletter = words[0][0];
                 }
                 catch (int e)
