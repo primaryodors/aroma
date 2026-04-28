@@ -91,28 +91,37 @@ for rcpid in data.protutils.prots.keys():
         else:
             o = data.odorutils.odors[ligid]
 
+        isemp = False
+        isago = False
+        isinv = False
+        isant = False
+        if "activity" in o:
+            for url in o["activity"].keys():
+                acv = o["activity"][url]
+                if rcpid in acv:
+                    isemp = True
+                    if "adjusted_curve_top" in acv[rcpid]:
+                        if float(acv[rcpid]["adjusted_curve_top"]) > 0:
+                            isago = True
+                        elif float(acv[rcpid]["adjusted_curve_top"]) < 0:
+                            isinv = True
+                    elif "type" in acv[rcpid]:
+                        if acv[rcpid]["type"] in ["vsa", "sa", "ma", "wa", "pa", "a"]:
+                            isago = True
+                        elif acv[rcpid]["type"] == "ia":
+                            isinv = True
+                    elif "ec50" in acv[rcpid]:
+                        isago = True
+                    
+                    if "antagonist" in acv[rcpid] \
+                        and (int(acv[rcpid]["antagonist"]) or acv[rcpid]["antagonist"] == "Y"):
+                        isant = True
+
         if lopt != "*" or popt != "*":
             if popt == "emp" or lopt == "emp":
-                if not "activity" in o: continue
-                isemp = False
-                for url in o["activity"].keys():
-                    acv = o["activity"][url]
-                    if rcpid in acv: isemp = True
                 if not isemp: continue
             elif popt == "ago" or lopt == "ago":
                 if not "activity" in o: continue
-                isago = False
-                for url in o["activity"].keys():
-                    acv = o["activity"][url]
-                    if rcpid in acv:
-                        if "adjusted_curve_top" in acv[rcpid]:
-                            if float(acv[rcpid]["adjusted_curve_top"]) > 0:
-                                isago = True
-                        elif "type" in acv[rcpid]:
-                            if acv[rcpid]["type"] in ["vsa", "sa", "ma", "wa", "pa", "a"]:
-                                isago = True
-                        elif "ec50" in acv[rcpid]:
-                            isago = True
                 if not isago: continue
             elif lopt == "top":
                 p = data.protutils.prots[rcpid]
@@ -176,7 +185,12 @@ for rcpid in data.protutils.prots.keys():
                     and fmt > os.path.getmtime("bin/aromadock"):
                         continue
 
-            print(f"Beginning {rcpid} ~ "+o["full_name"]+"...")
+            acvmsg = "antagonist" if isant \
+                else "agonist" if isago \
+                else "inverse agonist" if isinv \
+                else "non-agonist" if isemp \
+                else "unknown activity"
+            print(f"Beginning {rcpid}:{suff} ~ {o["full_name"]} ({acvmsg})...")
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             with open("example.config", "r") as f:
                 cfg = f.read()
