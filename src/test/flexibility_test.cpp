@@ -32,7 +32,9 @@ int main(int argc, char** argv)
         return 0x9076bc12;
     }
 
+    int i;
     AminoAcid *aa;
+    float phi, psi, bend;
     int start = p.get_start_resno(), end = p.get_region_start(1);
     float stretch = p.max_stretch(start, end);
 
@@ -103,7 +105,24 @@ int main(int argc, char** argv)
     start = end;
     end = p.get_region_end(6);
 
-    // TODO:
+    cout << endl;
+    for (i=start; i<=end; i++)
+    {
+        aa = p.get_residue(i);
+        if (aa)
+        {
+            phi = aa->get_phi();
+            psi = aa->get_psi();
+
+            bend = (ALPHA_PHI - phi + ALPHA_PSI - psi); 
+            bend /= (M_PI*2);
+            bend -= round(bend);
+            bend *= (M_PI*2);
+
+            cout << aa->get_name() << " helix bend = " << (bend*fiftyseven) << endl;
+        }
+    }
+    cout << endl;
 
     start = end;
     end = p.get_region_start(7);

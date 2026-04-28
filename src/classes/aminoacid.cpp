@@ -1632,9 +1632,9 @@ void AminoAcid::load_aa_defs()
                     if (wordcount > 6) aa_defs[idx].alpha_helix_penalty = atof(words[6]);
                     if (wordcount > 7) aa_defs[idx].sidechain_hydration_free_energy = atof(words[7]);
                     if (wordcount > 8) aa_defs[idx].xflx = (words[8][0] == 'Y');
-                    if (wordcount > 9) aa_defs[idx].mean_helix_bend = atof(words[9]);
-                    if (wordcount > 10) aa_defs[idx].min_helix_bend = atof(words[10]);
-                    if (wordcount > 11) aa_defs[idx].max_helix_bend = atof(words[11]);
+                    if (wordcount > 9) aa_defs[idx].mean_helix_bend = atof(words[9]) * fiftyseventh;
+                    if (wordcount > 10) aa_defs[idx].min_helix_bend = atof(words[10]) * fiftyseventh;
+                    if (wordcount > 11) aa_defs[idx].max_helix_bend = atof(words[11]) * fiftyseventh;
 
                     tbdctr++;
                     lastletter = words[0][0];
