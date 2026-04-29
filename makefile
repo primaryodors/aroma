@@ -7,7 +7,7 @@ TMP=tmp
 DIRS=$(OBJ) $(BIN) $(OUT) $(SDF) $(TMP)
 OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/space.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
 	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
-DOBJ=$(OBJ)/dynamic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
+DOBJ=$(OBJ)/motion.o $(OBJ)/kinetic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
@@ -110,8 +110,11 @@ $(OBJ)/soft.o: src/classes/soft.h src/classes/soft.cpp $(OBJ)/protein.o makefile
 $(OBJ)/appear.o: src/classes/appear.h src/classes/appear.cpp $(OBJ)/protein.o makefile
 	$(CPL) -c src/classes/appear.cpp -o $(OBJ)/appear.o $(CFLAGS)
 
-$(OBJ)/dynamic.o: src/classes/dynamic.h src/classes/dynamic.cpp $(OBJ)/protein.o makefile
-	$(CPL) -c src/classes/dynamic.cpp -o $(OBJ)/dynamic.o $(CFLAGS)
+$(OBJ)/motion.o: src/classes/motion.h src/classes/motion.cpp $(OBJ)/protein.o makefile
+	$(CPL) -c src/classes/motion.cpp -o $(OBJ)/motion.o $(CFLAGS)
+
+$(OBJ)/kinetic.o: src/classes/kinetic.h src/classes/kinetic.cpp $(OBJ)/protein.o makefile
+	$(CPL) -c src/classes/kinetic.cpp -o $(OBJ)/kinetic.o $(CFLAGS)
 
 $(OBJ)/moiety.o: src/classes/moiety.h src/classes/moiety.cpp $(OBJ)/molecule.o makefile
 	$(CPL) -c src/classes/moiety.cpp -o $(OBJ)/moiety.o $(CFLAGS)

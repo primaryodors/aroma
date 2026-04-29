@@ -1,6 +1,6 @@
 
 #include "reshape.h"
-#include "dynamic.h"
+#include "motion.h"
 
 bool rshp_verbose = false;
 

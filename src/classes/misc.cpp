@@ -202,6 +202,33 @@ double entropy_from_permutations(float W)
     return -kB_kJmol * log(W);
 }
 
+// Returns a normal distribution value.
+double generate_gaussian(float mean, float sigma)
+{
+    static bool use_last = false;
+    static double y2;
+
+    if (use_last)
+    {
+        use_last = false;
+        return y2;
+    }
+
+    double u1, u2, w;
+    do 
+    {
+        u1 = 2.0 * frand(0,1) - 1.0;
+        u2 = 2.0 * frand(0,1) - 1.0;
+        w = u1 * u1 + u2 * u2;
+    } while (w >= 1.0 || w == 0.0); // Polar form of Box-Muller
+
+    double factor = std::sqrt((-2.0 * std::log(w)) / w);
+    y2 = u2 * factor; // Save for next call
+    use_last = true;
+
+    return mean + u1 * factor * sigma;
+}
+
 std::string elapsed_time(time_t start, time_t end)
 {
     int seconds = end-start;

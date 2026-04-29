@@ -48,6 +48,8 @@ class AtomCollection
     int allocate(int howmany);      // Works incrementally. If you call allocate(100) and then call allocate(100) again, you get space for 200.
     bool add(Atom* const* toadd);
     int size();
+
+    Atom* const* const & _atoms = all_atoms;
 };
 
 class Bond
@@ -62,6 +64,7 @@ public:
     float total_rotations=0;
     intera_type type = covalent;
     float optimal_radius = 1;
+    float bond_strength = 200;
     bond_rotation_fail_reason last_fail = bf_none;
 
     #if _debug_active_bond_rot

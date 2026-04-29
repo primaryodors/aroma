@@ -7,7 +7,7 @@
 #include "classes/search.h"
 #include "classes/reshape.h"
 #include "classes/progress.h"
-#include "classes/dynamic.h"
+#include "classes/motion.h"
 
 using namespace std;
 

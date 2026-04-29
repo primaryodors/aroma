@@ -9,7 +9,7 @@
 #include <sstream>
 #include <algorithm>
 #include <unistd.h>
-#include "classes/dynamic.h"
+#include "classes/motion.h"
 #include "classes/search.h"
 #include "classes/scoring.h"
 #include "classes/cavity.h"

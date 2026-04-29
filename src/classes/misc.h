@@ -97,6 +97,7 @@ double K(double DeltaG);
 double equilibrium(double kJmol1, double kJmol2);
 double fractional_factorial(float n);
 double entropy_from_permutations(float W);
+double generate_gaussian(float mean = 0, float sigma = 1);
 
 std::string elapsed_time(time_t start, time_t end);
 

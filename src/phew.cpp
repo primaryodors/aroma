@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include "classes/protein.h"
-#include "classes/dynamic.h"
+#include "classes/motion.h"
 
 using namespace std;
 
