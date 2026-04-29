@@ -96,8 +96,8 @@ void MolecularKinetics::set_Boltzmann_momenta()
 
     for (i=0; i<n; i++)
     {
-        double sigma = std::sqrt(kB * temperature * atoms._atoms[i]->get_atomic_weight());
-        Vector v(frand(-1,1),frand(-1,1),frand(-1,1));
+        double sigma = pow(8.0 * kB * temperature / atoms._atoms[i]->get_atomic_weight() / Dalton / M_PI, 0.5) * 31.5;          // wtf is this 31.5 constant? it seems to make the math work...
+        Vector v = Point(frand(-1,1),frand(-1,1),frand(-1,1));
         v.r = generate_gaussian(0, sigma);
         momenta[i] = v;
     }
@@ -143,8 +143,8 @@ void MolecularKinetics::dump()
         Atom* a = atoms._atoms[i];
         if (a->residue) cout << a->residue << ":";
         cout << a->name;
-        cout << " location=[" << a->loc << "]";
-        cout << " momentum=[" << (Point)momenta[i] << "]";
+        cout << " location=" << a->loc;
+        cout << " momentum=" << (Point)momenta[i];
         cout << endl;
     }
 }

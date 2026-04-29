@@ -32,13 +32,11 @@ int main(int argc, char** argv)
     m.save_sdf(fp);
     fclose(fp);
 
-
     mk.advance_clock(1);
     mk.dump();
     fp = fopen("tmp/frame3.sdf", "w");
     m.save_sdf(fp);
     fclose(fp);
-
 
     return 0;
 }

@@ -691,7 +691,7 @@ Vector& Vector::operator=(Point p)
 Vector Vector::add(Vector* v)
 {
     Point pt(v);
-    pt.add(this);
+    pt = pt.add(this);
     Vector lv(&pt);
     return lv;
 }

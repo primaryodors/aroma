@@ -205,15 +205,6 @@ double entropy_from_permutations(float W)
 // Returns a normal distribution value.
 double generate_gaussian(float mean, float sigma)
 {
-    static bool use_last = false;
-    static double y2;
-
-    if (use_last)
-    {
-        use_last = false;
-        return y2;
-    }
-
     double u1, u2, w;
     do 
     {
@@ -223,8 +214,6 @@ double generate_gaussian(float mean, float sigma)
     } while (w >= 1.0 || w == 0.0); // Polar form of Box-Muller
 
     double factor = std::sqrt((-2.0 * std::log(w)) / w);
-    y2 = u2 * factor; // Save for next call
-    use_last = true;
 
     return mean + u1 * factor * sigma;
 }

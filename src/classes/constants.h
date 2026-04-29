@@ -19,6 +19,7 @@
 #define Avogadro 6.02214076e+23
 #define kB 1.380649e-23
 #define kB_kJmol (kB/1000 * Avogadro)
+#define Dalton 1.66053906892e-24
 #define temperature 310.2
 #define R 0.00831446261815324
 #define kJ_mol_per_summed_bond_strain (91.0 / 4.332)
