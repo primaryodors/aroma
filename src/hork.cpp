@@ -1,4 +1,6 @@
 
+// Heuristic Odor Receptor Kinetics
+
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
