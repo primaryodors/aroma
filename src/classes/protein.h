@@ -122,6 +122,7 @@ public:
     void end_pdb(FILE* outfile);
     void revert_to_pdb();
     void copy_mcoords(Protein* copyfrom);
+    void add_to_collection(AtomCollection* toaddto);
 
     // Getters.
     int get_seq_length();

@@ -436,6 +436,7 @@ protected:
     const int& num_monomers = nmonomers;
     const Molecule* glued_to_mol() { return glued_to; }
     void check_glued_bond();
+    Atom* const* const & _atoms = atoms;
 };
 
 float g_total_mclash(void* mol);

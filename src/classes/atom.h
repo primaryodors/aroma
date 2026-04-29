@@ -38,6 +38,18 @@ enum bond_rotation_fail_reason
 std::ostream& operator<<(std::ostream& os, const bond_rotation_fail_reason& bf);
 
 class Atom;
+class AtomCollection
+{
+    protected:
+    Atom** all_atoms = nullptr;
+    int allocated = 0;
+
+    public:
+    int allocate(int howmany);      // Works incrementally. If you call allocate(100) and then call allocate(100) again, you get space for 200.
+    bool add(Atom* const* toadd);
+    int size();
+};
+
 class Bond
 {
 public:

@@ -1877,6 +1877,16 @@ void Protein::copy_mcoords(Protein* cf)
     }
 }
 
+void Protein::add_to_collection(AtomCollection *toaddto)
+{
+    if (!residues) return;
+    int i;
+    for (i=0; residues[i]; i++)
+    {
+        toaddto->add(residues[i]->_atoms);
+    }
+}
+
 Molecule* Protein::metals_as_molecule()
 {
     Molecule* met=NULL;

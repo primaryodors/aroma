@@ -3866,20 +3866,59 @@ std::ostream& operator<<(std::ostream& os, const bond_rotation_fail_reason& bf)
     return os;
 }
 
+int AtomCollection::allocate(int howmany)
+{
+    try
+    {
+        if (allocated)
+        {
+            int i;
+            Atom** was_atoms = all_atoms;
+            all_atoms = new Atom*[allocated+howmany];       // INCREMENTAL. Allocate 100 and then 100 again you get 200.
+            if (!all_atoms)
+            {
+                all_atoms = was_atoms;
+                return 0;
+            }
+            memset(all_atoms, 0, sizeof(Atom*)*(allocated+howmany));
+            for (i=0; i<allocated; i++) all_atoms[i] = was_atoms[i];
+            allocated += howmany;
+            delete[] was_atoms;
+        }
+        else
+        {
+            all_atoms = new Atom*[howmany];
+            allocated = howmany;
+            memset(all_atoms, 0, sizeof(Atom*)*(allocated));
+        }
+    }
+    catch (const std::exception& e)
+    {
+        return 0;
+    }
 
+    return allocated;
+}
 
+bool AtomCollection::add(Atom *const *toadd)
+{
+    if (!toadd) return false;
+    int i, j, n;
+    for (n=0; toadd[n]; n++);
+    if (!allocate(n+1)) return false;
 
+    for (j=0; j < allocated && all_atoms[j]; j++);           // find first null
+    if (j >= allocated-n) return false;
 
+    for (i=0; i<n; i++) all_atoms[i+j] = toadd[i];
+    all_atoms[i+j] = nullptr;
 
+    return true;
+}
 
-
-
-
-
-
-
-
-
-
-
-
+int AtomCollection::size()
+{
+    int i;
+    for (i=0; i<allocated && all_atoms[i]; i++);            // we don't ness to check for allocated because if it's zero we'll still get zero
+    return i;
+}

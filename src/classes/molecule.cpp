@@ -6674,6 +6674,7 @@ bool Molecule::from_smiles(char const * smilesstr, bool use_parser)
     for (i=0; i<10; i++) numbered[i] = 0;
 
     bool retval = from_smiles(smilesstr, nullptr);
+    atoms[atcount] = nullptr;
 
     for (i=0; i<spnum; i++)
     {
@@ -7044,7 +7045,7 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
         card = 1;
         prevarom = aromatic;
     }
-    atoms[atcount]=0;
+    atoms[atcount] = nullptr;
 
     identify_conjugations();
     return true;

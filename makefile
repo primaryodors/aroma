@@ -13,7 +13,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
-APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
+APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/hork $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
 all: $(DIRS) \
 	 $(OBJS) \
@@ -24,6 +24,7 @@ code: $(DIRS) $(OBJS) $(DOBJ) $(TSTS) $(APPS)
 apps: $(APPS)
 aromadock: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/aromadock
 phew: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/phew
+hork: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/hork
 ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
 
 CPL=g++
@@ -224,6 +225,9 @@ $(BIN)/aromadock: src/aromadock.cpp $(OBJS) $(DOBJ)
 
 $(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/phew.cpp $(OBJS) $(DOBJ) -o $(BIN)/phew $(CFLAGS)
+
+$(BIN)/hork: src/hork.cpp $(OBJS) $(DOBJ)
+	$(CPL) src/hork.cpp $(OBJS) $(DOBJ) -o $(BIN)/hork $(CFLAGS)
 
 $(BIN)/cavity_search: src/cavity_search.cpp $(OBJS) $(DOBJ)
 	$(CPL) src/cavity_search.cpp $(OBJS) $(DOBJ) -o $(BIN)/cavity_search $(CFLAGS)
