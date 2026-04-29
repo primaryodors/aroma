@@ -14,6 +14,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+    int i;
     FILE* fp;
     Molecule m("jlgsux");
     m.from_smiles("c1ccccc1CCOC(=O)C");
@@ -35,6 +36,14 @@ int main(int argc, char** argv)
     mk.advance_clock(1);
     mk.dump();
     fp = fopen("tmp/frame3.sdf", "w");
+    m.save_sdf(fp);
+    fclose(fp);
+
+    for (i=0; i<1000; i++)
+    {
+        mk.advance_clock(1);
+    }
+    fp = fopen("tmp/framelast.sdf", "w");
     m.save_sdf(fp);
     fclose(fp);
 
