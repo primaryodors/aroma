@@ -624,7 +624,11 @@ bool Atom::move(Point* pt, bool delgeo)
     // if (movclash_cb && movclash_prot) movclash_cb(this, movclash_prot);
     #endif
 
-    if (location.magnitude() > 1e5) throw 0xbadc0de;
+    if (location.magnitude() > 1e5)
+    {
+        cerr << "Attempt to move atom out of bounds " << location << endl;
+        throw 0xbadc0de;
+    }
     return true;
 }
 

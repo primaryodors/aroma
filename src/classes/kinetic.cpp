@@ -42,11 +42,11 @@ Vector MolecularKinetics::get_energetic_force(Atom *a)
 
             // Get bond strength in kJ/mol.
             float Eopt = InteratomicForce::covalent_bond_energy(a, b->atom2, b->cardinality);
-            float Eact = 0.5 * Eopt * pow(displacement, 2) / _kcal_per_kJ;
+            float Eact = 0.5 * Eopt * pow(displacement, 2);
             float Edelta = Eopt - Eact;                     // should always be positive because we squared the displacement
 
-            // Interaction is in kJ/mol, and 1J = 1 meter in 1 second, so force component strength in m/s = kJ/mol * 1e-3.
-            dir.r = Edelta * 1e-3;
+            // Interaction is in kJ/mol, and 1J = 1 meter in 1 second, so force component strength in m/s = kJ/mol * 1e3 / mass.
+            dir.r = Edelta / a->get_atomic_weight();
 
             result = result.add(dir);
         }
@@ -58,9 +58,9 @@ Vector MolecularKinetics::get_energetic_force(Atom *a)
         if (atom_is_nearby(atoms._atoms[i], a))
         {
             // Find displacement and optimal distance
-            float displacement = InteratomicForce::distance_anomaly(a, atoms._atoms[i]);
+            float optimal_distance = InteratomicForce::optimal_distance(a, atoms._atoms[i]);
             float r = a->distance_to(atoms._atoms[i]);
-            float optimal_distance = r - displacement;
+            float displacement = r - optimal_distance;
 
             // Find directional vector
             Vector dir = a->loc.subtract(atoms._atoms[i]->loc);
@@ -71,7 +71,7 @@ Vector MolecularKinetics::get_energetic_force(Atom *a)
             float Edelta = fabs(Eopt - Eact) * -sgn(displacement);
 
             // Interaction is in kJ/mol, and 1J = 1 meter in 1 second, so force component strength in m/s = kJ/mol * 1e-3.
-            dir.r = Edelta * 1e-3;
+            dir.r = Edelta / a->get_atomic_weight();
 
             result = result.add(dir);
         }

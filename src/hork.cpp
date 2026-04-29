@@ -39,8 +39,9 @@ int main(int argc, char** argv)
     m.save_sdf(fp);
     fclose(fp);
 
-    for (i=0; i<1000; i++)
+    for (i=0; i<20; i++)
     {
+        cout << i << " ";
         mk.advance_clock(1);
     }
     fp = fopen("tmp/framelast.sdf", "w");
