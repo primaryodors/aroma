@@ -1,0 +1,48 @@
+
+# Install the following packages.
+sudo apt-get install -y openmpi-bin libopenmpi-dev mpich qhull-bin libqhull-dev libfftw3-dev doxygen libantlr4-runtime4 libantlr4-runtime-dev libopenblas-dev rapidjson-dev libncurses5-dev libncursesw5-dev
+
+# Check antlr4 version
+apt show antlr4
+
+# If the version shown is less than 4.11, you will die unless you build the latest version from scratch.
+# Grab a local copy of the respository and build it.
+cd ~
+git clone https://github.com/antlr/antlr4.git
+cd antlr4/runtime/Cpp
+make build
+cd build
+cmake ..
+make
+DESTDIR=~/antlr4/runtime/Cpp/run make install
+
+# Check the usual folder. If it's not there, search for the location of libantlr4-runtime.so
+# and substitute the correct path in all the following commands.
+ls -al /usr/lib/x86_64-linux-gnu/ | grep antlr4
+
+sudo cp -R ~/antlr4/runtime/Cpp/run/usr/local/include/ /usr/local/
+sudo cp -R ~/antlr4/runtime/Cpp/run/usr/local/lib/ /usr/local/
+sudo cp -R ~/antlr4/runtime/Cpp/run/usr/local/share/ /usr/local/
+
+sudo cp ~/antlr4/runtime/Cpp/run/usr/local/lib/libantlr4-runtime.so.4.13.2 /usr/lib/x86_64-linux-gnu/
+sudo ln -s /usr/lib/x86_64-linux-gnu/libantlr4-runtime.so.4.13.2  /usr/lib/x86_64-linux-gnu/libantlr4-runtime.so
+
+sudo cp -R ~/antlr4/runtime/Cpp/runtime/src/* /usr/include/antlr4-runtime/
+
+# Once the latest antlr4 binary and header files are in place,
+# you should be able to compile OpenMD.
+cd ~
+git clone https://github.com/OpenMD/OpenMD.git
+
+# Edit your .bashrc file to export necessary environment variables.
+# The paths MUST be absolute; you CANNOT use ~.
+# Replace /home/yourname with the actual path.
+nano ~/.bashrc
+export FORCE_PARAM_PATH="/home/yourname/OpenMD/forceFields"
+export PATH="${PATH}:/home/yourname/OpenMD/build/bin"
+
+# See the OpenMD/OpenMD/blob/main/QUICK_START.md and OpenMD/OpenMD/blob/main/samples/protein/README.md
+# files for instructions to create an MD simulation from a PDB file.
+
+
+
