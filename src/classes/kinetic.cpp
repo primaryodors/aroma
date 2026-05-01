@@ -80,6 +80,11 @@ Vector MolecularKinetics::get_energetic_force(Atom *a)
     return result;
 }
 
+Vector MolecularKinetics::get_energetic_force(Molecule* m)
+{
+    // TODO:
+}
+
 MolecularKinetics::MolecularKinetics()
 {
 }
@@ -88,17 +93,26 @@ MolecularKinetics::~MolecularKinetics()
 {
 }
 
+float MolecularKinetics::generate_Boltzmann_velocity(float m)
+{
+    double sigma = pow(8.0 * kB * temperature / m / Dalton / M_PI, 0.5) * 31.5;          // wtf is this 31.5 constant? it seems to make the math work...
+    return generate_gaussian(0, sigma);
+}
+
 void MolecularKinetics::set_Boltzmann_momenta()
 {
     int i, n = atoms.size();
-    if (!n) throw 0xbadc0de;             // have to put atoms in the collection before calling the Boltzmann function
+    if (!n)
+    {
+        cerr << "Have to put atoms in the collection before calling the Boltzmann function." << endl;
+        throw 0xbadc0de;
+    }
     if (momenta_allocated < n) allocate_momenta();
 
     for (i=0; i<n; i++)
     {
-        double sigma = pow(8.0 * kB * temperature / atoms._atoms[i]->get_atomic_weight() / Dalton / M_PI, 0.5) * 31.5;          // wtf is this 31.5 constant? it seems to make the math work...
         Vector v = Point(frand(-1,1),frand(-1,1),frand(-1,1));
-        v.r = generate_gaussian(0, sigma);
+        v.r = generate_Boltzmann_velocity(atoms._atoms[i]->get_atomic_weight());
         momenta[i] = v;
     }
 }
@@ -129,6 +143,7 @@ void MolecularKinetics::advance_clock(float femtoseconds)
     for (i=0; atoms._atoms[i]; i++)
     {
         momenta[i] = momenta[i].add(forces[i]);
+        momenta[i].r = fmin(momenta[i].r, 1e5);     // cap the speeds of atoms
     }
 }
 

@@ -20,6 +20,7 @@ class MolecularKinetics
     MolecularKinetics();
     ~MolecularKinetics();
 
+    static float generate_Boltzmann_velocity(float mass_Daltons);
     void set_Boltzmann_momenta();
     void advance_clock(float femtoseconds);
     void dump();
