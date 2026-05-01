@@ -2042,7 +2042,7 @@ void apply_protein_specific_settings(Protein* p)
         }
 
         n = protein->get_end_resno();
-        for (i=1; i<=n; i++)
+        for (i=2; i<=n; i++)
         {
             bool helixed = false;
             AminoAcid* aa = protein->get_residue(i);

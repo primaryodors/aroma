@@ -39,8 +39,6 @@ import data.dyncenter
 data.protutils.load_prots()
 data.odorutils.load_odors()
 
-os.chdir("..")
-
 aaletts = "ARNDCEQGHILKMFPSTWYV"
 aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS",
            "GLU", "GLN", "GLY", "HIS", "ILE",

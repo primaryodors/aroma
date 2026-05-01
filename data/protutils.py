@@ -321,12 +321,8 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     print(closest_ids)
     weights = []
 
-    # Make the highest weight 5 times the lowest weight, and make the weights add up to 1.
-    # Since we want the highest to be 5 times as much as the lowest, that means we want it to be 4 times more.
-    span = closest_sim[0] - closest_sim[4]
-    tosub = closest_sim[4]; # - span/4
     for i in range(5):
-        weights.append(closest_sim[i] - tosub)
+        weights.append(1.0 / (1.0 + 300.0 * (1.0 - closest_sim[i])))
 
     divisor = sum(weights)
     for i in range(5):
