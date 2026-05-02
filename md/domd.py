@@ -56,6 +56,7 @@ if not os.path.exists(origpdb):
     exit()
 
 cmd = ["atom2omd", "-ipdb", origpdb]
+print(" ".join(cmd))
 subprocess.run(cmd)
 
 omdfname = f"out/{fam}/{protid}/{protid}~{lignameu}.{mode}.model1.omd"
@@ -69,14 +70,37 @@ with open(omdfname, "r") as f:
     lines = c.split("\\n")
 
 first_atom = last_atom = 0
-grpallow = ["ASN-OD1", "ASN-ND2", "ASN-HD1", "ASN-HD2",
-            "GLN-OE1", "GLN-NE2", "GLN-HE1", "GLN-HE2",
-            "THR-OG1", "THR-HG1", "THR-CG2", "THR-HG2", "THR-HG3", 
-            "HIS-ND1", "HIS-CD2", "HIS-HD1", "HIS-HD2", "HIS-CE1", "HIS-HE1", "HIS-NE2", "HIS-HE2",
-            "ILE-CG1", "ILE-HG1", "ILE-CG2", "ILE-HG2",
-            "TRP-CD1", "TRP-CD2", "TRP-HD1", "TRP-HD2", "TRP-NE1", "TRP-HE1", "TRP-CE2", "TRP-HE2", "TRP-CE3", "TRP-HE3",
-            "TRP-CZ2", "TRP-HZ2", "TRP-CZ3", "TRP-HZ3", "TRP-CH2", "TRP-HH2", 
+grpallow = [ # "ASN-OD1", "ASN-ND2", "ASN-HD1", "ASN-HD2",
+             # "GLN-OE1", "GLN-NE2", "GLN-HE1", "GLN-HE2",
+             # "THR-OG1", "THR-CG2", 
+             "THR-HG1", "THR-HG2",
+             # "HIS-ND1", "HIS-CD2", "HIS-CE1", "HIS-NE2", 
+             "HIS-HD1", "HIS-HD2", "HIS-HE1", "HIS-HE2",
+             # "ILE-CG1", "ILE-HG1", "ILE-CG2", "ILE-HG2",
+             # "TRP-CD1", "TRP-CD2", "TRP-HD1", "TRP-HD2", 
+             "TRP-NE1", "TRP-HE1", "TRP-CE2", "TRP-HE2", "TRP-CE3", "TRP-HE3",
+             # "TRP-CZ2", "TRP-HZ2", "TRP-CZ3", "TRP-HZ3", "TRP-CH2", "TRP-HH2", 
             ]
+translations = dict()
+with open("md/translations", "r") as f:
+    c = f.read().__str__()
+    c = c.replace("\x0a", "\\n")
+    xl8lines = c.split("\\n")
+    for ln in xl8lines:
+        ln = re.sub("\\s+", " ", ln).strip()
+        if ln:
+            key, value = ln.split(" ")
+            translations[key] = value
+
+xnew = dict()
+for xl8 in translations.keys():
+    if xl8[3] == '-':
+        if not f"N{xl8}" in translations:
+            xnew[f"N{xl8}"] = translations[xl8]
+        if not f"C{xl8}" in translations:
+            xnew[f"C{xl8}"] = translations[xl8]
+translations.update(xnew)
+# print(translations)
 
 badatno = []
 for i in range(len(lines)):
@@ -88,37 +112,25 @@ for i in range(len(lines)):
             pieces = ln.split("]")
             atno = int(re.sub("[^0-9]", "", pieces[0]))
             badatno.append(atno)
-            print(badatno)
             lines[i] = ""
             continue
-        m = re.search("[A-Z]{3}-[A-Z]+[0-9]", ln)
-        if m:
-            grp = m.group()
-            aa3let = grp[0:3]
-            if not grp in grpallow:
-                se = m.span()
-                lines[i] = ln[0:se[0]] + re.sub("[0-9]", "", grp) + ln[se[1]:]
-    elif False: # "atom[" in ln:
-        ln = ln.replace("C3", "CT")
-        ln = ln.replace("Cac", "CA")
-        ln = ln.replace("O.co2", "O2")
-        lines[i] = ln
+
     elif first_atom:
         last_atom = i-1
+
 
     if "members(" in ln:
         found = False
         for atno in badatno:
             if f"({atno}," in ln or f" {atno})" in ln:
                 found = True
-                print(ln)
                 break
         if found:
             lines[i] = ""
             continue
 
     if "</MetaData>" in ln:
-        lines[i] = "\nforceField = \"Amber\";\n" \
+        lines[i] = "\nforceField = \"gaff2\";\n" \
             + "ensemble = NVT;\n" \
             + "cutoffMethod = \"shifted_force\";\n" \
             + "electrostaticScreeningMethod = \"damped\";\n" \
@@ -136,7 +148,7 @@ for i in range(len(lines)):
     if "Hmat:" in ln:
         ln = "        Hmat: {{ 300, 0, 0 }, { 0, 300, 0 }, { 0, 0, 300 }}"
 
-apply_terminus_prefixes = ["N", "CA", "C", "O", "OXT", "HN", "HA"]
+apply_terminus_prefixes = ["N"] # , "CA", "C", "O", "OXT", "HN", "HA"]
 for terminus_resaname in apply_terminus_prefixes:
     if not "XT" in terminus_resaname:
         for i in range(first_atom, last_atom-1):
@@ -144,11 +156,28 @@ for terminus_resaname in apply_terminus_prefixes:
             if re.search("[A-Z]{3}-"+terminus_resaname, ln):
                 lines[i] = re.sub("([A-Z]{3}-"+terminus_resaname+"\")", "N\\1", ln)
                 break
-    for i in range(last_atom, first_atom-1, -1):
-        ln = lines[i]
-        if re.search("[A-Z]{3}-"+terminus_resaname, ln):
-            lines[i] = re.sub("([A-Z]{3}-"+terminus_resaname+"\")", "C\\1", ln)
-            break
+    if False:
+        for i in range(last_atom, first_atom-1, -1):
+            ln = lines[i]
+            if re.search("[A-Z]{3}-"+terminus_resaname, ln):
+                lines[i] = re.sub("([A-Z]{3}-"+terminus_resaname+"\")", "C\\1", ln)
+                break
+
+for i in range(len(lines)):
+    ln = lines[i]
+    if re.search("atom\\[[0-9]+\\]\\s+\\{\\s+type\\s+=\\s+\"[A-Z]{3}-[A-Z0-9]+\";\\s+position\\(\\s*[0-9.-]+,\\s+[0-9.-]+,\\s+[0-9.-]+\\);\\}", ln):
+        m = re.search("[A-Z]{3}-[A-Z]+[0-9]", ln)
+        if m:
+            grp = m.group()
+            aa3let = grp[0:3]
+            if not grp in grpallow:
+                se = m.span()
+                lines[i] = ln[0:se[0]] + re.sub("[0-9]", "", grp) + ln[se[1]:]
+
+    for xl8 in translations.keys():
+        lines[i] = lines[i].replace(f"\"{xl8}\"", f"\"{translations[xl8]}\"")
+
+    # TODO: Change the sulfur atoms of cysteine cross links from sh to ss.
 
 with open(omdfname, "w") as f:
     for ln in lines:
@@ -156,7 +185,12 @@ with open(omdfname, "w") as f:
 
 omdwarmname = omdfname.replace(".model1.omd", ".model1.warm.omd")
 cmd = ["thermalizer", "-i", omdfname, "-o", omdwarmname, "-t", "310.2"]
+print(" ".join(cmd))
 subprocess.run(cmd)
+if not os.path.exists(omdwarmname):
+    print("Failed to thermalize.")
+    exit()
 
 cmd = ["openmd", omdwarmname]
+print(" ".join(cmd))
 subprocess.run(cmd)
