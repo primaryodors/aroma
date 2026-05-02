@@ -55,6 +55,35 @@ if not os.path.exists(origpdb):
           "and that it generated a PDB file in out/{fam}/{protid} ending in .model1.pdb")
     exit()
 
+# Get the atom numbers and residue numbers of all SG atoms.
+# Then scan CONECT records for any SG-SG bonds.
+# Save a list of disulfide-linked residue numbers.
+sgatoms = dict()
+disulfres = []
+with open(origpdb, "r") as f:
+    c = f.read().__str__()
+    c = c.replace("\x0a", "\\n")
+    lines = c.split("\\n")
+
+    for ln in lines:
+        if ln[0:4] == "ATOM":
+            # 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+            # ATOM   4141  HD1 HIS A 261      7.697  19.264   2.085   1.00001.00           H 
+            aname = ln[12:16].strip()
+            if aname == "SG":
+                atno = int(ln[5:11].strip())
+                resno = int(ln[22:26].strip())
+                sgatoms[atno] = resno
+        if ln[0:6] == "CONECT":
+            # 01234567890123456789
+            # CONECT 1518 2823
+            conect, atno1, atno2 = ln.split(' ', 2)
+            atno1 = int(atno1)
+            atno2 = int(atno2)
+            if atno1 in sgatoms.keys() and atno2 in sgatoms.keys():
+                disulfres.append(sgatoms[atno1])
+                disulfres.append(sgatoms[atno2])
+
 cmd = ["atom2omd", "-ipdb", origpdb]
 print(" ".join(cmd))
 subprocess.run(cmd)
@@ -94,7 +123,7 @@ with open("md/translations", "r") as f:
 
 xnew = dict()
 for xl8 in translations.keys():
-    if xl8[3] == '-':
+    if len(xl8) >= 4 and xl8[3] == '-':
         if not f"N{xl8}" in translations:
             xnew[f"N{xl8}"] = translations[xl8]
         if not f"C{xl8}" in translations:
@@ -163,21 +192,32 @@ for terminus_resaname in apply_terminus_prefixes:
                 lines[i] = re.sub("([A-Z]{3}-"+terminus_resaname+"\")", "C\\1", ln)
                 break
 
+resno = 0
 for i in range(len(lines)):
     ln = lines[i]
+
+    if re.search("atom\\[[0-9]+\\]\\s+\\{\\s+type\\s+=\\s+\"[A-Z]{3,4}-[A-Z0-9]+\";\\s+position\\(\\s*[0-9.-]+,\\s+[0-9.-]+,\\s+[0-9.-]+\\);\\}", ln):
+        m = re.search("[A-Z]{3,4}-[A-Z]+", ln)
+        if m:
+            grp = m.group()
+            aa3let, aname = grp.split('-', 1)
+            if aname == "N": resno += 1
+
+            # Set the type of sulfur atoms of cystine cross links to ss.
+            if resno in disulfres and aname == "SG":
+                ln = lines[i] = ln[0:se[0]] + "ss" + ln[se[1]-1:]
+
     if re.search("atom\\[[0-9]+\\]\\s+\\{\\s+type\\s+=\\s+\"[A-Z]{3}-[A-Z0-9]+\";\\s+position\\(\\s*[0-9.-]+,\\s+[0-9.-]+,\\s+[0-9.-]+\\);\\}", ln):
         m = re.search("[A-Z]{3}-[A-Z]+[0-9]", ln)
         if m:
             grp = m.group()
-            aa3let = grp[0:3]
             if not grp in grpallow:
                 se = m.span()
-                lines[i] = ln[0:se[0]] + re.sub("[0-9]", "", grp) + ln[se[1]:]
+                ln = lines[i] = ln[0:se[0]] + re.sub("[0-9]", "", grp) + ln[se[1]:]
 
-    for xl8 in translations.keys():
-        lines[i] = lines[i].replace(f"\"{xl8}\"", f"\"{translations[xl8]}\"")
-
-    # TODO: Change the sulfur atoms of cysteine cross links from sh to ss.
+    if "atom[" in ln:
+        for xl8 in translations.keys():
+            lines[i] = lines[i].replace(f"\"{xl8}\"", f"\"{translations[xl8]}\"")
 
 with open(omdfname, "w") as f:
     for ln in lines:
