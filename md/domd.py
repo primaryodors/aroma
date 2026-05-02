@@ -147,7 +147,6 @@ for i in range(len(lines)):
     elif first_atom:
         last_atom = i-1
 
-
     if "members(" in ln:
         found = False
         for atno in badatno:
@@ -176,6 +175,9 @@ for i in range(len(lines)):
 
     if "Hmat:" in ln:
         ln = "        Hmat: {{ 300, 0, 0 }, { 0, 300, 0 }, { 0, 0, 300 }}"
+
+    #if re.match("\\s+[0-9]+\\s+pv\\s+[0-9e.+-]+\\s+[0-9e.+-]+\\s+[0-9e.+-]+\\s+[0-9e.+-]+\\s+[0-9e.+-]+\\s+[0-9e.+-]+", ln):
+     #   shit
 
 apply_terminus_prefixes = ["N"] # , "CA", "C", "O", "OXT", "HN", "HA"]
 for terminus_resaname in apply_terminus_prefixes:
