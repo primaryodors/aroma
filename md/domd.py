@@ -56,6 +56,7 @@ if not os.path.exists(origpdb):
     exit()
 
 cmd = ["atom2omd", "-ipdb", origpdb]
+print(" ".join(cmd))
 subprocess.run(cmd)
 
 omdfname = f"out/{fam}/{protid}/{protid}~{lignameu}.{mode}.model1.omd"
@@ -78,6 +79,13 @@ grpallow = ["ASN-OD1", "ASN-ND2", "ASN-HD1", "ASN-HD2",
             "TRP-CZ2", "TRP-HZ2", "TRP-CZ3", "TRP-HZ3", "TRP-CH2", "TRP-HH2", 
             ]
 
+ensemble = "ensemble = NVT;"
+minimizer = "minimizer {\n" \
+            + "    useMinimizer = true;\n" \
+            + "    method = \"SD\";\n" \
+            + "    maxIterations = 5000;\n" \
+            + "}\n"
+
 badatno = []
 for i in range(len(lines)):
     ln = lines[i]
@@ -98,10 +106,11 @@ for i in range(len(lines)):
             if not grp in grpallow:
                 se = m.span()
                 lines[i] = ln[0:se[0]] + re.sub("[0-9]", "", grp) + ln[se[1]:]
-    elif False: # "atom[" in ln:
+    elif "atom[" in ln:
         ln = ln.replace("C3", "CT")
         ln = ln.replace("Cac", "CA")
         ln = ln.replace("O.co2", "O2")
+        ln = ln.replace("H", "H1")
         lines[i] = ln
     elif first_atom:
         last_atom = i-1
@@ -119,14 +128,14 @@ for i in range(len(lines)):
 
     if "</MetaData>" in ln:
         lines[i] = "\nforceField = \"Amber\";\n" \
-            + "ensemble = NVT;\n" \
+            + minimizer \
             + "cutoffMethod = \"shifted_force\";\n" \
             + "electrostaticScreeningMethod = \"damped\";\n" \
             + "cutoffRadius = 10;\n" \
             + "dampingAlpha = 0.18;\n" \
             + "targetTemp = 310.2;\n" \
             + "tauThermostat = 1000;\n" \
-            + "dt = 1.0;\n" \
+            + "dt = 0.25;\n" \
             + "runTime = 1e4;\n" \
             + "tempSet = \"false\";\n" \
             + "sampleTime = 100;\n" \
@@ -156,7 +165,20 @@ with open(omdfname, "w") as f:
 
 omdwarmname = omdfname.replace(".model1.omd", ".model1.warm.omd")
 cmd = ["thermalizer", "-i", omdfname, "-o", omdwarmname, "-t", "310.2"]
+print(" ".join(cmd))
 subprocess.run(cmd)
 
 cmd = ["openmd", omdwarmname]
+print(" ".join(cmd))
+subprocess.run(cmd)
+
+with open(omdwarmname, "r") as f:
+    c = f.read().__str__()
+c = c.replace(minimizer, ensemble)
+with open(omdwarmname, "w") as f:
+    f.write(c)
+
+omdwarmname = omdwarmname[0:-4] + ".eor"
+cmd = ["openmd", omdwarmname]
+print(" ".join(cmd))
 subprocess.run(cmd)
