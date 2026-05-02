@@ -83,7 +83,7 @@ ensemble = "ensemble = NVT;"
 minimizer = "minimizer {\n" \
             + "    useMinimizer = true;\n" \
             + "    method = \"SD\";\n" \
-            + "    maxIterations = 5000;\n" \
+            + "    maxIterations = 1000;\n" \
             + "}\n"
 
 badatno = []
@@ -136,7 +136,7 @@ for i in range(len(lines)):
             + "targetTemp = 310.2;\n" \
             + "tauThermostat = 1000;\n" \
             + "dt = 0.25;\n" \
-            + "runTime = 1e4;\n" \
+            + "runTime = 1e5;\n" \
             + "tempSet = \"false\";\n" \
             + "sampleTime = 100;\n" \
             + "statusTime = 10;\n" \
@@ -164,6 +164,7 @@ with open(omdfname, "w") as f:
         f.write(f"{ln}\n")
 
 omdwarmname = omdfname.replace(".model1.omd", ".model1.warm.omd")
+fttl = omdwarmname[0:-4]
 cmd = ["thermalizer", "-i", omdfname, "-o", omdwarmname, "-t", "310.2"]
 print(" ".join(cmd))
 subprocess.run(cmd)
@@ -171,6 +172,10 @@ subprocess.run(cmd)
 cmd = ["openmd", omdwarmname]
 print(" ".join(cmd))
 subprocess.run(cmd)
+omdwarmname = fttl + ".eor"
+if not os.path.exists(omdwarmname):
+    print("Failed to create energy-minimized eor file.")
+    exit()
 
 with open(omdwarmname, "r") as f:
     c = f.read().__str__()
@@ -178,7 +183,20 @@ c = c.replace(minimizer, ensemble)
 with open(omdwarmname, "w") as f:
     f.write(c)
 
-omdwarmname = omdwarmname[0:-4] + ".eor"
 cmd = ["openmd", omdwarmname]
 print(" ".join(cmd))
 subprocess.run(cmd)
+if not os.path.exists(omdwarmname):
+    print("Failed to run molecular dynamics simulation.")
+    exit()
+
+cmd = [ "Dump2XYZ", "-i", f"{fttl}.dump", "-m", "-b" ]          # take a warm dump and convert it to xyz
+print(" ".join(cmd))
+subprocess.run(cmd)
+xyzfname = fttl + ".xyz"
+if not os.path.exists(xyzfname):
+    print("Failed to run molecular dynamics simulation.")
+    exit()
+else:
+    print(f"Created {xyzfname}.")
+
