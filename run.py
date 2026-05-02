@@ -224,10 +224,11 @@ for rcpid in data.protutils.prots.keys():
 
                     newcfg.append(ln)
 
-            if fam[0:2] == "OR":
+            if 0: # fam[0:2] == "OR":
                 if int(fam[2:]) < 50: softness = "1.0"
                 else: softness = "0.1"
                 newcfg.append("SOFT " + softness + " 2 3 4 5 6 7")
+
             newcfg.append("NODEL 45.52 5.39")
             newcfg.append("NODEL 7.49 7.55")
             # newcfg.append("OUTBBP")
