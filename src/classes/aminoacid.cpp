@@ -2655,8 +2655,9 @@ void AminoAcid::hydrogenate(bool steric_only)
     {
         Atom* C = get_atom("C");
         if (!oxt->get_bond_between(C)) oxt->bond_to(C, 1);
-    }    
-    
+        if (!oxt->get_charge()) oxt->increment_charge(-1);
+    }
+
     int i, j, k, l, n;
 
     #if hydrogenate_add_missing_heavy_atoms
