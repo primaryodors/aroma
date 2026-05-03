@@ -591,7 +591,7 @@ void Protein::save_pdb(FILE* os, Molecule* lig)
             for (j=0; j<residues[i]->nconects; j++)
             {
                 Bond* b = residues[i]->conecta1[j]->get_bond_between(residues[i]->conecta2[j]);
-                if (b) connections.push_back(b);
+                if (b) add_connection_if_not_exists(b);
             }
         }
     }
@@ -1074,7 +1074,7 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
                 {
                     pdba[a1]->bond_to(pdba[a2], 1);
                     Bond* b = pdba[a1]->get_bond_between(pdba[a2]);
-                    if (b) connections.push_back(b);
+                    if (b) add_connection_if_not_exists(b);
                 }
             }
 
@@ -3820,7 +3820,7 @@ bool Protein::disulfide_bond(int resno1, int resno2)
                                 res2->delete_atom(H2);
                                 if (S1->bond_to(S2, 1))
                                 {
-                                    connections.push_back(S1->get_bond_between(S2));
+                                    add_connection_if_not_exists(S1->get_bond_between(S2));
                                     result = true;
                                 }
                                 goto _next_S1;
@@ -3835,6 +3835,33 @@ bool Protein::disulfide_bond(int resno1, int resno2)
     }
 
     return result;
+}
+
+bool Protein::add_connection_if_not_exists(Bond *b)
+{
+    int i, n = connections.size();
+    bool found = false, added = false;
+    for (i=0; i<n; i++)
+    {
+        if (connections[i]->atom1 == b->atom1 && connections[i]->atom2 == b->atom2)
+        {
+            found = true;
+            break;
+        }
+        if (connections[i]->atom1 == b->atom2 && connections[i]->atom2 == b->atom1)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        connections.push_back(b);
+        added = true;
+    }
+
+    return added;
 }
 
 void Protein::upright()

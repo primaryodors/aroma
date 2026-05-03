@@ -850,7 +850,7 @@ int Molecule::count_atoms_by_element(const char *esym)
     for (i=0; atoms[i]; i++)
         if (atoms[i]->Z == findZ)
             retval++;
-    
+
     return retval;
 }
 
@@ -887,6 +887,10 @@ void Molecule::hydrogenate(bool steric_only)
         }
         if (!db && steric_only) continue;
         if (atoms[i]->aaletter == 'W' && !strcmp(atoms[i]->name, "NE1")) bcardsum--;
+        if (!strcmp(atoms[i]->name, "OXT"))
+        {
+            j = 1;
+        }
 
         if (bcardsum && atoms[i]->Z == 1) continue;
         bcardsum = ceil(bcardsum);
