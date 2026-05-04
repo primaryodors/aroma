@@ -178,7 +178,7 @@ if (@$_REQUEST['view'] == "dock")
                          + pow($xyz[1] - $abc[1], 2)
                          + pow($xyz[2] - $abc[2], 2)
                          );
-                if ($r < 2.3)
+                if ($r < 1.9)
                     $ligbonds[$aname][$bname] = true;
                 if ($r > $farthestr)
                 {
@@ -512,7 +512,7 @@ function svg_from_smiles(smiles, w, h)
 
                             switch ($aa)
                             {
-                                case "A": case "I": case "L": case "V":
+                                case "A": case "I": case "L": case "V": case "P":
                                     $couleur = "#ccc";
                                     break;
                                 case "M":
