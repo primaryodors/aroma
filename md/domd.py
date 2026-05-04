@@ -79,7 +79,11 @@ grpallow = ["ASN-OD1", "ASN-ND2", "ASN-HD1", "ASN-HD2",
             "TRP-CZ2", "TRP-HZ2", "TRP-CZ3", "TRP-HZ3", "TRP-CH2", "TRP-HH2", 
             ]
 
-ensemble = "ensemble = NVT;"
+# ensemble = "ensemble = NVT;"
+ensemble = "ensemble = NPAT;\n" \
+            + "targetPressure = 200.0;\n" \
+            + "tauBarostat = 5000;\n" \
+            + "privilegedAxis = \"y\";\n"
 minimizer = "minimizer {\n" \
             + "    useMinimizer = true;\n" \
             + "    method = \"SD\";\n" \
@@ -136,14 +140,14 @@ for i in range(len(lines)):
             + "targetTemp = 310.2;\n" \
             + "tauThermostat = 1000;\n" \
             + "dt = 0.25;\n" \
-            + "runTime = 1e5;\n" \
+            + "runTime = 1e3;\n" \
             + "tempSet = \"false\";\n" \
             + "sampleTime = 100;\n" \
             + "statusTime = 10;\n" \
             + ln
 
     if "Hmat:" in ln:
-        ln = "        Hmat: {{ 300, 0, 0 }, { 0, 300, 0 }, { 0, 0, 300 }}"
+        ln = "        Hmat: {{ 300, 0, 0 }, { 0, 35, 0 }, { 0, 0, 300 }}"
 
 apply_terminus_prefixes = ["N", "CA", "C", "O", "OXT", "HN", "HA"]
 for terminus_resaname in apply_terminus_prefixes:
