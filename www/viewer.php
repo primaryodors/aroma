@@ -653,9 +653,12 @@ function svg_from_smiles(smiles, w, h)
                     {
                         if (isset($rescxy[$bw]))
                         {
+                            $resno = resno_from_bw($protid, $bw);
                             list($cx,$cy) = $rescxy[$bw];
-                            $tx = $cx - intval(floatval(strlen($bw)+1) * 3.2);
-                            $ty = $cy + 3;
+                            $tx  = $cx - intval(floatval(strlen($bw)) * 3.333);
+                            $txr = $cx - intval(floatval(strlen($resno)+1) * 3.333);
+                            $ty  = $cy - 2;
+                            $tyr = $cy + 9;
 
                             switch ($aa)
                             {
@@ -694,7 +697,8 @@ function svg_from_smiles(smiles, w, h)
                             }
 
                             echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"$resradius\\\" stroke=\\\"$couleur\\\" stroke-width=\\\"1\\\" fill-opacity=\\\"0\\\"></circle>\\n\";\n";
-                            echo "svgdat += \"<text x=\\\"$tx\\\" y=\\\"$ty\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$aa$bw</text>\\n\";\n";
+                            echo "svgdat += \"<text x=\\\"$tx\\\" y=\\\"$ty\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$bw</text>\\n\";\n";
+                            echo "svgdat += \"<text x=\\\"$txr\\\" y=\\\"$tyr\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$aa$resno</text>\\n\";\n";
                         }
                     }
                     ?>
