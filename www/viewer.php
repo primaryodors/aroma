@@ -524,8 +524,11 @@ function svg_from_smiles(smiles, w, h)
                                 case "C":
                                     $couleur = "#fc0";
                                     break;
-                                case "F": case "W": case "Y":
-                                    $couleur = "#c7c";
+                                case "F": case "W":
+                                    $couleur = "#c9c";
+                                    break;
+                                case "Y":
+                                    $couleur = "#f6f";
                                     break;
                                 case "S": case "T": case "N": case "Q":
                                     $couleur = "#0ff";
