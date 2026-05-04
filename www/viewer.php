@@ -178,7 +178,7 @@ if (@$_REQUEST['view'] == "dock")
                          + pow($xyz[1] - $abc[1], 2)
                          + pow($xyz[2] - $abc[2], 2)
                          );
-                if ($r < 1.9)
+                if ($r < 2.2)
                     $ligbonds[$aname][$bname] = true;
                 if ($r > $farthestr)
                 {
@@ -394,6 +394,29 @@ function svg_from_smiles(smiles, w, h)
                     $ligaxy = [];
                     foreach ($ligapos as $aname => $xyz)
                     {
+                        // 3D rotation
+                        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+                        list($x, $y, $z) = $xyz;
+
+                        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+                        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+                        $ligaxy[$aname] = [$cx, $cy];
+                    }
+                    foreach ($ligbonds as $aname1 => $b2)
+                    {
+                        if (!isset($ligaxy[$aname1])) continue;
+                        list($x1,$y1) = $ligaxy[$aname1];
+                        foreach ($b2 as $aname2 => $v)
+                        {
+                            if ($v && isset($ligaxy[$aname2]))
+                            {
+                                list($x2,$y2) = $ligaxy[$aname2];
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#666\\\" />\\n\";\n";
+                            }
+                        }
+                    }
+                    foreach ($ligapos as $aname => $xyz)
+                    {
                         $elem = ucwords(strtolower(preg_replace("/[0-9]/", "", $aname)));
                         if ($elem == "H") continue;
                         switch ($elem)
@@ -417,28 +440,8 @@ function svg_from_smiles(smiles, w, h)
                                 $couleur = "#f6f";
                                 break;
                         }
-
-                        // 3D rotation
-                        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
-                        list($x, $y, $z) = $xyz;
-
-                        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
-                        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
-                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"3\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
-                        $ligaxy[$aname] = [$cx, $cy];
-                    }
-                    foreach ($ligbonds as $aname1 => $b2)
-                    {
-                        if (!isset($ligaxy[$aname1])) continue;
-                        list($x1,$y1) = $ligaxy[$aname1];
-                        foreach ($b2 as $aname2 => $v)
-                        {
-                            if ($v && isset($ligaxy[$aname2]))
-                            {
-                                list($x2,$y2) = $ligaxy[$aname2];
-                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#999\\\" />\\n\";\n";
-                            }
-                        }
+                        list($cx,$cy) = $ligaxy[$aname];
+                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"4\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
                     }
 
                     $rescxy = [];
@@ -537,7 +540,7 @@ function svg_from_smiles(smiles, w, h)
                                     $couleur = "#f66";
                                     break;
                                 case "K": case "R":
-                                    $couleur = "#69f";
+                                    $couleur = "#06f";
                                     break;
                                 case "H":
                                     $couleur = "#76f";
