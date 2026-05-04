@@ -413,7 +413,7 @@ function svg_from_smiles(smiles, w, h)
         $frist = true;
         $lataa = [];
         $o = find_odorant($odor);
-        foreach ($sim as $id => list($lb, $simpcnt))
+        foreach ($sim as $id => list($lb, $sim_percent))
         {
             if ($fam != family_from_protid($id)) continue;
             if ($frist)
@@ -447,8 +447,8 @@ function svg_from_smiles(smiles, w, h)
             echo "<b><a href=\"receptor.php?r=$id\">$id</a></b>";
             echo "</td>";
             echo "<td style=\"text-align: left;\">";
-            $simpcnt = intval($simpcnt*100);
-            echo "$simpcnt%";
+            $sim_percent = intval($sim_percent*100);
+            echo "$sim_percent%";
             echo "</td>";
             echo "<td style=\"text-align: left;\">";
             if (isset($prots[$id]['expression'])) echo " {$prots[$id]['expression']}%";
@@ -571,6 +571,7 @@ function svg_from_smiles(smiles, w, h)
                         {
                             if (isset($ligaxy[$aname]) && isset($rescxy[$bw]))
                             {
+                                $dasharray = "stroke-dasharray=\\\"2\\\"";
                                 switch ($intera_type)
                                 {
                                     case "hbond": case "ionic":
@@ -579,6 +580,15 @@ function svg_from_smiles(smiles, w, h)
 
                                     case "polarpi": case "mcoord":
                                     $couleur = "#696";
+                                    break;
+
+                                    case "pi":
+                                    $couleur = "#c9c";
+                                    break;
+
+                                    case "covalent":
+                                    $couleur = "#ccc";
+                                    $dasharray = "";
                                     break;
 
                                     default:
@@ -592,7 +602,7 @@ function svg_from_smiles(smiles, w, h)
                                 $x2 = $x1 + $coeff*($x2-$x1);
                                 $y2 = $y1 + $coeff*($y2-$y1);
 
-                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"$couleur\\\" stroke-dasharray=\\\"2\\\" />\\n\";\n";
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"$couleur\\\" $dasharray />\\n\";\n";
                             }
                         }
                     }
