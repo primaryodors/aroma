@@ -596,7 +596,7 @@ function svg_from_smiles(smiles, w, h)
                         if (isset($rescxy[$bw]))
                         {
                             list($cx,$cy) = $rescxy[$bw];
-                            $tx = $cx - 16;
+                            $tx = $cx - intval(floatval(strlen($bw)+1) * 3.2);
                             $ty = $cy + 3;
 
                             switch ($aa)
