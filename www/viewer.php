@@ -519,6 +519,21 @@ function svg_from_smiles(smiles, w, h)
                         }
                     }
 
+                    // BRING RESIDUES CLOSER TO INTERACTING ATOMS
+                    foreach ($rescxy as $bw => $cxy)
+                    {
+                        if (!isset($bsrintera[$bw])) continue;
+                        if (!is_array($bsrintera[$bw])) continue;
+                        foreach (array_keys($bsrintera[$bw]) as $aname)
+                        {
+                            if (isset($ligaxy[$aname]))
+                            {
+                                $rescxy[$bw][0] += ($ligaxy[$aname][0] - $cxy[0]) / 3;
+                                $rescxy[$bw][1] += ($ligaxy[$aname][1] - $cxy[1]) / 3;
+                            }
+                        }
+                    }
+
                     // MOVE RESIDUES TO TIDY LOCATIONS
                     for ($respositer=0; $respositer<503; $respositer++)
                     {
@@ -542,8 +557,9 @@ function svg_from_smiles(smiles, w, h)
                             if ($nessamo)
                             {
                                 $r = get_2d_distance($nessamxy, $cxy);
-                                $adjustment = [ $nessamxy[0] - $cxy[0], $nessamxy[1] - $cxy[1] ];
-                                $d = $nessamd - 90;
+                                $r1 = get_2d_distance([$wid/2, $hei/2], $cxy);
+                                $adjustment = ($r1 > $r) ? [ $wid/2 - $cxy[0], $hei/2 - $cxy[1] ] : [ $nessamxy[0] - $cxy[0], $nessamxy[1] - $cxy[1] ];
+                                $d = ($r1 > $r) ? ($nessamd - 53) : ($r1 - 123);
                                 $adjustment[0] *= $d / $r / 3;
                                 $adjustment[1] *= $d / $r / 3;
 
@@ -567,7 +583,7 @@ function svg_from_smiles(smiles, w, h)
                     // INTERACTION LINES
                     foreach ($bsrintera as $bw => $lresinters)
                     {
-                        foreach ($lresinters as $aname => list($aname, $intera_type))
+                        foreach ($lresinters as $aname => list($energy, $intera_type))
                         {
                             if (isset($ligaxy[$aname]) && isset($rescxy[$bw]))
                             {
@@ -679,7 +695,7 @@ function svg_from_smiles(smiles, w, h)
                                     $couleur = "#cc6";
                                     break;
                                 case "G":
-                                    $couleur = "#666";
+                                    $couleur = "#999";
                                     break;
                                 case "C":
                                     $couleur = "#fc0";
