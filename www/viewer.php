@@ -95,6 +95,10 @@ if (@$_REQUEST['view'] == "dock")
     $odor = $_REQUEST["odor"];
     $mode = $_REQUEST["mode"];      // active or inactive.
     $n = @$_REQUEST["n"] ?: 1;
+
+    // SVG section parameters and variables
+    $wid = 602; $hei = 420; $scale = floatval($wid) / 20;
+    $resradius = 25;
     $capos = [];
     $ligapos = [];
     $ligcen = [0,0,0];
@@ -104,7 +108,7 @@ if (@$_REQUEST['view'] == "dock")
     $ligrot1 = [0,0,0,0];
     $ligrot2 = [0,0,0,0];
     $ligrot3 = [0,0,0,0];
-    $wid = 602; $hei = 420; $scale = floatval($wid) / 20;           // for SVG section
+    $bsrintera = [];
 
     chdir(__DIR__);
     $dock = "../out/$fam/$protid/$protid~$odor.$mode.dock";
@@ -142,6 +146,20 @@ if (@$_REQUEST['view'] == "dock")
                 $y = floatval(substr($ln, 38, 8));
                 $z = floatval(substr($ln, 46, 8));
                 $ligapos[$aname] = [$x,$y,$z];
+            }
+            else if ($poseno == 1 && preg_match("/^[A-Z][a-z]{2}[0-9]+:[A-Z0-9]+~[^:]+:[A-Za-z0-9]+:\\s+[0-9.+-]+/", $ln))
+            {
+                list($resno, $idgaf, $aname, $binding) = explode(':', $ln);
+                if (false===strpos($binding, ' ')) $binding .= " none";
+                list($energy, $intera_type) = explode(' ', trim($binding));
+                $resno = intval(preg_replace("/[^0-9]/", "", $resno));
+                $energy = floatval($energy);
+
+                if ($energy < -0.5)
+                {
+                    $bw = bw_from_resno($protid, $resno);
+                    $bsrintera[$bw][$aname] = [ $energy, $intera_type ];
+                }
             }
             if (substr($ln, 0, 10) != "REMARK 800") continue;
             $next = @$lines[$i+1];
@@ -480,54 +498,8 @@ function svg_from_smiles(smiles, w, h)
                     var svgdat = "<svg id=\"function random() { [native code] }\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"<?php echo $wid; ?>px\" height=\"<?php echo $hei; ?>px\" viewBox=\"0 0 <?php echo $wid; ?> <?php echo $hei; ?>\">"; // svg_from_smiles("<?php echo $o["smiles"]; ?>", <?php echo $wid; ?>, <?php echo $hei; ?>);
                     svgdat = svgdat.replace("</svg>", "");
                     <?php
-                    foreach ($ligbonds as $aname1 => $b2)
-                    {
-                        if (!isset($ligaxy[$aname1])) continue;
-                        list($x1,$y1) = $ligaxy[$aname1];
-                        foreach ($b2 as $aname2 => $v)
-                        {
-                            if ($v && isset($ligaxy[$aname2]))
-                            {
-                                list($x2,$y2) = $ligaxy[$aname2];
-                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#666\\\" />\\n\";\n";
-                            }
-                        }
-                    }
-                    foreach ($ligapos as $aname => $xyz)
-                    {
-                        $elem = ucwords(strtolower(preg_replace("/[0-9]/", "", $aname)));
-                        if ($elem == "H") continue;
-                        switch ($elem)
-                        {
-                            case "C":
-                                $couleur = "#ccc";
-                                break;
-                            case "N":
-                                $couleur = "#06f";
-                                break;
-                            case "O":
-                                $couleur = "#f00";
-                                break;
-                            case "S":
-                                $couleur = "#fc0";
-                                break;
-                            case "Cl":
-                                $couleur = "#0c0";
-                                break;
-                            case "Br":
-                                $couleur = "#c60";
-                                break;
-                            case "I":
-                                $couleur = "#609";
-                                break;
-                            default:
-                                $couleur = "#f6f";
-                                break;
-                        }
-                        list($cx,$cy) = $ligaxy[$aname];
-                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"4\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
-                    }
 
+                    // RESIDUE RAW X,Y COORDINATES FOR SVG
                     $rescxy = [];
                     foreach ($lb as $bw => $aa)
                     {
@@ -547,6 +519,7 @@ function svg_from_smiles(smiles, w, h)
                         }
                     }
 
+                    // MOVE RESIDUES TO TIDY LOCATIONS
                     for ($respositer=0; $respositer<503; $respositer++)
                     {
                         foreach ($rescxy as $bw => $cxy)
@@ -591,6 +564,91 @@ function svg_from_smiles(smiles, w, h)
                         }
                     }
 
+                    // INTERACTION LINES
+                    foreach ($bsrintera as $bw => $lresinters)
+                    {
+                        foreach ($lresinters as $aname => list($aname, $intera_type))
+                        {
+                            if (isset($ligaxy[$aname]) && isset($rescxy[$bw]))
+                            {
+                                switch ($intera_type)
+                                {
+                                    case "hbond": case "ionic":
+                                    $couleur = "#393";
+                                    break;
+
+                                    case "polarpi": case "mcoord":
+                                    $couleur = "#696";
+                                    break;
+
+                                    default:
+                                    $couleur = "#666";
+                                }
+
+                                list($x1, $y1) = $ligaxy[$aname];
+                                list($x2, $y2) = $rescxy[$bw];
+                                $r = get_2d_distance($ligaxy[$aname], $rescxy[$bw]);
+                                $coeff = ($r-$resradius)/$r;
+                                $x2 = $x1 + $coeff*($x2-$x1);
+                                $y2 = $y1 + $coeff*($y2-$y1);
+
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"$couleur\\\" stroke-dasharray=\\\"2\\\" />\\n\";\n";
+                            }
+                        }
+                    }
+
+                    // LIGAND COVALENT BONDS
+                    foreach ($ligbonds as $aname1 => $b2)
+                    {
+                        if (!isset($ligaxy[$aname1])) continue;
+                        list($x1,$y1) = $ligaxy[$aname1];
+                        foreach ($b2 as $aname2 => $v)
+                        {
+                            if ($v && isset($ligaxy[$aname2]))
+                            {
+                                list($x2,$y2) = $ligaxy[$aname2];
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#ccc\\\" />\\n\";\n";
+                            }
+                        }
+                    }
+
+                    // LIGAND ATOMS
+                    foreach ($ligapos as $aname => $xyz)
+                    {
+                        $elem = ucwords(strtolower(preg_replace("/[0-9]/", "", $aname)));
+                        if ($elem == "H") continue;
+                        switch ($elem)
+                        {
+                            case "C":
+                                $couleur = "#ccc";
+                                break;
+                            case "N":
+                                $couleur = "#06f";
+                                break;
+                            case "O":
+                                $couleur = "#f00";
+                                break;
+                            case "S":
+                                $couleur = "#fc0";
+                                break;
+                            case "Cl":
+                                $couleur = "#0c0";
+                                break;
+                            case "Br":
+                                $couleur = "#c60";
+                                break;
+                            case "I":
+                                $couleur = "#609";
+                                break;
+                            default:
+                                $couleur = "#f6f";
+                                break;
+                        }
+                        list($cx,$cy) = $ligaxy[$aname];
+                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"4\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
+                    }
+
+                    // RESIDUE CIRCLES
                     foreach ($lb as $bw => $aa)
                     {
                         if (isset($rescxy[$bw]))
@@ -635,7 +693,7 @@ function svg_from_smiles(smiles, w, h)
                                     $couleur = "#f0f";
                             }
 
-                            echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"25\\\" stroke=\\\"$couleur\\\" stroke-width=\\\"1\\\" fill-opacity=\\\"0\\\"></circle>\\n\";\n";
+                            echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"$resradius\\\" stroke=\\\"$couleur\\\" stroke-width=\\\"1\\\" fill-opacity=\\\"0\\\"></circle>\\n\";\n";
                             echo "svgdat += \"<text x=\\\"$tx\\\" y=\\\"$ty\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$aa$bw</text>\\n\";\n";
                         }
                     }
