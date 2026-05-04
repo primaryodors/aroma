@@ -103,6 +103,8 @@ if (@$_REQUEST['view'] == "dock")
     $farthestr = 0;
     $ligrot1 = [0,0,0,0];
     $ligrot2 = [0,0,0,0];
+    $ligrot3 = [0,0,0,0];
+    $wid = 602; $hei = 420; $scale = floatval($wid) / 20;           // for SVG section
 
     chdir(__DIR__);
     $dock = "../out/$fam/$protid/$protid~$odor.$mode.dock";
@@ -193,6 +195,94 @@ if (@$_REQUEST['view'] == "dock")
     }
 
     if ($farthestr) $ligrot1 = align_points_3d($ligapos[$farthest2], [10000,$ligcen[1],$ligcen[2]], $ligcen);
+
+    $ligaxy = [];
+    $fiftyseventh = pi()/180;
+    $bestspread = 0.0;
+    $besttheta = 0.0;
+    for ($theta=0.0; $theta<pi()*2; $theta+=5.0*$fiftyseventh)
+    {
+        $ligrot2 = [ 10000.0, 0.0, 0.0, $theta ];
+        foreach ($ligapos as $aname => $xyz)
+        {
+            // 3D rotation
+            $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+            $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+            list($x, $y, $z) = $xyz;
+
+            $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+            $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+            $ligaxy[$aname] = [$cx, $cy];
+        }
+
+        $lspread = 0;
+        foreach ($ligaxy as $aname => $cxy)
+        {
+            foreach ($ligaxy as $bname => $dxy)
+            {
+                if ($bname == $aname) continue;
+                $r = get_2d_distance($cxy, $dxy);
+                $lspread += $r;
+            }
+        }
+
+        if ($lspread > $bestspread)
+        {
+            $bestspread = $lspread;
+            $besttheta = $theta;
+        }
+    }
+
+    $ligrot2 = [ 10000.0, 0.0, 0.0, $besttheta ];
+    foreach ($ligapos as $aname => $xyz)
+    {
+        // 3D rotation
+        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+        $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+        list($x, $y, $z) = $xyz;
+
+        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+        $ligaxy[$aname] = [$cx, $cy];
+    }
+
+    $besttheta = 0.0;
+    $bestspread = 1e9;
+    for ($theta=0.0; $theta<pi()*2; $theta+=5.0*$fiftyseventh)
+    {
+        $ligrot3 = [0, 0, 10000, $theta];
+        $ymin = 1e9;
+        $ymax = -1e9;
+        foreach ($ligaxy as $aname => $cxy)
+        {
+            // 2D rotation trick
+            $cxy[2] = 0;
+            $cxy = rotate3D($cxy, $ligcen, $ligrot3, $ligrot3[3]);
+            list($cx, $cy, $cz) = $cxy;
+
+            if ($cy < $ymin) $ymin = $cy;
+            if ($cy > $ymax) $ymax = $cy;
+        }
+
+        $yspread = $ymax - $ymin;
+        if ($yspread < $bestspread)
+        {
+            $bestspread = $yspread;
+            $besttheta = $theta;
+        }
+    }
+    $ligrot3 = [0, 0, 10000, $besttheta];
+    foreach ($ligapos as $aname => $xyz)
+    {
+        // 3D rotation
+        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+        $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+        list($x, $y, $z) = $xyz;
+
+        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+        $ligaxy[$aname] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
+    }
 
     // $c = str_replace("	var lligbs = get_ligbs_from_orid();\n", $ligbs, $c);
     $c = str_replace("var literal_pdb = false;\n", "var literal_pdb = `$txt`;\n", $c);
@@ -385,23 +475,11 @@ function svg_from_smiles(smiles, w, h)
                 </td>
                 </tr>
                 <script>
-                <?php $wid = 602; $hei = 420; $scale = floatval($wid) / 20; ?>
                 window.setTimeout(function()
                 {
                     var svgdat = "<svg id=\"function random() { [native code] }\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"<?php echo $wid; ?>px\" height=\"<?php echo $hei; ?>px\" viewBox=\"0 0 <?php echo $wid; ?> <?php echo $hei; ?>\">"; // svg_from_smiles("<?php echo $o["smiles"]; ?>", <?php echo $wid; ?>, <?php echo $hei; ?>);
                     svgdat = svgdat.replace("</svg>", "");
                     <?php
-                    $ligaxy = [];
-                    foreach ($ligapos as $aname => $xyz)
-                    {
-                        // 3D rotation
-                        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
-                        list($x, $y, $z) = $xyz;
-
-                        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
-                        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
-                        $ligaxy[$aname] = [$cx, $cy];
-                    }
                     foreach ($ligbonds as $aname1 => $b2)
                     {
                         if (!isset($ligaxy[$aname1])) continue;
@@ -460,10 +538,12 @@ function svg_from_smiles(smiles, w, h)
                         if (@$caloc = $capos[$resno])
                         {
                             // 3D rotation
-                            list($x, $y, $z) = rotate3D($caloc, $ligcen, $ligrot1, $ligrot1[3]);
+                            $lxyz = rotate3D($caloc, $ligcen, $ligrot1, $ligrot1[3]);
+                            list($x, $y, $z) = rotate3D($lxyz, $ligcen, $ligrot2, $ligrot2[3]);
+
                             $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
                             $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
-                            $rescxy[$bw] = [$cx,$cy];
+                            $rescxy[$bw] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
                         }
                     }
 
