@@ -4906,7 +4906,14 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         Point aloc = latoms[i]->loc;
         for (l=0; ligands[l]; l++)
         {
-            if (glued_to && ligands[l] == glued_to) return glued_energy;
+            if (glued_to && ligands[l] == glued_to)
+            {
+                interall_a1[ninterall] = glued_atom_mine;
+                interall_a2[ninterall] = glued_atom_other;
+                interall_t[ninterall] = covalent;
+                interall[ninterall++] = glued_energy.summed();
+                return glued_energy;
+            }
             if (ligands[l]->glued_to && ligands[l]->glued_to == this) return ligands[l]->glued_energy;
             bool skip = false;
             if (ligands[l]->nmonomers)

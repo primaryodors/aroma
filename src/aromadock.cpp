@@ -2320,7 +2320,10 @@ int main(int argc, char** argv)
         std::vector<std::string> todolist;
         while (fgets(buffer, 65530, fp))
         {
-            todolist.push_back((std::string)buffer);
+            const char* c = buffer;
+            while (*c > 0 && *c <= 32) c++;
+            if (c[0] && c[0] != '#')
+                todolist.push_back((std::string)c);
         }
         fclose(fp);
 

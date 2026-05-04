@@ -86,6 +86,7 @@ dockdata;
 
 if (@$_REQUEST['view'] == "dock")
 {
+    require("../data/3dtools.php");
     require("../data/protutils.php");
     require("../data/odorutils.php");
     $protid = $_REQUEST["prot"];
@@ -94,6 +95,20 @@ if (@$_REQUEST['view'] == "dock")
     $odor = $_REQUEST["odor"];
     $mode = $_REQUEST["mode"];      // active or inactive.
     $n = @$_REQUEST["n"] ?: 1;
+
+    // SVG section parameters and variables
+    $wid = 602; $hei = 420; $scale = floatval($wid) / 20;
+    $resradius = 25;
+    $capos = [];
+    $ligapos = [];
+    $ligcen = [0,0,0];
+    $ligbonds = [];
+    $farthest1 = $farthest2 = false;
+    $farthestr = 0;
+    $ligrot1 = [0,0,0,0];
+    $ligrot2 = [0,0,0,0];
+    $ligrot3 = [0,0,0,0];
+    $bsrintera = [];
 
     chdir(__DIR__);
     $dock = "../out/$fam/$protid/$protid~$odor.$mode.dock";
@@ -105,8 +120,47 @@ if (@$_REQUEST['view'] == "dock")
     if (file_exists($cavfn))
     {
         $lines = explode("\n", $txt);
+        $poseno = 0;
         foreach ($lines as $i => $ln)
         {
+            if (substr($ln, 0, 6) == "Pose: ")
+            {
+                $poseno = intval(substr($ln, 6));
+            }
+            else if ($poseno == 1 && substr($ln, 0, 4) == "ATOM")
+            {
+                $aname = trim(substr($ln, 12, 4));
+                if ($aname == "CA")
+                {
+                    $resno = intval(substr($ln, 22, 4));
+                    $x = floatval(substr($ln, 30, 8));
+                    $y = floatval(substr($ln, 38, 8));
+                    $z = floatval(substr($ln, 46, 8));
+                    $capos[$resno] = [$x,$y,$z];
+                }
+            }
+            else if ($poseno == 1 && substr($ln, 0, 6) == "HETATM")
+            {
+                $aname = trim(substr($ln, 12, 4));
+                $x = floatval(substr($ln, 30, 8));
+                $y = floatval(substr($ln, 38, 8));
+                $z = floatval(substr($ln, 46, 8));
+                $ligapos[$aname] = [$x,$y,$z];
+            }
+            else if ($poseno == 1 && preg_match("/^[A-Z][a-z]{2}[0-9]+:[A-Z0-9]+~[^:]+:[A-Za-z0-9]+:\\s+[0-9.+-]+/", $ln))
+            {
+                list($resno, $idgaf, $aname, $binding) = explode(':', $ln);
+                if (false===strpos($binding, ' ')) $binding .= " none";
+                list($energy, $intera_type) = explode(' ', trim($binding));
+                $resno = intval(preg_replace("/[^0-9]/", "", $resno));
+                $energy = floatval($energy);
+
+                if ($energy < -0.5)
+                {
+                    $bw = bw_from_resno($protid, $resno);
+                    $bsrintera[$bw][$aname] = [ $energy, $intera_type ];
+                }
+            }
             if (substr($ln, 0, 10) != "REMARK 800") continue;
             $next = @$lines[$i+1];
             if (substr($next, 0, 10) != "REMARK 800")
@@ -123,8 +177,129 @@ if (@$_REQUEST['view'] == "dock")
                 break;
             }
         }
-    
+
         $txt = implode("\n", $lines);
+    }
+
+    if ($nla = count($ligapos))
+    {
+        foreach ($ligapos as $aname => $xyz)
+        {
+            $ligcen[0] += $xyz[0];
+            $ligcen[1] += $xyz[1];
+            $ligcen[2] += $xyz[2];
+
+            if (substr($aname, 0, 1) == "H") continue;
+            foreach ($ligapos as $bname => $abc)
+            {
+                if ($bname == $aname) continue;
+                if (substr($bname, 0, 1) == "H") continue;
+                $r = sqrt( pow($xyz[0] - $abc[0], 2)
+                         + pow($xyz[1] - $abc[1], 2)
+                         + pow($xyz[2] - $abc[2], 2)
+                         );
+                if ($r < 2.2)
+                    $ligbonds[$aname][$bname] = true;
+                if ($r > $farthestr)
+                {
+                    $farthest1 = $aname;
+                    $farthest2 = $bname;
+                    $farthestr = $r;
+                }
+            }
+        }
+
+        foreach ($ligcen as $k => $v) $ligcen[$k] /= $nla;
+    }
+
+    if ($farthestr) $ligrot1 = align_points_3d($ligapos[$farthest2], [10000,$ligcen[1],$ligcen[2]], $ligcen);
+
+    $ligaxy = [];
+    $fiftyseventh = pi()/180;
+    $bestspread = 0.0;
+    $besttheta = 0.0;
+    for ($theta=0.0; $theta<pi()*2; $theta+=5.0*$fiftyseventh)
+    {
+        $ligrot2 = [ 10000.0, 0.0, 0.0, $theta ];
+        foreach ($ligapos as $aname => $xyz)
+        {
+            // 3D rotation
+            $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+            $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+            list($x, $y, $z) = $xyz;
+
+            $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+            $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+            $ligaxy[$aname] = [$cx, $cy];
+        }
+
+        $lspread = 0;
+        foreach ($ligaxy as $aname => $cxy)
+        {
+            foreach ($ligaxy as $bname => $dxy)
+            {
+                if ($bname == $aname) continue;
+                $r = get_2d_distance($cxy, $dxy);
+                $lspread += $r;
+            }
+        }
+
+        if ($lspread > $bestspread)
+        {
+            $bestspread = $lspread;
+            $besttheta = $theta;
+        }
+    }
+
+    $ligrot2 = [ 10000.0, 0.0, 0.0, $besttheta ];
+    foreach ($ligapos as $aname => $xyz)
+    {
+        // 3D rotation
+        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+        $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+        list($x, $y, $z) = $xyz;
+
+        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+        $ligaxy[$aname] = [$cx, $cy];
+    }
+
+    $besttheta = 0.0;
+    $bestspread = 1e9;
+    for ($theta=0.0; $theta<pi()*2; $theta+=5.0*$fiftyseventh)
+    {
+        $ligrot3 = [0, 0, 10000, $theta];
+        $ymin = 1e9;
+        $ymax = -1e9;
+        foreach ($ligaxy as $aname => $cxy)
+        {
+            // 2D rotation trick
+            $cxy[2] = 0;
+            $cxy = rotate3D($cxy, $ligcen, $ligrot3, $ligrot3[3]);
+            list($cx, $cy, $cz) = $cxy;
+
+            if ($cy < $ymin) $ymin = $cy;
+            if ($cy > $ymax) $ymax = $cy;
+        }
+
+        $yspread = $ymax - $ymin;
+        if ($yspread < $bestspread)
+        {
+            $bestspread = $yspread;
+            $besttheta = $theta;
+        }
+    }
+    $ligrot3 = [0, 0, 10000, $besttheta];
+    foreach ($ligapos as $aname => $xyz)
+    {
+        // 3D rotation
+        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+        $xyz = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+        list($x, $y, $z) = $xyz;
+
+        $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+        $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+        $ligaxy[$aname] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
     }
 
     // $c = str_replace("	var lligbs = get_ligbs_from_orid();\n", $ligbs, $c);
@@ -238,7 +413,7 @@ function svg_from_smiles(smiles, w, h)
         $frist = true;
         $lataa = [];
         $o = find_odorant($odor);
-        foreach ($sim as $id => list($lb, $simpcnt))
+        foreach ($sim as $id => list($lb, $sim_percent))
         {
             if ($fam != family_from_protid($id)) continue;
             if ($frist)
@@ -272,8 +447,8 @@ function svg_from_smiles(smiles, w, h)
             echo "<b><a href=\"receptor.php?r=$id\">$id</a></b>";
             echo "</td>";
             echo "<td style=\"text-align: left;\">";
-            $simpcnt = intval($simpcnt*100);
-            echo "$simpcnt%";
+            $sim_percent = intval($sim_percent*100);
+            echo "$sim_percent%";
             echo "</td>";
             echo "<td style=\"text-align: left;\">";
             if (isset($prots[$id]['expression'])) echo " {$prots[$id]['expression']}%";
@@ -320,7 +495,225 @@ function svg_from_smiles(smiles, w, h)
                 <script>
                 window.setTimeout(function()
                 {
-                    $("#skel<?php echo $id; ?>")[0].innerHTML = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
+                    var svgdat = "<svg id=\"function random() { [native code] }\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"<?php echo $wid; ?>px\" height=\"<?php echo $hei; ?>px\" viewBox=\"0 0 <?php echo $wid; ?> <?php echo $hei; ?>\">"; // svg_from_smiles("<?php echo $o["smiles"]; ?>", <?php echo $wid; ?>, <?php echo $hei; ?>);
+                    svgdat = svgdat.replace("</svg>", "");
+                    <?php
+
+                    // RESIDUE RAW X,Y COORDINATES FOR SVG
+                    $rescxy = [];
+                    foreach ($lb as $bw => $aa)
+                    {
+                        $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
+                        if ($i < 0) continue;
+
+                        $resno = resno_from_bw($protid, $bw);
+                        if (@$caloc = $capos[$resno])
+                        {
+                            // 3D rotation
+                            $lxyz = rotate3D($caloc, $ligcen, $ligrot1, $ligrot1[3]);
+                            list($x, $y, $z) = rotate3D($lxyz, $ligcen, $ligrot2, $ligrot2[3]);
+
+                            $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
+                            $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+                            $rescxy[$bw] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
+                        }
+                    }
+
+                    // MOVE RESIDUES TO TIDY LOCATIONS
+                    for ($respositer=0; $respositer<503; $respositer++)
+                    {
+                        foreach ($rescxy as $bw => $cxy)
+                        {
+                            $nessamo = false;
+                            $nessamd = 1e9;
+                            $nessamxy = [0,0];
+
+                            foreach ($ligaxy as $aname => $lxy)
+                            {
+                                $r = get_2d_distance($cxy, $lxy);
+                                if ($r < $nessamd)
+                                {
+                                    $nessamd = $r;
+                                    $nessamo = $aname;
+                                    $nessamxy = $lxy;
+                                }
+                            }
+
+                            if ($nessamo)
+                            {
+                                $r = get_2d_distance($nessamxy, $cxy);
+                                $adjustment = [ $nessamxy[0] - $cxy[0], $nessamxy[1] - $cxy[1] ];
+                                $d = $nessamd - 90;
+                                $adjustment[0] *= $d / $r / 3;
+                                $adjustment[1] *= $d / $r / 3;
+
+                                $rescxy[$bw] = [ $cxy[0]+$adjustment[0], $cxy[1]+$adjustment[1] ];
+                            }
+
+                            foreach ($rescxy as $ne => $vcu)
+                            {
+                                if ($ne == $bw) continue;
+                                $r = get_2d_distance($cxy, $vcu);
+                                if ($r < 65)
+                                {
+                                    $adjustment = [ ($vcu[0]-$cxy[0])*10.0/$r, ($vcu[1]-$cxy[1])*10.0/$r ];
+                                    $rescxy[$bw] = [ $cxy[0]-$adjustment[0], $cxy[1]-$adjustment[1] ];
+                                    $rescxy[$ne] = [ $vcu[0]+$adjustment[0], $vcu[1]+$adjustment[1] ];
+                                }
+                            }
+                        }
+                    }
+
+                    // INTERACTION LINES
+                    foreach ($bsrintera as $bw => $lresinters)
+                    {
+                        foreach ($lresinters as $aname => list($aname, $intera_type))
+                        {
+                            if (isset($ligaxy[$aname]) && isset($rescxy[$bw]))
+                            {
+                                $dasharray = "stroke-dasharray=\\\"2\\\"";
+                                switch ($intera_type)
+                                {
+                                    case "hbond": case "ionic":
+                                    $couleur = "#393";
+                                    break;
+
+                                    case "polarpi": case "mcoord":
+                                    $couleur = "#696";
+                                    break;
+
+                                    case "pi":
+                                    $couleur = "#c9c";
+                                    break;
+
+                                    case "covalent":
+                                    $couleur = "#ccc";
+                                    $dasharray = "";
+                                    break;
+
+                                    default:
+                                    $couleur = "#666";
+                                }
+
+                                list($x1, $y1) = $ligaxy[$aname];
+                                list($x2, $y2) = $rescxy[$bw];
+                                $r = get_2d_distance($ligaxy[$aname], $rescxy[$bw]);
+                                $coeff = ($r-$resradius)/$r;
+                                $x2 = $x1 + $coeff*($x2-$x1);
+                                $y2 = $y1 + $coeff*($y2-$y1);
+
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"$couleur\\\" $dasharray />\\n\";\n";
+                            }
+                        }
+                    }
+
+                    // LIGAND COVALENT BONDS
+                    foreach ($ligbonds as $aname1 => $b2)
+                    {
+                        if (!isset($ligaxy[$aname1])) continue;
+                        list($x1,$y1) = $ligaxy[$aname1];
+                        foreach ($b2 as $aname2 => $v)
+                        {
+                            if ($v && isset($ligaxy[$aname2]))
+                            {
+                                list($x2,$y2) = $ligaxy[$aname2];
+                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#ccc\\\" />\\n\";\n";
+                            }
+                        }
+                    }
+
+                    // LIGAND ATOMS
+                    foreach ($ligapos as $aname => $xyz)
+                    {
+                        $elem = ucwords(strtolower(preg_replace("/[0-9]/", "", $aname)));
+                        if ($elem == "H") continue;
+                        switch ($elem)
+                        {
+                            case "C":
+                                $couleur = "#ccc";
+                                break;
+                            case "N":
+                                $couleur = "#06f";
+                                break;
+                            case "O":
+                                $couleur = "#f00";
+                                break;
+                            case "S":
+                                $couleur = "#fc0";
+                                break;
+                            case "Cl":
+                                $couleur = "#0c0";
+                                break;
+                            case "Br":
+                                $couleur = "#c60";
+                                break;
+                            case "I":
+                                $couleur = "#609";
+                                break;
+                            default:
+                                $couleur = "#f6f";
+                                break;
+                        }
+                        list($cx,$cy) = $ligaxy[$aname];
+                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"4\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
+                    }
+
+                    // RESIDUE CIRCLES
+                    foreach ($lb as $bw => $aa)
+                    {
+                        if (isset($rescxy[$bw]))
+                        {
+                            $resno = resno_from_bw($protid, $bw);
+                            list($cx,$cy) = $rescxy[$bw];
+                            $tx  = $cx - intval(floatval(strlen($bw)) * 3.333);
+                            $txr = $cx - intval(floatval(strlen($resno)+1) * 3.333);
+                            $ty  = $cy - 2;
+                            $tyr = $cy + 9;
+
+                            switch ($aa)
+                            {
+                                case "A": case "I": case "L": case "V": case "P":
+                                    $couleur = "#ccc";
+                                    break;
+                                case "M":
+                                    $couleur = "#cc6";
+                                    break;
+                                case "G":
+                                    $couleur = "#666";
+                                    break;
+                                case "C":
+                                    $couleur = "#fc0";
+                                    break;
+                                case "F": case "W":
+                                    $couleur = "#c9c";
+                                    break;
+                                case "Y":
+                                    $couleur = "#f6f";
+                                    break;
+                                case "S": case "T": case "N": case "Q":
+                                    $couleur = "#0ff";
+                                    break;
+                                case "D": case "E":
+                                    $couleur = "#f66";
+                                    break;
+                                case "K": case "R":
+                                    $couleur = "#06f";
+                                    break;
+                                case "H":
+                                    $couleur = "#76f";
+                                    break;
+                                default:
+                                    $couleur = "#f0f";
+                            }
+
+                            echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"$resradius\\\" stroke=\\\"$couleur\\\" stroke-width=\\\"1\\\" fill-opacity=\\\"0\\\"></circle>\\n\";\n";
+                            echo "svgdat += \"<text x=\\\"$tx\\\" y=\\\"$ty\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$bw</text>\\n\";\n";
+                            echo "svgdat += \"<text x=\\\"$txr\\\" y=\\\"$tyr\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$aa$resno</text>\\n\";\n";
+                        }
+                    }
+                    ?>
+                    svgdat += "</svg>";
+                    $("#skel<?php echo $id; ?>")[0].innerHTML = svgdat;
                     var cx = 0, cy = 0, x0, x1, y0, y1;
                     var i, n = ax.length;
                     for (i=0; i<n; i++)
@@ -336,7 +729,7 @@ function svg_from_smiles(smiles, w, h)
                     console.log(rect);
                     <?php
                     $aayoff = [];
-                    foreach ($lb as $bw => $aa)
+                    if (0) foreach ($lb as $bw => $aa)
                     {
                         $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
                         $ay = @$aayoff[$i] ?: 0;
@@ -379,8 +772,8 @@ function svg_from_smiles(smiles, w, h)
         </tr>
         <tr>
             <th>Legend:</th>
-            <td colspan="2" class="bigger">bigger</td>
-            <td colspan="2" class="smaller">smaller</td>
+            <td colspan="2" class="bigger">tighter</td>
+            <td colspan="2" class="smaller">roomier</td>
             <td colspan="2" class="wetter">wetter</td>
             <td colspan="2" class="drier">drier</td>
             <td colspan="2" class="acidic">more acid</td>
