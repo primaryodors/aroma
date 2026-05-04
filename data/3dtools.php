@@ -29,7 +29,7 @@ function rotate3D($point, $source, $axis, $theta)
 
     list($x,$y,$z) = $point;
     $u = $lvec[0] / $axisr;
-    $v = $lvec[1] / $axisr; 
+    $v = $lvec[1] / $axisr;
     $w = $lvec[2] / $axisr;
 
     list($a,$b,$c) = $source;
@@ -85,8 +85,8 @@ function compute_normal($pt1, $pt2, $pt3)
 
     return
     [	$U[1] * $V[2] - $U[2] * $V[1],
-        $U[2] * $V[1] - $U[1] * $V[2],
-        $U[1] * $V[1] - $U[1] * $V[1]
+        $U[2] * $V[0] - $U[0] * $V[2],
+        $U[0] * $V[1] - $U[1] * $V[0]
     ];
 }
 

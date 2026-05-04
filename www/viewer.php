@@ -192,7 +192,7 @@ if (@$_REQUEST['view'] == "dock")
         foreach ($ligcen as $k => $v) $ligcen[$k] /= $nla;
     }
 
-    if ($farthestr) $ligrot1 = align_points_3d($ligapos[$farthest1], [10000,0,0], $ligcen);
+    if ($farthestr) $ligrot1 = align_points_3d($ligapos[$farthest2], [10000,$ligcen[1],$ligcen[2]], $ligcen);
 
     // $c = str_replace("	var lligbs = get_ligbs_from_orid();\n", $ligbs, $c);
     $c = str_replace("var literal_pdb = false;\n", "var literal_pdb = `$txt`;\n", $c);
@@ -435,6 +435,12 @@ function svg_from_smiles(smiles, w, h)
                                 break;
                             case "Cl":
                                 $couleur = "#0c0";
+                                break;
+                            case "Br":
+                                $couleur = "#c60";
+                                break;
+                            case "I":
+                                $couleur = "#609";
                                 break;
                             default:
                                 $couleur = "#f6f";
