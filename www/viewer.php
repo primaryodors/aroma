@@ -772,8 +772,8 @@ function svg_from_smiles(smiles, w, h)
         </tr>
         <tr>
             <th>Legend:</th>
-            <td colspan="2" class="bigger">bigger</td>
-            <td colspan="2" class="smaller">smaller</td>
+            <td colspan="2" class="bigger">tighter</td>
+            <td colspan="2" class="smaller">roomier</td>
             <td colspan="2" class="wetter">wetter</td>
             <td colspan="2" class="drier">drier</td>
             <td colspan="2" class="acidic">more acid</td>
