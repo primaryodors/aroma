@@ -440,6 +440,8 @@ function svg_from_smiles(smiles, w, h)
                             }
                         }
                     }
+
+                    $rescxy = [];
                     foreach ($lb as $bw => $aa)
                     {
                         $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
@@ -452,6 +454,59 @@ function svg_from_smiles(smiles, w, h)
                             list($x, $y, $z) = rotate3D($caloc, $ligcen, $ligrot1, $ligrot1[3]);
                             $cx = intval($wid/2 + ($x - $ligcen[0])*$scale);
                             $cy = intval($hei/2 + ($z - $ligcen[2])*$scale);
+                            $rescxy[$bw] = [$cx,$cy];
+                        }
+                    }
+
+                    for ($respositer=0; $respositer<503; $respositer++)
+                    {
+                        foreach ($rescxy as $bw => $cxy)
+                        {
+                            $nessamo = false;
+                            $nessamd = 1e9;
+                            $nessamxy = [0,0];
+
+                            foreach ($ligaxy as $aname => $lxy)
+                            {
+                                $r = get_2d_distance($cxy, $lxy);
+                                if ($r < $nessamd)
+                                {
+                                    $nessamd = $r;
+                                    $nessamo = $aname;
+                                    $nessamxy = $lxy;
+                                }
+                            }
+
+                            if ($nessamo)
+                            {
+                                $r = get_2d_distance($nessamxy, $cxy);
+                                $adjustment = [ $nessamxy[0] - $cxy[0], $nessamxy[1] - $cxy[1] ];
+                                $d = $nessamd - 90;
+                                $adjustment[0] *= $d / $r / 3;
+                                $adjustment[1] *= $d / $r / 3;
+
+                                $rescxy[$bw] = [ $cxy[0]+$adjustment[0], $cxy[1]+$adjustment[1] ];
+                            }
+
+                            foreach ($rescxy as $ne => $vcu)
+                            {
+                                if ($ne == $bw) continue;
+                                $r = get_2d_distance($cxy, $vcu);
+                                if ($r < 65)
+                                {
+                                    $adjustment = [ ($vcu[0]-$cxy[0])*10.0/$r, ($vcu[1]-$cxy[1])*10.0/$r ];
+                                    $rescxy[$bw] = [ $cxy[0]-$adjustment[0], $cxy[1]-$adjustment[1] ];
+                                    $rescxy[$ne] = [ $vcu[0]+$adjustment[0], $vcu[1]+$adjustment[1] ];
+                                }
+                            }
+                        }
+                    }
+
+                    foreach ($lb as $bw => $aa)
+                    {
+                        if (isset($rescxy[$bw]))
+                        {
+                            list($cx,$cy) = $rescxy[$bw];
                             $tx = $cx - 16;
                             $ty = $cy + 3;
 

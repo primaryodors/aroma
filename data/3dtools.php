@@ -5,6 +5,11 @@ function get_3d_distance($pt1, $pt2)
     return sqrt( pow($pt1[0]-$pt2[0], 2) + pow($pt1[1]-$pt2[1], 2) + pow($pt1[2]-$pt2[2], 2) );
 }
 
+function get_2d_distance($pt1, $pt2)
+{
+    return sqrt( pow($pt1[0]-$pt2[0], 2) + pow($pt1[1]-$pt2[1], 2) );
+}
+
 function scale_point($pt, $scale)
 {
     $r = sqrt( pow($pt[0], 2) + pow($pt[1], 2) + pow($pt[2], 2) );
