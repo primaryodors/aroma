@@ -6,14 +6,38 @@ import subprocess
 import os
 import os.path
 import math
+import sys
 from natsort import natsorted
 import data.globals
 import data.geometry
 
+prots = {}
+
 def load_prots():
+    """Extracts the receptor database with absolute path enforcement."""
     global prots
-    with open('data/receptor.json', 'r') as file:
-        prots = json.load(file)
+    
+    # 1. Determine the exact absolute directory of THIS script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Forge the unbreakable path (handling whether protutils is in root or /data)
+    db_path = os.path.join(current_dir, 'data', 'receptor.json')
+    if not os.path.exists(db_path):
+        db_path = os.path.join(current_dir, 'receptor.json')
+        
+    # 3. Validate existence
+    if not os.path.exists(db_path):
+        print(f"FATAL ERROR: Receptor database not found at {db_path}", file=sys.stderr)
+        sys.exit(1)
+        
+    # 4. Extract and load into memory safely
+    try:
+        with open(db_path, 'r', encoding='utf-8') as file:
+            prots_data = json.load(file)
+            prots.update(prots_data)
+    except Exception as e:
+        print(f"FATAL ERROR: Failed to extract protein data from {db_path} - {e}", file=sys.stderr)
+        sys.exit(1)
 
 def bw_insdel(protid, tmrno, offset):
     global prots
@@ -83,6 +107,18 @@ def subfamily_from_protid(protid):
     else:
         return ""
 
+def member_from_protid(protid):
+    """Extracts the member number from a protein ID."""
+    if protid.startswith("OR"):
+        fam = family_from_protid(protid)
+        sub = subfamily_from_protid(protid)
+        # Strip the family and subfamily, then remove any non-numeric characters
+        remaining = protid[len(fam)+len(sub):]
+        return re.sub(r"[^0-9]", "", remaining)
+    else:
+        # Non-OR families typically have a 4-character prefix (e.g., TAAR1)
+        return protid[4:]
+    
 def build_pdb_fname(protid, suffix="active"):
     fam = family_from_protid(protid)
     return f"pdbs/{fam}/{protid}.{suffix}.pdb"
