@@ -27,7 +27,7 @@ bool allow_ligand_360_flex = true;
 
 bool cfmols_have_metals = false;
 float intermol_covalent_enthalpy = 0;
-Atom* tmp_rigid_atoms[1024];
+Atom* tmp_binding_atoms[1024];
 
 Molecule *worst_clash_1 = nullptr, *worst_clash_2 = nullptr;
 float worst_mol_clash = 0;
@@ -4879,8 +4879,15 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
 
     if (selfish)
     {
-        latoms = tmp_rigid_atoms;
+        latoms = tmp_binding_atoms;
         selfish->fetch_moves_rigidly_with_atom2(latoms);
+    }
+    else if (mcoord && compute_interall)
+    {
+        latoms = tmp_binding_atoms;
+        for (i=0; atoms[i]; i++) latoms[i] = atoms[i];
+        latoms[i++] = coordmtl;
+        latoms[i] = nullptr;
     }
     else latoms = atoms;
 
@@ -4908,13 +4915,16 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         {
             if (glued_to && ligands[l] == glued_to)
             {
-                interall_a1[ninterall] = glued_atom_mine;
-                interall_a2[ninterall] = glued_atom_other;
-                interall_t[ninterall] = covalent;
-                interall[ninterall++] = glued_energy.summed();
-                return glued_energy;
+                if (compute_interall)
+                {
+                    interall_a1[ninterall] = glued_atom_mine;
+                    interall_a2[ninterall] = glued_atom_other;
+                    interall_t[ninterall] = covalent;
+                    interall[ninterall++] = glued_energy.summed();
+                }
+                kJmol += glued_energy;
             }
-            if (ligands[l]->glued_to && ligands[l]->glued_to == this) return ligands[l]->glued_energy;
+            if (ligands[l]->glued_to && ligands[l]->glued_to == this) kJmol += ligands[l]->glued_energy;
             bool skip = false;
             if (ligands[l]->nmonomers)
             {
@@ -5092,6 +5102,18 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                         }
                     }
                     else lastshielded -= InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j]).summed();
+                }
+            }
+
+            if (compute_interall && ligands[l]->coordmtl && ligands[l]->coordmtl->residue == ligands[l]->is_residue())
+            {
+                Interaction abind = InteratomicForce::total_binding(latoms[i], ligands[l]->coordmtl);
+                if (abind.summed() < 0)
+                {
+                    interall_a1[ninterall] = latoms[i];
+                    interall_a2[ninterall] = ligands[l]->coordmtl;
+                    interall_t[ninterall] = mcoord;
+                    interall[ninterall++] = abind.summed();
                 }
             }
         }

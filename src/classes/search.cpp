@@ -491,7 +491,7 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
     return found;
 }
 
-void Search::pair_targets(Protein* prot, Molecule *ligand,
+int Search::pair_targets(Protein* prot, Molecule *ligand,
     LigandTarget *targets, AminoAcid **pocketres,
     Point loneliest,
     BestBindingResult* output, Cavity* container, bool allow_thiolation, Progressbar *pbr)
@@ -725,6 +725,12 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                 #endif
                 if (targets[k].contains(&targets[i])) continue;
                 if (targets[i].contains(&targets[k])) continue;
+
+                if (targets[i].single_atom && targets[k].single_atom
+                    && targets[i].single_atom->is_bonded_to(targets[k].single_atom)
+                    )
+                    continue;
+
                 float kchg = targets[k].charge();
                 float kpol = targets[k].polarity() / targets[k].count_heavy_atoms();
                 if (kpol < hydrophilicity_cutoff) kpol = 0;
@@ -876,6 +882,11 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
                             if (targets[m].contains(&targets[k])) continue;
                             if (targets[k].contains(&targets[m])) continue;
 
+                            if (targets[i].single_atom && targets[m].single_atom
+                                && targets[i].single_atom->is_bonded_to(targets[m].single_atom)
+                                )
+                                continue;
+
                             mchg = targets[m].charge();
                             mpol = targets[m].polarity() / targets[m].count_heavy_atoms();
                             if (mpol < hydrophilicity_cutoff) mpol = 0;
@@ -1006,7 +1017,7 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
         cerr << "Pocket residues:";
         for (i=0; pocketres[i]; i++) cerr << " " << pocketres[i]->get_name();
         cerr << endl;
-        throw 0x90ba1125;
+        return 0;
     }
 
     // Make thiolates when binding to metals.
@@ -1019,11 +1030,18 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
             Atom* H = (output->pri_tgt)->single_atom->is_bonded_to("H");
             if (H)
             {
+                if (ligand->stay_close2_mine == H) ligand->stay_close2_mine = nullptr;
+
                 // TODO: test this
                 ligand->deprotonate(H);
             }
         }
     }
+
+    int result = 0;
+    if (output->pri_res && output->pri_tgt) result++;
+    if (output->sec_res && output->sec_tgt) result++;
+    if (output->tert_res && output->tert_tgt) result++;
 
     #if _dbg_bb_pairs
     if (output->pri_res && output->pri_tgt) cout << "Primary pairing: " << *output->pri_tgt << " to " << (output->pri_res)->get_name() << endl;
@@ -1031,6 +1049,8 @@ void Search::pair_targets(Protein* prot, Molecule *ligand,
     if (output->tert_res && output->tert_tgt) cout << "Tertiary pairing: " << *output->tert_tgt << " to " << (output->tert_res)->get_name() << endl;
     cout << endl;
     #endif
+
+    return result;
 }
 
 Point BestBindingResult::barycenter()
@@ -1712,7 +1732,11 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
     Atom *bH = bh->is_bonded_to("H");
     if (rhmet && bH)
     {
-        if (llig->deprotonate(bH)) bH = nullptr;
+        if (llig->deprotonate(bH))
+        {
+            if (llig->stay_close2_mine == bH) llig->stay_close2_mine = nullptr;
+            bH = nullptr;
+        }
     }
 
     int bhbt = bh->get_bonded_atoms_count(), bhg = bh->get_geometry(), bhfam = bh->get_family();
@@ -1932,9 +1956,10 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
     }
 
     if (fabs(bh->is_polar()) >= hydrophilicity_cutoff && fabs(rh->is_polar()) >= hydrophilicity_cutoff
-        && !bH && !lrs[i]->has_hbond_donors())
+        && (rhmet || (!bH && !lrs[i]->has_hbond_donors()))
+        )
     {
-        lrs[i]->protonate();
+        if (!rhmet) lrs[i]->protonate();
         if (!rh->is_bonded_to("H") && rh->is_pi() && rh->get_family() == CHALCOGEN)
         {
             Atom *C = rh->is_bonded_to(TETREL);
@@ -1952,12 +1977,14 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
     }
 
     #if _dbg_rh_selection
-    cout << "Selected ligand:" << bh->name << " ... " << lrs[i]->get_name() << ":" << rh->name
-        << " hydro = " << lrs[i]->hydrophilicity()
+    cout << "Selected ligand:" << bh->name << " ... "
+        << (rhmet ? rhmet->name : (lrs[i] ? lrs[i]->get_name() : "(null)")) 
+        << ":" << rh->name
+        << " hydro = " << (rhmet ? fabs(rhmet->is_polar()) : lrs[i]->hydrophilicity())
         << endl << endl;
     #else
     cout << "Assigning ligand:" << bh->name
-        << " to proximity with " << (lrs[i] ? lrs[i]->get_name() : "(null)")
+        << " to proximity with " << (rhmet ? rhmet->name : (lrs[i] ? lrs[i]->get_name() : "(null)"))
         << ":" << rh->name << "." << endl;
     #endif
 
@@ -1987,7 +2014,7 @@ void Search::do_randhyd_search(Molecule *ligand, Protein *protein, Point nodecen
 
     ligand->stay_close_mine = bh;
     ligand->stay_close_other = rh;
-    ligand->stay_close_mol = lrs[i];
+    ligand->stay_close_mol = rhmet ? nullptr : lrs[i];
     ligand->stay_close_optimal = ropt;
     ligand->stay_close_tolerance = 0.1 * ropt;
     ligand->stay_close2_mine = nullptr;

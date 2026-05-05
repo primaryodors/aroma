@@ -2923,6 +2923,7 @@ _try_again:
         {
             protein->pocketcen = pocketcen;
             protein->coordinate_metal(mtlcoords, nmtlcoords);
+            metald_prot = protein;
         }
 
         freeze_bridged_residues();
@@ -3636,6 +3637,7 @@ _try_again:
                                 if (!aa) continue;
                                 if (std::find(center_resnos.begin(), center_resnos.end(), cvres[i][j]) != center_resnos.end())
                                     numbsr++;
+                                if (aa->coordmtl) aa->priority = true;
                                 if (aa->priority)
                                 {
                                     numpri++;
@@ -3661,6 +3663,7 @@ _try_again:
                             if (frand(0,1) < probs)
                             {
                                 gcav = &cvtys[i];
+                                loneliest = nodecen = pocketcen = gcav->get_center();
                                 #if _dbg_cavsel_probs
                                 cout << "Pocket " << cvtys[i].resnos_as_string(protein) << " chosen." << endl << endl;
                                 #endif
@@ -3726,30 +3729,20 @@ _try_again:
                             llig = ligand->get_monomer(l);
                             LigandTarget llt[maxlt];
                             Search::identify_ligand_pairing_targets(llig, llt, maxlt);
-                            upivsmfpoy:
-                            try
+
+                            progb.erase();
+                            if (!Search::pair_targets(protein, llig, llt, lrs, searchcen, &g_bbr[l], gcav, !l))
                             {
-                                Search::pair_targets(protein, llig, llt, lrs, searchcen, &g_bbr[l], gcav, !l);
-                            }
-                            catch (int sodivld)
-                            {
-                                if (sodivld == 0x90ba1125)          // this says "no pairs". Yes, it looks like something else but Balsz rhymes with "waltz" anywho.
+                                if (gcav && gcav->count_partials())
                                 {
-                                    if (pose == 1)
-                                    {
-                                        if (gcav && gcav->count_partials())
-                                        {
-                                            gcav->find_best_containment(ligand, true);
-                                        }
-                                        else
-                                        {
-                                            cout << "FATAL ERROR." << endl;
-                                            throw sodivld;
-                                        }
-                                    }
-                                    else goto upivsmfpoy;           // try again, we already know it can be done.
+                                    cout << "Reverting to cavity fit..." << endl;
+                                    goto _no_bb_pairs_revert_to_randhyd;
                                 }
-                                else throw sodivld;
+                                else
+                                {
+                                    cout << "FATAL ERROR." << endl;
+                                    throw 0xbadc0de;
+                                }
                             }
                             g_bbr[l].protein = protein;
 
@@ -3841,6 +3834,13 @@ _try_again:
                                 if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].tert_res->get_nearest_atom(g_bbr[l].tert_tgt->barycenter());
                                 if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
 
+                                if (llig->stay_close2_mine
+                                    && llig->stay_close2_mine->Z == 1
+                                    && llig->stay_close2_mine->is_bonded_to("S")
+                                    && protein->_mcoords[0].mtl
+                                    )
+                                    llig->stay_close2_mine = llig->stay_close2_other = nullptr;
+
                                 if (pose <= 1 && llig->stay_close2_other) cout << "Staying " << llig->stay_close2_mine->name << " near " 
                                     << g_bbr[l].tert_res->get_residue_no() << ":" << llig->stay_close2_other->name << endl;
                             }
@@ -3860,6 +3860,13 @@ _try_again:
                                 else llig->stay_close2_other = g_bbr[l].sec_res->get_reach_atom(g_bbr[l].sec_tgt->best_interaction());
                                 if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].sec_res->get_nearest_atom(g_bbr[l].sec_tgt->barycenter());
                                 if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
+
+                                if (llig->stay_close2_mine
+                                    && llig->stay_close2_mine->Z == 1
+                                    && llig->stay_close2_mine->is_bonded_to("S")
+                                    && protein->_mcoords[0].mtl
+                                    )
+                                    llig->stay_close2_mine = llig->stay_close2_other = nullptr;
 
                                 if (pose <= 1 && llig->stay_close2_other) cout << "Staying " << llig->stay_close2_mine->name << " near " 
                                     << g_bbr[l].sec_res->get_residue_no() << ":" << llig->stay_close2_other->name << endl;
@@ -3926,6 +3933,7 @@ _try_again:
                 }
                 else if (pdpst == pst_randhyd)
                 {
+                    _no_bb_pairs_revert_to_randhyd:
                     progb.erase();
                     Search::do_randhyd_search(ligand, protein, nodecen, gcav, reaches_spheroid[nodeno]);
 
@@ -3935,6 +3943,7 @@ _try_again:
                 }
                 else if (pdpst == pst_cavfit)
                 {
+                    _no_bb_pairs_revert_to_cavity_fit:
                     ligand->movability = MOV_ALL;
                     ligand->recenter(nodecen);
                     if (gcav)
@@ -3952,6 +3961,13 @@ _try_again:
                     i = (pose-1) % npreconf;
                     preconforms[i].restore_state(ligand);
                 }
+
+                if (ligand->stay_close2_mine
+                    && ligand->stay_close2_mine->Z == 1
+                    && ligand->stay_close2_mine->is_bonded_to("S")
+                    && protein->_mcoords[0].mtl
+                    )
+                    ligand->stay_close2_mine = nullptr;
 
                 // else ligand->recenter(ligcen_target);
 
@@ -4066,7 +4082,8 @@ _try_again:
                 }
                 else if (pdpst == pst_best_binding)
                 {
-                    if (fabs(g_bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
+                    if (g_bbr->sec_res && g_bbr->sec_tgt &&
+                        fabs(g_bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
                         && fabs(g_bbr->sec_tgt->polarity()) >= hydrophilicity_cutoff
                         )
                     {

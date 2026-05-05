@@ -863,11 +863,32 @@ void DockResult::entropy(DockResult* dr, int rows, int cols)
 
 std::ostream& operator<<(std::ostream& output, const DockResult& dr)
 {
-    int l;
+    int i, l;
 
     if (dr.isomer.length())
     {
         output << "Isomer: " << dr.isomer << endl << endl;
+    }
+
+    if (dr.mprot && dr.mprot->_mcoords[0].mtl)
+    {
+        for (l=0; l<_MAX_MCOORDS && dr.mprot->_mcoords[l].mtl; l++)
+        {
+            int mchg = dr.mprot->_mcoords[l].mtl->get_charge();
+            output << "Metal coordination: "
+                << dr.mprot->_mcoords[l].mtl->get_elem_sym()
+                << (mchg > 0 ? "+" : "-")
+                << fabs(mchg);
+            for (i=0; dr.mprot->_mcoords[l].coordres[i].resno; i++)
+            {
+                AminoAcid *aa = dr.mprot->get_residue(dr.mprot->_mcoords[l].coordres[i].resno);
+                if (aa)
+                {
+                    output << " " << aa->get_name();
+                }
+            }
+            output << endl;
+        }
     }
 
     if (dr.mbbr)

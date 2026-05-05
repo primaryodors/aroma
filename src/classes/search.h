@@ -65,7 +65,7 @@ class Search
     static void copy_ligand_position_from_file(Protein* protein, Molecule* ligand, const char* filename, const char* ligname, int auth_resno);
 
     static int identify_ligand_pairing_targets(Molecule* ligand, LigandTarget* results, int max_results);
-    static void pair_targets(Protein* prot, Molecule* ligand, 
+    static int pair_targets(Protein* prot, Molecule* ligand, 
         LigandTarget* targets, AminoAcid** pocketres, Point loneliest, 
         BestBindingResult* output, Cavity* container = nullptr, bool allow_thiolation = true,
         Progressbar *pbr = nullptr);

@@ -1855,13 +1855,36 @@ void Protein::copy_mcoords(Protein* cf)
 
     if (n = cf->nm_mcoords) for (i=0; i<n; i++)
     {
+        // Get existing mcoord
         MCoord mc = cf->m_mcoords[i];
+
+        // Make sure it has a metal atom
+        if (!mc.mtl)
+        {
+            mc.coordres[0].resolve_resno(cf);
+            int resno = mc.coordres[0].resno;
+            AminoAcid *aa = cf->get_residue(resno);
+            mc.mtl = aa->coordmtl;
+        }
+
+        // Place the metal atom in its designated location
         if (mc.mtl) mc.mtl->move(mc.mtl_original_location);
-        this->m_mcoords[nm_mcoords++] = mc;
+
+        // Make sure the mcoords object isn't already set
+        bool found = false;
+        for (j=0; j<nm_mcoords && !found; j++)
+        {
+            if (this->m_mcoords[j].mtl == mc.mtl) found = true;
+        }
+        if (found) continue;
+
+        // Copy the mcoords object
+        this->m_mcoords[nm_mcoords] = mc;
+        nm_mcoords++;
     }
 
     for (i=0; i<32; i++) mcoord_resnos[i] = cf->mcoord_resnos[i];
-    for (i=0; i<16; i++) metals[i] = cf->metals[i];
+    for (i=0; i<_MAX_MCOORDS; i++) metals[i] = cf->metals[i];
 
     n = min(get_end_resno(), cf->get_end_resno());
     for (i=1; i<=n; i++)
@@ -1873,6 +1896,7 @@ void Protein::copy_mcoords(Protein* cf)
             AminoAcid* aa = get_residue(i);
             if (!aa) continue;
             aa->coordmtl = cfaa->coordmtl;
+            if (cfaa->mcoord_atom) aa->mcoord_atom = aa->get_atom(cfaa->mcoord_atom->name);
         }
     }
 }
@@ -3049,6 +3073,7 @@ MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
         {
             mcoord_aa[l]->movability = MOV_PINNED;
             mcoord_aa[l]->coordmtl = lmtl;
+            mcoord_aa[l]->mcoord_atom = coord_atoms[l];
         }
 
         mtlcoords[i].mtl_original_location = lmtl->loc;

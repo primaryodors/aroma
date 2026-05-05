@@ -147,7 +147,7 @@ if (@$_REQUEST['view'] == "dock")
                 $z = floatval(substr($ln, 46, 8));
                 $ligapos[$aname] = [$x,$y,$z];
             }
-            else if ($poseno == 1 && preg_match("/^[A-Z][a-z]{2}[0-9]+:[A-Z0-9]+~[^:]+:[A-Za-z0-9]+:\\s+[0-9.+-]+/", $ln))
+            else if ($poseno == 1 && preg_match("/^[A-Z][a-z]{2}[0-9]+:[A-Za-z0-9]+~[^:]+:[A-Za-z0-9]+:\\s+[0-9.+-]+/", $ln))
             {
                 list($resno, $idgaf, $aname, $binding) = explode(':', $ln);
                 if (false===strpos($binding, ' ')) $binding .= " none";
@@ -353,12 +353,23 @@ function svg_from_smiles(smiles, w, h)
     $dockfname = "../out/$fam/$protid/$protid~$odor.$mode.dock";
     $lbsr = [];
     $lbstr = [];
+    $mcres = [];
     $d = file_get_contents($dockfname);
     $lines = explode("\n", $d);
     foreach ($lines as $ln) 
     {
         if (trim($ln) == "# PDB Data") break;
         if (trim($ln) == "Pose: 2") break;
+        if (substr($ln, 0, 20) == "Metal coordination: ")
+        {
+            $pieces = explode(' ', $ln);
+            for ($i=3; $i<count($pieces); $i++)
+            {
+                $resno = preg_replace("/[^0-9]/", "", $pieces[$i]);
+                $bw = bw_from_resno($protid, $resno);
+                $mcres[$bw] = true;
+            }
+        }
         if (false!==strpos($ln, "~(ligand)") || false!==strpos($ln, "$odor:"))
         {
             list($lcntct, $strength) = explode(": ", $ln, 2);
@@ -383,6 +394,17 @@ function svg_from_smiles(smiles, w, h)
             }
         }
     }
+    foreach ($mcres as $bw => $v)
+    {
+        if ($v && !isset($lbsr[$bw]))
+        {
+            $lbsr[$bw] = "1";
+            $lbstr[$bw] = 0;
+        }
+    }
+    /* print_r($lbsr);
+    print_r($lbstr);
+    exit(); */
 
     ksort($bsr4sim);
     // print_r($bsr4sim);
@@ -503,8 +525,9 @@ function svg_from_smiles(smiles, w, h)
                     $rescxy = [];
                     foreach ($lb as $bw => $aa)
                     {
-                        $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
-                        if ($i < 0) continue;
+                        // if ($lbstr[$bw] > -0.5) continue;
+                        // echo "$bw {$lbstr[$bw]}\n";
+                        if (!isset($lbsr[$bw])) continue;
 
                         $resno = resno_from_bw($protid, $bw);
                         if (@$caloc = $capos[$resno])
@@ -518,6 +541,7 @@ function svg_from_smiles(smiles, w, h)
                             $rescxy[$bw] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
                         }
                     }
+                    // exit();
 
                     // BRING RESIDUES CLOSER TO INTERACTING ATOMS
                     foreach ($rescxy as $bw => $cxy)

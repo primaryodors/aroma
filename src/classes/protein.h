@@ -275,7 +275,7 @@ protected:
     AminoAcid** residues = nullptr;
     AminoAcid*** res_can_clash = nullptr;
     float* res_reach = nullptr;
-    Atom* metals[16];
+    Atom* metals[_MAX_MCOORDS];
     int metcount = 0;
     Star aaptrmin, aaptrmax;
     float initial_int_clashes = 0;
@@ -283,7 +283,7 @@ protected:
     region_source regions_from = rgn_none;
     char** remarks = nullptr;
     int remarksz = 0;
-    MCoord m_mcoords[16];
+    MCoord m_mcoords[_MAX_MCOORDS];
     int nm_mcoords = 0;
     int Ballesteros_Weinstein[79];
     std::vector<AABridge> aabridges;
@@ -298,6 +298,9 @@ protected:
     float get_coord_anomaly(Atom* metal, AminoAcid* coord_res);
     void allocate_undo_poses();
     void save_undo_state();
+
+    public:
+    MCoord * const _mcoords = m_mcoords;
 };
 
 std::ostream& operator<<(std::ostream& os, const BallesterosWeinstein& bw);

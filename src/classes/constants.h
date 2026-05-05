@@ -40,6 +40,7 @@
 // Programmatic constants.
 #define _def_atc 100
 #define _MAX_NUM_FORCES 65536
+#define _MAX_MCOORDS 16
 #define any_element -5141
 #define ATOM_NOT_OF_AMINO_ACID 0x907aa
 #define BOND_DEF_NOT_FOUND 0xbadb09d

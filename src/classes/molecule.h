@@ -351,6 +351,7 @@ public:
     bool been_flexed = false;
     bool priority = false;
     Atom *coordmtl = nullptr;
+    Atom *mcoord_atom = nullptr;
     Molecule** mclashables = nullptr;
     Atom *clash1 = nullptr, *clash2 = nullptr;
     Atom *best_intera = nullptr, *best_other_intera = nullptr;
@@ -454,7 +455,7 @@ extern Molecule global_water;
 extern FILE* audit;
 extern bool cfmols_have_metals;
 extern float intermol_covalent_enthalpy;
-extern Atom* tmp_rigid_atoms[1024];
+extern Atom* tmp_binding_atoms[1024];
 extern bool selfish_side_chains;
 
 #if _dbg_improvements_only_rule
