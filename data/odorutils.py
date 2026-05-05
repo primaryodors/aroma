@@ -1,17 +1,47 @@
-
+import sys
 import json
 import re
 import os
 import subprocess
 import traceback
-from rdkit import Chem
-from rdkit.Chem import AllChem
-import data.globals
+
+try:
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+    RDKIT_AVAILABLE = True
+except ImportError:
+    RDKIT_AVAILABLE = False
+    print("WARNING: RDKit not found in environment. System defaulting to OpenBabel fallback.", file=sys.stderr)
+
 
 def load_odors():
-    global odors
-    with open('data/odorant.json', 'r') as file:
-        odors = json.load(file)
+    """Extracts the odorant database with absolute path enforcement."""
+    # 1. Determine the exact, absolute directory of THIS script (odorutils.py)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 2. Forge the unbreakable path to the database
+    db_path = os.path.join(current_dir, 'odorant.json')
+    
+    # 3. Validate existence before execution
+    if not os.path.exists(db_path):
+        print(f"FATAL ERROR: Odorant database not found at {db_path}", file=sys.stderr)
+        return None
+        
+    # 4. Extract and return the payload
+    # 4. Extract and normalize the payload
+    try:
+        with open(db_path, 'r', encoding='utf-8') as file:
+            odor_data = json.load(file)
+            
+            # --- NORMALIZATION ---
+            # If the JSON is a dictionary (mapping IDs to molecules), flatten it.
+            if isinstance(odor_data, dict):
+                odor_data = list(odor_data.values())
+                
+            return odor_data
+    except Exception as e:
+        print(f"FATAL ERROR: Failed to extract data from {db_path} - {e}", file=sys.stderr)
+        return None
 
 def empirical_pairs(rcpid, onedim=False, agonists_only=False):
     global odors
