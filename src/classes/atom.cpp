@@ -603,6 +603,10 @@ bool Atom::move(Point* pt, bool delgeo)
     }
 
     // if (residue==198 || residue==277) throw 0xbadc0de;
+    if (!strcmp(name, "S1") && pt->y > 15)
+    {
+        location.y += 0.00001;
+    }
 
     #if _dbg_soft_metal
     if (is_metal() || !strcmp(name, "Cu"))

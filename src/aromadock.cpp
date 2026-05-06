@@ -3608,6 +3608,10 @@ _try_again:
                         cvres[i] = nullptr;
                         if (cvtys[i].has_priority()) any_priority = true;
                     }
+
+                    Molecule* pmets = protein->metals_as_molecule();
+                    int npmets = pmets->get_atom_count();
+
                     while (!gcav)
                     {
                         for (i=0; i<ncvtys; i++)
@@ -3616,6 +3620,18 @@ _try_again:
                             {
                                 if (frand(0,1) >= 0.01) continue;
                             }
+
+                            if (npmets)
+                            {
+                                bool found_metal = false;
+                                for (j=0; !found_metal&& j<npmets; j++)
+                                {
+                                    Atom* recherche = pmets->get_atom(j);
+                                    if (recherche && cvtys[i].point_inside_pocket(recherche->loc)) found_metal = true;
+                                }
+                                if (!found_metal) continue;
+                            }
+
                             // if (!cvtys[i].point_inside_pocket(nodecen)) continue;
                             float r = cvtys[i].get_center().get_3d_distance(nodecen); // ligand->get_barycenter());
                             r *= frand(0.8, 1.3);
