@@ -12,7 +12,7 @@ if "help" in sys.argv:
     print("Usage:\npython3 hm/fixfail.py [receptor] [docked PDB or ligand_name] ([options]...)\n")
     print("Available options:")
     print("  help\tShow this message.")
-    print("  reset\tCreate a new homology model, using dohm.php, to use for processing, before performing any other function.")
+    print("  reset\tCreate a new homology model, using dohm.py, to use for processing, before performing any other function.")    
     print("  fit\tConduct a best-fit search for placing the ligand into one of the receptor's cavities. Requires a ligand name instead of a docked PDB.")
     print("  predock\tCreate a new docked PDB by attempting to dock a named ligand in the receptor before processing.")
     print("  loop\tAfter creating a fixed-fail model, attempt to dock the ligand and, if less that three output poses, go back and try the fixfail procedure again for a maximum of 100 attempts.")
@@ -65,17 +65,21 @@ origpdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 
 if argc > 2:
     inppdb = sys.argv[2]
-    if not os.path.exists(inppdb):
-        inppdb = f"out/{fam}/{protid}/{protid}~{sys.argv[2]}.{mode}.model1.pdb"
-    if not os.path.exists(inppdb):
-        print(f"Input file not found: {sys.argv[2]}")
-        exit()
+    # Bypass file checks if the user provided a command keyword instead of a PDB file
+    if inppdb in ["help", "reset", "fit", "predock", "loop", "dock"]:
+        argc = 2  # Downgrade argument count so downstream logic ignores the missing PDB
+    else:
+        if not os.path.exists(inppdb):
+            inppdb = f"out/{fam}/{protid}/{protid}~{sys.argv[2]}.{mode}.model1.pdb"
+        if not os.path.exists(inppdb):
+            print(f"Input file not found: {sys.argv[2]}")
+            exit()
 
 # If PDB files get too wonky, you can kill the fixfail.py process and rerun it with the reset argument.
 doreset = False
 if "reset" in sys.argv:
     # Rebuild the unmodified HM structure.
-    cmd = ["php", "-f", "hm/dohm.php", protid]
+    cmd = ["python3", "hm/dohm.py", protid]
     data.globals.wait_cool_cpu()
     print(" ".join(cmd))
     subprocess.run(cmd)
@@ -134,12 +138,12 @@ if "fit" in sys.argv:
     # TODO: If no result from cavity_fit, error out and exit.
 
 if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
-    # Perform an active-state dock on the new model, then proceed normally to model refinement with rigid-body ligand.
-    # TODO: If both fit and predock, use the fitted model's ligand as the pre-placement, no RH/BB/TS.
-    cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
-    data.globals.wait_cool_cpu()
-    print(" ".join(cmd))
-    subprocess.run(cmd)
+    # Perform an active-state dock on the new model...
+    if odor:
+        cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+        data.globals.wait_cool_cpu()
+        print(" ".join(cmd))
+        subprocess.run(cmd)
 
 tries = 0
 while True:
@@ -369,7 +373,7 @@ while True:
     # print(seq)
 
     os.chdir("hm")
-    cmd = ["php", "-f", "build_alignment_file.php"]
+    cmd = ["python3", "hm/build_alignment_file.py"]
     data.globals.wait_cool_cpu()
     subprocess.run(cmd)
 
@@ -570,9 +574,10 @@ SAVE $outf
         break
     else: tries += 1
 
-    cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
-    data.globals.wait_cool_cpu()
-    subprocess.run(cmd)
+    if odor:
+        cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+        data.globals.wait_cool_cpu()
+        subprocess.run(cmd)
 
     dock_success = False
     dockfile = f"out/{fam}/{protid}/{protid}~{odor['full_name']}.{mode}.dock"

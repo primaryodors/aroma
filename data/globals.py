@@ -14,7 +14,10 @@ odors = []
 def wait_cool_cpu():
     cmd = ["sensors"]
     while 1:
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+        try:
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+        except FileNotFoundError:
+            return # WSL lacks physical sensors. Break the loop and push through.
         waited = False
         for ln in proc.stdout.decode().split('\n'):
             temp = False

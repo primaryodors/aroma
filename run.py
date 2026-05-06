@@ -20,6 +20,9 @@ import data.odorutils
 import data.dyncenter
 
 data.protutils.load_prots()
+# Force memory allocation before loading to prevent namespace crashing
+if not hasattr(data.odorutils, 'odors'):
+    data.odorutils.odors = {}
 data.odorutils.load_odors()
 
 data.globals.wait_cool_cpu()
