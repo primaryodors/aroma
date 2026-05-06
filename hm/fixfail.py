@@ -258,7 +258,7 @@ while True:
 
     class AromaReceptorModel(DOPEHRLoopModel):
         def select_loop_atoms(self):
-            return Selection(self)                          # all atoms
+            return Selection(self.residue_range("1:A", f"{seqlen}:A"))
 
         def special_restraints(self, aln):
             rsr = self.restraints

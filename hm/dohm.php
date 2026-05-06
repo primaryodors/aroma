@@ -68,7 +68,8 @@ foreach ($xlinx as $xl)
 
 if ($disulfs) $disulfs = "    def special_patches(self, aln):\n$disulfs";
 
-$mdlcls = "DOPEHRLoopModel";
+$mdlcls = "AutoModel"; // "DOPEHRLoopModel";
+if ($rcpid == "OR51F1" || $rcpid == "OR51F2" || $rcpid == "OR51G2") $mdlcls = "AutoModel";
 
 exec("php -f build_alignment_file.php");
 
@@ -93,6 +94,8 @@ if (file_exists("atomr_$rcpid"))
 {
     $restraint_atomr = file_get_contents("atomr_$rcpid");
 }
+
+if ($usecpl) $mdlcls = "AutoModel";
 
 $knowns = "";
 
@@ -297,9 +300,6 @@ with open("$rcpid.hm.ali", "w") as f:
     f.write(f"{tgtali}\\n\\n")
 
 class MyModel($mdlcls):
-    def select_loop_atoms(self):
-        return Selection(self)                          # all atoms
-
     def special_restraints(self, aln):
         rsr = self.restraints
         at = self.atoms
