@@ -257,6 +257,9 @@ while True:
         env.io.hetatm = True
 
     class AromaReceptorModel(DOPEHRLoopModel):
+        def select_loop_atoms(self):
+            return Selection(self)                          # all atoms
+
         def special_restraints(self, aln):
             rsr = self.restraints
             at = self.atoms
