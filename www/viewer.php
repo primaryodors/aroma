@@ -517,6 +517,12 @@ function svg_from_smiles(smiles, w, h)
                 <script>
                 window.setTimeout(function()
                 {
+                    var molrawsvg = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
+
+                    // TODO:
+                    // Rotate molrawsvg to place its atoms as close as possible to coordinates in the $ligaxy array.
+                    // Can use the colors of <text> elements to align atoms like oxygen, nitrogen, sulfur, chlorine, etc.
+
                     var svgdat = "<svg id=\"function random() { [native code] }\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"<?php echo $wid; ?>px\" height=\"<?php echo $hei; ?>px\" viewBox=\"0 0 <?php echo $wid; ?> <?php echo $hei; ?>\">"; // svg_from_smiles("<?php echo $o["smiles"]; ?>", <?php echo $wid; ?>, <?php echo $hei; ?>);
                     svgdat = svgdat.replace("</svg>", "");
                     <?php
@@ -541,7 +547,6 @@ function svg_from_smiles(smiles, w, h)
                             $rescxy[$bw] = rotate3D([$cx, $cy, 0], [$wid/2, $hei/2, 0], $ligrot3, $ligrot3[3]);
                         }
                     }
-                    // exit();
 
                     // BRING RESIDUES CLOSER TO INTERACTING ATOMS
                     foreach ($rescxy as $bw => $cxy)

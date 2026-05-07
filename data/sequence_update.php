@@ -39,7 +39,7 @@ foreach ($lines as $i => $ln)
 				$ells[$j] = substr($ln, $j, 1); // $j;
 			}
 		} while (count($jarr));
-		//print_r($ells);
+		// print_r($ells);
 
 		continue;
 	}

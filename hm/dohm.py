@@ -288,6 +288,7 @@ SAVE $outf
     subprocess.run(["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"])
 
     # 10. Cleanup Perimeter
+    return
     os.chdir(script_dir)
     target_pdb = os.path.join(root_dir, "pdbs", fam, f"{rcpid}.active.pdb")
     if os.path.exists(target_pdb) and os.path.getmtime(target_pdb) > os.path.getmtime(phew_path):
