@@ -132,7 +132,7 @@ if "fit" in sys.argv:
     sdfname = data.odorutils.ensure_sdf_exists(odor["full_name"])
     inppdb = f"tmp/{protid}.fit.pdb"
     delete_inppdb = True
-    cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
+    cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "1", "-n", "1", "-o", inppdb]
     data.globals.wait_cool_cpu()
     print(" ".join(cmd))
     subprocess.run(cmd)
@@ -142,6 +142,12 @@ if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
     # Perform an active-state dock on the new model...
     if odor:
         cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+        
+        # ISSUE #5 OVERRIDE: If cavity fit was executed, force the docking engine 
+        # into External (EX) search mode and feed it the exact fit coordinates.
+        if "fit" in sys.argv:
+            cmd.extend(["EX", inppdb])
+            
         data.globals.wait_cool_cpu()
         print(" ".join(cmd))
         subprocess.run(cmd)
