@@ -8252,7 +8252,7 @@
     },
     "2cb1e8f9df11e35e3246d7a9b343ee78":
     {
-        "full_name": "sotolone",
+        "full_name": "(S)-sotolone",
         "name1": "caramel furanone",
         "smiles": "C[C@H]1C(=C(C(=O)O1)O)C",
         "pK":
@@ -8280,6 +8280,13 @@
                 "burnt_sugar",
                 "fenugreek",
                 "curry"
+            ],
+            "https://doi.org/10.1021/acs.jafc.3c09142":
+            [
+                "sweet",
+                "milky",
+                "acidic",
+                "nutty"
             ]
         },
         "activity":
@@ -8397,6 +8404,13 @@
                 "OR8D1":
                 {
                     "ec50": "-5.35"
+                }
+            },
+            "https://doi.org/10.1021/acs.jafc.3c09142":
+            {
+                "OR8D1":
+                {
+                    "ec50": "-4.07"
                 }
             }
         },
@@ -8584,36 +8598,6 @@
             }
         },
         "oid": "2e056651296b2da1d124d6ee4a743041"
-    },
-    "2e05cd3406a41c69cc7c2e749a3b446c":
-    {
-        "full_name": "heliotropin",
-        "smiles": "O=Cc1ccc2c(c1)OCO2",
-        "aroma":
-        {
-            "http://www.thegoodscentscompany.com":
-            [
-                "cherry",
-                "maraschino_cherry",
-                "bitter_almond",
-                "cherry",
-                "tropical",
-                "custard",
-                "vanilla",
-                "spicy"
-            ]
-        },
-        "activity":
-        {
-            "https://patents.google.com/patent/WO2024126820A1/en":
-            {
-                "OR5P3":
-                {
-                    "type": "a"
-                }
-            }
-        },
-        "oid": "2e05cd3406a41c69cc7c2e749a3b446c"
     },
     "2e23e67d62de67e219a69ef501627b18":
     {
@@ -14241,35 +14225,6 @@
         },
         "oid": "54a24de23b1b9537fef18ab457f11e46"
     },
-    "5585c44ec5462e59af3a41e056070567":
-    {
-        "full_name": "ethyl methyl mercaptopropionate",
-        "smiles": "CCOC(=O)CCSC",
-        "aroma":
-        {
-            "http://www.thegoodscentscompany.com":
-            [
-                "sulfurous",
-                "metallic",
-                "pineapple",
-                "fruity",
-                "ripe",
-                "pulpy",
-                "tomato"
-            ]
-        },
-        "activity":
-        {
-            "https://doi.org/10.1093/chemse/bjw118":
-            {
-                "OR2M3":
-                {
-                    "adjusted_curve_top": "0"
-                }
-            }
-        },
-        "oid": "5585c44ec5462e59af3a41e056070567"
-    },
     "558b05f2b0688fb1dd49fa536c1c26cc":
     {
         "full_name": "2-methylisoborneol",
@@ -18712,6 +18667,8 @@
     "6c25661e9f97c5dc0c49421d5227a520":
     {
         "full_name": "ethyl 3-methylthiopropionate",
+        "name1": "ethyl methyl mercaptopropionate",
+        "name2": "methional acid ethyl ester",
         "smiles": "CSCCC(=O)OCC",
         "aroma":
         {
@@ -19299,7 +19256,8 @@
     "6fb895ef826409c3e7c0ed50af71876c":
     {
         "full_name": "piperonal",
-        "smiles": "C1OC2=C(O1)C=C(C=C2)C=O",
+        "name1": "heliotropin",
+        "smiles": "O=Cc1ccc2c(c1)OCO2",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -19356,6 +19314,13 @@
                 "OR2W1":
                 {
                     "ec50": "-3.394"
+                }
+            },
+            "https://patents.google.com/patent/WO2024126820A1/en":
+            {
+                "OR5P3":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -23954,32 +23919,6 @@
             }
         },
         "oid": "85e7a14fc546cbfa1ddd9cce0f303b56"
-    },
-    "8605cd701ef83bfb773714cd01c6bf2b":
-    {
-        "full_name": "(S)-sotolone",
-        "aroma":
-        {
-            "https://doi.org/10.1021/acs.jafc.3c09142":
-            [
-                "sweet",
-                "milky",
-                "acidic",
-                "nutty"
-            ]
-        },
-        "activity":
-        {
-            "https://doi.org/10.1021/acs.jafc.3c09142":
-            {
-                "OR8D1":
-                {
-                    "ec50": "-4.07"
-                }
-            }
-        },
-        "smiles": "C[C@H]1C(=C(C(=O)O1)O)C",
-        "oid": "8605cd701ef83bfb773714cd01c6bf2b"
     },
     "86208d18e5619cf3b167a5185465f418":
     {

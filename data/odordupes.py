@@ -12,7 +12,11 @@ import subprocess
 # Enforce correct path resolution for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data.odorutils import load_odors
+import data.globals
+import data.odorutils
+import data.dyncenter
+
+data.odorutils.load_odors()
 
 
 def num_heavy_atoms(smiles: str) -> int:
@@ -57,17 +61,16 @@ def get_canonical(odorant: dict) -> str:
 
 def main():
     """Main execution loop for duplicate detection."""
-    odors = load_odors()
 
     # -----------------------------------------
     # ARCHITECTURAL ENFORCEMENT: VALIDATE PAYLOAD
     # -----------------------------------------
-    if odors is None:
+    if data.odorutils.odors is None:
         print("FATAL ERROR: load_odors() returned None.", file=sys.stderr)
         print("The system failed to extract the dataset. Check the file paths and I/O logic in data.odorutils.", file=sys.stderr)
         sys.exit(1)
 
-    if not isinstance(odors, list) or len(odors) == 0:
+    if not isinstance(data.odorutils.odors, dict) or len(data.odorutils.odors) == 0:
         print("WARNING: load_odors() returned an empty list. No data to process.", file=sys.stderr)
         sys.exit(0)
     # -----------------------------------------
@@ -75,16 +78,16 @@ def main():
     # Execute the comparison matrix
     canonical_map = {}
     
-    for odor in odors:
+    for oid in data.odorutils.odors:
         # 1. Calculate canonical SMILES exactly once per molecule
-        canonical = get_canonical(odor)
+        canonical = get_canonical(data.odorutils.odors[oid])
         if not canonical:
             continue
             
         # 2. Hash the molecule into the map
         if canonical not in canonical_map:
             canonical_map[canonical] = []
-        canonical_map[canonical].append(odor)
+        canonical_map[canonical].append(data.odorutils.odors[oid])
         
     print("Pre-computation complete. Identifying duplicates...", file=sys.stderr)
 

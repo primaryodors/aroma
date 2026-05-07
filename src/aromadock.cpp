@@ -672,9 +672,9 @@ void iteration_callback(int iter, Molecule** mols)
 
     // Stochastically force flexion on some side chains that get clashes.
     #if stochastic_flexion_of_clashing_residues
-    for (l=0; mols[l]; l++)
+    if (flex) for (l=0; mols[l]; l++)
     {
-        if (mols[l]->movability & MOV_PINNED) continue;
+        if (mols[l]->movability != MOV_FLXDESEL) continue;
         Interaction li = mols[l]->get_intermol_binding(mols);
         float lf = li.summed(), lc = li.clash, ptnl = mols[l]->get_intermol_potential(mols);
 

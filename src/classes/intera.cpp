@@ -1524,9 +1524,10 @@ float InteratomicForce::Lennard_Jones(Atom* atom1, Atom* atom2, float sigma)
     if (!sigma) sigma = atom1->vdW_radius + atom2->vdW_radius - local_clash_allowance;
     float r = atom1->distance_to(atom2);
     float sigma_r = sigma / r;
-
-    // Counterintuitively, std::pow() is faster than direct multiplication.
-    return Lennard_Jones_epsilon_x4 * (std::pow(sigma_r, 12) - 2.0*std::pow(sigma_r, 6));
+    float r3 = sigma_r*sigma_r*sigma_r;
+    float r6 = r3*r3;
+    float r12 = r6*r6;
+    return Lennard_Jones_epsilon_x4 * (r12 - 2.0*r6);
 }
 
 bool Interaction::improved(Interaction rel)

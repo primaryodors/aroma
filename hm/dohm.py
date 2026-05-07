@@ -151,7 +151,7 @@ def main():
     if riglig:
         env.io.hetatm = True
 
-    class MyModel(AutoModel):
+    class AromaModel(AutoModel):
         def special_patches(self, aln):
             # Check for 3.25 - 45.50 disulfide bridge
             try:
@@ -203,7 +203,7 @@ def main():
 
     # 6. Execute Homology Model
     print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
-    a = MyModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
+    a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
     a.starting_model = 0
     a.ending_model = 9
     a.library_schedule = autosched.slow
