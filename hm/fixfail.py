@@ -132,7 +132,7 @@ if "fit" in sys.argv:
     sdfname = data.odorutils.ensure_sdf_exists(odor["full_name"])
     inppdb = f"tmp/{protid}.fit.pdb"
     delete_inppdb = True
-    cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "1", "-n", "1", "-o", inppdb]
+    cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
     data.globals.wait_cool_cpu()
     print(" ".join(cmd))
     subprocess.run(cmd)
