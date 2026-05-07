@@ -66,8 +66,11 @@ origpdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
 if argc > 2:
     inppdb = sys.argv[2]
     # Bypass file checks if the user provided a command keyword instead of a PDB file
-    if inppdb in ["help", "reset", "fit", "predock", "loop", "dock"]:
+    if inppdb in ["help"]:
         argc = 2  # Downgrade argument count so downstream logic ignores the missing PDB
+    elif inppdb in ["reset", "fit", "predock", "loop", "dock"]:
+        print("Second argument must be a path to a PDB file or a protein ID.", file=sys.stderr)
+        exit()
     else:
         if not os.path.exists(inppdb):
             inppdb = f"out/{fam}/{protid}/{protid}~{sys.argv[2]}.{mode}.model1.pdb"

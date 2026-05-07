@@ -5074,6 +5074,7 @@ _exitposes:
         }
         pose = 1;
         protein = &pose_proteins[lbi];
+        ligand = &pose_ligands[lbi];
         do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
 
         if (append_pdb && outpdb_poses)

@@ -13,10 +13,14 @@ odors = []
 
 def wait_cool_cpu():
     cmd = ["sensors"]
+    time.sleep(2)           # In case this thread's previous step heated the CPU.
     while 1:
         try:
             proc = subprocess.run(cmd, stdout=subprocess.PIPE)
         except FileNotFoundError:
+            print("WARNING: Unable to monitor CPU temperature to prevent overheating.")
+            print("If you plan to run multiple simultaneous docks, homology models, fixfails, etc.,")
+            print("then there may be a risk of overheating the processor. Otherwise, it's safe to ignore this warning.")
             return # WSL lacks physical sensors. Break the loop and push through.
         waited = False
         for ln in proc.stdout.decode().split('\n'):

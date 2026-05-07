@@ -11,7 +11,8 @@ try:
     RDKIT_AVAILABLE = True
 except ImportError:
     RDKIT_AVAILABLE = False
-    print("WARNING: RDKit not found in environment. System defaulting to OpenBabel fallback.", file=sys.stderr)
+    print("ERROR: RDKit not found in environment.", file=sys.stderr)
+    exit()
 
 odors = {}
 
