@@ -142,6 +142,12 @@ if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
     # Perform an active-state dock on the new model...
     if odor:
         cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+        
+        # ISSUE #5 OVERRIDE: If cavity fit was executed, force the docking engine 
+        # into External (EX) search mode and feed it the exact fit coordinates.
+        if "fit" in sys.argv:
+            cmd.extend(["EX", inppdb])
+            
         data.globals.wait_cool_cpu()
         print(" ".join(cmd))
         subprocess.run(cmd)
