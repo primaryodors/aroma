@@ -3770,6 +3770,17 @@
         },
         "oid": "14d72420cc149f59c7920656c2d00755"
     },
+    "14f1cc347f22eedd546cd5a9598233e5":
+    {
+        "full_name": "isopropyl 3-methylvalerate",
+        "smiles": "CCC(CC(=O)OC(C)C)C",
+        "isomers":
+        {
+            "(R)": "CC[C@H](CC(=O)OC(C)C)C",
+            "(S)": "CC[C@@H](CC(=O)OC(C)C)C"
+        },
+        "oid": "14f1cc347f22eedd546cd5a9598233e5"
+    },
     "151e8ee457fd70c2e08c2b808487989a":
     {
         "full_name": "methyl tuberate",
@@ -5355,6 +5366,13 @@
                 "OR14J1":
                 {
                     "ec50": "-5.66"
+                }
+            },
+            "https://doi.org/10.1016/j.phymed.2026.158408":
+            {
+                "OR13G1":
+                {
+                    "type": "a"
                 }
             }
         },
@@ -17118,6 +17136,13 @@
                 {
                     "adjusted_curve_top": "4"
                 }
+            },
+            "https://doi.org/10.1016/j.cbi.2026.112214":
+            {
+                "OR7D2":
+                {
+                    "type": "sa"
+                }
             }
         },
         "oid": "663b02f9a091b68b2b12ac695e8d5a82"
@@ -24257,6 +24282,17 @@
         },
         "oid": "881f5d4d9db863b3be88512c99047dd6"
     },
+    "8849f5d3bb17d821fff74feda1949606":
+    {
+        "full_name": "isoamyl 3-methylvalerate",
+        "smiles": "CCC(CC(=O)OCCC(C)C)C",
+        "isomers":
+        {
+            "(R)": "CC[C@H](CC(=O)OCCC(C)C)C",
+            "(S)": "CC[C@@H](CC(=O)OCCC(C)C)C"
+        },
+        "oid": "8849f5d3bb17d821fff74feda1949606"
+    },
     "889748872983de7214334b637f8ad5b3":
     {
         "full_name": "methyl isobutyl ketone",
@@ -25381,6 +25417,13 @@
                 "OR10G7":
                 {
                     "ec50": "-6.29"
+                }
+            },
+            "https://doi.org/10.1016/j.cbi.2026.112214":
+            {
+                "OR10A4":
+                {
+                    "type": "sa"
                 }
             }
         },
@@ -36387,6 +36430,17 @@
         },
         "soluble": "w",
         "oid": "d5ca075c633a3f8067608fae49d2d7e8"
+    },
+    "d60b307219f81f7fa5b45f37d9b03ea9":
+    {
+        "full_name": "isobutyl 3-methylvalerate",
+        "isomers":
+        {
+            "(R)": "CC[C@H](CC(=O)OCC(C)C)C",
+            "(S)": "CC[C@@H](CC(=O)OCC(C)C)C"
+        },
+        "smiles": "CCC(CC(=O)OCC(C)C)C",
+        "oid": "d60b307219f81f7fa5b45f37d9b03ea9"
     },
     "d6234cfb0dd2cb7281951b3219c29c84":
     {

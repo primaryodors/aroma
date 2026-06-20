@@ -104,6 +104,12 @@
         "short_name": "Billesb\u00f8lle et al (2022)",
         "citation": "Christian B. Billesb\u00f8lle, Claire A. de March, Wijnand J. C. van der Velden, Ning Ma, Jeevan Tewari, Claudia Llinas del Torrent, Linus Li, Bryan Faust, Nagarajan Vaidehi, Hiroaki Matsunami, Aashish Manglik. Structural basis of odorant recognition by a human odorant receptor. bioRxiv 2022.12.20.520951; doi: https://doi.org/10.1101/2022.12.20.520951"
     },
+    "https://doi.org/10.1016/j.cbi.2026.112214":
+    {
+        "short_name": "Bin et al (2026)",
+        "citation": "Bin, Y., Kang, W., Jung, Y., Lee, H., Ha, Y., & Park, T. (2026). Activation of the olfactory receptors OR7D2 and OR10A4 by natural odorants modulates inflammatory responses in human keratinocytes. Chemico-Biological Interactions, 112214.",
+        "opinion": "Paywalls can kma."
+    },
     "https://pubmed.ncbi.nlm.nih.gov/30453735/":
     {
         "short_name": "Block (2018)",
@@ -1119,6 +1125,11 @@
     {
         "short_name": "Zhao et al (2013)",
         "citation": "Zhao W, Ho L, Varghese M, Yemul S, Dams-O'Connor K, Gordon W, Knable L, Freire D, Haroutunian V, Pasinetti GM. Decreased level of olfactory receptors in blood cells following traumatic brain injury and potential association with tauopathy. J Alzheimers Dis. 2013;34(2):417-429. doi: 10.3233/JAD-121894. PMID: 23241557; PMCID: PMC3968322."
+    },
+    "https://doi.org/10.1016/j.phymed.2026.158408":
+    {
+        "short_name": "Zhao et al (2026)",
+        "citation": "Zhao, Hui, et al. \"Patchouli oil and its main component patchouli alcohol inhibit colorectal cancer by activating ectopic olfactory receptor.\" Phytomedicine (2026): 158408."
     },
     "https://elifesciences.org/articles/50279":
     {

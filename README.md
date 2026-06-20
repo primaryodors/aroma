@@ -3,7 +3,7 @@ https://www.primaryodors.org
 
 # Dependencies
 
-g++ make openbabel python3 python3-pybel python3-biopython python3-natsort lm-sensors librdkit1 python3-rdkit rdkit-data php php-curl php-gd
+g++ make openbabel python3 python3-pybel python3-biopython python3-natsort lm-sensors librdkit1 python3-rdkit rdkit-data php php-curl php-gd wget woff2
 
 If your operating system or environment doesn't support `lm-sensors`, and you plan to run multiple simultaneous docks or other processes,
 then it is important to monitor your processor temperature to ensure it does not overheat.
