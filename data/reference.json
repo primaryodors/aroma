@@ -187,8 +187,13 @@
     },
     "https://doi.org/10.1038/s41467-023-43983-9":
     {
-        "short_name": "Choi Bae et al (2023)",
+        "short_name": "Choi et al (2023)",
         "citation": "Choi, C., Bae, J., Kim, S. et al. Understanding the molecular mechanisms of odorant binding and activation of the human OR52 family. Nat Commun 14, 8105 (2023)."
+    },
+    "https://doi.org/10.1038/s42003-026-10317-6":
+    {
+        "short_name": "Choi et al (2026)",
+        "citation": "Choi, C., Byeon, H., Lee, J., Lee, H. G., Seok, C., & Choi, H. J. (2026). Structural basis of the sweat odorant HMHA recognition by the human odorant receptor OR52E8. Communications Biology."
     },
     "https://doi.org/10.1111/cbdd.12903":
     {

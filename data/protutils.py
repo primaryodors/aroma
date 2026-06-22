@@ -125,7 +125,7 @@ def build_pdb_fname(protid, suffix="active"):
 
 def templates_for_hm(protid):
     consOR51 = ["8uxv"]
-    consOR52 = ["8hti"]
+    consOR52 = ["8hti", "9wg4"]
     OR51E2 = ["8f76"]
     consOR1 = ["8uxy"]
     OR1D2 = ["9w45"]
