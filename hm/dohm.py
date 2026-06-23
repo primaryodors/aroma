@@ -103,7 +103,7 @@ def main():
     # 3. Build Custom Template
     # We must ensure we are in the hm/ directory for template writing
     os.chdir(script_dir)
-    
+
     result_str = pu.custom_pdb_template(tgtali, rcpid, f"{rcpid}_tpl.pdb")
     pieces = result_str.split("\n", 1)
     tplsused = pieces[0]
@@ -181,8 +181,8 @@ def main():
             except Exception:
                 pass
 
-            # Cu-binding site distance restraints (OR2M / OR2T)
-            if famsub in ["OR2M", "OR2T"]:
+            # Cu-binding site distance restraints (OR2M/T/V)
+            if famsub in ["OR2M", "OR2T", "OR2V"]:
                 try:
                     r539, r542, r543, r546 = [pu.resno_from_bw(rcpid, x) for x in ["5.39", "5.42", "5.43", "5.46"]]
                     seq = p['sequence']
@@ -207,8 +207,8 @@ def main():
     a.starting_model = 0
     a.ending_model = 9
     a.library_schedule = autosched.slow
-    a.max_var_iterations = 300
-    
+    a.max_var_iterations = 1000
+
     if rcpid in ["OR2AE1", "OR2AG1", "OR2AG2"]:
         a.md_level = refine.very_slow
 
@@ -229,7 +229,7 @@ def main():
 
     best_model = min(ok_models, key=lambda m: m['molpdf'])
     best_pdb = best_model['name']
-    print(f"Best model generated: {best_pdb} with molpdf {best_model['molpdf']}", file=sys.stderr)
+    print(f"Best model generated: {best_pdb} with molpdf {best_model['molpdf']}")
 
     # 8. Post-Processing Script Generation (.phew)
     adjustments = ""
@@ -281,13 +281,13 @@ SAVE $outf
     with open(phew_path, "w") as f:
         f.write(phew_script)
 
-    # 9. Execute External Binaries
+    # 9. Adapt output file for AromaDock compatibility
     print("Running orientation and internal coordinates...", file=sys.stderr)
     os.chdir(root_dir)
     subprocess.run(["./bin/phew", f"hm/{phew_path}"])
     subprocess.run(["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"])
 
-    # 10. Cleanup Perimeter
+    # 10. Clean up temporary files
     return
     os.chdir(script_dir)
     target_pdb = os.path.join(root_dir, "pdbs", fam, f"{rcpid}.active.pdb")

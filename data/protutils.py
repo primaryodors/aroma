@@ -294,6 +294,8 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
 
+    ntpls = 5
+
     # Choose experimental structures by grouping.
     fam = family_from_protid(rcpid)
     exclude = []
@@ -340,7 +342,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
         if pdbid in exclude: continue
         simaln = aln_similarity(aln, alns[pdbid])
         # print(f"{pdbid}: {simaln}")
-        for i in range(5):
+        for i in range(ntpls):
             if i >= len(closest_ids):
                 closest_ids.append(pdbid)
                 closest_sim.append(simaln)
@@ -359,14 +361,15 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
 
     # Make the highest weight 5 times the lowest weight, and make the weights add up to 1.
     # Since we want the highest to be 5 times as much as the lowest, that means we want it to be 4 times more.
-    span = closest_sim[0] - closest_sim[4]
-    tosub = closest_sim[4]; # - span/4
-    for i in range(5):
-        weights.append(closest_sim[i] - tosub)
+    if ntpls > 1:
+        tosub = closest_sim[ntpls-1];
+        for i in range(ntpls):
+            weights.append(closest_sim[i] - tosub)
 
-    divisor = sum(weights)
-    for i in range(5):
-        weights[i] = weights[i] / divisor
+        divisor = sum(weights)
+        for i in range(ntpls):
+            weights[i] = weights[i] / divisor
+    else: weights[0] = 1.0
 
     print(weights)
 
