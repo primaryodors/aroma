@@ -524,8 +524,8 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
                 else:
                     print(f"WARNING: {aname} not found in {pdbid1}")
 
-    atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
-    seq0 = dict(natsorted(seq0.items()))
+        atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
+        seq0 = dict(natsorted(seq0.items()))
 
     # Generate a PDB of transposed and rotated 3D coordinates of the weighted average of the closest sequences.
     atno = 1
