@@ -294,7 +294,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
 
-    ntpls = 5
+    ntpls = 1
 
     # Choose experimental structures by grouping.
     fam = family_from_protid(rcpid)
@@ -369,7 +369,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
         divisor = sum(weights)
         for i in range(ntpls):
             weights[i] = weights[i] / divisor
-    else: weights[0] = 1.0
+    else: weights.append(1.0)
 
     print(weights)
 
