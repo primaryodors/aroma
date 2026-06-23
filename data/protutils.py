@@ -504,24 +504,25 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
         frist = False
 
     # The OR5V1 cryo-EM is missing the EXR2 helix, but accurate predictions require that helix, so we'll fill it in from the consOR5 structure.
-    pdbid0 = closest_ids[0]
-    pdbid1 = closest_ids[1]
-    outali = alns[closest_ids[0]]
-    h = 5
-    for m in range(19, 58):
-        aname = f"{h}.{m}:CA"
-        seqkey = f"{h}.{m}"
-        if not aname in atomxyz[pdbid0]:
-            if aname in atomxyz[pdbid1]:
-                atomxyz[pdbid0][aname] = atomxyz[pdbid1][aname].copy()
-                seq0[seqkey] = "GLY"
+    if rcpid == "OR5V1":
+        pdbid0 = closest_ids[0]
+        pdbid1 = closest_ids[1]
+        outali = alns[closest_ids[0]]
+        h = 5
+        for m in range(19, 58):
+            aname = f"{h}.{m}:CA"
+            seqkey = f"{h}.{m}"
+            if not aname in atomxyz[pdbid0]:
+                if aname in atomxyz[pdbid1]:
+                    atomxyz[pdbid0][aname] = atomxyz[pdbid1][aname].copy()
+                    seq0[seqkey] = "GLY"
 
-                mstr = m+49
-                outalilns = outali.split("\n")
-                outalilns[h-1] = outalilns[h-1][0:mstr] + "G" + outalilns[h-1][mstr+1:]
-                outali = "\n".join(outalilns)
-            else:
-                print(f"WARNING: {aname} not found in {pdbid1}")
+                    mstr = m+49
+                    outalilns = outali.split("\n")
+                    outalilns[h-1] = outalilns[h-1][0:mstr] + "G" + outalilns[h-1][mstr+1:]
+                    outali = "\n".join(outalilns)
+                else:
+                    print(f"WARNING: {aname} not found in {pdbid1}")
 
     atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
     seq0 = dict(natsorted(seq0.items()))
