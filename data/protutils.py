@@ -505,9 +505,9 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
 
     # The OR5V1 cryo-EM is missing the EXR2 helix, but accurate predictions require that helix, so we'll fill it in from the consOR5 structure.
     pdbid0 = closest_ids[0]
+    outali = alns[closest_ids[0]]
     if rcpid == "OR5V1":
         pdbid1 = closest_ids[1]
-        outali = alns[closest_ids[0]]
         h = 5
         for m in range(19, 58):
             aname = f"{h}.{m}:CA"
