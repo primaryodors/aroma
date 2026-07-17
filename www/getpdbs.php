@@ -82,7 +82,7 @@ foreach ($prots as $protid => $p)
     $infname = "pdbs/$fam/import/".substr($url, strrpos($url, "/")+2);
     $outfname = "pdbs/$fam/$protid.inactive.pdb";
 
-    if (file_exists($infname) && file_exists($outfname) && filemtime($outfname) >= $tmcutoff) continue;
+    if (file_exists($outfname) && filemtime($outfname) >= $tmcutoff) continue;
 
     $antitax_server = true;
     if (!file_exists($infname))

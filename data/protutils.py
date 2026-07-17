@@ -294,6 +294,8 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
     with open("../hm/experimental.ali", "r") as f:
         c = f.read().__str__()
 
+    ntpls = 1
+
     # Choose experimental structures by grouping.
     fam = family_from_protid(rcpid)
     exclude = []
@@ -340,7 +342,7 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
         if pdbid in exclude: continue
         simaln = aln_similarity(aln, alns[pdbid])
         # print(f"{pdbid}: {simaln}")
-        for i in range(5):
+        for i in range(ntpls):
             if i >= len(closest_ids):
                 closest_ids.append(pdbid)
                 closest_sim.append(simaln)
@@ -359,14 +361,15 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
 
     # Make the highest weight 5 times the lowest weight, and make the weights add up to 1.
     # Since we want the highest to be 5 times as much as the lowest, that means we want it to be 4 times more.
-    span = closest_sim[0] - closest_sim[4]
-    tosub = closest_sim[4]; # - span/4
-    for i in range(5):
-        weights.append(closest_sim[i] - tosub)
+    if ntpls > 1:
+        tosub = closest_sim[ntpls-1];
+        for i in range(ntpls):
+            weights.append(closest_sim[i] - tosub)
 
-    divisor = sum(weights)
-    for i in range(5):
-        weights[i] = weights[i] / divisor
+        divisor = sum(weights)
+        for i in range(ntpls):
+            weights[i] = weights[i] / divisor
+    else: weights.append(1.0)
 
     print(weights)
 
@@ -502,26 +505,27 @@ def custom_pdb_template(aln, rcpid, output_fname):                             #
 
     # The OR5V1 cryo-EM is missing the EXR2 helix, but accurate predictions require that helix, so we'll fill it in from the consOR5 structure.
     pdbid0 = closest_ids[0]
-    pdbid1 = closest_ids[1]
     outali = alns[closest_ids[0]]
-    h = 5
-    for m in range(19, 58):
-        aname = f"{h}.{m}:CA"
-        seqkey = f"{h}.{m}"
-        if not aname in atomxyz[pdbid0]:
-            if aname in atomxyz[pdbid1]:
-                atomxyz[pdbid0][aname] = atomxyz[pdbid1][aname].copy()
-                seq0[seqkey] = "GLY"
+    if rcpid == "OR5V1":
+        pdbid1 = closest_ids[1]
+        h = 5
+        for m in range(19, 58):
+            aname = f"{h}.{m}:CA"
+            seqkey = f"{h}.{m}"
+            if not aname in atomxyz[pdbid0]:
+                if aname in atomxyz[pdbid1]:
+                    atomxyz[pdbid0][aname] = atomxyz[pdbid1][aname].copy()
+                    seq0[seqkey] = "GLY"
 
-                mstr = m+49
-                outalilns = outali.split("\n")
-                outalilns[h-1] = outalilns[h-1][0:mstr] + "G" + outalilns[h-1][mstr+1:]
-                outali = "\n".join(outalilns)
-            else:
-                print(f"WARNING: {aname} not found in {pdbid1}")
+                    mstr = m+49
+                    outalilns = outali.split("\n")
+                    outalilns[h-1] = outalilns[h-1][0:mstr] + "G" + outalilns[h-1][mstr+1:]
+                    outali = "\n".join(outalilns)
+                else:
+                    print(f"WARNING: {aname} not found in {pdbid1}")
 
-    atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
-    seq0 = dict(natsorted(seq0.items()))
+        atomxyz[pdbid0] = dict(natsorted(atomxyz[pdbid0].items()))
+        seq0 = dict(natsorted(seq0.items()))
 
     # Generate a PDB of transposed and rotated 3D coordinates of the weighted average of the closest sequences.
     atno = 1
