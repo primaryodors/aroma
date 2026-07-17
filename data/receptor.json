@@ -32824,6 +32824,70 @@
         "aligned": "----------------------------------------MTLVSFFSFLSKPLIMLLSNSSWRLSQPSFLLVGIPGLEESQHWIALPLGILYLLALVGNVTILFIIW------------------------------------------------------------------------------------------------------MDPSLHQSMYLFLSMLAAIDLVLASSTAPKALAVLLV------------------------------------------------------------------------------HAHEIGYIVCLIQMFFIHAFSSMESGVLVAMALDCYVAICH-------------------------------------------------------------------------------------------------------PLHHSTILHPGVIGCIGMVVLVRGLLLLIPFPILL---------------------------------------------------------------------GKLIFCQATIIGHAYCEHMAVVKLACSETTVNRAYGLTMALLVIGLDVLAIGVSYAHILQAVLKV--------------------------------------------------------------------------------------PGSEARLKAFSTCGSHICVILVFYVPGIFSFLTHR-----------------------------------------------------------------------------------------------FGHHVPHHVHVLLATWYLLMPPALNPLVYGVK------------------------------------------------------------------------------------------------------------------------TQQIRQRVLRVFTQKD----------------------",
         "expression": 96
     },
+    "OR52M1":
+    {
+        "id": "OR52M1",
+        "uniprot_id": "Q8NGK5",
+        "sequence": "MLTFHNVCSVPSSFWLTGIPGLESLHVWLSIPFGSMYLVAVVGNVTILAVVKIERSLHQPMYFFLCMLAAIDLVLSTSTIPKLLGIFWFGACDIGLDACLGQMFLIHCFATVESGIFLAMAFDRYVAICNPLRHSMVLTYTVVGRLGLVSLLRGVLYIGPLPLMIRLRLPLYKTHVISHSYCEHMAVVALTCGDSRVNNVYGLSIGFLVLILDSVAIAASYVMIFRAVMGLATPEARLKTLGTCASHLCAILIFYVPIAVSSLIHRFGQCVPPPVHTLLANFYLLIPPILNPIVYAVRTKQIRESLLQIPRIEMKIR",
+        "bw":
+        {
+            "1.50": "44",
+            "2.50": "72",
+            "3.50": "124",
+            "34.50": "131",
+            "4.50": "151",
+            "45.50": "182",
+            "5.50": "214",
+            "56.50": "232",
+            "6.50": "257",
+            "7.50": "292",
+            "8.50": "302"
+        },
+        "region":
+        {
+            "TMR1":
+            {
+                "start": 22,
+                "end": 54
+            },
+            "TMR2":
+            {
+                "start": 60,
+                "end": 89
+            },
+            "TMR3":
+            {
+                "start": 93,
+                "end": 130
+            },
+            "TMR4":
+            {
+                "start": 140,
+                "end": 166
+            },
+            "TMR5":
+            {
+                "start": 194,
+                "end": 231
+            },
+            "TMR6":
+            {
+                "start": 236,
+                "end": 268
+            },
+            "TMR7":
+            {
+                "start": 272,
+                "end": 297
+            },
+            "HXR8":
+            {
+                "start": 298,
+                "end": 317
+            }
+        },
+        "aligned": "--------------------------------------------------------MLTFHNVCSVPSSFWLTGIPGLESLHVWLSIPFGSMYLVAVVGNVTILAVVK------------------------------------------------------------------------------------------------------IERSLHQPMYFFLCMLAAIDLVLSTSTIPKLLGIFWF------------------------------------------------------------------------------GACDIGLDACLGQMFLIHCFATVESGIFLAMAFDRYVAICN-------------------------------------------------------------------------------------------------------PLRHSMVLTYTVVGRLGLVSLLRGVLYIGPLPLMI-------------------------------------------------------------------RLRLPLYKTHVISHSYCEHMAVVALTCGDSRVNNVYGLSIGFLVLILDSVAIAASYVMIFRAVMGL---------------------------------------------------------------------------------------ATPEARLKTLGTCASHLCAILIFYVPIAVSSLIHR-----------------------------------------------------------------------------------------------FGQCVPPPVHTLLANFYLLIPPILNPIVYAVR------------------------------------------------------------------------------------------------------------------------TKQIRESLLQIPRIEMKIR-------------------"
+    },
     "OR52N1":
     {
         "id": "OR52N1",

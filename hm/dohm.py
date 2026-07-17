@@ -151,16 +151,64 @@ def main():
     if riglig:
         env.io.hetatm = True
 
+    dspotr1 = [pu.resno_from_bw(rcpid, "3.25"),                     # Conserved TMR3-EXR2 bond
+                pu.resno_from_bw(rcpid, "45.40"),                   # https://doi.org/10.1002/pro.2717 (goddamn paywalled)
+                pu.resno_from_bw(rcpid, "3.40")                     # OR10D/G/S feature, plus a handful of other ORs
+                ]
+    dspotr2 = [pu.resno_from_bw(rcpid, "45.50"),
+                pu.resno_from_bw(rcpid, "45.60"),
+                pu.resno_from_bw(rcpid, "5.50")
+                ]
+
+    # https://doi.org/10.1016/j.jbc.2026.113319
+    if rcpid == "OR5W2":
+        dspotr1.append(6)
+        dspotr2.append(pu.resno_from_bw(rcpid, "45.38"))
+
+    elif rcpid == "OR4D10":
+        dspotr2[1] = 6
+    elif rcpid == "OR10A7":
+        dspotr2[1] = 3
+    elif rcpid == "OR51E2":
+        dspotr2[1] = 4
+
+    elif rcpid == "OR52M1":
+        dspotr1[1] = 8
+    elif rcpid == "OR5L1":
+        dspotr1[1] = 6
+    elif rcpid == "OR5L2":
+        dspotr1[1] = 6
+    elif rcpid == "OR2AT4":
+        dspotr1[1] = 6
+
+    elif rcpid == "OR56A1":
+        dspotr1.append(23)
+        dspotr2.append(pu.resno_from_bw(rcpid, "45.48"))
+    elif rcpid == "OR56A3":
+        dspotr1.append(20)
+        dspotr2.append(pu.resno_from_bw(rcpid, "45.48"))
+    elif rcpid == "OR56A4":
+        dspotr1.append(19)
+        dspotr2.append(pu.resno_from_bw(rcpid, "45.48"))
+    elif rcpid == "OR56A5":
+        dspotr1.append(19)
+        dspotr2.append(pu.resno_from_bw(rcpid, "45.48"))
+
+    dsres1 = []
+    dsres2 = []
+
     class AromaModel(AutoModel):
         def special_patches(self, aln):
-            # Check for 3.25 - 45.50 disulfide bridge
-            try:
-                r1 = pu.resno_from_bw(rcpid, "3.25")
-                r2 = pu.resno_from_bw(rcpid, "45.50")
-                if r1 and r2 and p['sequence'][r1-1] == 'C' and p['sequence'][r2-1] == 'C':
-                    self.patch(residue_type='DISU', residues=(self.residues[f'{r1}:A'], self.residues[f'{r2}:A']))
-            except Exception:
-                pass
+            # Add disulfide bridges
+            for idx, r1 in enumerate(dspotr1):
+                r2 = dspotr2[idx]
+                try:
+                    if r1 and r2 and p['sequence'][r1-1] == 'C' and p['sequence'][r2-1] == 'C':
+                        self.patch(residue_type='DISU', residues=(self.residues[f'{r1}:A'], self.residues[f'{r2}:A']))
+                        dsres1.append(r1)
+                        dsres2.append(r2)
+                except Exception:
+                    pass
 
         def special_restraints(self, aln):
             rsr = self.restraints
@@ -170,16 +218,16 @@ def main():
             for rgs, rge in alpha_helices:
                 rsr.add(secondary_structure.Alpha(self.residue_range(f'{rgs}:A', f'{rge}:A')))
 
-            # Disulfide distance restraint
-            try:
-                r1 = pu.resno_from_bw(rcpid, "3.25")
-                r2 = pu.resno_from_bw(rcpid, "45.50")
-                if r1 and r2 and p['sequence'][r1-1] == 'C' and p['sequence'][r2-1] == 'C':
-                    rsr.add(forms.Gaussian(group=physical.xy_distance,
-                                           feature=features.Distance(at[f'SG:{r1}:A'], at[f'SG:{r2}:A']),
-                                           mean=2.05, stdev=0.2))
-            except Exception:
-                pass
+            # Disulfide distance restraints
+            for idx, r1 in enumerate(dsres1):
+                r2 = dsres2[idx]
+                try:
+                    if r1 and r2 and p['sequence'][r1-1] == 'C' and p['sequence'][r2-1] == 'C':
+                        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                                            feature=features.Distance(at[f'SG:{r1}:A'], at[f'SG:{r2}:A']),
+                                            mean=2.05, stdev=0.2))
+                except Exception:
+                    pass
 
             # Cu-binding site distance restraints (OR2M/T/V)
             if famsub in ["OR2M", "OR2T", "OR2V"]:
@@ -259,7 +307,6 @@ STRAND A
 IF "{tplsused}" = "" REMARK 265 HM_TEMPLATES: none
 ELSE REMARK 265 HM_TEMPLATES: {tplsused}
 
-DELETE 1 %1.26
 HYDRO
 
 UNCHAIN I

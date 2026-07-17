@@ -115,7 +115,7 @@ foreach ($prots as $protid => $p)
     $tree[$path] = $protid;
 }
 
-ksort($tree, SORT_STRING);
+// ksort($tree, SORT_STRING);
 
 ?>
 <style>
@@ -301,7 +301,8 @@ ksort($tree, SORT_STRING);
 <div id="seqdiv">
     <pre><?php // print_r($rgns); exit;
             $ffam = "";
-            foreach ($tree as $protid)
+            // foreach ($tree as $protid)
+            foreach (array_keys($prots) as $protid)
             {
                 $fam = family_from_protid($protid);
                 if ($ffam != $fam)

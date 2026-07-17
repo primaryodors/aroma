@@ -435,6 +435,7 @@ else
             $lets .= "<b style=\"color: $col;\">";
             $bold=1;
         }
+        else if ($aaletter == 'C' && $i < $receptor['region']["TMR1"]['start']) $lets .= "<b style=\"color: #ec0;\">";
 
         $between = ($nxtmr-1)."$nxtmr.50";
         if (($i+1) == resno_from_bw($rcpid, "$nxtmr.50")
@@ -455,6 +456,7 @@ else
             $nxtmr++;
             $bold=0;
         }
+        else if ($aaletter == 'C' && $i < $receptor['region']["TMR1"]['start']) $lets .= "</b>";
 
         _tail:
         if (($i % 10) == 9) $lets .= ' ';
@@ -624,7 +626,7 @@ echo "</p>";*/
 
     for ($i=0; $i<$mxrt; $i++)
     {
-        foreach (array_reverse($rgntext) as $rgn => $text) if (substr($rgn,0,3) == 'TMR') 
+        foreach (array_reverse($rgntext) as $rgn => $text) if (substr($rgn,0,3) == 'TMR')
         {
             $tmr = intval(substr($rgn,-1));
             if (isset($text[$i]))
@@ -667,6 +669,7 @@ echo "</p>";*/
 
                         echo "font-weight: bold; ";
                     }
+
                     echo "\">";
                     if (@$_REQUEST["abc"]) echo chr(65+strpos("ARNDCEQGHILKMFPSTWYV", substr($text[$i],$j,1)));
                     else echo substr($text[$i],$j,1);
