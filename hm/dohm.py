@@ -304,9 +304,12 @@ def main():
     for idx, r1 in enumerate(dsres1):
         r2 = dsres2[idx]
         dsphew += f"""
+MEASURE {r1} SG {r2} SG &d
+IF &d > 3 GOTO _nodisulf{idx}
 DELATOM {r1} HG
 DELATOM {r2} HG
 CONECT {r1} SG {r2} SG
+_nodisulf{idx}:
 """
 
     phew_script = f"""LET $rcpid = "{rcpid}"
