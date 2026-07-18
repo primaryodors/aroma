@@ -194,6 +194,15 @@ def main():
         dspotr1.append(19)
         dspotr2.append(pu.resno_from_bw(rcpid, "45.48"))
 
+    # Other misc cross links
+    elif rcpid == "OR1B1":
+        dspotr1[1] = pu.resno_from_bw(rcpid, "45.34")
+    elif rcpid == "OR1C1":
+        dspotr1.append(pu.resno_from_bw(rcpid, "3.44"))
+        dspotr2.append(pu.resno_from_bw(rcpid, "5.53"))
+    elif rcpid == "OR11A1":
+        dspotr2[2] = pu.resno_from_bw(rcpid, "5.46")
+
     dsres1 = []
     dsres2 = []
 
@@ -291,6 +300,15 @@ def main():
     if famsub == "OR5K":
         adjustments += 'ATOMTO %45.49 EXTENT @2.58\n'
 
+    dsphew = ""
+    for idx, r1 in enumerate(dsres1):
+        r2 = dsres2[idx]
+        dsphew += f"""
+DELATOM {r1} HG
+DELATOM {r2} HG
+CONECT {r1} SG {r2} SG
+"""
+
     phew_script = f"""LET $rcpid = "{rcpid}"
 LET $inpf = "pdbs/{fam}/{rcpid}.inactive.pdb"
 LET $mdld = "hm/{best_pdb}"
@@ -315,11 +333,7 @@ STRAND A
 UPRIGHT
 BWCENTER
 {adjustments}
-IF $3.25 != "C" OR $45.50 != "C" GOTO _not_disulfide
-DELATOM %3.25 HG
-DELATOM %45.50 HG
-CONECT %3.25 SG %45.50 SG
-_not_disulfide:
+{dsphew}
 LET $outf = "pdbs/{fam}/{rcpid}.active.pdb"
 SAVE $outf
 """
