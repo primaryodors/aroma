@@ -200,6 +200,12 @@ def main():
     elif rcpid == "OR1C1":
         dspotr1.append(pu.resno_from_bw(rcpid, "3.44"))
         dspotr2.append(pu.resno_from_bw(rcpid, "5.53"))
+    elif rcpid == "OR1N2" or rcpid == "OR2T10":
+        dspotr1.append(pu.resno_from_bw(rcpid, "3.41"))
+        dspotr2.append(pu.resno_from_bw(rcpid, "4.49"))
+    elif rcpid == "OR1S1" or rcpid == "OR1S2" or rcpid == "OR2A4":
+        dspotr1.append(pu.resno_from_bw(rcpid, "3.55"))
+        dspotr2.append(pu.resno_from_bw(rcpid, "5.60"))
     elif rcpid == "OR11A1":
         dspotr2[2] = pu.resno_from_bw(rcpid, "5.46")
 
