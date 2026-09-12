@@ -221,6 +221,17 @@ Atom *best_ligand_stays, *best_ligand_stays_other;
 
 ICHelixGroup hg;
 
+struct TrackedInternalContact
+{
+    int res1 = 0;
+    int res2 = 0;
+    bool is_salt_bridge = false;
+    float init_binding_energy = 0;
+};
+
+std::vector<std::pair<int, int>> active_disulfides;
+std::vector<TrackedInternalContact> tracked_internal_contacts;
+
 #if _dummy_atoms_for_debug
 std::vector<Atom> dummies;
 #endif
@@ -2041,6 +2052,14 @@ void apply_protein_specific_settings(Protein* p)
             if (!soft_nodel_end[i].resno) soft_nodel_end[i].resolve_resno(protein);
         }
 
+        active_disulfides = protein->get_disulfide_residues();
+        std::vector<std::pair<int, int>> disulfide_spans;
+        for (const auto& ds : active_disulfides)
+        {
+            disulfide_spans.push_back(protein->get_span_to_nearest_helix(ds.first));
+            disulfide_spans.push_back(protein->get_span_to_nearest_helix(ds.second));
+        }
+
         n = protein->get_end_resno();
         for (i=1; i<=n; i++)
         {
@@ -2066,6 +2085,30 @@ void apply_protein_specific_settings(Protein* p)
                 {
                     snfound = true;
                     break;
+                }
+            }
+            if (!snfound)
+            {
+                for (const auto& sp : disulfide_spans)
+                {
+                    int sp_min = std::min(sp.first, sp.second);
+                    int sp_max = std::max(sp.first, sp.second);
+                    if (i >= sp_min && i <= sp_max)
+                    {
+                        snfound = true;
+                        break;
+                    }
+                }
+            }
+            if (!snfound)
+            {
+                for (const auto& ds : active_disulfides)
+                {
+                    if (i == ds.first || i == ds.second)
+                    {
+                        snfound = true;
+                        break;
+                    }
                 }
             }
             if (snfound) continue;
@@ -2134,6 +2177,8 @@ void apply_protein_specific_settings(Protein* p)
             }
         }
 
+        tracked_internal_contacts.clear();
+
         if (hg.n_helix)
         {
             for (i=0; i<hg.n_helix; i++)
@@ -2150,12 +2195,62 @@ void apply_protein_specific_settings(Protein* p)
                             AminoAcid* aa1 = p->get_residue(lic->res1.resno);
                             AminoAcid* aa2 = p->get_residue(lic->res2.resno);
 
-                            if (aa1 && aa2
-                                && aa1->get_reach_atom(hbond)
-                                && aa2->get_reach_atom(hbond)
-                                )
+                            if (aa1 && aa2)
                             {
-                                aa1->movability = aa2->movability = MOV_PINNED;
+                                if (aa1->get_reach_atom(hbond) && aa2->get_reach_atom(hbond))
+                                {
+                                    aa1->movability = aa2->movability = MOV_PINNED;
+                                }
+
+                                Interaction init_e = aa1->get_intermol_binding(aa2);
+                                bool is_sb = false;
+                                char l1 = aa1->get_letter();
+                                char l2 = aa2->get_letter();
+                                bool basic1 = (l1 == 'R' || l1 == 'K' || l1 == 'H');
+                                bool acidic1 = (l1 == 'D' || l1 == 'E');
+                                bool basic2 = (l2 == 'R' || l2 == 'K' || l2 == 'H');
+                                bool acidic2 = (l2 == 'D' || l2 == 'E');
+                                if ((basic1 && acidic2) || (acidic1 && basic2))
+                                {
+                                    Atom *a1 = nullptr, *a2 = nullptr;
+                                    aa1->mutual_closest_atoms(aa2, &a1, &a2);
+                                    float init_dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+                                    if (init_dist <= 4.5f && init_e.summed() < 0) is_sb = true;
+                                }
+
+                                int tr1 = lic->res1.resno, tr2 = lic->res2.resno;
+                                if (tr1 > tr2) std::swap(tr1, tr2);
+                                bool exists = false;
+                                for (const auto& tc : tracked_internal_contacts)
+                                {
+                                    if (tc.res1 == tr1 && tc.res2 == tr2) { exists = true; break; }
+                                }
+                                if (!exists)
+                                {
+                                    TrackedInternalContact tic;
+                                    tic.res1 = tr1;
+                                    tic.res2 = tr2;
+                                    tic.is_salt_bridge = is_sb;
+                                    tic.init_binding_energy = init_e.summed();
+                                    tracked_internal_contacts.push_back(tic);
+                                }
+
+                                bool matched = false;
+                                for (int k=0; k<nsoftrgn; k++)
+                                {
+                                    if (lic->res1.resno >= softrgns[k].rgn.start && lic->res1.resno <= softrgns[k].rgn.end)
+                                    {
+                                        softrgns[k].add_contact(lic->res1.resno, lic->res2.resno, p, matched);
+                                        if (k) softrgns[k].link_region(&softrgns[k-1]);
+                                        matched = true;
+                                    }
+                                    else if (lic->res2.resno >= softrgns[k].rgn.start && lic->res2.resno <= softrgns[k].rgn.end)
+                                    {
+                                        softrgns[k].add_contact(lic->res2.resno, lic->res1.resno, p, matched);
+                                        if (k) softrgns[k].link_region(&softrgns[k-1]);
+                                        matched = true;
+                                    }
+                                }
                             }
                         }
                     }
@@ -2168,10 +2263,46 @@ void apply_protein_specific_settings(Protein* p)
             soft_contact_a[i].resolve_resno(p);
             soft_contact_b[i].resolve_resno(p);
 
-            AminoAcid* aa = p->get_residue(soft_contact_a[i].resno);
-            if (aa) aa->movability = MOV_PINNED;
-            aa = p->get_residue(soft_contact_b[i].resno);
-            if (aa) aa->movability = MOV_PINNED;
+            AminoAcid* aa1 = p->get_residue(soft_contact_a[i].resno);
+            if (aa1) aa1->movability = MOV_PINNED;
+            AminoAcid* aa2 = p->get_residue(soft_contact_b[i].resno);
+            if (aa2) aa2->movability = MOV_PINNED;
+
+            if (aa1 && aa2)
+            {
+                Interaction init_e = aa1->get_intermol_binding(aa2);
+                bool is_sb = false;
+                char l1 = aa1->get_letter();
+                char l2 = aa2->get_letter();
+                bool basic1 = (l1 == 'R' || l1 == 'K' || l1 == 'H');
+                bool acidic1 = (l1 == 'D' || l1 == 'E');
+                bool basic2 = (l2 == 'R' || l2 == 'K' || l2 == 'H');
+                bool acidic2 = (l2 == 'D' || l2 == 'E');
+                if ((basic1 && acidic2) || (acidic1 && basic2))
+                {
+                    Atom *a1 = nullptr, *a2 = nullptr;
+                    aa1->mutual_closest_atoms(aa2, &a1, &a2);
+                    float init_dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+                    if (init_dist <= 4.5f && init_e.summed() < 0) is_sb = true;
+                }
+
+                int tr1 = soft_contact_a[i].resno, tr2 = soft_contact_b[i].resno;
+                if (tr1 > tr2) std::swap(tr1, tr2);
+                bool exists = false;
+                for (const auto& tc : tracked_internal_contacts)
+                {
+                    if (tc.res1 == tr1 && tc.res2 == tr2) { exists = true; break; }
+                }
+                if (!exists)
+                {
+                    TrackedInternalContact tic;
+                    tic.res1 = tr1;
+                    tic.res2 = tr2;
+                    tic.is_salt_bridge = is_sb;
+                    tic.init_binding_energy = init_e.summed();
+                    tracked_internal_contacts.push_back(tic);
+                }
+            }
 
             bool matched = false;
 
@@ -2185,12 +2316,62 @@ void apply_protein_specific_settings(Protein* p)
                 }
                 else if (soft_contact_b[i].resno >= softrgns[j].rgn.start && soft_contact_b[i].resno <= softrgns[j].rgn.end)
                 {
-                    softrgns[j].add_contact(soft_contact_a[i].resno, soft_contact_b[i].resno, p, matched);
+                    softrgns[j].add_contact(soft_contact_b[i].resno, soft_contact_a[i].resno, p, matched);
                     if (j) softrgns[j].link_region(&softrgns[j-1]);
                     matched = true;
                 }
             }
+        }
 
+        for (const auto& ds : active_disulfides)
+        {
+            int r1 = ds.first;
+            int r2 = ds.second;
+            AminoAcid* aa1 = p->get_residue(r1);
+            AminoAcid* aa2 = p->get_residue(r2);
+            if (!aa1 || !aa2) continue;
+
+            aa1->movability = aa2->movability = MOV_PINNED;
+
+            for (int k=0; k<nsoftrgn; k++)
+            {
+                bool r1_in = (r1 >= softrgns[k].rgn.start && r1 <= softrgns[k].rgn.end);
+                bool r2_in = (r2 >= softrgns[k].rgn.start && r2 <= softrgns[k].rgn.end);
+
+                if (!r1_in)
+                {
+                    std::pair<int, int> sp1 = p->get_span_to_nearest_helix(r1);
+                    if ((sp1.first >= softrgns[k].rgn.start && sp1.first <= softrgns[k].rgn.end) ||
+                        (sp1.second >= softrgns[k].rgn.start && sp1.second <= softrgns[k].rgn.end))
+                    {
+                        r1_in = true;
+                    }
+                }
+                if (!r2_in)
+                {
+                    std::pair<int, int> sp2 = p->get_span_to_nearest_helix(r2);
+                    if ((sp2.first >= softrgns[k].rgn.start && sp2.first <= softrgns[k].rgn.end) ||
+                        (sp2.second >= softrgns[k].rgn.start && sp2.second <= softrgns[k].rgn.end))
+                    {
+                        r2_in = true;
+                    }
+                }
+
+                if (r1_in)
+                {
+                    softrgns[k].add_contact(r1, r2, p, false, true);
+                    if (k) softrgns[k].link_region(&softrgns[k-1]);
+                }
+                else if (r2_in)
+                {
+                    softrgns[k].add_contact(r2, r1, p, false, true);
+                    if (k) softrgns[k].link_region(&softrgns[k-1]);
+                }
+            }
+        }
+
+        for (i=0; i<nsoftrgn; i++)
+        {
             softrgns[i].check_chain_constraints(p);                 // Refreshes AA pointers to current protein.
         }
     }
@@ -4632,6 +4813,63 @@ _try_again:
                             + (std::string)"\n";
                     }
                 }
+
+                // Disulfide integrity check
+                for (const auto& ds : active_disulfides)
+                {
+                    AminoAcid* aa1 = protein->get_residue(ds.first);
+                    AminoAcid* aa2 = protein->get_residue(ds.second);
+                    if (!aa1 || !aa2) continue;
+                    Atom* sg1 = aa1->get_atom("SG");
+                    Atom* sg2 = aa2->get_atom("SG");
+                    if (sg1 && sg2)
+                    {
+                        float dist = sg1->distance_to(sg2);
+                        if (dist > 2.8f)
+                        {
+                            dr[drcount][nodeno].disqualified = true;
+                            std::string reason = "Disulfide ruptured: " + std::string(aa1->get_name())
+                                + "..." + std::string(aa2->get_name()) + " (dist = "
+                                + std::to_string(dist) + " A > 2.8 A). ";
+                            dr[drcount][nodeno].disqualify_reason += reason;
+                            dr[drcount][nodeno].miscdata += reason + "\n";
+                        }
+                    }
+                }
+
+                // Salt bridge integrity check and dissociation penalty
+                for (const auto& tic : tracked_internal_contacts)
+                {
+                    if (!tic.is_salt_bridge) continue;
+                    AminoAcid* aa1 = protein->get_residue(tic.res1);
+                    AminoAcid* aa2 = protein->get_residue(tic.res2);
+                    if (!aa1 || !aa2) continue;
+
+                    Interaction curr_e = aa1->get_intermol_binding(aa2);
+                    Atom* a1 = nullptr;
+                    Atom* a2 = nullptr;
+                    aa1->mutual_closest_atoms(aa2, &a1, &a2);
+                    float dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+
+                    // A formed salt bridge is ruptured if distance exceeds 4.5 A or attractive binding lost
+                    if (dist > 4.5f || curr_e.summed() > -1.0f)
+                    {
+                        // Penalty equals the dissociation energy of the salt bridge (-init_binding_energy)
+                        float dissoc_energy = -tic.init_binding_energy;
+                        if (dissoc_energy > 0)
+                        {
+                            dr[drcount][nodeno].kJmol += dissoc_energy;
+
+                            std::string msg = "Salt bridge ruptured: " + std::string(aa1->get_name())
+                                + "..." + std::string(aa2->get_name()) + " (dist = "
+                                + std::to_string(dist) + " A, penalty = "
+                                + std::to_string(dissoc_energy * energy_mult) + " "
+                                + (kcal ? "kcal/mol" : "kJ/mol") + ").\n";
+                            dr[drcount][nodeno].miscdata += msg;
+                        }
+                    }
+                }
+
                 dr[drcount][nodeno].miscdata += (std::string)"Raw ligand binding energy: " 
                     + std::to_string(dr[drcount][nodeno].kJmol * energy_mult) + (std::string)".\n";
                 dr[drcount][nodeno].miscdata += (std::string)"Soft contact anomaly: "

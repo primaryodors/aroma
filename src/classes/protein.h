@@ -114,6 +114,8 @@ public:
     void renumber_residues(int startres, int endres, int new_startres);
     bool disulfide_bond(int resno1, int resno2);
     bool add_connection_if_not_exists(Bond* b);
+    std::vector<std::pair<int, int>> get_disulfide_residues();
+    std::pair<int, int> get_span_to_nearest_helix(int resno);
 
     // Serialization.
     void set_name_from_pdb_name(const char* pdb_name);
