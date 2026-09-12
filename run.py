@@ -115,9 +115,9 @@ for rcpid in data.protutils.prots.keys():
                             isinv = True
                     elif "ec50" in acv[rcpid]:
                         isago = True
-                    
+
                     if "antagonist" in acv[rcpid] \
-                        and (int(acv[rcpid]["antagonist"]) or acv[rcpid]["antagonist"] == "Y"):
+                        and (acv[rcpid]["antagonist"] == "Y" or int(acv[rcpid]["antagonist"])):
                         isant = True
 
         if lopt != "*" or popt != "*":

@@ -2299,6 +2299,7 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
 
     rotatable_bonds = other->rotatable_bonds = nullptr;
     if (aaCA && aaCB && aaCA->distance_to(aaCB) > 2) throw 0xbadc0de;
+    been_flexed = other->been_flexed = true;
     return H2O;
 }
 

@@ -52,7 +52,8 @@ const aa_aliphatic = 0,
 	aa_hydrophilic = 2,
 	aa_acidic = 3,
 	aa_basic = 4,
-	aa_sulfur = 5;
+	aa_sulfur = 5,
+	aa_cys = 16;
 
 var opc_molecule = 1.0;
 var opc_ligand = 1.0;
@@ -2495,6 +2496,20 @@ function show_seqdd()
 	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
 	seqdd.appendChild(tgl);
 
+	tgl = document.createElement("span");
+	tgl.innerText = "|";
+	seqdd.appendChild(tgl);
+
+	tgl = document.createElement("span");
+	tgl.className = "clickme nodebtn sctgbtn";
+	tgl.innerText = "Cysteine";
+	tgl.id = "seqddcys";
+	tgl.setAttribute("onclick", "event.preventDefault(); showSideChainsByType(aa_cys); return false;");
+	tgl.setAttribute("ondblclick", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousedown", "event.preventDefault(); return false;");
+	tgl.setAttribute("onmousemove", "event.preventDefault(); return false;");
+	seqdd.appendChild(tgl);
+
 	tgl = document.createElement("br");
 	// tgl.innerText = "|";
 	seqdd.appendChild(tgl);
@@ -3009,7 +3024,7 @@ function showSideChainsByType(show_type)
 				show_sc = (show_type == aa_aliphatic);
 				break;
 			case 'C':
-				show_sc = (show_type == aa_sulfur);
+				show_sc = (show_type == aa_sulfur || show_type == aa_cys);
 				break;
 			case 'F': case 'W': case 'Y':
 				show_sc = (show_type == aa_aromatic);
