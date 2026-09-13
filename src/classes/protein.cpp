@@ -6,6 +6,7 @@
 #include <math.h>
 #include <strings.h>
 #include "protein.h"
+#include "spatialgrid.h"
 
 #define _DBG_REACHLIG true
 
@@ -231,6 +232,7 @@ Protein::Protein(const char* lname)
 
 Protein::~Protein()
 {
+    invalidate_spatial_grid();
     connections.clear();
 
     delete[] remarks;
@@ -438,9 +440,35 @@ Point Protein::get_atom_location(int resno, const char* aname)
     return aa->get_atom_location(aname);
 }
 
+SpatialGrid* Protein::get_spatial_grid()
+{
+    if (!spatial_grid)
+    {
+        spatial_grid = new SpatialGrid(7.0f);
+        spatial_grid->build(residues);
+    }
+    return spatial_grid;
+}
+
+void Protein::invalidate_spatial_grid()
+{
+    if (spatial_grid)
+    {
+        delete spatial_grid;
+        spatial_grid = nullptr;
+    }
+}
+
 Atom* Protein::get_nearest_atom(Point pt, int sr, int er)
 {
     if (!residues) return 0;
+
+    SpatialGrid* sg = get_spatial_grid();
+    if (sg)
+    {
+        Atom* a = sg->get_nearest_atom(pt, sr, er);
+        if (a) return a;
+    }
 
     int i;
     float bestr = Avogadro;
@@ -1554,26 +1582,33 @@ int Protein::fetch_residues_near(Point pt, float maxr, AminoAcid** results, bool
     cout << "Protein::fetch_residues_near(" << pt << ", " << maxr << ")" << endl;
     #endif
 
+    float maxr2 = maxr * maxr;
+
     for (i=0; residues[i]; i++)
     {
-        Atom* nessamon = residues[i]->get_nearest_atom(pt);
-        float r = pt.get_3d_distance(nessamon->loc);
+        float max_reach = maxr + residues[i]->get_reach();
+        if (residues[i]->get_CA_location().get_3d_distance_squared(pt) > max_reach * max_reach) continue;
 
-        if (facing && residues[i]->get_atom("CB"))
+        Atom* nessamon = residues[i]->get_nearest_atom(pt);
+        if (!nessamon) continue;
+        float r2 = pt.get_3d_distance_squared(nessamon->loc);
+        if (r2 > maxr2) continue;
+
+        float r = sqrt(r2);
+
+        if (facing && residues[i]->get_CB())
         {
-            float r1 = pt.get_3d_distance(residues[i]->get_atom_location("CB"));
-            float r2 = residues[i]->get_atom_location("CA").get_3d_distance(residues[i]->get_atom_location("CB"));
-            float tolerance = r2 * tolerance_sine;
+            Atom* cb = residues[i]->get_CB();
+            float r1 = pt.get_3d_distance(cb->loc);
+            float r2_ca_cb = residues[i]->get_CA_location().get_3d_distance(cb->loc);
+            float tolerance = r2_ca_cb * tolerance_sine;
             if (r1 > r+tolerance) continue;
         }
 
-        if (r <= maxr)
-        {
-            results[l++] = residues[i];
-            #if _DBG_TUMBLE_SPHERES
-            cout << residues[i]->get_3letter() << residues[i]->get_residue_no() << " ";
-            #endif
-        }
+        results[l++] = residues[i];
+        #if _DBG_TUMBLE_SPHERES
+        cout << residues[i]->get_3letter() << residues[i]->get_residue_no() << " ";
+        #endif
     }
     #if _DBG_TUMBLE_SPHERES
     cout << endl << endl;
@@ -1692,6 +1727,21 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
     bool resno_already[8192];
     for (i=0; i<8192; i++) resno_already[i] = false;
 
+    Point lig_cen = ligand ? ligand->get_barycenter() : nodecen;
+    float max_lig_d2 = 0.0f;
+    int lcount = ligand ? ligand->get_atom_count() : 0;
+    for (int k = 0; k < lcount; k++)
+    {
+        Atom* la = ligand->get_atom(k);
+        if (la)
+        {
+            float d2 = la->loc.get_3d_distance_squared(lig_cen);
+            if (d2 > max_lig_d2) max_lig_d2 = d2;
+        }
+    }
+    float lig_radius = sqrt(max_lig_d2);
+    float pocket_radius = fmax(szm, lig_radius) + _INTERA_R_CUTOFF;
+
     for (i=0; i<SPHREACH_MAX; i++) reaches_spheroid[i] = NULL;
 
     for (i=1; i<seql && residues[i]; i++)
@@ -1715,6 +1765,21 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             resno_already[resno] = true;
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
+        }
+
+        float max_reach = pocket_radius + aa->get_reach();
+        float max_reach2 = max_reach * max_reach;
+        Point ca_loc = aa->get_CA_location();
+        if (ca_loc.get_3d_distance_squared(lig_cen) > max_reach2
+            && ca_loc.get_3d_distance_squared(nodecen) > max_reach2)
+        {
+            if (addl_resno)
+            {
+                bool is_addl = false;
+                for (j=0; addl_resno[j]; j++) if (addl_resno[j] == resno) { is_addl = true; break; }
+                if (!is_addl) continue;
+            }
+            else continue;
         }
 
         Atom *la, *na;
@@ -1752,9 +1817,9 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             }
         }
 
-        Atom* ca = aa->get_atom("CA");
+        Atom* ca = aa->get_CA();
         if (!ca) continue;
-        Atom* cb = aa->get_atom("CB");
+        Atom* cb = aa->get_CB();
 
         Point pt = ca->loc;
         Atom* a = ligand->get_nearest_atom(pt);
@@ -2732,6 +2797,29 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
         if (!aa) continue;
         MovabilityType mt = aa->movability;
         if (mt & MOV_PINNED) continue;
+
+        Bond** b = aa->get_all_bonds(true);
+        if (!b) continue;
+
+        bool faa = false;
+        if (fr) for (j=0; fr[j]; j++) if (fr[j] == i) faa = true;
+
+        bool has_actionable_bonds = false;
+        for (j=0; b[j]; j++)
+        {
+            if (!b[j]->atom1 || !b[j]->atom2) continue;
+            if (b[j]->atom1->is_backbone && b[j]->atom2->is_backbone) continue;
+            if (b[j]->atom2->Z < 2) continue;
+            if (!faa && b[j]->atom2->get_bonded_heavy_atoms_count() > 1) continue;
+            if (!equal_or_zero(b[j]->atom1->residue, b[j]->atom2->residue)) continue;
+            if (b[j]->can_rotate || b[j]->can_flip) { has_actionable_bonds = true; break; }
+        }
+        if (!has_actionable_bonds)
+        {
+            delete[] b;
+            continue;
+        }
+
         aa->movability = MOV_FLEXONLY;
         AminoAcid* sphres[1024];
         get_residues_can_clash_ligand(sphres, aa, aa->get_barycenter(), Point(8,8,8), nullptr);
@@ -2745,12 +2833,6 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
         #endif
         Interaction before = aa->get_intermol_binding(sphres);
         Pose best(aa);
-
-        Bond** b = aa->get_all_bonds(true);
-        if (!b) continue;
-
-        bool faa = false;
-        if (fr) for (j=0; fr[j]; j++) if (fr[j] == i) faa = true;
 
         for (j=0; b[j]; j++)
         {
@@ -2780,6 +2862,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
                     }
                 }
                 best.restore_state_relative(aa, "CA");
+                before = aa->get_intermol_binding(sphres);
             }
             else if (b[j]->can_flip)
             {

@@ -38,9 +38,11 @@ struct Point
     }
     Point negate();
     Point randomize(float amt) const;
-    float get_3d_distance(const Point reference) const;
+    float get_3d_distance(const Point& reference) const;
     float get_3d_distance(const Point* reference) const;
-    float get_distance_to_line(const Point a, const Point b) const;         // Where a and b are the termini of the line.
+    float get_3d_distance_squared(const Point& reference) const;
+    float get_3d_distance_squared(const Point* reference) const;
+    float get_distance_to_line(const Point& a, const Point& b) const;         // Where a and b are the termini of the line.
     Point multiply_3d_distance(const Point* reference, float r_mult);
     bool pt_in_bounding_box(const Point* corner1, const Point* corner2);
     float magnitude() const;

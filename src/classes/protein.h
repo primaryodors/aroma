@@ -5,6 +5,8 @@
 #ifndef _PROTEIN
 #define _PROTEIN
 
+class SpatialGrid;
+
 #include <string>
 #include <climits>
 
@@ -299,7 +301,11 @@ protected:
     void allocate_undo_poses();
     void save_undo_state();
 
+    SpatialGrid* spatial_grid = nullptr;
+
     public:
+    SpatialGrid* get_spatial_grid();
+    void invalidate_spatial_grid();
     MCoord * const _mcoords = m_mcoords;
 };
 

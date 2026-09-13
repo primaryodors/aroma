@@ -205,6 +205,19 @@ public:
     int atno_offset=0;
     bool added_heavies = false;
     float initial_eclipses = 0;
+    Atom* ca_atom = nullptr;
+    Atom* cb_atom = nullptr;
+    void cache_ca_cb();
+    Atom* get_CA() const {
+        if (ca_atom) return ca_atom;
+        return get_atom("CA");
+    }
+    Atom* get_CB() const {
+        if (cb_atom) return cb_atom;
+        return get_atom("CB");
+    }
+    Atom* get_atom(char const* aname) const;
+    using Molecule::get_atom;
 
 protected:
     void load_aa_defs();

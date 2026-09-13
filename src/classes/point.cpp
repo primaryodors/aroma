@@ -100,7 +100,7 @@ float Point::get_3d_distance(const Point* reference) const
     return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-float Point::get_3d_distance(const Point reference) const
+float Point::get_3d_distance(const Point& reference) const
 {
     float dx = x - reference.x,
           dy = y - reference.y,
@@ -109,6 +109,24 @@ float Point::get_3d_distance(const Point reference) const
     if (isnan(dx+dy+dz)) return 1e9;
 
     return sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+float Point::get_3d_distance_squared(const Point& reference) const
+{
+    float dx = x - reference.x,
+          dy = y - reference.y,
+          dz = z - reference.z;
+
+    return dx*dx + dy*dy + dz*dz;
+}
+
+float Point::get_3d_distance_squared(const Point* reference) const
+{
+    float dx = x - reference->x,
+          dy = y - reference->y,
+          dz = z - reference->z;
+
+    return dx*dx + dy*dy + dz*dz;
 }
 
 std::string Point::printable() const
@@ -229,13 +247,14 @@ Vector::Vector(double lr, double ltheta, double lphi)
 }
 
 // https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-float Point::get_distance_to_line(Point a, Point b) const
+float Point::get_distance_to_line(const Point& a, const Point& b) const
 {
-    float r2 = pow(a.get_3d_distance(b), 2);
+    float dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+    float r2 = dx*dx + dy*dy + dz*dz;
     if (!r2) return get_3d_distance(a);
 
-    float t = fmax(0, fmin(1,  ((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y) + (z - a.z) * (b.z - a.z)) / r2));
-    Point p(a.x + t * (b.x-a.x), a.y + t * (b.y-a.y), a.z + t * (b.z-a.z));
+    float t = fmax(0.0f, fmin(1.0f,  ((x - a.x) * dx + (y - a.y) * dy + (z - a.z) * dz) / r2));
+    Point p(a.x + t * dx, a.y + t * dy, a.z + t * dz);
 
     return get_3d_distance(p);
 }

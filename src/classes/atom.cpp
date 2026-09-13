@@ -917,6 +917,30 @@ Atom* Atom::is_bonded_to(const char* element, const Atom* ti)
     return 0;
 }
 
+Atom* Atom::is_bonded_to_Z(const int target_Z, const Atom* ti)
+{
+    if (location.magnitude() > 1e5) throw 0xbadc0de;
+    if (!bonded_to) return 0;
+    int i;
+    for (i=0; i<geometry; i++)
+        if (bonded_to[i].atom2 && ti != bonded_to[i].atom2)
+            if (target_Z == 0 || bonded_to[i].atom2->Z == target_Z)
+                return bonded_to[i].atom2;
+    return 0;
+}
+
+Atom* Atom::is_bonded_to_Z(const int target_Z, const int lcardinality)
+{
+    if (!bonded_to) return 0;
+    int i;
+    for (i=0; i<geometry; i++)
+        if (bonded_to[i].atom2)
+            if ((target_Z == 0 || bonded_to[i].atom2->Z == target_Z)
+                && fabs(bonded_to[i].cardinality - lcardinality) <= 0.25)
+                return bonded_to[i].atom2;
+    return 0;
+}
+
 Atom* Atom::is_bonded_to_charged_H()
 {
     if (!bonded_to) return 0;

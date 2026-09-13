@@ -437,6 +437,26 @@ protected:
     const int& num_monomers = nmonomers;
     const Molecule* glued_to_mol() { return glued_to; }
     void check_glued_bond();
+
+    float memoized_internal_clashes = 0.0f;
+    float memoized_total_eclipses = 0.0f;
+    bool has_memoized_clashes = false;
+    void memoize_clashes() {
+        memoized_internal_clashes = get_internal_clashes();
+        memoized_total_eclipses = total_eclipses();
+        has_memoized_clashes = true;
+    }
+    void invalidate_memoized_clashes() {
+        has_memoized_clashes = false;
+    }
+    float get_memoized_internal_clashes() {
+        if (!has_memoized_clashes) memoize_clashes();
+        return memoized_internal_clashes;
+    }
+    float get_memoized_total_eclipses() {
+        if (!has_memoized_clashes) memoize_clashes();
+        return memoized_total_eclipses;
+    }
 };
 
 float g_total_mclash(void* mol);
