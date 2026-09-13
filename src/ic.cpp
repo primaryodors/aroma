@@ -34,6 +34,7 @@ int main(int argc, char** argv)
     DynamicMotion winding(&p);
     ResidueAtomPlaceholder atmov, attgt;
     ResiduePlaceholder protr;
+    vector<ResiduePlaceholder> pinned_res;
 
     int i;
     FILE* fp;
@@ -89,6 +90,15 @@ int main(int argc, char** argv)
         {
             protr.set(argv[++i]);
             doprot = true;
+        }
+        else if (!strcmp(argv[i], "pin"))
+        {
+            if (i+1 < argc)
+            {
+                ResiduePlaceholder rp;
+                rp.set(argv[++i]);
+                pinned_res.push_back(rp);
+            }
         }
         else if (atof(argv[i])) threshold = atof(argv[i]);
         else if (strstr(argv[i], ".pdb"))
@@ -224,6 +234,20 @@ int main(int argc, char** argv)
         else cerr << "Failed to perform atomto: one or both residues not found in protein." << endl;
     }
 
+    for (size_t pr = 0; pr < pinned_res.size(); pr++)
+    {
+        pinned_res[pr].resolve_resno(&p);
+        if (pinned_res[pr].resno)
+        {
+            AminoAcid* aa = p.get_residue(pinned_res[pr].resno);
+            if (aa)
+            {
+                aa->movability = MOV_PINNED;
+                cout << "Pinned residue " << aa->get_name() << " (" << pinned_res[pr].bw << ")" << endl;
+            }
+        }
+    }
+
     int j, n = p.get_end_resno();
     if (dominc)
     {
@@ -231,6 +255,7 @@ int main(int argc, char** argv)
         {
             AminoAcid* aa = p.get_residue(i);
             if (!aa) continue;
+            if (aa->movability & MOV_PINNED) continue;
             AminoAcid* cl[SPHREACH_MAX+4];
             p.get_residues_can_clash_ligand(cl, aa, aa->get_barycenter(), Point(8,8,8), nullptr);
             Interaction e = aa->get_intermol_binding(cl, false);
