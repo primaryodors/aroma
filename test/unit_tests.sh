@@ -26,12 +26,12 @@ do_test "aniso_test"
 do_test "bond_rotation_test"
 do_test "conj_test"
 do_test "eclipsing_test"
-do_test "histidine_test" # check this, it's probably wrong
+do_test "histidine_test"
 do_test "inte_test"
 do_test "mcoord_test"
 do_test "moiety_test"
 do_test "mol_assem_test"
-do_test "pi_stack_test" # check this, it's probably wrong
+do_test "pi_stack_test"
 do_test "vdw_vertex_test"
 do_test "probability_test"
 
