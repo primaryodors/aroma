@@ -3506,7 +3506,7 @@ Bond** AminoAcid::get_rotatable_bonds()
                             {
                                 cout << lba->name << " is bonded to:";
                                 int o, ag = lba->get_geometry();
-                                for (o=0; o<ag; o++) if (lbb[o]->atom2) cout << " " << lbb[o]->atom2->name;
+                                for (o=0; o<ag; o++) if (lbb[o] && lbb[o]->atom2) cout << " " << lbb[o]->atom2->name;
                                 cout << "." << endl;
                             }
                         }
@@ -4310,24 +4310,41 @@ void Molecule::rotate(Rotation rot, Point origin)
 
 bool Molecule::shielded(Atom* a, Atom* b) const
 {
-    int i;
+    if (!a || !b || !atoms) return false;
     float r = a->distance_to(b);
-    float r6 = r*1.26, r125 = 1.25*r;
     float va = a->vdW_radius, vb = b->vdW_radius;
-    if (r < 2) return false;
+    if (r < va + vb || r < 2) return false;
+
+    float r6 = r*1.26f, r125 = 1.25f*r;
+    float r6_2 = r6 * r6;
 
     a->shielding_angle = b->shielding_angle = 0;
 
     Point aloc = a->loc, bloc = b->loc;
+    float min_x = fmin(aloc.x, bloc.x) - r6;
+    float max_x = fmax(aloc.x, bloc.x) + r6;
+    float min_y = fmin(aloc.y, bloc.y) - r6;
+    float max_y = fmax(aloc.y, bloc.y) + r6;
+    float min_z = fmin(aloc.z, bloc.z) - r6;
+    float max_z = fmax(aloc.z, bloc.z) + r6;
+
+    int i;
     for (i=0; atoms[i]; i++)
     {
         Atom* ai = atoms[i];
         if (!ai) break;
         if (ai == a || ai == b) continue;
-        float rai = ai->distance_to(a);
-        if (rai > r6) continue;
-        float rbi = ai->distance_to(b);
-        if (rbi > r6) continue;
+        if (ai->loc.x < min_x || ai->loc.x > max_x ||
+            ai->loc.y < min_y || ai->loc.y > max_y ||
+            ai->loc.z < min_z || ai->loc.z > max_z) continue;
+
+        float rai2 = ai->loc.get_3d_distance_squared(aloc);
+        if (rai2 > r6_2) continue;
+        float rbi2 = ai->loc.get_3d_distance_squared(bloc);
+        if (rbi2 > r6_2) continue;
+
+        float rai = sqrt(rai2);
+        float rbi = sqrt(rbi2);
         if ((rai+rbi) > r125) continue;
         float vs = ai->vdW_radius;
         if (rai < va+vs) return true;
@@ -4337,15 +4354,7 @@ bool Molecule::shielded(Atom* a, Atom* b) const
         if (f3da > a->shielding_angle) a->shielding_angle = b->shielding_angle = f3da;
         if (f3da > _shield_angle)
         {
-            if (last_iter && (a->residue == 114 || b->residue == 114) && ((a->residue + b->residue) == 114))
-            {
-                /*cout << ai->name << " shields "
-                	 << a->residue << ":" << a->name << "..."
-                	 << b->residue << ":" << b->name
-                	 << " angle " << (f3da*fiftyseven)
-                	 << endl;*/
-                return true;
-            }
+            return true;
         }
     }
 
@@ -5450,7 +5459,7 @@ Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfis
     Interaction lbind = rawbind * lbias;
     lbind.attractive += get_intermol_contact_area(om, true) * cavity_stuffing;
     lbind.clash *= iteration_additional_clash_coefficient;
-    lbind.clash += (get_internal_clashes() + total_eclipses()) * iteration_internal_clash_coefficient;
+    lbind.clash += (get_memoized_internal_clashes() + get_memoized_total_eclipses()) * iteration_internal_clash_coefficient;
 
     int i;
 
@@ -5504,10 +5513,11 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* self
 {
     if (a->is_residue() && ((AminoAcid*)a)->conditionally_basic()) ((AminoAcid*)a)->set_conditional_basicity(nearby);
 
-    Interaction result = -a->total_eclipses();
+    a->memoize_clashes();
+    Interaction result = -a->get_memoized_total_eclipses();
     if (a->is_residue()) result += reinterpret_cast<AminoAcid*>(a)->initial_eclipses;
 
-    result.clash += a->get_internal_clashes();              // Removing this may result in self clashes of side chains.
+    result.clash += a->get_memoized_internal_clashes();              // Removing this may result in self clashes of side chains.
 
     int i, j;
     if (a->mclashables)
@@ -6243,7 +6253,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 bb[q]->rotate(theta, false);
                                 a->enforce_stays(multimol_stays_enforcement);
                                 tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                                tryenerg.clash += a->total_eclipses();
                                 float try_cavfit = cav ? mm[0]->contained_by_space(cav) : 1;
                                 fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                                 if (audit) sprintf(triedchange, "fullrot flexion %s-%s %f deg.", bb[q]->atom1->name, bb[q]->atom2->name, theta*fiftyseven);
@@ -6319,8 +6328,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
 
                             tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                            tryenerg.clash += a->total_eclipses();
-                            tryenerg.clash += a->get_internal_clashes();
                             tryenerg.clash += a->get_intermol_clashes(nearby);
                             fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                             float try_cavfit = cav ? mm[0]->contained_by_space(cav) : 1;

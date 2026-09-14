@@ -30,7 +30,7 @@ ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
 CPL=g++
 
 # Common flags for all modes
-CFLAGS=-ffast-math -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
+CFLAGS=-O3 -flto -fopenmp -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
 
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g

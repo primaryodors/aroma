@@ -9,6 +9,9 @@
 #include <sstream>
 #include <algorithm>
 #include <unistd.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "classes/dynamic.h"
 #include "classes/search.h"
 #include "classes/scoring.h"
@@ -128,6 +131,7 @@ int nvestibule_holder = 0, nvestibule_grabber = 0;
 Point vestcen(0,0,0);
 #endif
 int poses = 10;
+int num_threads = 1;
 int iters = 50;
 int maxh2o = 0;
 int omaxh2o = 0;
@@ -1552,6 +1556,16 @@ int interpret_config_line(char** words)
         optsecho = "Number of poses: " + to_string(poses);
         return 1;
     }
+    else if (!strcmp(words[0], "THREADS") || !strcmp(words[0], "THREAD") || !strcmp(words[0], "T"))
+    {
+        num_threads = atoi(words[1]);
+        if (num_threads < 1) num_threads = 1;
+        #ifdef _OPENMP
+        omp_set_num_threads(num_threads);
+        #endif
+        optsecho = "Threads: " + to_string(num_threads);
+        return 1;
+    }
     else if (!strcmp(words[0], "PROGRESS"))
     {
         progressbar = true;
@@ -2238,6 +2252,15 @@ int main(int argc, char** argv)
             argv[i] -= 2;
             i += j;
         }
+        else if (!strcmp(argv[i], "-t") && i+1 < argc)
+        {
+            num_threads = atoi(argv[++i]);
+            if (num_threads < 1) num_threads = 1;
+            #ifdef _OPENMP
+            omp_set_num_threads(num_threads);
+            #endif
+            optsecho = "Threads: " + to_string(num_threads);
+        }
         else if (!configset && file_exists(argv[i]))
         {
             char* dot = strrchr(argv[i], '.');
@@ -2280,6 +2303,15 @@ int main(int argc, char** argv)
             if (optsecho.size()) cout << optsecho << endl;
             argv[i] -= 2;
             i += j;
+        }
+        else if (!strcmp(argv[i], "-t") && i+1 < argc)
+        {
+            num_threads = atoi(argv[++i]);
+            if (num_threads < 1) num_threads = 1;
+            #ifdef _OPENMP
+            omp_set_num_threads(num_threads);
+            #endif
+            if (optsecho.size()) cout << optsecho << endl;
         }
     }
 
@@ -2706,6 +2738,7 @@ int main(int argc, char** argv)
     if (debug) *debug << "Created metals molecule." << endl;
     #endif
 
+    #if _DBG_STEPBYSTEP
     float bclash = 0;
 
     for (l=0; l<seql; l++)
@@ -2725,6 +2758,7 @@ int main(int argc, char** argv)
     }
     if (met) bclash += ligand->get_intermol_clashes(met);
     if (debug) *debug << "Initial clashes: " << bclash << endl;
+    #endif
 
     // TODO: Output some basic stats: receptor, ligand, etc.
     cout << "PDB file: " << protfname << endl;
@@ -4069,7 +4103,9 @@ _try_again:
             }
 
             if (audit && !nodeno) fprintf(audit, "\nPose Candidate %d\nMovie offset: %d\n", pose, movie_offset);
+            #if _DBG_STEPBYSTEP
             float predock_mclashes = protein->total_mclashes();
+            #endif
 
             for (i=0; i<nappears; i++)
             {
@@ -4198,8 +4234,10 @@ _try_again:
             /////////////////////////////////////////////////////////////////////////////////
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0, (Space*)gcav);
             if (end_program) poses = pose;
+            #if _DBG_STEPBYSTEP
             float postdock_mclashes = protein->total_mclashes();
             float mclash_delta = postdock_mclashes - predock_mclashes;
+            #endif
             if (audit) fclose(audit);
             audit = nullptr;
 
