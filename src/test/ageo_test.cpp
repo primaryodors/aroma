@@ -11,9 +11,17 @@ int main(int argc, char** argv)
 {
     Protein p("Test Peptide");
 
-    FILE* fp = fopen("pdbs/OR51/OR51E2.active.pdb", "rb");
-    p.load_pdb(fp);
-    fclose(fp);
+    FILE* fp = fopen(argc > 1 ? argv[1] : "test.pdb", "rb");
+    if (!fp)
+    {
+        p.add_sequence("AAAAAAAAAA");
+        p.make_helix(1, p.get_seq_length(), ALPHA_PHI, ALPHA_PSI);
+    }
+    else
+    {
+        p.load_pdb(fp);
+        fclose(fp);
+    }
 
     int i, j, k, l, n, seqlen = p.get_end_resno(), fails = 0;
     for (i=1; i<=seqlen; i++)

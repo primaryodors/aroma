@@ -11,7 +11,7 @@ using namespace std;
 int main(int argc, char** argv)
 {
     Molecule m("Test");
-    m.from_smiles("CC");
+    m.from_smiles("CC", false);
     float e = m.total_eclipses();
     cout << "Initial eclipses: " << e << endl;
 
