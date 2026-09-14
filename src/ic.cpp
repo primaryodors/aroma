@@ -4,6 +4,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <fstream>
+#include <vector>
+#include <sstream>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "classes/search.h"
 #include "classes/reshape.h"
 #include "classes/progress.h"
@@ -37,19 +42,31 @@ int main(int argc, char** argv)
     vector<ResiduePlaceholder> pinned_res;
 
     int i;
+    int num_threads = 1;
     FILE* fp;
     float threshold = -3;
     for (i=1; i<argc; i++)
     {
-        if (!strcmp(argv[i], "save"))
+        if (!strcmp(argv[i], "--threads") || !strcmp(argv[i], "-t"))
+        {
+            if (i+1 < argc)
+            {
+                num_threads = atoi(argv[++i]);
+                if (num_threads < 1) num_threads = 1;
+            }
+            continue;
+        }
+        else if (!strcmp(argv[i], "save"))
         {
             dosave = true;
+            continue;
         }
-        if (!strcmp(argv[i], "minc"))
+        else if (!strcmp(argv[i], "minc"))
         {
             dominc = true;
+            continue;
         }
-        if (!strcmp(argv[i], "hydro"))
+        else if (!strcmp(argv[i], "hydro"))
         {
             dohyd = true;
         }
@@ -268,18 +285,19 @@ int main(int argc, char** argv)
     p.optimize_hydrogens();
     cout << "Optimized hydrogens." << endl;
 
-    float ttl = 0;
-    for (i=1; i<=n; i++)
+    std::vector<std::vector<std::string>> outputs(n + 1);
+    std::vector<float> res_ttls(n + 1, 0.0f);
+
+    #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
+    for (int i=1; i<=n; i++)
     {
         AminoAcid* aa = p.get_residue(i);
         if (!aa) continue;
         AminoAcid* cl[SPHREACH_MAX+4];
         p.get_residues_can_clash_ligand(cl, aa, aa->get_barycenter(), Point(8,8,8), nullptr);
         BallesterosWeinstein bw1 = p.get_bw_from_resno(i);
-        float bestf = 0;
-        Pose best(aa);
 
-        for (j=0; cl[j]; j++)
+        for (int j=0; cl[j]; j++)
         {
             BallesterosWeinstein bw2 = p.get_bw_from_resno(cl[j]->get_residue_no());
             if (bw1.helix_no && bw2.helix_no && bw1.helix_no >= bw2.helix_no) continue;
@@ -303,7 +321,7 @@ int main(int argc, char** argv)
             Interaction e = aa->get_intermol_binding(cl[j], false);
             if (a->distance_to(b) > (a->vdW_radius+b->vdW_radius)) e.clash = 0;
             float f = e.summed();
-            ttl += f;
+            res_ttls[i] += f;
             if (polaronly)
             {
                 if (!contact_polar) continue;
@@ -315,22 +333,27 @@ int main(int argc, char** argv)
 
             if ((threshold < 0 && f <= threshold) || (threshold > 0 && f >= threshold))
             {
-                cout << *aa;
-                if (bw1.helix_no && bw1.member_no) cout << "(" << bw1 << ")";
-                if (a) cout << "." << a->name;
-                cout << "-" << *cl[j];
-                if (bw2.helix_no && bw2.member_no) cout << "(" << bw2 << ")";
-                if (b) cout << "." << b->name;
-                cout << ": " << r << " Å; " << f << " kJ/mol." << endl;
-            }
-            if (f < bestf)
-            {
-                best.copy_state(aa);
-                bestf = f;
+                std::stringstream ss;
+                ss << *aa;
+                if (bw1.helix_no && bw1.member_no) ss << "(" << bw1 << ")";
+                if (a) ss << "." << a->name;
+                ss << "-" << *cl[j];
+                if (bw2.helix_no && bw2.member_no) ss << "(" << bw2 << ")";
+                if (b) ss << "." << b->name;
+                ss << ": " << r << " Å; " << f << " kJ/mol.";
+                outputs[i].push_back(ss.str());
             }
         }
+    }
 
-        if (bestf) best.restore_state(aa);
+    float ttl = 0;
+    for (int i=1; i<=n; i++)
+    {
+        ttl += res_ttls[i];
+        for (const auto& line : outputs[i])
+        {
+            cout << line << endl;
+        }
     }
 
     cout << "Total: " << ttl << " kJ/mol." << endl;

@@ -757,8 +757,9 @@ AminoAcid::AminoAcid(const char letter, AminoAcid* prevaa, bool minintc, Protein
 
     aa_defs[idx].loaded = true;
 
-    Atom* CA = get_atom("CA");
-    Atom* CB = get_atom("CB");
+    cache_ca_cb();
+    Atom* CA = get_CA();
+    Atom* CB = get_CB();
 
     if (prevaa)
     {
@@ -1509,6 +1510,7 @@ _return_added:
     #endif
 
     initial_eclipses = total_eclipses();
+    cache_ca_cb();
 
     return added;
 }
@@ -2892,9 +2894,48 @@ void AminoAcid::hydrogenate(bool steric_only)
     ensure_pi_atoms_coplanar();
 }
 
+void AminoAcid::cache_ca_cb()
+{
+    ca_atom = nullptr;
+    cb_atom = nullptr;
+    if (!atoms) return;
+    for (int i = 0; atoms[i]; i++)
+    {
+        if (atoms[i]->name)
+        {
+            if (atoms[i]->name[0] == 'C' && atoms[i]->name[1] == 'A' && atoms[i]->name[2] == '\0')
+                ca_atom = atoms[i];
+            else if (atoms[i]->name[0] == 'C' && atoms[i]->name[1] == 'B' && atoms[i]->name[2] == '\0')
+                cb_atom = atoms[i];
+        }
+    }
+}
+
+Atom* AminoAcid::get_atom(char const* aname) const
+{
+    if (aname && aname[0] == 'C')
+    {
+        if (aname[1] == 'A' && aname[2] == '\0')
+        {
+            if (ca_atom) return ca_atom;
+            Atom* a = Molecule::get_atom(aname);
+            if (a) const_cast<AminoAcid*>(this)->ca_atom = a;
+            return a;
+        }
+        if (aname[1] == 'B' && aname[2] == '\0')
+        {
+            if (cb_atom) return cb_atom;
+            Atom* a = Molecule::get_atom(aname);
+            if (a) const_cast<AminoAcid*>(this)->cb_atom = a;
+            return a;
+        }
+    }
+    return Molecule::get_atom(aname);
+}
+
 Point AminoAcid::get_CA_location()
 {
-    Atom* a = get_atom("CA");
+    Atom* a = get_CA();
     if (!a) return Point(0,0,0);
     return a->loc;
 }
@@ -2990,6 +3031,7 @@ void AminoAcid::delete_sidechain()
         atoms[i] = latoms[i];
 
     atoms[i] = NULL;
+    cb_atom = nullptr;
 }
 
 Atom* AminoAcid::previous_residue_C()

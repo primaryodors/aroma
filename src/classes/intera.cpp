@@ -55,6 +55,17 @@ Interaction Interaction::operator+(Interaction const& obj)
     result.worst_atom_clash = fmax(worst_atom_clash, obj.worst_atom_clash);
     return result;
 }
+
+Interaction Interaction::operator-(Interaction const& obj)
+{
+    Interaction result;
+    result.attractive = attractive - obj.attractive;
+    result.repulsive = repulsive - obj.repulsive;
+    result.clash = clash - obj.clash;
+    result.stays_met = stays_met;
+    result.worst_atom_clash = worst_atom_clash;
+    return result;
+}
     
 Interaction Interaction::operator+=(Interaction const& obj)
 {
@@ -63,7 +74,15 @@ Interaction Interaction::operator+=(Interaction const& obj)
     clash += obj.clash;
     stays_met = stays_met && obj.stays_met;
     worst_atom_clash = fmax(worst_atom_clash, obj.worst_atom_clash);
-    return obj;
+    return *this;
+}
+
+Interaction Interaction::operator-=(Interaction const& obj)
+{
+    attractive -= obj.attractive;
+    repulsive -= obj.repulsive;
+    clash -= obj.clash;
+    return *this;
 }
 
 Interaction Interaction::operator*(double const& f)
@@ -555,18 +574,18 @@ void InteratomicForce::fetch_applicable(Atom* a, Atom* b, InteratomicForce** ret
                     &&
                     (	!look[i]->bZa
                         ||
-                        (!look[i]->aritybZa && a->is_bonded_to(Atom::esym_from_Z(look[i]->bZa)))
+                        (!look[i]->aritybZa && a->is_bonded_to_Z(look[i]->bZa))
                         ||
-                        ( look[i]->aritybZa && a->is_bonded_to(Atom::esym_from_Z(look[i]->bZa), look[i]->aritybZa))
+                        ( look[i]->aritybZa && a->is_bonded_to_Z(look[i]->bZa, look[i]->aritybZa))
                     )
                     &&
                     (look[i]->Zb == Zb || look[i]->Zb == any_element)
                     &&
                     (	!look[i]->bZb
                         ||
-                        (!look[i]->aritybZb && b->is_bonded_to(Atom::esym_from_Z(look[i]->bZb)))
+                        (!look[i]->aritybZb && b->is_bonded_to_Z(look[i]->bZb))
                         ||
-                        ( look[i]->aritybZb && b->is_bonded_to(Atom::esym_from_Z(look[i]->bZb), look[i]->aritybZb))
+                        ( look[i]->aritybZb && b->is_bonded_to_Z(look[i]->bZb, look[i]->aritybZb))
                     )
              )
                 ||
@@ -574,18 +593,18 @@ void InteratomicForce::fetch_applicable(Atom* a, Atom* b, InteratomicForce** ret
                     &&
                     (	!look[i]->bZb
                         ||
-                        (!look[i]->aritybZb && a->is_bonded_to(Atom::esym_from_Z(look[i]->bZb)))
+                        (!look[i]->aritybZb && a->is_bonded_to_Z(look[i]->bZb))
                         ||
-                        ( look[i]->aritybZb && a->is_bonded_to(Atom::esym_from_Z(look[i]->bZb), look[i]->aritybZb))
+                        ( look[i]->aritybZb && a->is_bonded_to_Z(look[i]->bZb, look[i]->aritybZb))
                     )
                     &&
                     (look[i]->Za == Zb || look[i]->Za == any_element)
                     &&
                     (	!look[i]->bZa
                         ||
-                        (!look[i]->aritybZa && b->is_bonded_to(Atom::esym_from_Z(look[i]->bZa)))
+                        (!look[i]->aritybZa && b->is_bonded_to_Z(look[i]->bZa))
                         ||
-                        ( look[i]->aritybZa && b->is_bonded_to(Atom::esym_from_Z(look[i]->bZa), look[i]->aritybZa))
+                        ( look[i]->aritybZa && b->is_bonded_to_Z(look[i]->bZa, look[i]->aritybZa))
                     )
                 )
            )
@@ -741,10 +760,10 @@ float InteratomicForce::potential_binding(Atom* a, Atom* b, bool shpmm)
 }
 
 #define _num_force_precedences 6
-InteratomicForce* forces_by_type[_num_force_precedences];
 const intera_type force_precedence[_num_force_precedences] = {mcoord, ionic, hbond, pi, polarpi, vdW};
 Interaction InteratomicForce::total_binding(Atom* a, Atom* b)
 {
+    InteratomicForce* forces_by_type[_num_force_precedences];
     Interaction kJmol = 0;
     if (a->vanished || b->vanished) return kJmol;
 
@@ -1539,23 +1558,18 @@ bool Interaction::improved(Interaction rel)
     return (abetter + rbetter) > 0;
 }
 
+// Metropolis criterion: If the new interaction is better,
+// accept it; otherwise stochastically accept or reject it
+// according to the equilibrium probability. The first half
+// lives in the accept_change() function, NOT in the
+// probability function.
 float Interaction::probability(Interaction rel)
 {
     float Emine = summed(), Eyours = rel.summed();
-    if (Emine < Eyours) return 1;
-    #if 1
+
     // Metropolis Criterion
     float K = exp((Eyours-Emine)/(kB_kJmol*temperature));
     return K / (K+1);
-    #else
-    float Kattr = exp((attractive-rel.attractive)/(kB_kJmol*temperature));
-    float Krepl = exp((repulsive-rel.repulsive)/(kB_kJmol*temperature));
-    float Kclsh = exp((clash-clash)/(kB_kJmol*temperature));
-    float probsattr = Kattr / (Kattr+1);
-    float probsrepl = Krepl / (Krepl+1);
-    float probsclsh = Kclsh / (Kclsh+1);
-    return pow(probsattr*probsrepl*probsclsh, 1.0/3);
-    #endif
 }
 
 bool Interaction::accept_change(Interaction rel)
