@@ -84,7 +84,7 @@ Point Point::negate()
 Point Point::randomize(float amt) const
 {
     float rx = frand(-amt, amt), ry = frand(-amt, amt), rz = frand(-amt, amt);
-    Point rel(rx, ry ,rz);
+    Point rel(rx, ry,rz);
     rel.scale(frand(0, amt));
     return add(rel);
 }
@@ -131,7 +131,8 @@ float Point::get_3d_distance_squared(const Point* reference) const
 
 std::string Point::printable() const
 {
-    auto fmt = [](double v) -> double {
+    auto fmt = [](double v) -> double
+    {
         int iv = (int)(v * 1000);
         if (iv == 0) return 0.0;
         return iv * 0.001;
@@ -278,9 +279,9 @@ Point average_of_points(Point* points, int count)
         z += points[i].weight * points[i].z;
         sum += points[i].weight;
 
-        #if _dbg_point_avg
+#if _dbg_point_avg
         cout << "Adding " << points[i] << " for total [" << x << "," << y << "," << z << "]." << endl;
-        #endif
+#endif
     }
 
     if (!sum)
@@ -288,15 +289,15 @@ Point average_of_points(Point* points, int count)
         return Point(0,0,0);
     }
 
-    #if _dbg_point_avg
+#if _dbg_point_avg
     cout << "Sum of weights: " << sum << "; return value = [";
-    #endif
+#endif
     x /= sum;
     y /= sum;
     z /= sum;
-    #if _dbg_point_avg
+#if _dbg_point_avg
     cout << x << "," << y << "," << z << "]." << endl << endl;
-    #endif
+#endif
 
     if (isnan(x) || isnan(y) || isnan(z)) throw 0xbadc0de;
 
@@ -356,9 +357,14 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
         float bd;
         switch (xyz)
         {
-            case 0: bd = lbias.x; break;
-            case 1: bd = lbias.y; break;
-            default: bd = lbias.z;
+        case 0:
+            bd = lbias.x;
+            break;
+        case 1:
+            bd = lbias.y;
+            break;
+        default:
+            bd = lbias.z;
         }
 
         float f;
@@ -369,9 +375,14 @@ Point find_equidistant_point(Point* points, int count, Point* bias)
         Point was = retval;
         switch (xyz)
         {
-            case 0: retval.x += f; break;
-            case 1: retval.y += f; break;
-            default: retval.z += f;
+        case 0:
+            retval.x += f;
+            break;
+        case 1:
+            retval.y += f;
+            break;
+        default:
+            retval.z += f;
         }
 
         float r = equidistance_anomaly(retval, points, count);
@@ -516,16 +527,16 @@ Point rotate3D(Point* point, Point* source, Vector* axis, float theta)
     double sint = sin(theta), cost = cos(theta), _1_cost = (1.0 - cost);
 
     double x1 = (a * (v2+w2) - u * (b*v + c*w - u*x - v*y - w*z)) * _1_cost
-               + x * cost
-               + (-c*v + b*w - w*y + v*z) * sint;
+                + x * cost
+                + (-c*v + b*w - w*y + v*z) * sint;
 
     double y1 = (b * (u2+w2) - v * (a*u + c*w - u*x - v*y - w*z)) * _1_cost
-               + y * cost
-               + ( c*u - a*w + w*x - u*z) * sint;
+                + y * cost
+                + ( c*u - a*w + w*x - u*z) * sint;
 
     double z1 = (c * (u2+v2) - w * (a*u + b*v - u*x - v*y - w*z)) * _1_cost
-               + z * cost
-               + (-b*u + a*v - v*x + u*y) * sint;
+                + z * cost
+                + (-b*u + a*v - v*x + u*y) * sint;
 
     Point pt(x1,y1,z1);
     return pt;
@@ -734,9 +745,9 @@ Rotation Rotation::add(Rotation* rot)
         r1.a *= m;
         r2.a *= m;
 
-        #if _dbg_infinite_loops
+#if _dbg_infinite_loops
         cout << "Calling recursive Rotation::add()..." << endl << flush;
-        #endif
+#endif
         return r1.add(&r2);		// RECURSION!
     }
 

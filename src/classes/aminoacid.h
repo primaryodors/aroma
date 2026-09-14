@@ -110,7 +110,10 @@ public:
     bool is_amide();
     bool is_amine();
     bool conditionally_basic() const;
-    bool is_xflx() { return aadef ? aadef->xflx : false; }
+    bool is_xflx()
+    {
+        return aadef ? aadef->xflx : false;
+    }
     float sc_pKa() const;
     float sc_hfe() const;
     float get_reach() const
@@ -136,7 +139,10 @@ public:
     void establish_internal_clash_baseline();
     void refresh_base_intermol_clashes();
     void renumber(int new_resno);
-    float get_alpha_helix_penalty() { return aadef->alpha_helix_penalty; }
+    float get_alpha_helix_penalty()
+    {
+        return aadef->alpha_helix_penalty;
+    }
 
     // Serialization.
     int from_pdb(FILE* instream, int resno_offset = 0);							// returns number of atoms loaded.
@@ -189,14 +195,20 @@ public:
     float occlusion_by_mclashables();
 
     // Misc.
-    Protein* get_parent() const { return protein; }
+    Protein* get_parent() const
+    {
+        return protein;
+    }
     void delete_sidechain();
     static Molecule** aas_to_mols(AminoAcid** aas);
     float similarity_to(const char letter);
     float similarity_to(const AminoAcid* aa);
     Ring* get_most_distal_arom_ring();
     std::string printable();
-    char get_pdb_chain() const { return pdbchain; }
+    char get_pdb_chain() const
+    {
+        return pdbchain;
+    }
     char set_pdb_chain(char chain);
     void find_his_flips();
 
@@ -208,11 +220,13 @@ public:
     Atom* ca_atom = nullptr;
     Atom* cb_atom = nullptr;
     void cache_ca_cb();
-    Atom* get_CA() const {
+    Atom* get_CA() const
+    {
         if (ca_atom) return ca_atom;
         return get_atom("CA");
     }
-    Atom* get_CB() const {
+    Atom* get_CB() const
+    {
         if (cb_atom) return cb_atom;
         return get_atom("CB");
     }

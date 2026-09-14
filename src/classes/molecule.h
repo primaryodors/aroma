@@ -159,8 +159,14 @@ public:
     virtual void move(Point move_amt, bool override_residue = false);
     virtual void recenter(Point new_location);
     const Point* obtain_vdW_surface(float density);
-    Atom** get_vdW_vertex_atoms() { return vdw_vertex_atom; }
-    int get_vdW_vertex_count() { return vdw_vertex_count; }
+    Atom** get_vdW_vertex_atoms()
+    {
+        return vdw_vertex_atom;
+    }
+    int get_vdW_vertex_count()
+    {
+        return vdw_vertex_count;
+    }
     int get_atom_vdW_vertex_count(Atom* a);
     void wipe_vdw_surface();
     void rotate(Vector* Vector, float theta, bool bond_weighted = false);
@@ -182,11 +188,11 @@ public:
     float get_atom_bond_angle_anomaly(Atom* atom, Atom* ignore = nullptr, bool energprob = false);
     // TODO: add a function for torsional strain and test cyclopropane ~= 24.5 kJ/mol.
     float refine_structure(int generations = _evolution_default_generations,
-        float mutation_rate = _default_mutation_rate,
-        int pop_size = _default_population_size,
-        Molecule** ligands = nullptr,
-        Progressbar* pgb = nullptr
-        );
+                           float mutation_rate = _default_mutation_rate,
+                           int pop_size = _default_population_size,
+                           Molecule** ligands = nullptr,
+                           Progressbar* pgb = nullptr
+                          );
     float total_bond_strain();
     float bond_strain_for_structure_refinement();
     int atoms_inside_sphere(Sphere container, bool* byindex, float radius_multiplier = 1);     // If byindex is not null, sets byindex[n] to true for atoms inside the sphere, but does not set to false.
@@ -255,8 +261,14 @@ public:
     // Interaction functions.
     float get_internal_clashes(bool subtract_baseline = false, bool include_backbone = true);
     void minimize_internal_clashes();
-    float get_base_clashes() { return base_internal_clashes; }
-    float get_base_mclashes() { return base_intermol_clashes; }
+    float get_base_clashes()
+    {
+        return base_internal_clashes;
+    }
+    float get_base_mclashes()
+    {
+        return base_intermol_clashes;
+    }
     float get_intermol_clashes(Molecule* ligand);
     float get_intermol_clashes(Molecule** ligands);
     static float total_intermol_clashes(Molecule** ligands);
@@ -276,26 +288,26 @@ public:
     float get_total_mclashes();
     Interaction optimize_intermol_contact(Molecule* ligand);
 
-    #if compute_vdw_repulsion
+#if compute_vdw_repulsion
     float get_vdW_repulsion(Molecule* ligand);
-    #endif
+#endif
 
     float bindability_by_type(intera_type type, bool include_backbone = false);
 
     static Interaction total_intermol_binding(Molecule** ligands);
 
     static void conform_molecules(Molecule** molecules, int iterations = 50,
-        void (*callback)(int, Molecule**) = nullptr,
-        void (*progress)(float) = nullptr,
-        int min_iter = 0,
-        Space* cavity = nullptr
-        );
-    
+                                  void (*callback)(int, Molecule**) = nullptr,
+                                  void (*progress)(float) = nullptr,
+                                  int min_iter = 0,
+                                  Space* cavity = nullptr
+                                 );
+
     static void conform_molecules(Molecule** molecules, Molecule** background, int iterations = 50,
-        void (*callback)(int, Molecule**) = nullptr,
-        void (*progress)(float) = nullptr,
-        Space* cavity = nullptr
-        );
+                                  void (*callback)(int, Molecule**) = nullptr,
+                                  void (*progress)(float) = nullptr,
+                                  Space* cavity = nullptr
+                                 );
 
     void quick_conform(Molecule** background, int iterations = 25);
 
@@ -328,7 +340,7 @@ public:
     void delete_mandatory_connections();
 
     // Debug stuff.
-    #if debug_break_on_move
+#if debug_break_on_move
     void set_atoms_break_on_move(bool break_on_move)
     {
         if (atoms)
@@ -337,7 +349,7 @@ public:
             for (i=0; atoms[i]; i++) atoms[i]->break_on_move = break_on_move;
         }
     }
-    #endif
+#endif
 
     bool echo_iters = false;
     MovabilityType movability = MOV_ALL;
@@ -362,7 +374,7 @@ public:
     Molecule *stay_close_water = nullptr, *stay_close_mol = nullptr, *stay_close2_mol = nullptr;
     float stay_close_tolerance = 0, stay_close_optimal = 2, stay_close2_optimal = 2;
     bool is_ic_res = false;
-    #define CONECTS_MAX 256
+#define CONECTS_MAX 256
     int nconects = 0;
     Atom *conecta1[CONECTS_MAX], *conecta2[CONECTS_MAX];
     float conectcard[CONECTS_MAX];
@@ -428,32 +440,39 @@ protected:
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr,
-        Space* cavity = nullptr);
+                                       Space* cavity = nullptr);
     bool faces_any_ligand(Molecule** ligands);
     float octant_occlusion(Molecule** ligands);
     double solvation_from_surface_areas(double totalsurf, double polsurf);
 
-    public:
+public:
     const int& num_monomers = nmonomers;
-    const Molecule* glued_to_mol() { return glued_to; }
+    const Molecule* glued_to_mol()
+    {
+        return glued_to;
+    }
     void check_glued_bond();
 
     float memoized_internal_clashes = 0.0f;
     float memoized_total_eclipses = 0.0f;
     bool has_memoized_clashes = false;
-    void memoize_clashes() {
+    void memoize_clashes()
+    {
         memoized_internal_clashes = get_internal_clashes();
         memoized_total_eclipses = total_eclipses();
         has_memoized_clashes = true;
     }
-    void invalidate_memoized_clashes() {
+    void invalidate_memoized_clashes()
+    {
         has_memoized_clashes = false;
     }
-    float get_memoized_internal_clashes() {
+    float get_memoized_internal_clashes()
+    {
         if (!has_memoized_clashes) memoize_clashes();
         return memoized_internal_clashes;
     }
-    float get_memoized_total_eclipses() {
+    float get_memoized_total_eclipses()
+    {
         if (!has_memoized_clashes) memoize_clashes();
         return memoized_total_eclipses;
     }
