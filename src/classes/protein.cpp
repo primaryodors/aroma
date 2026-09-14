@@ -3889,6 +3889,161 @@ bool Protein::add_connection_if_not_exists(Bond *b)
     return added;
 }
 
+std::vector<std::pair<int, int>> Protein::get_disulfide_residues()
+{
+    std::vector<std::pair<int, int>> results;
+
+    // 1. Check connections from PDB CONECT records
+    for (size_t i = 0; i < connections.size(); i++)
+    {
+        Bond* b = connections[i];
+        if (b && b->atom1 && b->atom2)
+        {
+            if (b->atom1->Z == 16 && b->atom2->Z == 16)
+            {
+                int r1 = b->atom1->residue;
+                int r2 = b->atom2->residue;
+                if (r1 && r2 && r1 != r2)
+                {
+                    if (r1 > r2) std::swap(r1, r2);
+                    bool exists = false;
+                    for (size_t k = 0; k < results.size(); k++)
+                    {
+                        if (results[k].first == r1 && results[k].second == r2)
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) results.push_back(std::make_pair(r1, r2));
+                }
+            }
+        }
+    }
+
+    // 2. Scan all cysteine SG-SG pairs under 2.5 A (covers PDBs without explicit CONECT records)
+    int end_rn = get_end_resno();
+    for (int i = 1; i <= end_rn; i++)
+    {
+        AminoAcid* aa1 = get_residue(i);
+        if (!aa1 || (aa1->get_letter() != 'C' && !aa1->is_thiol())) continue;
+        Atom* sg1 = aa1->get_atom("SG");
+        if (!sg1) continue;
+
+        for (int j = i + 1; j <= end_rn; j++)
+        {
+            AminoAcid* aa2 = get_residue(j);
+            if (!aa2 || (aa2->get_letter() != 'C' && !aa2->is_thiol())) continue;
+            Atom* sg2 = aa2->get_atom("SG");
+            if (!sg2) continue;
+
+            float d = sg1->loc.get_3d_distance(sg2->loc);
+            if (d <= 2.5f)
+            {
+                int r1 = i, r2 = j;
+                bool exists = false;
+                for (size_t k = 0; k < results.size(); k++)
+                {
+                    if (results[k].first == r1 && results[k].second == r2)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) results.push_back(std::make_pair(r1, r2));
+            }
+        }
+    }
+
+    return results;
+}
+
+std::pair<int, int> Protein::get_span_to_nearest_helix(int resno)
+{
+    AminoAcid* aa = get_residue(resno);
+    if (!aa) return std::make_pair(resno, resno);
+
+    if (aa->is_alpha_helix()) return std::make_pair(resno, resno);
+
+    for (int i = 0; i < PROT_MAX_RGN; i++)
+    {
+        if (regions[i].start && resno >= regions[i].start && resno <= regions[i].end)
+            return std::make_pair(resno, resno);
+    }
+
+    int n = get_end_resno();
+    int up_helix_end = 0;
+    int down_helix_start = 0;
+
+    // Scan upstream towards N-terminus
+    for (int d = resno - 1; d >= 1; d--)
+    {
+        AminoAcid* a = get_residue(d);
+        if (!a) continue;
+        bool in_hx = a->is_alpha_helix();
+        if (!in_hx)
+        {
+            for (int r = 0; r < PROT_MAX_RGN; r++)
+            {
+                if (regions[r].start && d >= regions[r].start && d <= regions[r].end)
+                {
+                    in_hx = true;
+                    break;
+                }
+            }
+        }
+        if (in_hx)
+        {
+            up_helix_end = d;
+            break;
+        }
+    }
+
+    // Scan downstream towards C-terminus
+    for (int u = resno + 1; u <= n; u++)
+    {
+        AminoAcid* a = get_residue(u);
+        if (!a) continue;
+        bool in_hx = a->is_alpha_helix();
+        if (!in_hx)
+        {
+            for (int r = 0; r < PROT_MAX_RGN; r++)
+            {
+                if (regions[r].start && u >= regions[r].start && u <= regions[r].end)
+                {
+                    in_hx = true;
+                    break;
+                }
+            }
+        }
+        if (in_hx)
+        {
+            down_helix_start = u;
+            break;
+        }
+    }
+
+    if (up_helix_end && down_helix_start)
+    {
+        int dist_up = resno - up_helix_end;
+        int dist_down = down_helix_start - resno;
+        if (dist_up <= dist_down)
+            return std::make_pair(up_helix_end, resno);
+        else
+            return std::make_pair(resno, down_helix_start);
+    }
+    else if (up_helix_end)
+    {
+        return std::make_pair(up_helix_end, resno);
+    }
+    else if (down_helix_start)
+    {
+        return std::make_pair(resno, down_helix_start);
+    }
+
+    return std::make_pair(resno, resno);
+}
+
 void Protein::upright()
 {
     save_undo_state();

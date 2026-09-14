@@ -4337,15 +4337,7 @@ bool Molecule::shielded(Atom* a, Atom* b) const
         if (f3da > a->shielding_angle) a->shielding_angle = b->shielding_angle = f3da;
         if (f3da > _shield_angle)
         {
-            if (last_iter && (a->residue == 114 || b->residue == 114) && ((a->residue + b->residue) == 114))
-            {
-                /*cout << ai->name << " shields "
-                	 << a->residue << ":" << a->name << "..."
-                	 << b->residue << ":" << b->name
-                	 << " angle " << (f3da*fiftyseven)
-                	 << endl;*/
-                return true;
-            }
+            return true;
         }
     }
 
@@ -8492,6 +8484,7 @@ bool mclash_delta(void* mol, float previous_mclashes)
 {
     return reinterpret_cast<Molecule*>(mol)->get_total_mclashes() <= previous_mclashes;
 }
+
 bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
 {
     int i;

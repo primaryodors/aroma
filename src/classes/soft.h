@@ -11,6 +11,7 @@ class SoftContact
     public:
     int local = 0, distant = 0;
     bool paired = false;
+    bool is_disulfide = false;
     float energy = 0;
     float CA_distance = 0;
 };
@@ -34,10 +35,11 @@ class SoftRegion
     AminoAcid* get_distant_contact(int i, Protein* p);
     float get_contact_original_distance(int i);
     bool is_contact_paired(int i) { return contacts[i].paired; }
+    bool is_contact_disulfide(int i) { return (contacts && i < allocated) ? contacts[i].is_disulfide : false; }
     Atom* get_pivot_atom_by_contact_idx(int i, Protein* p);
     float contact_anomaly(Protein *p, int i = -1, bool ignore_paired = true);
     float contact_distance_anomaly(Protein *p, int i = -1, bool ignore_paired = true);
-    void add_contact(int local, int distant, Protein* p, bool paired = false);
+    void add_contact(int local, int distant, Protein* p, bool paired = false, bool is_disulfide = false);
     void link_region(SoftRegion* prev);
     bool check_chain_constraints(Protein* prot);
     void optimize_contact(Protein *p, int i);

@@ -993,6 +993,11 @@ int main(int argc, char** argv)
                 aa->movability = MOV_FLEXONLY;
                 if (!aa->mclashables) working->set_clashables(aa->get_residue_no());
                 aa->conform_atom_to_location(a->name, target);
+
+                if (aa->get_internal_clashes() > clash_limit_per_aa)
+                {
+                    aa->minimize_internal_clashes();
+                }
             }	// ATOMTO
 
             else if (!strcmp(words[0], "BEND"))

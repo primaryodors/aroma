@@ -93,6 +93,15 @@ float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
             }
             #endif
             if (f > contacts[i].energy) anomaly += (f - contacts[i].energy);
+            if (contacts[i].is_disulfide)
+            {
+                Atom *sg1 = aa1->get_atom("SG"), *sg2 = aa2->get_atom("SG");
+                if (sg1 && sg2)
+                {
+                    float d = sg1->distance_to(sg2);
+                    if (d > 2.3f) anomaly += (d - 2.3f) * 100.0f;
+                }
+            }
             /* cout << "Binding energy between " << aa1->get_name() << " and " << aa2->get_name()
                 << " = " << f << " originally " << contacts[i].energy << endl; */
         }
@@ -212,7 +221,7 @@ bool SoftRegion::check_chain_constraints(Protein* prot)
     return !prev_rgn_violated && !next_rgn_violated;
 }
 
-void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired)
+void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired, bool is_disulfide)
 {
     int i;
 
@@ -226,8 +235,12 @@ void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired)
     {
         for (i=0; contacts[i].local; i++)               // get count
         {
-            if (contacts[i].local == local && contacts[i].distant == distant) return;               // prevent duplicates
-            if (contacts[i].local == distant && contacts[i].distant == local) return;
+            if ((contacts[i].local == local && contacts[i].distant == distant) ||
+                (contacts[i].local == distant && contacts[i].distant == local))
+            {
+                if (is_disulfide) contacts[i].is_disulfide = true;
+                return;               // prevent duplicates
+            }
         }
         if (i >= allocated-1)
         {
@@ -254,6 +267,7 @@ void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired)
     }
     contacts[i].energy = e.summed();
     contacts[i].paired = paired;
+    contacts[i].is_disulfide = is_disulfide;
     // cout << contacts[i].local->get_name() << "..." << contacts[i].distant->get_name() << " with energy " << contacts[i].energy << endl;
     i++;
     contacts[i].local = contacts[i].distant = 0;
@@ -334,7 +348,9 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             Atom *CA1 = aa1->get_atom("CA"), *CA2 = aa2->get_atom("CA");
             float ra = CA1->distance_to(CA2) - softrgns[i].get_contact_original_distance(j);
             Vector ctpull = CA2->loc.subtract(CA1->loc);
-            ctpull.r = ra * soft_contact_elasticity * frand(0,1);
+            float elasticity = soft_contact_elasticity;
+            if (softrgns[i].is_contact_disulfide(j)) elasticity *= 10.0f;
+            ctpull.r = ra * elasticity * frand(0,1);
             softpush = softpush.subtract(ctpull);
             pullmagn += ctpull.r;
         }
