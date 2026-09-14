@@ -19,6 +19,8 @@ do_test()
     fi
 }
 
+make tests
+
 do_test "point_test"
 do_test "ageo_test"
 do_test "amino_test"

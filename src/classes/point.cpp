@@ -131,8 +131,13 @@ float Point::get_3d_distance_squared(const Point* reference) const
 
 std::string Point::printable() const
 {
+    auto fmt = [](double v) -> double {
+        int iv = (int)(v * 1000);
+        if (iv == 0) return 0.0;
+        return iv * 0.001;
+    };
     std::stringstream buffer;
-    buffer << "[" << (0.001 * (int)(x*1000)) << "," << (0.001 * (int)(y*1000)) << "," << (0.001 * (int)(z*1000)) << "]";
+    buffer << "[" << fmt(x) << "," << fmt(y) << "," << fmt(z) << "]";
     return buffer.str();
 }
 
