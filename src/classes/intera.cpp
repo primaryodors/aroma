@@ -1539,23 +1539,18 @@ bool Interaction::improved(Interaction rel)
     return (abetter + rbetter) > 0;
 }
 
+// Metropolis criterion: If the new interaction is better,
+// accept it; otherwise stochastically accept or reject it
+// according to the equilibrium probability. The first half
+// lives in the accept_change() function, NOT in the
+// probability function.
 float Interaction::probability(Interaction rel)
 {
     float Emine = summed(), Eyours = rel.summed();
-    // if (Emine < Eyours) return 1;
-    #if 1
+
     // Metropolis Criterion
     float K = exp((Eyours-Emine)/(kB_kJmol*temperature));
     return K / (K+1);
-    #else
-    float Kattr = exp((attractive-rel.attractive)/(kB_kJmol*temperature));
-    float Krepl = exp((repulsive-rel.repulsive)/(kB_kJmol*temperature));
-    float Kclsh = exp((clash-clash)/(kB_kJmol*temperature));
-    float probsattr = Kattr / (Kattr+1);
-    float probsrepl = Krepl / (Krepl+1);
-    float probsclsh = Kclsh / (Kclsh+1);
-    return pow(probsattr*probsrepl*probsclsh, 1.0/3);
-    #endif
 }
 
 bool Interaction::accept_change(Interaction rel)
