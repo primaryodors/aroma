@@ -225,17 +225,6 @@ Atom *best_ligand_stays, *best_ligand_stays_other;
 
 ICHelixGroup hg;
 
-struct TrackedInternalContact
-{
-    int res1 = 0;
-    int res2 = 0;
-    bool is_salt_bridge = false;
-    float init_binding_energy = 0;
-};
-
-std::vector<std::pair<int, int>> active_disulfides;
-std::vector<TrackedInternalContact> tracked_internal_contacts;
-
 #if _dummy_atoms_for_debug
 std::vector<Atom> dummies;
 #endif
@@ -2070,6 +2059,10 @@ void apply_protein_specific_settings(Protein* p)
         std::vector<std::pair<int, int>> disulfide_spans;
         for (const auto& ds : active_disulfides)
         {
+            AminoAcid *cys = protein->get_residue(ds.first);
+            if (cys) cys->movability = MOV_PINNED;
+            cys = protein->get_residue(ds.second);
+            if (cys) cys->movability = MOV_PINNED;
             disulfide_spans.push_back(protein->get_span_to_nearest_helix(ds.first));
             disulfide_spans.push_back(protein->get_span_to_nearest_helix(ds.second));
         }
@@ -2397,6 +2390,7 @@ void apply_protein_specific_settings(Protein* p)
 int main(int argc, char** argv)
 {
     strcpy(splash, "\n        ***     ******      ****    ***    ***     ***     *****       ****      ****   **    **     \n       ** **    **   **    **  **   ****  ****    ** **    **  **     **  **    **  **  **    **     \n      **   **   **    **  **    **  ** **** **   **   **   **   **   **    **  **       **    **     \n     **     **  **   **   **    **  **  **  **  **     **  **    **  **    **  **       **   **      \n     *********  ******    **    **  **  **  **  *********  **    **  **    **  **       ******       \n     **     **  **   **   **    **  **      **  **     **  **    **  **    **  **       **   **      \n     **     **  **    **  **    **  **      **  **     **  **   **   **    **  **       **    **     \n     **     **  **    **   **  **   **      **  **     **  **  **     **  **    **  **  **    **     \n     **     **  **    **    ****    **      **  **     **  *****       ****      ****   **    **     \n");
+    bool dosplash = true;
     char buffer[65536];
     int i, j;
 
@@ -2441,6 +2435,10 @@ int main(int argc, char** argv)
             omp_set_num_threads(num_threads);
             #endif
             optsecho = "Threads: " + to_string(num_threads);
+        }
+        else if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
+        {
+            dosplash = false;
         }
         else if (!configset && file_exists(argv[i]))
         {
@@ -2502,7 +2500,7 @@ int main(int argc, char** argv)
     pf = fopen(protfname, "r");
     if (!pf)
     {
-        cout << splash << endl;
+        if (dosplash) cout << splash << endl;
         cerr << "Error trying to read " << protfname << endl;
         return 0xbadf12e;
     }
@@ -2511,7 +2509,7 @@ int main(int argc, char** argv)
 
     j=1;
     std::string seq = protein->get_sequence();
-    for (i=0; splash[i]; i++)
+    if (dosplash) for (i=0; splash[i]; i++)
     {
         if (splash[i] == '*')
         {
@@ -2525,7 +2523,7 @@ int main(int argc, char** argv)
     float init_A100 = protein->A100();
     #endif
 
-    cout << splash << endl;
+    if (dosplash) cout << splash << endl;
 
     FILE* fp = fopen("TODO.txt", "r");
     if (fp)
@@ -4844,11 +4842,19 @@ _try_again:
                         float canom = softrgns[i].contact_anomaly(protein, j);
                         if (fabs(canom) < 0.1) continue;
                         AminoAcid *aac1 = softrgns[i].get_local_contact(j, protein), *aac2 = softrgns[i].get_distant_contact(j, protein);
-                        if (aac1 && aac2) dr[drcount][nodeno].miscdata += (std::string)"Contact anomaly for "
-                            + (std::string)"region " + std::to_string(i) + (std::string)" "
-                            + (std::string)aac1->get_name() + (std::string)"..." + (std::string)aac2->get_name()
-                            + (std::string)": " + std::to_string(canom * energy_mult)
-                            + (std::string)"\n";
+                        if (aac1 && aac2)
+                        {
+                            protein->bridge(aac1->get_residue_no(), aac2->get_residue_no());
+                            canom = softrgns[i].contact_anomaly(protein, j);
+                            if (fabs(canom) < clash_limit_per_atom) continue;
+                            dr[drcount][nodeno].miscdata += (std::string)"Contact anomaly for "
+                                + (std::string)"region " + std::to_string(i) + (std::string)" "
+                                + (std::string)aac1->get_name() + (std::string)"..." + (std::string)aac2->get_name()
+                                + (std::string)": " + std::to_string(canom * energy_mult)
+                                + (std::string)"\n"
+                                + softrgns[i].contact_ruptures
+                                + (std::string)"\n";
+                        }
                     }
                 }
 
@@ -4863,7 +4869,17 @@ _try_again:
                     if (sg1 && sg2)
                     {
                         float dist = sg1->distance_to(sg2);
-                        if (dist > 2.8f)
+                        if (dist > disulfide_rupture_threshold)
+                        {
+                            aa1->movability = aa2->movability = MOV_FORCEFLEX;
+                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.8);
+                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.5);
+                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.2);
+                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.07);
+                            aa1->movability = aa2->movability = MOV_PINNED;
+                            dist = sg1->distance_to(sg2);
+                        }
+                        if (dist > disulfide_rupture_threshold)
                         {
                             dr[drcount][nodeno].disqualified = true;
                             std::string reason = "Disulfide ruptured: " + std::string(aa1->get_name())
@@ -4888,6 +4904,12 @@ _try_again:
                     Atom* a2 = nullptr;
                     aa1->mutual_closest_atoms(aa2, &a1, &a2);
                     float dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+
+                    if (dist > 4.5f || curr_e.summed() > -1.0f)
+                    {
+                        protein->bridge(tic.res1, tic.res2);
+                        dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+                    }
 
                     // A formed salt bridge is ruptured if distance exceeds 4.5 A or attractive binding lost
                     if (dist > 4.5f || curr_e.summed() > -1.0f)

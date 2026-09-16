@@ -1,4 +1,5 @@
 
+#include <string>
 #include "protein.h"
 
 #ifndef _SOFT
@@ -29,6 +30,7 @@ class SoftRegion
     public:
     Region rgn;
     float initclash = 0;
+    std::string contact_ruptures = "";
 
     int num_contacts();
     AminoAcid* get_local_contact(int i, Protein* p);

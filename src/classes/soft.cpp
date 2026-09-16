@@ -62,6 +62,7 @@ void SoftRegion::optimize_contact(Protein *p, int cidx)
 
 float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
 {
+    contact_ruptures = "";
     if (!allocated || !contacts) return 0;
     int i;
     float anomaly = 0;
@@ -93,7 +94,7 @@ float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
             }
             #endif
             if (f > contacts[i].energy) anomaly += (f - contacts[i].energy);
-            if (contacts[i].is_disulfide)
+            /* if (contacts[i].is_disulfide)
             {
                 Atom *sg1 = aa1->get_atom("SG"), *sg2 = aa2->get_atom("SG");
                 if (sg1 && sg2)
@@ -101,9 +102,16 @@ float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
                     float d = sg1->distance_to(sg2);
                     if (d > 2.3f) anomaly += (d - 2.3f) * 100.0f;
                 }
-            }
-            /* cout << "Binding energy between " << aa1->get_name() << " and " << aa2->get_name()
-                << " = " << f << " originally " << contacts[i].energy << endl; */
+            }*/
+
+            contact_ruptures += std::string("Binding energy between ")
+                + std::string(aa1->get_name())
+                + std::string(" and ")
+                + std::string(aa2->get_name())
+                + std::string(" = ") + std::to_string(f)
+                + std::string(" originally ")
+                + std::to_string(contacts[i].energy)
+                + (std::string)"\n";
         }
         else break;
     }
@@ -277,6 +285,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
 {
     int i, j, l;
 
+    bool break_loop = false;
     for (i=0; i<nsoftrgn; i++)
     {
         int srnc = softrgns[i].num_contacts();
@@ -480,32 +489,116 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
 
                     break;
                 }
+
+                break_loop = false;
+
+                // Disulfide integrity check
+                for (const auto& ds : active_disulfides)
+                {
+                    AminoAcid* aa1 = protein->get_residue(ds.first);
+                    AminoAcid* aa2 = protein->get_residue(ds.second);
+                    if (!aa1 || !aa2) continue;
+                    Atom* sg1 = aa1->get_atom("SG");
+                    Atom* sg2 = aa2->get_atom("SG");
+                    if (sg1 && sg2)
+                    {
+                        float dist = sg1->distance_to(sg2);
+                        if (dist > disulfide_rupture_threshold)
+                        {
+                            aa1->movability = aa2->movability = MOV_FORCEFLEX;
+                            // protein->bridge(ds.first, ds.second);
+                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.8);
+                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.5);
+                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.2);
+                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.07);
+                            aa1->movability = aa2->movability = MOV_PINNED;
+                            dist = sg1->distance_to(sg2);
+                        }
+                        if (dist > disulfide_rupture_threshold)
+                        {
+                            protein->undo();
+                            #if move_ligand_with_soft_motion
+                            ligand_was.restore_state(ligand, true);
+                            #endif
+                            cafter = cbefore;
+                            clafter = clbefore;
+                            break_loop = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Salt bridge integrity check and dissociation penalty
+                for (const auto& tic : tracked_internal_contacts)
+                {
+                    if (!tic.is_salt_bridge) continue;
+                    AminoAcid* aa1 = protein->get_residue(tic.res1);
+                    AminoAcid* aa2 = protein->get_residue(tic.res2);
+                    if (!aa1 || !aa2) continue;
+
+                    Interaction curr_e = aa1->get_intermol_binding(aa2);
+                    Atom* a1 = nullptr;
+                    Atom* a2 = nullptr;
+                    aa1->mutual_closest_atoms(aa2, &a1, &a2);
+                    float dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+
+                    if (dist > 4.5f || curr_e.summed() > -1.0f)
+                    {
+                        protein->bridge(tic.res1, tic.res2);
+                        dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+                    }
+
+                    // A formed salt bridge is ruptured if distance exceeds 4.5 A or attractive binding lost
+                    if (dist > 4.5f || curr_e.summed() > -1.0f)
+                    {
+                        // Penalty equals the dissociation energy of the salt bridge (-init_binding_energy)
+                        float dissoc_energy = -tic.init_binding_energy;
+                        if (dissoc_energy > 0)
+                        {
+                            protein->undo();
+                            #if move_ligand_with_soft_motion
+                            ligand_was.restore_state(ligand, true);
+                            #endif
+                            cafter = cbefore;
+                            clafter = clbefore;
+                            break_loop = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (break_loop) break;
+
                 #if move_ligand_with_soft_motion
-                else if (!ligand->glued_to_mol()) ligand_was.copy_state(ligand);
+                if (!ligand->glued_to_mol()) ligand_was.copy_state(ligand);
                 #endif
             }
-            /*cout << "Moved residues " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << " "
+
+            if (!break_loop)
+            {
+                /*cout << "Moved residues " << softrgns[i].rgn.start << "-" << softrgns[i].rgn.end << " "
                 << translation_accomplished*ABx.r << "A." << endl << endl;*/
 
-            rotation_share += translation_share * (1.0 - translation_accomplished);
-            translation_share *= translation_accomplished;
-            ABx.r *= translation_accomplished;
-            Point CX = C.add(ABx);
-            if (audit) fprintf(audit, "Accepted soft dock translation from %g to %g.\n", cwaybefore, cafter);
+                rotation_share += translation_share * (1.0 - translation_accomplished);
+                translation_share *= translation_accomplished;
+                ABx.r *= translation_accomplished;
+                Point CX = C.add(ABx);
+                if (audit) fprintf(audit, "Accepted soft dock translation from %g to %g.\n", cwaybefore, cafter);
 
-            Point A = average_of_points(foravg, l);
-            Point B = A.add(ABr);
-            Rotation rot = align_points_3d(A, B, CX);
-            rot.a = fmin(rot.a, 0.1*softness*fiftyseventh);
+                Point A = average_of_points(foravg, l);
+                Point B = A.add(ABr);
+                Rotation rot = align_points_3d(A, B, CX);
+                rot.a = fmin(rot.a, 0.1*softness*fiftyseventh);
 
-            cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
-            protein->rotate_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, CX, rot.v, rot.a);
-            cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
-            if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore || !softrgns[i].check_chain_constraints(protein))
-                protein->undo();
-            else if (audit) fprintf(audit, "Accepted soft dock rotation from %g to %g.\n", cbefore, cafter);
+                cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
+                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
+                protein->rotate_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, CX, rot.v, rot.a);
+                cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
+                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
+                if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore || !softrgns[i].check_chain_constraints(protein))
+                    protein->undo();
+                else if (audit) fprintf(audit, "Accepted soft dock rotation from %g to %g.\n", cbefore, cafter);
+            }
         }
     }
 

@@ -193,7 +193,7 @@ for rcpid in data.protutils.prots.keys():
                 else "inverse agonist" if isinv \
                 else "non-agonist" if isemp \
                 else "unknown activity"
-            print(f"Beginning {rcpid}:{suff} ~ {o["full_name"]} ({acvmsg})...")
+            print(f"Beginning {rcpid}:{suff} ~ {o['full_name']} ({acvmsg})...")
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             with open("example.config", "r") as f:
                 cfg = f.read()
@@ -337,6 +337,7 @@ for rcpid in data.protutils.prots.keys():
 
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             cmd = ["bin/aromadock", "tmp/" + conffn]
+            if "ns" in sys.argv: cmd.append("--ns")
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
             subprocess.run(cmd)
