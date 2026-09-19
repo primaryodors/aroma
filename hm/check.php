@@ -37,9 +37,10 @@ foreach ($prots as $rcpid => $p)
         else $ttlfam[$famno]++;
     }
 
-    if ($force || !file_exists("pdbs/$fam/$rcpid.active.pdb"))
+    $fe = file_exists("pdbs/$fam/$rcpid.active.pdb");
+    if ($force || !$fe)
     {
-        echo "$rcpid active PDB is missing.\n";
+        if (!$fe) echo "$rcpid active PDB is missing.\n";
         if ($famno) $byfam[$famno]++;
         $errors++;
         if (file_exists("pdbs/$fam/$rcpid.inactive.pdb") && $dofix) passthru("python3 hm/dohm.py $rcpid $nochk");
