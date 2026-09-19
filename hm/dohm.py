@@ -426,12 +426,13 @@ SAVE $outf
                     except ValueError:
                         pass
 
-        tip_atoms = {
+        tip_atoms = \
+        {
             'LEU': ['CD1', 'CD2'],
             'ILE': ['CD1'],
             'VAL': ['CG1', 'CG2'],
             'MET': ['CE'],
-            'PHE': ['CZ']
+            # 'PHE': ['CZ']
         }
 
         repoint_cmds = []
