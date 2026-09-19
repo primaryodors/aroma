@@ -301,7 +301,7 @@ def main():
     print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
     a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
     a.starting_model = 0
-    a.ending_model = 9
+    a.ending_model = 0 # 9
     a.library_schedule = autosched.slow
     a.max_var_iterations = 1000
 
@@ -441,6 +441,28 @@ SAVE $outf
             '-GLU': ['CD'],
         }
 
+        bsrcen = [0.0,0.0,0.0,0.0]
+        
+        for h, s, e in tmrs:
+            for rnum in range(s, e + 1):
+                bwpos = 50 + rnum - bw50[h]
+                bw = f"{h}.{bwpos}"
+                if bw in pu.bsrs:
+                    atoms = res[rnum]['atoms']
+                    if 'CA' not in atoms:
+                        continue
+                    ca = atoms['CA']
+                    bsrcen[0] += ca[0]
+                    bsrcen[1] += ca[1]
+                    bsrcen[2] += ca[2]
+                    bsrcen[3] += 1
+
+        if bsrcen[3]:
+            bsrcen[0] /= bsrcen[3]
+            bsrcen[1] /= bsrcen[3]
+            bsrcen[2] /= bsrcen[3]
+        print(f"bsrcen {bsrcen}")
+
         repoint_cmds = []
         for h, s, e in tmrs:
             for rnum in range(s, e + 1):
@@ -461,10 +483,14 @@ SAVE $outf
                     continue
                 ca = atoms['CA']
                 y_ca = ca[1]
-                if not (-20.0 <= y_ca <= 25.0):
+                if not (-2.0 <= y_ca <= 20.0):
                     continue
                 r_ca = math.sqrt(ca[0]**2 + ca[2]**2)
-                if r_ca <= 11.0:
+                killall = ca[0] - bsrcen[0]
+                thehumans = ca[2] - bsrcen[2]
+                r_ca_p = math.sqrt(killall**2 + thehumans**2)
+                print(f"{resn}{rnum} r_ca {r_ca} r_ca_p {r_ca_p}")
+                if r_ca <= 11.0 and r_ca_p <= 11.0:
                     continue
 
                 tips = [atoms[a] for a in tip_atoms[resn] if a in atoms]
