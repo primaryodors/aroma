@@ -428,11 +428,17 @@ SAVE $outf
 
         tip_atoms = \
         {
-            'LEU': ['CD1', 'CD2'],
+            'LEU': ['CG'],
             'ILE': ['CD1'],
-            'VAL': ['CG1', 'CG2'],
+            # 'VAL': ['CG1', 'CG2'],
             'MET': ['CE'],
             # 'PHE': ['CZ']
+            '-SER': ['OG'],
+            '-THR': ['OG1'],
+            '-ASN': ['CG'],
+            '-GLN': ['CD'],
+            '-ASP': ['CG'],
+            '-GLU': ['CD'],
         }
 
         repoint_cmds = []
@@ -441,7 +447,14 @@ SAVE $outf
                 if rnum not in res:
                     continue
                 resn = res[rnum]['name']
-                if resn not in tip_atoms:
+                resnm = f"-{resn}"
+                point_sign = 0
+                if resn in tip_atoms:
+                    point_sign = 5.0
+                elif resnm in tip_atoms:
+                    point_sign = -1.5
+                    resn = resnm
+                else:
                     continue
                 atoms = res[rnum]['atoms']
                 if 'CA' not in atoms:
@@ -468,10 +481,10 @@ SAVE $outf
                 if r_tip < r_ca or dot < 0:
                     u_x = ca[0] / r_ca
                     u_z = ca[2] / r_ca
-                    tgt_x = ca[0] + 5.0 * u_x
+                    tgt_x = ca[0] + point_sign * u_x
                     tgt_y = ca[1]
-                    tgt_z = ca[2] + 5.0 * u_z
-                    repoint_cmds.append(f"ATOMTO {rnum} EXTENT [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
+                    tgt_z = ca[2] + point_sign * u_z
+                    repoint_cmds.append(f"ATOMTO {rnum} {tip_atoms[resn][0]} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
                     if h in bw50:
                         bw_pos = 50 + rnum - bw50[h]
                         pinned_bw.append(f"{h}.{bw_pos}")
@@ -501,6 +514,9 @@ SAVE $outf
         if not nodel:
             print("Cleaning up temporary MODELLER artifacts...", file=sys.stderr)
             for doomed in glob.glob(f"{rcpid}.*"):
+                if doomed != f"{rcpid}.active.pdb":
+                    os.remove(doomed)
+            for doomed in glob.glob(f"{rcpid}_tpl.*"):
                 if doomed != f"{rcpid}.active.pdb":
                     os.remove(doomed)
 
