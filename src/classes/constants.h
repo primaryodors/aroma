@@ -31,6 +31,7 @@
 #define amide_zwitterionic_amount 0.25
 #define water_molecule_size 2.8
 #define straight_chain_CA_to_CA_distance 3.8
+#define disulfide_rupture_threshold 2.83
 
 // Warning - increasing these constants significantly above the maximal 35.0, 60.0 values
 // will cause docking fails in the unit tests.
@@ -328,7 +329,7 @@
 
 // Optimization constants.
 #define contact_energy_allowance_for_optimization 0.3
-#define optimize_energies_in_contact_anomaly_check 0
+#define optimize_energies_in_contact_anomaly_check 1
 #define contact_energy_optimization_iterations 5
 #define optimize_internal_contacts_post_iterations 1
 

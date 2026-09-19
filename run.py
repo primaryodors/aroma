@@ -193,7 +193,7 @@ for rcpid in data.protutils.prots.keys():
                 else "inverse agonist" if isinv \
                 else "non-agonist" if isemp \
                 else "unknown activity"
-            print(f"Beginning {rcpid}:{suff} ~ {o["full_name"]} ({acvmsg})...")
+            print(f"Beginning {rcpid}:{suff} ~ {o['full_name']} ({acvmsg})...")
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             with open("example.config", "r") as f:
                 cfg = f.read()
@@ -231,6 +231,7 @@ for rcpid in data.protutils.prots.keys():
                 if int(fam[2:]) < 50: softness = "1.0"
                 else: softness = "0.1"
                 newcfg.append("SOFT " + softness + " 2 3 4 5 6 7")
+            newcfg.append("NODEL 4.60 45.40")
             newcfg.append("NODEL 45.52 5.39")
             newcfg.append("NODEL 7.49 7.55")
             # newcfg.append("OUTBBP")
@@ -336,6 +337,7 @@ for rcpid in data.protutils.prots.keys():
 
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             cmd = ["bin/aromadock", "tmp/" + conffn]
+            if "ns" in sys.argv: cmd.append("--ns")
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
             subprocess.run(cmd)
