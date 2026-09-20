@@ -8,6 +8,7 @@ import sys
 import subprocess
 import glob
 import re
+import math
 
 # -----------------------------------------
 # ARCHITECTURAL ENFORCEMENT: PATH RESOLUTION
@@ -264,6 +265,38 @@ def main():
                 except Exception:
                     pass
 
+            # Restrain BW 5.47 to extended conformation
+            try:
+                r547 = pu.resno_from_bw(rcpid, "5.47")
+                if r547:
+                    aa547 = p['sequence'][r547 - 1]
+                    if aa547 in ['L', 'I', 'V', 'M']:
+                        cg_name = 'CG1' if aa547 in ['I', 'V'] else 'CG'
+                        mean_chi1 = 3.14159 if aa547 in ['I', 'V'] else -3.05
+                        rsr.add(forms.Gaussian(group=physical.chi1_dihedral,
+                                            feature=features.Dihedral(at[f'N:{r547}:A'], at[f'CA:{r547}:A'], at[f'CB:{r547}:A'], at[f'{cg_name}:{r547}:A']),
+                                            mean=mean_chi1, stdev=0.25))
+            except Exception:
+                pass
+
+            # Prevent BW 5.44 collapse in Class I ORs
+            if famno in [51, 52, 56]:
+                try:
+                    r544 = pu.resno_from_bw(rcpid, "5.44")
+                    if r544:
+                        aa544 = p['sequence'][r544 - 1]
+                        if aa544 in ['I', 'L']:
+                            cg_name = 'CG1' if aa544 == 'I' else 'CG'
+                            rsr.add(forms.Gaussian(group=physical.chi1_dihedral,
+                                                feature=features.Dihedral(at[f'N:{r544}:A'], at[f'CA:{r544}:A'], at[f'CB:{r544}:A'], at[f'{cg_name}:{r544}:A']),
+                                                mean=-1.5708, stdev=0.25))
+                            cd_name = 'CD1'
+                            rsr.add(forms.Gaussian(group=physical.chi2_dihedral,
+                                                feature=features.Dihedral(at[f'CA:{r544}:A'], at[f'CB:{r544}:A'], at[f'{cg_name}:{r544}:A'], at[f'{cd_name}:{r544}:A']),
+                                                mean=3.14159, stdev=0.25))
+                except Exception:
+                    pass
+
     # 6. Execute Homology Model
     print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
     a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
@@ -355,7 +388,198 @@ SAVE $outf
     print("Running orientation and internal coordinates...", file=sys.stderr)
     os.chdir(root_dir)
     subprocess.run(["./bin/phew", f"hm/{phew_path}"])
-    subprocess.run(["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"])
+
+    # Radial Outward/Inward Field: flex pocket aliphatics out and hydrophilics in
+    active_pdb_rel = f"pdbs/{fam}/{rcpid}.active.pdb"
+    pinned_bw = []
+    if os.path.exists(active_pdb_rel):
+        bw50 = {}
+        tmrs = []
+        res = {}
+        atom_list = []
+        with open(active_pdb_rel, "r") as f:
+            for line in f:
+                if line.startswith("REMARK 800 SITE BW "):
+                    parts = line.split()
+                    if len(parts) >= 6:
+                        bw_tag = parts[4]
+                        rnum = int(parts[5])
+                        h = int(bw_tag.split(".")[0])
+                        bw50[h] = rnum
+                elif line.startswith("REMARK 650 HELIX TMR"):
+                    parts = line.split()
+                    if len(parts) >= 6:
+                        h = int(parts[3][3:])
+                        s = int(parts[4])
+                        e = int(parts[5])
+                        tmrs.append((h, s, e))
+                elif line.startswith("ATOM"):
+                    try:
+                        rnum = int(line[22:26].strip())
+                        aname = line[12:16].strip()
+                        resn = line[17:20].strip()
+                        x = float(line[30:38])
+                        y = float(line[38:46])
+                        z = float(line[46:54])
+                        if rnum not in res:
+                            res[rnum] = \
+                            {
+                                'name': resn,
+                                'atoms': {},
+                                'h': None,
+                                'bw': None,
+                            }
+                        res[rnum]['atoms'][aname] = (x, y, z)
+                        atom_list.append((x, y, z, rnum, aname))
+                    except ValueError:
+                        pass
+
+        for h, s, e in tmrs:
+            for rnum in range(s, e + 1):
+                if rnum in res:
+                    res[rnum]['h'] = h
+                    if h in bw50:
+                        bwpos = 50 + rnum - bw50[h]
+                        res[rnum]['bw'] = f"{h}.{bwpos}"
+
+        tip_atoms = \
+        {
+            'LEU': ['CD1', 'CD2'],
+            'ILE': ['CD1'],
+            'VAL': ['CG1', 'CG2'],
+            'MET': ['CE'],
+            '-SER': ['OG'],
+            '-THR': ['OG1'],
+            '-ASN': ['CG'],
+            '-GLN': ['CD'],
+            '-ASP': ['CG'],
+            '-GLU': ['CD'],
+        }
+
+        # Identify BSRs within Y coordinate range
+        bsr_rnums = []
+        for h, s, e in tmrs:
+            for rnum in range(s, e + 1):
+                bw = res.get(rnum, {}).get('bw')
+                if bw in pu.bsrs:
+                    if rnum in res and 'CA' in res[rnum]['atoms']:
+                        ca = res[rnum]['atoms']['CA']
+                        if -2.0 <= ca[1] <= 20.0:
+                            bsr_rnums.append(rnum)
+
+        bsrcen = [0.0, 0.0, 0.0]
+        for rnum in bsr_rnums:
+            ca = res[rnum]['atoms']['CA']
+            bsrcen[0] += ca[0]
+            bsrcen[1] += ca[1]
+            bsrcen[2] += ca[2]
+
+        if bsr_rnums:
+            bsrcen[0] /= len(bsr_rnums)
+            bsrcen[1] /= len(bsr_rnums)
+            bsrcen[2] /= len(bsr_rnums)
+        print(f"bsrcen {bsrcen}")
+
+        def dist_pt_to_seg(p, a, b):
+            dx = b[0] - a[0]
+            dy = b[1] - a[1]
+            dz = b[2] - a[2]
+            l2 = dx * dx + dy * dy + dz * dz
+            if l2 == 0:
+                return math.sqrt((p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2 + (p[2] - a[2]) ** 2)
+            t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy + (p[2] - a[2]) * dz) / l2))
+            proj_x = a[0] + t * dx
+            proj_y = a[1] + t * dy
+            proj_z = a[2] + t * dz
+            return math.sqrt((p[0] - proj_x) ** 2 + (p[1] - proj_y) ** 2 + (p[2] - proj_z) ** 2)
+
+        sub_atoms = [a for a in atom_list if -5.0 <= a[1] <= 25.0]
+
+        repoint_cmds = []
+        for h, s, e in tmrs:
+            for rnum in range(s, e + 1):
+                if rnum not in res:
+                    continue
+                resn = res[rnum]['name']
+                resnm = f"-{resn}"
+                point_sign = 0
+                tip_atom_name = None
+                if resn in tip_atoms:
+                    point_sign = 5.0
+                    tip_atom_name = tip_atoms[resn][0]
+                elif resnm in tip_atoms:
+                    point_sign = -5.0
+                    tip_atom_name = tip_atoms[resnm][0]
+                    resn = resnm
+                else:
+                    continue
+
+                atoms = res[rnum]['atoms']
+                if 'CA' not in atoms or tip_atom_name not in atoms:
+                    continue
+                ca = atoms['CA']
+                y_ca = ca[1]
+                if not (-2.0 <= y_ca <= 20.0):
+                    continue
+
+                is_bsr = (rnum in bsr_rnums)
+                has_los = False
+                if not is_bsr:
+                    for br in bsr_rnums:
+                        if res[rnum]['h'] == res[br]['h']:
+                            continue
+                        ca_b = res[br]['atoms']['CA']
+                        obstructed = False
+                        for ax, ay, az, arnum, aname in sub_atoms:
+                            if arnum == rnum or arnum == br:
+                                continue
+                            if dist_pt_to_seg((ax, ay, az), ca, ca_b) < 1.5:
+                                obstructed = True
+                                break
+                        if not obstructed:
+                            if dist_pt_to_seg(bsrcen, ca, ca_b) < 10.0:
+                                has_los = True
+                                break
+
+                if not (is_bsr or has_los):
+                    continue
+
+                dx = ca[0] - bsrcen[0]
+                dz = ca[2] - bsrcen[2]
+                r_ca_p = math.sqrt(dx * dx + dz * dz)
+                if r_ca_p < 0.1:
+                    continue
+                ux = dx / r_ca_p
+                uz = dz / r_ca_p
+
+                if point_sign < 0:
+                    tgt_x = bsrcen[0]
+                    tgt_y = bsrcen[1]
+                    tgt_z = bsrcen[2]
+                else:
+                    tgt_x = ca[0] + point_sign * ux
+                    tgt_y = ca[1]
+                    tgt_z = ca[2] + point_sign * uz
+
+                repoint_cmds.append(f"ATOMTO {rnum} {tip_atom_name} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
+                if res[rnum]['bw']:
+                    pinned_bw.append(res[rnum]['bw'])
+                else:
+                    pinned_bw.append(str(rnum))
+
+        if repoint_cmds:
+            radial_phew = f"hm/{rcpid}.radial.phew"
+            with open(radial_phew, "w") as f:
+                f.write(f"LOAD {active_pdb_rel} A A\n")
+                for cmd in repoint_cmds:
+                    f.write(f"{cmd}\n")
+                f.write(f"SAVE {active_pdb_rel}\n")
+            subprocess.run(["./bin/phew", radial_phew])
+
+    ic_cmd = ["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"]
+    for bw in pinned_bw:
+        ic_cmd.extend(["pin", bw])
+    subprocess.run(ic_cmd)
 
     # 10. Clean up temporary files
     os.chdir(script_dir)
@@ -364,6 +588,9 @@ SAVE $outf
         if not nodel:
             print("Cleaning up temporary MODELLER artifacts...", file=sys.stderr)
             for doomed in glob.glob(f"{rcpid}.*"):
+                if doomed != f"{rcpid}.active.pdb":
+                    os.remove(doomed)
+            for doomed in glob.glob(f"{rcpid}_tpl.*"):
                 if doomed != f"{rcpid}.active.pdb":
                     os.remove(doomed)
 

@@ -8499,6 +8499,7 @@ bool mclash_delta(void* mol, float previous_mclashes)
 {
     return reinterpret_cast<Molecule*>(mol)->get_total_mclashes() <= previous_mclashes;
 }
+
 bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
 {
     int i;
