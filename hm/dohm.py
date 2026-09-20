@@ -389,13 +389,14 @@ SAVE $outf
     os.chdir(root_dir)
     subprocess.run(["./bin/phew", f"hm/{phew_path}"])
 
-    # Radial Outward Field: repoint lipid-facing hydrophobic residues in TMR1-TMR7
+    # Radial Outward/Inward Field: flex pocket aliphatics out and hydrophilics in
     active_pdb_rel = f"pdbs/{fam}/{rcpid}.active.pdb"
     pinned_bw = []
     if os.path.exists(active_pdb_rel):
         bw50 = {}
         tmrs = []
         res = {}
+        atom_list = []
         with open(active_pdb_rel, "r") as f:
             for line in f:
                 if line.startswith("REMARK 800 SITE BW "):
@@ -421,18 +422,32 @@ SAVE $outf
                         y = float(line[38:46])
                         z = float(line[46:54])
                         if rnum not in res:
-                            res[rnum] = {'name': resn, 'atoms': {}}
+                            res[rnum] = \
+                            {
+                                'name': resn,
+                                'atoms': {},
+                                'h': None,
+                                'bw': None,
+                            }
                         res[rnum]['atoms'][aname] = (x, y, z)
+                        atom_list.append((x, y, z, rnum, aname))
                     except ValueError:
                         pass
+
+        for h, s, e in tmrs:
+            for rnum in range(s, e + 1):
+                if rnum in res:
+                    res[rnum]['h'] = h
+                    if h in bw50:
+                        bwpos = 50 + rnum - bw50[h]
+                        res[rnum]['bw'] = f"{h}.{bwpos}"
 
         tip_atoms = \
         {
             'LEU': ['CD1', 'CD2'],
             'ILE': ['CD1'],
-            # 'VAL': ['CG1', 'CG2'],
+            'VAL': ['CG1', 'CG2'],
             'MET': ['CE'],
-            # 'PHE': ['CZ']
             '-SER': ['OG'],
             '-THR': ['OG1'],
             '-ASN': ['CG'],
@@ -441,27 +456,44 @@ SAVE $outf
             '-GLU': ['CD'],
         }
 
-        bsrcen = [0.0,0.0,0.0,0.0]
-        
+        # Identify BSRs within Y coordinate range
+        bsr_rnums = []
         for h, s, e in tmrs:
             for rnum in range(s, e + 1):
-                bwpos = 50 + rnum - bw50[h]
-                bw = f"{h}.{bwpos}"
+                bw = res.get(rnum, {}).get('bw')
                 if bw in pu.bsrs:
-                    atoms = res[rnum]['atoms']
-                    if 'CA' not in atoms:
-                        continue
-                    ca = atoms['CA']
-                    bsrcen[0] += ca[0]
-                    bsrcen[1] += ca[1]
-                    bsrcen[2] += ca[2]
-                    bsrcen[3] += 1
+                    if rnum in res and 'CA' in res[rnum]['atoms']:
+                        ca = res[rnum]['atoms']['CA']
+                        if -2.0 <= ca[1] <= 20.0:
+                            bsr_rnums.append(rnum)
 
-        if bsrcen[3]:
-            bsrcen[0] /= bsrcen[3]
-            bsrcen[1] /= bsrcen[3]
-            bsrcen[2] /= bsrcen[3]
+        bsrcen = [0.0, 0.0, 0.0]
+        for rnum in bsr_rnums:
+            ca = res[rnum]['atoms']['CA']
+            bsrcen[0] += ca[0]
+            bsrcen[1] += ca[1]
+            bsrcen[2] += ca[2]
+
+        if bsr_rnums:
+            bsrcen[0] /= len(bsr_rnums)
+            bsrcen[1] /= len(bsr_rnums)
+            bsrcen[2] /= len(bsr_rnums)
         print(f"bsrcen {bsrcen}")
+
+        def dist_pt_to_seg(p, a, b):
+            dx = b[0] - a[0]
+            dy = b[1] - a[1]
+            dz = b[2] - a[2]
+            l2 = dx * dx + dy * dy + dz * dz
+            if l2 == 0:
+                return math.sqrt((p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2 + (p[2] - a[2]) ** 2)
+            t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy + (p[2] - a[2]) * dz) / l2))
+            proj_x = a[0] + t * dx
+            proj_y = a[1] + t * dy
+            proj_z = a[2] + t * dz
+            return math.sqrt((p[0] - proj_x) ** 2 + (p[1] - proj_y) ** 2 + (p[2] - proj_z) ** 2)
+
+        sub_atoms = [a for a in atom_list if -5.0 <= a[1] <= 25.0]
 
         repoint_cmds = []
         for h, s, e in tmrs:
@@ -471,50 +503,69 @@ SAVE $outf
                 resn = res[rnum]['name']
                 resnm = f"-{resn}"
                 point_sign = 0
+                tip_atom_name = None
                 if resn in tip_atoms:
                     point_sign = 5.0
+                    tip_atom_name = tip_atoms[resn][0]
                 elif resnm in tip_atoms:
-                    point_sign = -1.5
+                    point_sign = -5.0
+                    tip_atom_name = tip_atoms[resnm][0]
                     resn = resnm
                 else:
                     continue
+
                 atoms = res[rnum]['atoms']
-                if 'CA' not in atoms:
+                if 'CA' not in atoms or tip_atom_name not in atoms:
                     continue
                 ca = atoms['CA']
                 y_ca = ca[1]
                 if not (-2.0 <= y_ca <= 20.0):
                     continue
-                r_ca = math.sqrt(ca[0]**2 + ca[2]**2)
-                maruos = ca[0] - bsrcen[0]
-                gdoniobo = ca[2] - bsrcen[2]
-                r_ca_p = math.sqrt(maruos**2 + gdoniobo**2)
-                if r_ca < 11.0 and r_ca_p >= 13:
+
+                is_bsr = (rnum in bsr_rnums)
+                has_los = False
+                if not is_bsr:
+                    for br in bsr_rnums:
+                        if res[rnum]['h'] == res[br]['h']:
+                            continue
+                        ca_b = res[br]['atoms']['CA']
+                        obstructed = False
+                        for ax, ay, az, arnum, aname in sub_atoms:
+                            if arnum == rnum or arnum == br:
+                                continue
+                            if dist_pt_to_seg((ax, ay, az), ca, ca_b) < 1.5:
+                                obstructed = True
+                                break
+                        if not obstructed:
+                            if dist_pt_to_seg(bsrcen, ca, ca_b) < 10.0:
+                                has_los = True
+                                break
+
+                if not (is_bsr or has_los):
                     continue
 
-                tips = [atoms[a] for a in tip_atoms[resn] if a in atoms]
-                if not tips:
+                dx = ca[0] - bsrcen[0]
+                dz = ca[2] - bsrcen[2]
+                r_ca_p = math.sqrt(dx * dx + dz * dz)
+                if r_ca_p < 0.1:
                     continue
-                tip_x = sum(t[0] - bsrcen[0] for t in tips) / len(tips)
-                tip_y = sum(t[1] - bsrcen[1] for t in tips) / len(tips)
-                tip_z = sum(t[2] - bsrcen[2] for t in tips) / len(tips)
+                ux = dx / r_ca_p
+                uz = dz / r_ca_p
 
-                r_tip = math.sqrt(tip_x**2 + tip_z**2)
-                v_side = (tip_x - ca[0], tip_z - ca[2])
-                dot = ca[0] * v_side[0] + ca[2] * v_side[1]
-
-                if r_tip < r_ca_p or dot < 0:
-                    u_x = ca[0] / r_ca
-                    u_z = ca[2] / r_ca
-                    tgt_x = ca[0] + point_sign * u_x
+                if point_sign < 0:
+                    tgt_x = bsrcen[0]
+                    tgt_y = bsrcen[1]
+                    tgt_z = bsrcen[2]
+                else:
+                    tgt_x = ca[0] + point_sign * ux
                     tgt_y = ca[1]
-                    tgt_z = ca[2] + point_sign * u_z
-                    repoint_cmds.append(f"ATOMTO {rnum} {tip_atoms[resn][0]} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
-                    if h in bw50:
-                        bw_pos = 50 + rnum - bw50[h]
-                        pinned_bw.append(f"{h}.{bw_pos}")
-                    else:
-                        pinned_bw.append(str(rnum))
+                    tgt_z = ca[2] + point_sign * uz
+
+                repoint_cmds.append(f"ATOMTO {rnum} {tip_atom_name} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
+                if res[rnum]['bw']:
+                    pinned_bw.append(res[rnum]['bw'])
+                else:
+                    pinned_bw.append(str(rnum))
 
         if repoint_cmds:
             radial_phew = f"hm/{rcpid}.radial.phew"
@@ -524,7 +575,7 @@ SAVE $outf
                     f.write(f"{cmd}\n")
                 f.write(f"SAVE {active_pdb_rel}\n")
             subprocess.run(["./bin/phew", radial_phew])
-            if os.path.exists(radial_phew):
+            if not nodel and os.path.exists(radial_phew):
                 os.remove(radial_phew)
 
     ic_cmd = ["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"]
