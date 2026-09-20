@@ -575,8 +575,6 @@ SAVE $outf
                     f.write(f"{cmd}\n")
                 f.write(f"SAVE {active_pdb_rel}\n")
             subprocess.run(["./bin/phew", radial_phew])
-            if not nodel and os.path.exists(radial_phew):
-                os.remove(radial_phew)
 
     ic_cmd = ["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"]
     for bw in pinned_bw:
