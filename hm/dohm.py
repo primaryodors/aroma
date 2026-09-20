@@ -245,6 +245,56 @@ def main():
                 except Exception:
                     pass
 
+            # 5-7 tyrosine link
+            bw5_58 = data.protutils.resno_from_bw(rcpid, "5.58")
+            bw7_53 = data.protutils.resno_from_bw(rcpid, "7.53")
+            if bw5_58 and bw7_53:
+                if data.protutils.aalet_at_resno(rcpid, bw5_58) == 'Y' and data.protutils.aalet_at_resno(rcpid, bw7_53) == 'Y':
+                    rsr.add(forms.Gaussian(group=physical.xy_distance,
+                        feature=features.Distance(at["OH:"+str(bw5_58)+":A"],
+                                                at["OH:"+str(bw7_53)+":A"]),
+                                                mean=4.6, stdev=1.2))
+
+            # 6-45 hydrogen bond
+            bw45_50 = data.protutils.resno_from_bw(rcpid, "45.50")
+            bw45_51 = bw45_50+1
+            bw6_55 = data.protutils.resno_from_bw(rcpid, "6.55")
+            print(f"Attempting Gaussian {bw45_51} ~ {bw6_55}")
+            if bw6_55:
+                atom6_55 = False
+                if data.protutils.aalet_at_resno(rcpid, bw6_55) == 'Y':
+                    atom6_55 = "OH"
+                elif data.protutils.aalet_at_resno(rcpid, bw6_55) == 'H':
+                    atom6_55 = "NE2"
+                if atom6_55:
+                    atom45_51 = False
+                    atom45_51_suck = False
+                    if data.protutils.aalet_at_resno(rcpid, bw45_51) == 'D':
+                        atom45_51 = "OD1"
+                        atom45_51_suck = "CG"
+                    elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'E':
+                        atom45_51 = "OE1"
+                        atom45_51_suck = "CD"
+                    elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'H':
+                        atom45_51 = "NE2"
+                        atom45_51_suck = "CD"
+                    elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'N':
+                        atom45_51 = "OD1"
+                        atom45_51_suck = "CG"
+                    elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'Q':
+                        atom45_51 = "OE1"
+                        atom45_51_suck = "CD"
+                    if atom45_51:
+                        print(f"Gaussian {bw45_51}:{atom45_51} ~ {bw6_55}:{atom6_55}")
+                        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at[atom6_55 +":"+str(bw6_55)+":A"],
+                                                    at[atom45_51+":"+str(bw45_51)+":A"]),
+                                                    mean=2.5, stdev=0.5))
+                        rsr.add(forms.Gaussian(group=physical.xy_distance,
+                            feature=features.Distance(at[atom6_55 +":"+str(bw6_55)+":A"],
+                                                    at[atom45_51_suck+":"+str(bw45_51)+":A"]),
+                                                    mean=3.2, stdev=0.8))
+
             # Cu-binding site distance restraints (OR2M/T/V)
             if famsub in ["OR2M", "OR2T", "OR2V"]:
                 try:
@@ -499,6 +549,8 @@ SAVE $outf
         for h, s, e in tmrs:
             for rnum in range(s, e + 1):
                 if rnum not in res:
+                    continue
+                if rnum in dspotr1 or rnum in dspotr2:
                     continue
                 resn = res[rnum]['name']
                 resnm = f"-{resn}"
