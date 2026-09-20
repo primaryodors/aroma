@@ -990,14 +990,25 @@ int main(int argc, char** argv)
                 if (!strcmp("EXTENT", aname)) a = aa->get_reach_atom();
                 if (!a) raise_error((std::string)"Atom not found " + std::to_string(resno) + (std::string)":" + (std::string)aname);
 
+                MovabilityType aamov = aa->movability;
                 aa->movability = MOV_FLEXONLY;
+                Pose putitback(aa);
+                aa->conform_atom_to_location(a->name, target, 10, 0, true);
                 if (!aa->mclashables) working->set_clashables(aa->get_residue_no());
-                aa->conform_atom_to_location(a->name, target);
+                aa->conform_atom_to_location(a->name, target, 10, 0, false);
+                if (aa->get_intermol_clashes(aa->mclashables) > clash_limit_per_aa)
+                {
+                    putitback.restore_state(aa);
+                    aa->conform_atom_to_location(a->name, target, 10);
+                    aa->refresh_base_intermol_clashes();
+                    aa->invalidate_memoized_clashes();
+                }
 
                 if (aa->get_internal_clashes() > clash_limit_per_aa)
                 {
                     aa->minimize_internal_clashes();
                 }
+                aa->movability = aamov;
             }	// ATOMTO
 
             else if (!strcmp(words[0], "BEND"))
