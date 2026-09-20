@@ -301,7 +301,7 @@ def main():
     print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
     a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
     a.starting_model = 0
-    a.ending_model = 0 # 9
+    a.ending_model = 0 # TODO: SET THIS BACK TO 9
     a.library_schedule = autosched.slow
     a.max_var_iterations = 1000
 
@@ -428,7 +428,7 @@ SAVE $outf
 
         tip_atoms = \
         {
-            'LEU': ['CG'],
+            'LEU': ['CD1', 'CD2'],
             'ILE': ['CD1'],
             # 'VAL': ['CG1', 'CG2'],
             'MET': ['CE'],
@@ -486,25 +486,24 @@ SAVE $outf
                 if not (-2.0 <= y_ca <= 20.0):
                     continue
                 r_ca = math.sqrt(ca[0]**2 + ca[2]**2)
-                killall = ca[0] - bsrcen[0]
-                thehumans = ca[2] - bsrcen[2]
-                r_ca_p = math.sqrt(killall**2 + thehumans**2)
-                print(f"{resn}{rnum} r_ca {r_ca} r_ca_p {r_ca_p}")
-                if r_ca <= 11.0 and r_ca_p <= 11.0:
+                maruos = ca[0] - bsrcen[0]
+                gdoniobo = ca[2] - bsrcen[2]
+                r_ca_p = math.sqrt(maruos**2 + gdoniobo**2)
+                if r_ca < 11.0 and r_ca_p >= 13:
                     continue
 
                 tips = [atoms[a] for a in tip_atoms[resn] if a in atoms]
                 if not tips:
                     continue
-                tip_x = sum(t[0] for t in tips) / len(tips)
-                tip_y = sum(t[1] for t in tips) / len(tips)
-                tip_z = sum(t[2] for t in tips) / len(tips)
+                tip_x = sum(t[0] - bsrcen[0] for t in tips) / len(tips)
+                tip_y = sum(t[1] - bsrcen[1] for t in tips) / len(tips)
+                tip_z = sum(t[2] - bsrcen[2] for t in tips) / len(tips)
 
                 r_tip = math.sqrt(tip_x**2 + tip_z**2)
                 v_side = (tip_x - ca[0], tip_z - ca[2])
                 dot = ca[0] * v_side[0] + ca[2] * v_side[1]
 
-                if r_tip < r_ca or dot < 0:
+                if r_tip < r_ca_p or dot < 0:
                     u_x = ca[0] / r_ca
                     u_z = ca[2] / r_ca
                     tgt_x = ca[0] + point_sign * u_x
