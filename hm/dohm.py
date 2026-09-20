@@ -301,7 +301,7 @@ def main():
     print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
     a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
     a.starting_model = 0
-    a.ending_model = 0 # TODO: SET THIS BACK TO 9
+    a.ending_model = 9
     a.library_schedule = autosched.slow
     a.max_var_iterations = 1000
 
