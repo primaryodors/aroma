@@ -2281,17 +2281,18 @@ void AminoAcid::set_conditional_basicity(Molecule** nearby_mols)
 
             if (proton) return;
 
-            // Create a hydrogen atom and attach it to the bare nitrogen.
-            // Save a pointer to the hydrogen atom for later.
+            // Reuse a loaded proton before creating another hydrogen.
+            // Keep its pointer for later deprotonation.
             char temp[255];
             strcpy(temp, protonated->name);
             temp[0] = 'H';
-            proton = add_atom("H", temp, protonated, 1);
+            proton = protonated->is_bonded_to("H");
+            if (!proton) proton = add_atom("H", temp, protonated, 1);
             proton->residue = residue_no;
             strcpy(proton->aa3let, aadef->_3let);
 
             // Set charge of the heavy atom.
-            protonated->increment_charge(1);
+            if (protonated->get_charge() < 0.2) protonated->increment_charge(1);
 
             #if _dbg_cond_basic
             cout << "Added protonation and incremented charge!" << endl << endl;
