@@ -242,9 +242,7 @@ var color_scheme = NGL.ColormakerRegistry.addScheme(function (params)
 <input type="text" name="rflp" id="rflp" value="">
 <br>
 
-<input type="button" id="gobtn" value="Generate locally" onclick="go(document.getElementById('smiles').value);">
-<input type="button" id="pubchembtn" value="PubChem 3D lookup" onclick="go(document.getElementById('smiles').value, 'pubchem');">
-<p>PubChem lookup sends the SMILES to PubChem and loads an available 3D conformer. Local transformations are unavailable for that lookup.</p>
+<input type="button" id="gobtn" value="Go" onclick="go($('#smiles')[0].value);" onchange="go($('#smiles')[0].value);">
 <br><br>
 <textarea id="result">
 </textarea>

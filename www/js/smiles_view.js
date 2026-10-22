@@ -1,22 +1,9 @@
-async function viewer_request(smiles, source) {
+async function viewer_request(smiles) {
     const controller = new AbortController();
     const deadline = setTimeout(() => controller.abort(), 30000);
     try {
         const brot = document.getElementById('brot').value;
         const rflp = document.getElementById('rflp').value;
-        if (source === 'pubchem') {
-            if (smiles.includes('{') || brot.trim() || rflp.trim()) {
-                throw new Error('PubChem accepts standard SMILES without local transformations.');
-            }
-            const response = await fetch('https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/SDF?record_type=3d', {
-                method: 'POST', body: new URLSearchParams({smiles}), signal: controller.signal
-            });
-            const sdf = await response.text();
-            if (!response.ok || !sdf.includes('M  END')) {
-                throw new Error('PubChem could not supply a 3D conformer for this SMILES.');
-            }
-            return {sdf, log: 'Loaded a 3D conformer from PubChem.'};
-        }
         const response = await fetch(window.location.pathname, {
             method: 'POST', body: new URLSearchParams({smiles, brot, rflp}),
             cache: 'no-store', signal: controller.signal
@@ -24,27 +11,27 @@ async function viewer_request(smiles, source) {
         const text = await response.text();
         let result;
         try { result = JSON.parse(text); }
-        catch (_) { throw new Error('Conversion failed (HTTP ' + response.status + '). Check the host PHP settings or use PubChem lookup.'); }
+        catch (_) { throw new Error('Conversion failed (HTTP ' + response.status + '). Check the host PHP settings.'); }
         if (!response.ok || result.error) throw new Error(result.error || 'Molecule generation failed.');
         if (!result.sdf || !result.sdf.includes('M  END')) throw new Error('No valid molecular structure was returned.');
         return result;
     } catch (error) {
-        if (error.name === 'AbortError') throw new Error('Molecule generation timed out. Try again or use PubChem lookup.');
+        if (error.name === 'AbortError') throw new Error('Molecule generation timed out. Try again.');
         throw error;
     } finally {
         clearTimeout(deadline);
     }
 }
 
-async function go(smiles, source = 'local') {
-    const buttons = ['gobtn', 'pubchembtn'].map(id => document.getElementById(id));
+async function go(smiles) {
+    const buttons = [document.getElementById('gobtn')];
     const output = document.getElementById('result');
     buttons.forEach(button => { button.disabled = true; button.classList.add('grayed'); });
-    output.value = source === 'pubchem' ? 'Looking up a 3D conformer...' : 'Generating molecule...';
+    output.value = 'Generating molecule...';
     try {
         stage.removeAllComponents();
         stage.setSpin(false);
-        const result = await viewer_request(smiles, source);
+        const result = await viewer_request(smiles);
         const component = await stage.loadFile(new Blob([result.sdf], {type: 'text/plain'}), {ext: 'sdf'});
         component.addRepresentation('ball+stick', {multipleBond: true, colorScheme: color_scheme});
         component.autoView();

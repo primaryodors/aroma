@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const elements = Object.fromEntries(['gobtn','pubchembtn','result','brot','rflp','smiles'].map(id => [id, {
+const elements = Object.fromEntries(['gobtn','result','brot','rflp','smiles'].map(id => [id, {
     value: '', disabled: false, classList: {add() {}, remove() {}}
 }]));
 let cleared = 0;
@@ -20,7 +20,6 @@ vm.runInContext(fs.readFileSync('www/js/smiles_view.js', 'utf8'), context);
     await context.go('CCO');
     assert.match(elements.result.value, /HTTP 500/);
     assert.equal(elements.gobtn.disabled, false);
-    assert.equal(elements.pubchembtn.disabled, false);
     assert.ok(cleared >= 2);
     context.fetch = async () => ({ok: true, status: 200,
         text: async () => JSON.stringify({sdf: 'example\nM  END\n', log: 'fresh molecule'})});
@@ -34,9 +33,5 @@ vm.runInContext(fs.readFileSync('www/js/smiles_view.js', 'utf8'), context);
     await context.go('CCO');
     assert.match(elements.result.value, /timed out/);
     assert.equal(elements.gobtn.disabled, false);
-    context.stage.loadFile = async () => ({addRepresentation() {}, autoView() {}});
-    context.fetch = async () => ({ok: true, text: async () => 'example\nM  END\n'});
-    await context.go('CCO', 'pubchem');
-    assert.match(elements.result.value, /PubChem/);
     console.log('Viewer success, HTTP failure, and display failure passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
