@@ -4792,6 +4792,48 @@ _try_again:
             cout << aadbg->get_name() << " charge = " << aadbg->get_charge() << endl;
             #endif
 
+            if (nsoftrgn)
+            {
+                // Complete structural repairs before scoring and saving this pose.
+                for (i=0; i<nsoftrgn; i++)
+                    for (j=0; j<softrgns[i].num_contacts(); j++)
+                    {
+                        if (softrgns[i].is_contact_paired(j)) continue;
+                        if (softrgns[i].contact_anomaly(protein, j) < 0.1f) continue;
+                        AminoAcid* first = softrgns[i].get_local_contact(j, protein);
+                        AminoAcid* second = softrgns[i].get_distant_contact(j, protein);
+                        if (first && second)
+                            protein->bridge(first->get_residue_no(), second->get_residue_no());
+                    }
+                for (const auto& ds : active_disulfides)
+                {
+                    AminoAcid* first = protein->get_residue(ds.first);
+                    AminoAcid* second = protein->get_residue(ds.second);
+                    if (!first || !second) continue;
+                    Atom* sg1 = first->get_atom("SG");
+                    Atom* sg2 = second->get_atom("SG");
+                    if (!sg1 || !sg2 || sg1->distance_to(sg2) <= disulfide_rupture_threshold) continue;
+                    first->movability = second->movability = MOV_FORCEFLEX;
+                    first->conform_atom_to_location(sg1, sg2, 20, 2.8);
+                    second->conform_atom_to_location(sg2, sg1, 20, 2.5);
+                    first->conform_atom_to_location(sg1, sg2, 20, 2.2);
+                    second->conform_atom_to_location(sg2, sg1, 20, 2.07);
+                    first->movability = second->movability = MOV_PINNED;
+                }
+                for (const auto& contact : tracked_internal_contacts)
+                {
+                    if (!contact.is_salt_bridge) continue;
+                    AminoAcid* first = protein->get_residue(contact.res1);
+                    AminoAcid* second = protein->get_residue(contact.res2);
+                    if (!first || !second) continue;
+                    Atom *a1 = nullptr, *a2 = nullptr;
+                    first->mutual_closest_atoms(second, &a1, &a2);
+                    const float distance = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
+                    if (distance > 4.5f || first->get_intermol_binding(second).summed() > -1.0f)
+                        protein->bridge(contact.res1, contact.res2);
+                }
+            }
+
             protein->optimize_hydrogens();
 
             #if _dbg_atom_mov_to_clash
@@ -4917,8 +4959,6 @@ _try_again:
                         AminoAcid *aac1 = softrgns[i].get_local_contact(j, protein), *aac2 = softrgns[i].get_distant_contact(j, protein);
                         if (aac1 && aac2)
                         {
-                            protein->bridge(aac1->get_residue_no(), aac2->get_residue_no());
-                            canom = softrgns[i].contact_anomaly(protein, j);
                             if (fabs(canom) < clash_limit_per_atom) continue;
                             dr[drcount][nodeno].miscdata += (std::string)"Contact anomaly for "
                                 + (std::string)"region " + std::to_string(i) + (std::string)" "
@@ -4944,16 +4984,6 @@ _try_again:
                         float dist = sg1->distance_to(sg2);
                         if (dist > disulfide_rupture_threshold)
                         {
-                            aa1->movability = aa2->movability = MOV_FORCEFLEX;
-                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.8);
-                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.5);
-                            aa1->conform_atom_to_location(sg1, sg2, 20, 2.2);
-                            aa2->conform_atom_to_location(sg2, sg1, 20, 2.07);
-                            aa1->movability = aa2->movability = MOV_PINNED;
-                            dist = sg1->distance_to(sg2);
-                        }
-                        if (dist > disulfide_rupture_threshold)
-                        {
                             dr[drcount][nodeno].disqualified = true;
                             std::string reason = "Disulfide ruptured: " + std::string(aa1->get_name())
                                 + "..." + std::string(aa2->get_name()) + " (dist = "
@@ -4977,12 +5007,6 @@ _try_again:
                     Atom* a2 = nullptr;
                     aa1->mutual_closest_atoms(aa2, &a1, &a2);
                     float dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
-
-                    if (dist > 4.5f || curr_e.summed() > -1.0f)
-                    {
-                        protein->bridge(tic.res1, tic.res2);
-                        dist = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
-                    }
 
                     // A formed salt bridge is ruptured if distance exceeds 4.5 A or attractive binding lost
                     if (dist > 4.5f || curr_e.summed() > -1.0f)

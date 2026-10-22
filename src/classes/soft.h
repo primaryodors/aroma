@@ -39,7 +39,7 @@ class SoftRegion
     bool is_contact_paired(int i) { return contacts[i].paired; }
     bool is_contact_disulfide(int i) { return (contacts && i < allocated) ? contacts[i].is_disulfide : false; }
     Atom* get_pivot_atom_by_contact_idx(int i, Protein* p);
-    float contact_anomaly(Protein *p, int i = -1, bool ignore_paired = true);
+    float contact_anomaly(Protein *p, int i = -1, bool ignore_paired = true, bool optimize = false);
     float contact_distance_anomaly(Protein *p, int i = -1, bool ignore_paired = true);
     void add_contact(int local, int distant, Protein* p, bool paired = false, bool is_disulfide = false);
     void link_region(SoftRegion* prev);

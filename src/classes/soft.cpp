@@ -60,7 +60,7 @@ void SoftRegion::optimize_contact(Protein *p, int cidx)
     }
 }
 
-float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
+float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip, bool optimize)
 {
     contact_ruptures = "";
     if (!allocated || !contacts) return 0;
@@ -82,7 +82,7 @@ float SoftRegion::contact_anomaly(Protein *p, int cidx, bool ip)
             if (lca && lcb && lca->distance_to(lcb) > (lca->vdW_radius+lcb->vdW_radius)) e.clash = 0;
             float f = e.summed();
             #if optimize_energies_in_contact_anomaly_check
-            if (f < (1.0-contact_energy_allowance_for_optimization)*contacts[i].energy)
+            if (optimize && f > (1.0-contact_energy_allowance_for_optimization)*contacts[i].energy)
             {
                 Molecule* mols[3];
                 mols[0] = (Molecule*)aa1;
@@ -389,7 +389,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
             Vector ABx_step = ABx;
             ABx_step.r *= translation_step;
             float cwaybefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein);
+                + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, true, true);
             float cbefore, cafter, clbefore, clafter;
             for (translation_accomplished = 0; translation_accomplished < 1; translation_accomplished += translation_step)
             {
@@ -405,7 +405,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 // Get energy before performing soft motion
                 clbefore = protein->get_intermol_clashes(ligand);
                 cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                    + clbefore + softrgns[i].contact_anomaly(protein, -1, false);
+                    + clbefore + softrgns[i].contact_anomaly(protein, -1, false, true);
 
                 #if move_ligand_with_soft_motion
                 Pose ligand_was(ligand);
@@ -450,7 +450,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 // Get energy after performing soft motion
                 clafter = protein->get_intermol_clashes(ligand);
                 cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                    + clafter + softrgns[i].contact_anomaly(protein, -1, false);
+                    + clafter + softrgns[i].contact_anomaly(protein, -1, false, true);
 
                 #if move_ligand_with_soft_motion
                 if (clafter > (1.0-contact_energy_allowance_for_optimization)*clbefore)
@@ -458,7 +458,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                     if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand);
                     clafter = protein->get_intermol_clashes(ligand);
                     cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                        + clafter + softrgns[i].contact_anomaly(protein, -1, false);
+                        + clafter + softrgns[i].contact_anomaly(protein, -1, false, true);
                 }
                 #endif
 
@@ -591,10 +591,10 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 rot.a = fmin(rot.a, 0.1*softness*fiftyseventh);
 
                 cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
+                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false, true);
                 protein->rotate_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, CX, rot.v, rot.a);
                 cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
-                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false);
+                    + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false, true);
                 if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore || !softrgns[i].check_chain_constraints(protein))
                     protein->undo();
                 else if (audit) fprintf(audit, "Accepted soft dock rotation from %g to %g.\n", cbefore, cafter);
