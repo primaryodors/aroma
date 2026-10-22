@@ -5,32 +5,35 @@ if (isset($_REQUEST['smiles']))
     chdir(__DIR__);
     chdir("..");
 
-    $smilesu = escapeshellarg($_REQUEST['smiles']);
-    if (false===strpos($_REQUEST['smiles'], '{'))
-        $cmd = "obabel --gen3d -osdf -O\"www/test.sdf\" -:$smilesu 2>&1";
-    else
-        $cmd = "test/mol_assem_test \"{$_REQUEST['smiles']}\" www/test.sdf";
-    echo ("$cmd\n");
-    passthru($cmd);
-
-    if (@$_REQUEST["brot"])
+    require_once(__DIR__."/chem_process.php");
+    $smiles = $_REQUEST['smiles'];
+    if (!is_string($smiles) || strlen($smiles) > 4096 || strpos($smiles, "\0") !== false)
     {
-        $brot = escapeshellarg($_REQUEST['brot']);
-        $brot = str_replace(' ', "' '", $brot);
-        $cmd = "test/bond_rotation_test \"www/test.sdf\" $brot";
-        echo ("$cmd\n");
-        passthru($cmd);
-        $c = @file_get_contents("rotated.sdf");
-        if ($c) file_put_contents("www/test.sdf", $c);
+        http_response_code(400);
+        exit("Invalid molecular input.");
     }
+    $cmd = strpos($smiles, '{') === false
+        ? ["obabel", "--gen3d", "-osdf", "-Owww/test.sdf", "-:".$smiles]
+        : ["test/mol_assem_test", $smiles, "www/test.sdf"];
+    if (run_chem_process($cmd) !== 0) exit;
 
-    if (@$_REQUEST["rflp"])
+    foreach (["brot", "rflp"] as $option)
     {
-        $rflp = escapeshellarg($_REQUEST['rflp']);
-        $rflp = str_replace(' ', "' '", $rflp);
-        $cmd = "bin/ringflip \"www/test.sdf\" $rflp";
-        echo ("$cmd\n");
-        passthru($cmd);
+        if (empty($_REQUEST[$option])) continue;
+        if (!is_string($_REQUEST[$option]) ||
+            !preg_match('/\A[A-Za-z0-9_.+\s-]+\z/', $_REQUEST[$option]))
+        {
+            http_response_code(400);
+            exit("Invalid transformation arguments.");
+        }
+        $args = preg_split('/\s+/', trim($_REQUEST[$option]), -1, PREG_SPLIT_NO_EMPTY);
+        $tool = $option === "brot" ? "test/bond_rotation_test" : "bin/ringflip";
+        if (run_chem_process(array_merge([$tool, "www/test.sdf"], $args)) !== 0) exit;
+        if ($option === "brot")
+        {
+            $c = @file_get_contents("rotated.sdf");
+            if ($c) file_put_contents("www/test.sdf", $c);
+        }
     }
 
     exit;
