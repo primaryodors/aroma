@@ -35,6 +35,7 @@ import data.globals
 import data.protutils
 import data.odorutils
 import data.dyncenter
+from data.disulfides import pdb_disulfides
 
 data.protutils.load_prots()
 data.odorutils.load_odors()
@@ -145,6 +146,14 @@ if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
         data.globals.wait_cool_cpu()
         print(" ".join(cmd))
         subprocess.run(cmd)
+
+source_disulfides = pdb_disulfides(origpdb)
+canonical = tuple(sorted((data.protutils.resno_from_bw(protid, "3.25") or 0,
+                          data.protutils.resno_from_bw(protid, "45.50") or 0)))
+if all(canonical) and all(data.protutils.aalet_at_resno(protid, r) == 'C' for r in canonical):
+    if canonical not in source_disulfides:
+        source_disulfides.append(canonical)
+disulfide_code = "\n".join(f"CONECT {first} SG {second} SG" for first, second in source_disulfides)
 
 tries = 0
 while True:
@@ -300,14 +309,10 @@ while True:
             if bw45_50:
                 rsr.add(secondary_structure.Alpha(self.residue_range(str(bw45_50+2)+":A", str(bw45_50+8)+":A")))
 
-            # disulfide bond
-            bw3_25 = data.protutils.resno_from_bw(protid, "3.25")
-            if bw3_25 and bw45_50:
-                if data.protutils.aalet_at_resno(protid, bw3_25) == 'C' and data.protutils.aalet_at_resno(protid, bw45_50) == 'C':
-                    rsr.add(forms.Gaussian(group=physical.xy_distance,
-                        feature=features.Distance(at["SG:"+str(bw3_25)+":A"],
-                                                at["SG:"+str(bw45_50)+":A"]),
-                                                mean=2.05, stdev=0.2))
+            for first, second in source_disulfides:
+                rsr.add(forms.Gaussian(group=physical.xy_distance,
+                    feature=features.Distance(at[f"SG:{first}:A"], at[f"SG:{second}:A"]),
+                    mean=2.05, stdev=0.2))
 
             rigresno = self.residues[-1].intnum
             rigb = RigidBody(self.residue_range(f"{rigresno}:A", f"{rigresno}:A"))
@@ -361,13 +366,9 @@ while True:
                                                     mean=2.5, stdev=0.5))
 
         def special_patches(self, aln):
-            # disulfide bond:
-            bw3_25 = data.protutils.resno_from_bw(protid, "3.25")
-            bw45_50 = data.protutils.resno_from_bw(protid, "45.50")
-            if bw3_25 and bw45_50:
-                if data.protutils.aalet_at_resno(protid, bw3_25) == 'C' and data.protutils.aalet_at_resno(protid, bw45_50) == 'C':
-                    self.patch(residue_type='DISU', residues=(self.residues[str(bw3_25)+':A'],
-                                                            self.residues[str(bw45_50)+':A']))
+            for first, second in source_disulfides:
+                self.patch(residue_type='DISU', residues=(self.residues[f'{first}:A'],
+                                                        self.residues[f'{second}:A']))
 
     # scan input pdb for sequence
     seq = ""
@@ -537,11 +538,7 @@ UPRIGHT
 BWCENTER
 # IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48
 
-IF $3.25 != "C" OR $45.50 != "C" GOTO _not_disulfide
-# DELATOM %3.25 HG
-# DELATOM %45.50 HG
-CONECT %3.25 SG %45.50 SG
-_not_disulfide:
+{disulfide_code}
 HYDRO
 
 LET %y6 = 0
