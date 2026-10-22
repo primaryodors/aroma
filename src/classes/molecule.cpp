@@ -5254,10 +5254,9 @@ void Molecule::minimize_internal_clashes()
     }
 
     int numrb = 0;
-    for (i=0; b[i]; i++) numrb = i;
+    for (i=0; b[i]; i++) numrb = i+1;
 
-    float angle[numrb];
-    for (i=0; i<numrb; i++) angle[i] = M_PI;
+    std::vector<float> angle(numrb, M_PI);
 
     for (i=0; i<numrb; i++)
     {
@@ -7211,6 +7210,7 @@ float Molecule::close_loop(Atom** path, float lcard)
 
     first = path[0];
     if (!first) return 0;
+    last = first;
 
     for (i=0; path[i]; i++)
     {
@@ -7254,7 +7254,7 @@ float Molecule::close_loop(Atom** path, float lcard)
     float anomaly = fsb_lsb_anomaly(first, last, lcard, bond_length);
     float iclash = get_internal_clashes();
     float oclash = iclash;
-    float bondrot[ringsize];
+    std::vector<float> bondrot(ringsize);
 
     for (i=0; i<ringsize; i++) bondrot[i] = M_PI/2*randsgn();
 
