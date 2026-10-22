@@ -268,32 +268,32 @@ def main():
                     atom6_55 = "NE2"
                 if atom6_55:
                     atom45_51 = False
-                    atom45_51_suck = False
+                    atom45_51c = False
                     if data.protutils.aalet_at_resno(rcpid, bw45_51) == 'D':
                         atom45_51 = "OD1"
-                        atom45_51_suck = "CG"
+                        atom45_51c = "CG"
                     elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'E':
                         atom45_51 = "OE1"
-                        atom45_51_suck = "CD"
+                        atom45_51c = "CD"
                     elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'H':
                         atom45_51 = "NE2"
-                        atom45_51_suck = "CD"
+                        atom45_51c = "CD"
                     elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'N':
                         atom45_51 = "OD1"
-                        atom45_51_suck = "CG"
+                        atom45_51c = "CG"
                     elif data.protutils.aalet_at_resno(rcpid, bw45_51) == 'Q':
                         atom45_51 = "OE1"
-                        atom45_51_suck = "CD"
+                        atom45_51c = "CD"
                     if atom45_51:
                         print(f"Gaussian {bw45_51}:{atom45_51} ~ {bw6_55}:{atom6_55}")
                         rsr.add(forms.Gaussian(group=physical.xy_distance,
                             feature=features.Distance(at[atom6_55 +":"+str(bw6_55)+":A"],
                                                     at[atom45_51+":"+str(bw45_51)+":A"]),
-                                                    mean=2.5, stdev=0.5))
+                                                    mean=2.5, stdev=0.25))
                         rsr.add(forms.Gaussian(group=physical.xy_distance,
                             feature=features.Distance(at[atom6_55 +":"+str(bw6_55)+":A"],
-                                                    at[atom45_51_suck+":"+str(bw45_51)+":A"]),
-                                                    mean=3.2, stdev=0.8))
+                                                    at[atom45_51c+":"+str(bw45_51)+":A"]),
+                                                    mean=3.0, stdev=0.5))
 
             # Cu-binding site distance restraints (OR2M/T/V)
             if famsub in ["OR2M", "OR2T", "OR2V"]:
@@ -381,6 +381,8 @@ def main():
     adjustments = ""
     if famno < 50:
         adjustments += 'IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48\n'
+        adjustments += 'IF $45.51 = "D" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
+        adjustments += 'IF $45.51 = "E" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
     elif famno in [51, 52]:
         adjustments += 'ATOMTO %6.59 EXTENT @4.57\n'
     elif rcpid == "OR56B2":
