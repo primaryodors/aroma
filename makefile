@@ -13,6 +13,10 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
+REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test \
+    test/numeric_test test/clash_selection_test test/entropy_test
+TSTS+=$(REGRESSION_TESTS)
+
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
 all: $(DIRS) \
@@ -217,6 +221,9 @@ test/moves_with_test: src/test/moves_with_test.cpp $(OBJS)
 
 test/occlusion_test: src/test/occlusion_test.cpp $(OBJS)
 	$(CPL) src/test/occlusion_test.cpp $(OBJS) -o test/occlusion_test $(CFLAGS)
+
+$(REGRESSION_TESTS): test/%: src/test/%.cpp $(OBJS) $(DOBJ) makefile
+	$(CPL) $< $(OBJS) $(DOBJ) -o $@ $(CFLAGS)
 
 # Apps
 
