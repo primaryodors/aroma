@@ -25,6 +25,12 @@ class DockResult
     float total_pose_enthalpy();
     void capture_coordinates(Protein* prot, Molecule* lig, Molecule** waters = nullptr);
     void restore_coordinates() const;
+    bool has_coordinates() const { return mprot && mlig && !saved_coordinates.empty(); }
+    bool is_better_fallback_than(const DockResult* other) const
+    {
+        return has_coordinates() && (!other || !other->has_coordinates()
+            || (std::isfinite(kJmol) && (!std::isfinite(other->kJmol) || kJmol < other->kJmol)));
+    }
     const std::vector<Molecule*>& water_molecules() const { return saved_waters; }
     const std::vector<Atom*>& metal_atoms() const { return saved_metals; }
 

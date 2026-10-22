@@ -1017,8 +1017,9 @@ std::string build_outpdb_fname()
     return out_pdb_fn;
 }
 
-void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
+bool do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
 {
+    if (!drjk || !drjk->has_coordinates()) return false;
 
     cout << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
     if (output) *output << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
@@ -1076,6 +1077,7 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
 
         fclose(pfout);
     }
+    return true;
 }
 
 void search_callback(std::string mesg)
@@ -3032,6 +3034,10 @@ int main(int argc, char** argv) try
     std::vector<DockResult> result_storage(i*j);
     std::vector<DockResult*> dr(i);
     for (int row=0; row<i; row++) dr[row] = &result_storage[row*j];
+    std::unique_ptr<FILE, int(*)(FILE*)> fallback_receptor(nullptr, &fclose);
+    std::unique_ptr<Protein> fallback_protein;
+    std::unique_ptr<Molecule> fallback_ligand;
+    float fallback_energy = nan("unset");
 
     int drcount = 0, qpr;
 
@@ -4342,6 +4348,24 @@ _try_again:
             }
             freeze_bridged_residues();
             if (output_each_iter) output_iter(nodeoff, cfmols, "initial placement");
+            if (output_something_even_if_it_is_wrong && !nodeno)
+            {
+                float placement_energy = 0;
+                for (int r=0; r<sphres; r++)
+                    placement_energy += ligand->get_intermol_binding(reaches_spheroid[nodeno][r]).summed();
+                if (!fallback_ligand || (isfinite(placement_energy)
+                    && (!isfinite(fallback_energy) || placement_energy < fallback_energy)))
+                {
+                    std::unique_ptr<FILE, int(*)(FILE*)> snapshot(tmpfile(), &fclose);
+                    if (!snapshot) throw std::runtime_error("Could not preserve the NOFAIL placement.");
+                    protein->save_pdb(snapshot.get());
+                    protein->end_pdb(snapshot.get());
+                    if (ferror(snapshot.get())) throw std::runtime_error("Could not write the NOFAIL placement.");
+                    fallback_ligand.reset(new Molecule(*ligand));
+                    fallback_receptor = std::move(snapshot);
+                    fallback_energy = placement_energy;
+                }
+            }
             if (pdpst == pst_best_binding) ligand->movability = (MovabilityType)(MOV_CAN_AXIAL | MOV_CAN_RECEN | MOV_CAN_FLEX);
             if (pdpst == pst_randhyd) ligand->movability = MOV_ALL;
 
@@ -4985,7 +5009,7 @@ _try_again:
                     + std::to_string(anomaly * energy_mult) + (std::string)".\n";
                 dr[drcount][nodeno].miscdata += (std::string)"Soft spatial anomaly: " + std::to_string(sanomaly) + (std::string)" A.\n";
 
-                if (dr[drcount][nodeno].kJmol > 0 && !output_something_even_if_it_is_wrong)
+                if (dr[drcount][nodeno].kJmol > 0)
                 {
                     std::string reason = (std::string)"Unfavorable ligand binding energy. ";
                     dr[drcount][nodeno].disqualified = true;
@@ -5313,8 +5337,7 @@ _try_again:
 
             if (dr[j][0].pose == i && dr[j][0].pdbdat.length())
             {
-                if ((dr[j][0].kJmol <= kJmol_cutoff && dr[j][nodeoff].kJmol <= kJmol_cutoff)
-                    || (output_something_even_if_it_is_wrong && !j))
+                if (dr[j][0].kJmol <= kJmol_cutoff && dr[j][nodeoff].kJmol <= kJmol_cutoff)
                 {
                     if (dr[j][nodeoff].proximity > search_size.magnitude()) continue;
                     if (dr[j][nodeoff].worst_nrg_aa > clash_limit_per_aa) continue;
@@ -5330,7 +5353,7 @@ _try_again:
                     for (k=0; k<=pathnodes+nodeoff; k++)
                     {
                         // If pathnode is not within kJ/mol cutoff, abandon it and all subsequent pathnodes of the same pose.
-                        if (dr[j][k].kJmol > kJmol_cutoff && !output_something_even_if_it_is_wrong)
+                        if (dr[j][k].kJmol > kJmol_cutoff)
                         {
                             cout << "Pose " << pose << " node " << k
                                  << " energy " << dr[j][k].kJmol*energy_mult
@@ -5357,7 +5380,7 @@ _try_again:
                                 fclose(audit);
                             }
                         }
-                        do_pose_output(&dr[j][k], k, energy_mult);
+                        if (!do_pose_output(&dr[j][k], k, energy_mult)) break;
 
                         if (!k) found_poses++;
                     }
@@ -5399,8 +5422,7 @@ _exitposes:
 
     if (!found_poses && output_something_even_if_it_is_wrong)
     {
-        float leastbad = Avogadro;
-        int lbi = 0;
+        int lbi = -1;
         for (l=0; l<poses; l++)
         {
             #if _dbg_output_something_even_if_it_is_wrong
@@ -5408,21 +5430,38 @@ _exitposes:
             if (dr[l][0].disqualified)
                 cout << " DISQUO'd " << dr[l][0].disqualify_reason;
             #endif
-            if (dr[l][0].kJmol && dr[l][0].kJmol < leastbad)
+            if (dr[l][0].is_better_fallback_than(lbi < 0 ? nullptr : &dr[lbi][0]))
             {
                 #if _dbg_output_something_even_if_it_is_wrong
                 cout << "*";
                 #endif
-                leastbad = dr[l][0].kJmol;
                 lbi = l;
             }
             #if _dbg_output_something_even_if_it_is_wrong
             cout << endl;
             #endif
         }
+        if (lbi < 0)
+        {
+            if (fallback_ligand)
+            {
+                fallback_protein.reset(new Protein());
+                rewind(fallback_receptor.get());
+                fallback_protein->load_pdb(fallback_receptor.get());
+                protein = fallback_protein.get();
+                ligand = fallback_ligand.get();
+            }
+            else
+            {
+                protein = &pose_proteins[0];
+                ligand = &pose_ligands[0];
+                ligand->recenter(pocketcen);
+            }
+            dr[0][0] = DockResult(protein, ligand, search_size, addl_resno, 1);
+            dr[0][0].miscdata += "NOFAIL: output from initial placement; no scored candidate survived.\n";
+            lbi = 0;
+        }
         pose = 1;
-        protein = &pose_proteins[lbi];
-        ligand = &pose_ligands[lbi];
         do_pose_output(&dr[lbi][0], 0, energy_mult);
 
         if (append_pdb && outpdb_poses)
