@@ -7,6 +7,7 @@
 #include <strings.h>
 #include "protein.h"
 #include "spatialgrid.h"
+#include <limits>
 
 #define _DBG_REACHLIG true
 
@@ -241,6 +242,7 @@ Protein::~Protein()
 
 bool Protein::add_residue(const int resno, const char aaletter)
 {
+    invalidate_spatial_grid();
     int i;
 
     if (!residues)
@@ -442,10 +444,13 @@ Point Protein::get_atom_location(int resno, const char* aname)
 
 SpatialGrid* Protein::get_spatial_grid()
 {
+    const auto revision = Atom::spatial_revision.load(std::memory_order_relaxed);
+    if (spatial_grid && spatial_grid->revision != revision) invalidate_spatial_grid();
     if (!spatial_grid)
     {
         spatial_grid = new SpatialGrid(7.0f);
         spatial_grid->build(residues);
+        spatial_grid->revision = revision;
     }
     return spatial_grid;
 }
@@ -470,31 +475,20 @@ Atom* Protein::get_nearest_atom(Point pt, int sr, int er)
         if (a) return a;
     }
 
-    int i;
-    float bestr = Avogadro;
+    float best_d2 = std::numeric_limits<float>::infinity();
     Atom* result = nullptr;
-    float range = 1;
-    while (range < 500)
+    for (int i=0; residues[i]; i++)
     {
-        for (i=0; residues[i]; i++)
+        int resno = residues[i]->get_residue_no();
+        if ((sr && resno < sr) || (er && resno > er)) continue;
+        Atom* a = residues[i]->get_nearest_atom(pt);
+        if (!a) continue;
+        float d2 = a->loc.get_3d_distance_squared(pt);
+        if (d2 < best_d2)
         {
-            int resno = residues[i]->get_residue_no();
-            if (resno < sr || resno > er) continue;
-
-            float rca = residues[i]->get_CA_location().get_3d_distance(pt);
-            if (rca > residues[i]->get_reach()*range) continue;
-            Atom* a = residues[i]->get_nearest_atom(pt);
-            if (!a) continue;
-            float r = a->loc.get_3d_distance(pt);
-            if (r < bestr)
-            {
-                result = a;
-                bestr = r;
-            }
+            result = a;
+            best_d2 = d2;
         }
-
-        if (result) break;
-        range *= 3.3333;
     }
 
     return result;
@@ -964,6 +958,7 @@ void Protein::set_name_from_pdb_name(const char* pdb_name)
 
 int Protein::load_pdb(FILE* is, int rno, char chain)
 {
+    invalidate_spatial_grid();
     AminoAcid* restmp[65536];
     char buffer[1024];
     Atom* a;
@@ -2688,6 +2683,7 @@ void Protein::make_helix(int startres, int endres, int stopat, float phi, float 
 
 void Protein::delete_residue(int resno)
 {
+    invalidate_spatial_grid();
     if (!resno) return;
     // if (resno > get_seq_length()) return;
     if (!residues) return;

@@ -521,6 +521,7 @@ float Pose::total_atom_motions()
 
 void Molecule::delete_atom(Atom* a)
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!a) return;
     paths = nullptr;
 
@@ -565,6 +566,7 @@ void Molecule::delete_atom(Atom* a)
 
 void Molecule::delete_all_atoms()
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!atoms) return;
     if (paths) delete[] paths;
     paths = nullptr;
@@ -701,6 +703,7 @@ void Molecule::add_existing_atom(Atom* a)
 
 void Molecule::append_existing_atom(Atom *a)
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!atoms) atcount = 0;
     else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
 

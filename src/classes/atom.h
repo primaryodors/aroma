@@ -4,6 +4,8 @@
 #include <vector>
 #include <iomanip>
 #include <memory>
+#include <atomic>
+#include <cstdint>
 #include <string.h>
 #include "point.h"
 
@@ -300,6 +302,7 @@ public:
     void stream_pdb_line(ostream& os, unsigned int atomno, bool force_hetatm = false);              // Atoms can be forced het, unlike humans.
 
     // Spatial functions.
+    static std::atomic<std::uint64_t> spatial_revision;
     bool move(Point* pt, bool delete_geometry = true);
     bool move(Point pt)
     {

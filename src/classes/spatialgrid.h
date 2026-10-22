@@ -31,6 +31,7 @@ struct VoxelCoordHash
 class SpatialGrid
 {
 public:
+    std::uint64_t revision = 0;
     float cellSize;
     std::unordered_map<VoxelCoord, std::vector<Atom*>, VoxelCoordHash> atom_cells;
 
@@ -110,11 +111,11 @@ public:
                 float min_d_next = ring * cellSize;
                 if (min_d_next * min_d_next >= best_d2)
                 {
-                    break;
+                    return best;
                 }
             }
         }
-        return best;
+        return nullptr;
     }
 };
 
