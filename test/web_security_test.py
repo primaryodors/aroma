@@ -58,7 +58,6 @@ class WebSecurityTest(unittest.TestCase):
             self.assertIn("no-store", response.headers.get("Cache-Control", ""))
             return json.load(response)
 
-    @unittest.skipUnless(shutil.which("obabel"), "Open Babel is unavailable")
     def test_each_response_contains_its_own_structure(self):
         stale = pathlib.Path("www/test.sdf")
         before = stale.read_bytes() if stale.exists() else None
@@ -67,6 +66,7 @@ class WebSecurityTest(unittest.TestCase):
         self.assertEqual(int(ethanol["sdf"].splitlines()[3][:3]), 9)
         self.assertEqual(int(ethane["sdf"].splitlines()[3][:3]), 8)
         self.assertNotEqual(ethanol["sdf"], ethane["sdf"])
+        self.assertIn("RDKit", ethanol["log"])
         self.assertEqual(stale.read_bytes() if stale.exists() else None, before)
 
     def test_transform_shell_text_is_rejected(self):
@@ -85,7 +85,6 @@ class WebSecurityTest(unittest.TestCase):
         self.assertEqual(result.exception.code, 400)
         self.assertIn("error", json.load(result.exception))
 
-    @unittest.skipUnless(shutil.which("obabel"), "Open Babel is unavailable")
     def test_conversion_failure_has_no_structure(self):
         body = urllib.parse.urlencode({"smiles": "not a molecule"}).encode()
         request = urllib.request.Request(self.base + "/smiles_view.php", data=body)
@@ -94,6 +93,25 @@ class WebSecurityTest(unittest.TestCase):
         payload = json.load(result.exception)
         self.assertIn("error", payload)
         self.assertNotIn("sdf", payload)
+
+    def test_rotations_and_ring_flips_modify_generated_coordinates(self):
+        plain = self.convert(smiles="C1CCCCC1CC")
+        rotated = self.convert(smiles="C1CCCCC1CC", brot="C6 C7 60")
+        flipped = self.convert(smiles="C1CCCCC1CC", rflp="C1")
+        combined = self.convert(smiles="C1CCCCC1CC", brot="C6 C7 60", rflp="C1")
+        def coordinates(result):
+            rows = result["sdf"].splitlines()
+            count = int(rows[3][:3])
+            return [tuple(float(row[i:i+10]) for i in (0, 10, 20))
+                    for row in rows[4:4+count]]
+        original = coordinates(plain)
+        for result in (rotated, flipped, combined):
+            points = coordinates(result)
+            self.assertEqual(len(points), len(original))
+            self.assertTrue(any(abs(a-b) > 0.05 for p, q in zip(original, points)
+                                for a, b in zip(p, q)))
+        self.assertNotEqual(coordinates(combined), coordinates(rotated))
+        self.assertNotEqual(coordinates(combined), coordinates(flipped))
 
 
 if __name__ == "__main__":

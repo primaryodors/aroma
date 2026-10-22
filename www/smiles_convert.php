@@ -32,6 +32,24 @@ function viewer_sdf(string $path): string
     return $sdf;
 }
 
+function viewer_python(): string
+{
+    if (getenv("AROMA_PYTHON")) return viewer_tool("python3", "AROMA_PYTHON");
+    $root = dirname(__DIR__);
+    if (is_file("$root/venvname"))
+    {
+        $environment = trim(file_get_contents("$root/venvname"));
+        if ($environment !== "")
+        {
+            if ($environment[0] !== "/") $environment = "$root/$environment";
+            foreach (["python3", "python"] as $name)
+                if (is_executable("$environment/bin/$name")) return "$environment/bin/$name";
+            throw new RuntimeException("The configured Python environment has no executable interpreter.", 503);
+        }
+    }
+    return viewer_tool("python3");
+}
+
 function convert_viewer_molecule(array $request): array
 {
     $smiles = $request["smiles"] ?? null;
@@ -81,7 +99,7 @@ function convert_viewer_molecule(array $request): array
         if (strpos($smiles, "{") !== false)
             $run([viewer_tool("test/mol_assem_test"), $smiles, $output]);
         else
-            $run([viewer_tool("obabel", "AROMA_OBABEL"), "-:".$smiles, "-h", "--gen3D", "-osdf", "-O$output"]);
+            $run([viewer_python(), "$root/data/viewer_sdf.py", $smiles, $output]);
         viewer_sdf($output);
         if ($transforms["brot"])
         {
