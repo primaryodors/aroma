@@ -152,7 +152,7 @@ Molecule::Molecule(char const* lname, Atom** collection)
 
 Molecule::Molecule(const Molecule &o)
 {
-    set_name(o.get_name());
+    if (o.get_name()) set_name(o.get_name());
     if (!o.atcount) return;
 
     echo_iters = o.echo_iters;

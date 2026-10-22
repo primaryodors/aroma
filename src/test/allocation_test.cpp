@@ -15,6 +15,10 @@ int main()
     named.name = named.region = nullptr;
     Atom unnamed(named);
     assert(unnamed.name[0] == 0 && unnamed.region[0] == 0);
+    Molecule empty;
+    Molecule empty_clone(empty);
+    assert(empty_clone.get_atom_count() == 0);
+    assert(empty_clone.get_name() == nullptr);
     Molecule m;
     m.from_smiles("CC(=O)O", false);
     m.set_name("copy-test");
