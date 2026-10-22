@@ -161,9 +161,11 @@ while True:
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
 
-    cmd = ["make", "apps"]
+    cmd = ["make", "bin/ic", "bin/phew"]
+    if ligcontacts:
+        cmd.append("bin/poslig")
     data.globals.wait_cool_cpu()
-    subprocess.run(cmd)
+    subprocess.run(cmd, check=True)
 
     print(f"Protein: {protid}\nInput PDB: {inppdb}")
 
