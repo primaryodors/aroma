@@ -1,5 +1,6 @@
 
 #include <iomanip>
+#include <limits>
 #include "scoring.h"
 
 float init_total_binding_by_type[_INTER_TYPES_LIMIT];
@@ -831,81 +832,49 @@ float DockResult::total_pose_enthalpy()
 
 void DockResult::entropy(DockResult* dr, int rows, int cols)
 {
-    int i, j, x, y;
-
-    // Columns will be the path nodes of docking; rows will be the dock results.
-    for (x=0; x<cols; x++)
+    if (!dr || rows <= 0 || cols <= 0) return;
+    std::vector<double> errors(rows);
+    std::vector<double> weights(rows);
+    std::vector<bool> valid(rows);
+    for (int x=0; x<cols; x++)
     {
-        float errors[rows+4];
-        float maxerr = 0;
-        float total_enthalpy = 0;
-
-        // Obtain positional errors for poses in the column.
-        for (y=0; y<rows; y++)
+        double max_error = 0, total_weight = 0;
+        int populated = 0;
+        for (int y=0; y<rows; y++)
         {
-            float closest_error = Avogadro;
-            for (i=0; i<rows; i++)
-            {
-                if (i == y) continue;
-                float e = dr[y*cols+x].ligpos.position_error(&dr[i*cols+x].ligpos);
-                if (e && e < closest_error) closest_error = e;
-            }
-            if (closest_error >= 0.999*Avogadro) closest_error = 0;
-            errors[y] = closest_error;
-            if (closest_error > maxerr) maxerr = closest_error;
-
-            #if _dbg_entropy
-            cout << "Result " << y << ":" << x << " positional error: " << closest_error << endl;
-            #endif
-
-            total_enthalpy += dr[y*cols+x].total_pose_enthalpy();
+            DockResult& result = dr[y*cols+x];
+            result.estimated_TDeltaS = 0;
+            double enthalpy = result.total_pose_enthalpy();
+            valid[y] = result.ligpos.has_data() && !result.disqualified && std::isfinite(enthalpy);
+            weights[y] = valid[y] ? std::abs(enthalpy) : 0;
+            total_weight += weights[y];
+            if (valid[y]) populated++;
+            errors[y] = 0;
         }
-
-        #if _dbg_entropy
-        cout << endl;
-        #endif
-
-        // Normalize positional errors
-        if (maxerr)
-            for (y=0; y<rows; y++)
-            {
-                errors[y] /= maxerr;
-                #if _dbg_entropy
-                cout << "Result " << y << ":" << x << " normalized positional error: " << errors[y] << endl;
-                #endif
-            }
-
-        #if _dbg_entropy
-        cout << endl;
-        #endif
-
-        // Sum the positional errors
-        float n = 0;                    // using a float instead of an int because the number of permutations will be treated as a non-integer.
-        for (y=0; y<rows; y++) n += errors[y];
-        n = fmax(1, n);
-
-        #if _dbg_entropy
-        cout << "Number of partial states: " << n << endl;
-        #endif
-
-        // Determine the non-integer value of W.
-        float W = tgamma(n);
-
-        // Total entropy for all states.
-        float DeltaS = entropy_from_permutations(W);
-
-        #if _dbg_entropy
-        cout << "kB * log(W " << W << ") - " << S_apo << " = S " << S << endl << endl;
-        #endif
-
-        // The entropy for each state would be proportional to its energy level divided by the sum of all states' energies.
-        for (y=0; y<rows; y++)
+        if (!populated) continue;
+        for (int y=0; y<rows; y++)
         {
-            dr[y*cols+x].estimated_TDeltaS = DeltaS * temperature * dr[y*cols+x].total_pose_enthalpy() / total_enthalpy;
-
-            #if _dbg_entropy
-            cout << "Result " << x << ":" << y << " TDeltaS = " << dr[y*cols+x].estimated_TDeltaS << endl;
-            #endif
+            if (!valid[y]) continue;
+            double closest = std::numeric_limits<double>::infinity();
+            for (int i=0; i<rows; i++)
+            {
+                if (i == y || !valid[i]) continue;
+                double error = dr[y*cols+x].ligpos.position_error(&dr[i*cols+x].ligpos);
+                if (error > 0 && std::isfinite(error)) closest = std::min(closest, error);
+            }
+            if (std::isfinite(closest)) errors[y] = closest;
+            max_error = std::max(max_error, errors[y]);
+        }
+        double states = 0;
+        if (max_error > 0)
+            for (double error : errors) states += error / max_error;
+        double delta_s = -kB_kJmol * std::lgamma(std::max(1.0, states));
+        for (int y=0; y<rows; y++)
+        {
+            if (!valid[y]) continue;
+            double share = total_weight > 0 ? weights[y] / total_weight : 1.0 / populated;
+            double value = delta_s * temperature * share;
+            if (std::isfinite(value)) dr[y*cols+x].estimated_TDeltaS = value;
         }
     }
 }

@@ -5151,7 +5151,7 @@ _try_again:
     }
 
     // Estimate the entropy of all results. Should always be negative.
-    DockResult::entropy(&dr[0][0], poses, max(1, pathnodes+pathpad));
+    DockResult::entropy(&dr[0][0], drcount, max(1, pathnodes+pathpad));
 
     // Output the dr[][] array in order of increasing pose number.
     cout << endl;
