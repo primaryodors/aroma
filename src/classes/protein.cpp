@@ -3674,10 +3674,10 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
 
 Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
 {
-    if (!residues) return cen;
+    if (pminr) *pminr = 0;
+    if (!residues || sz.x <= 0 || sz.y <= 0 || sz.z <= 0) return cen;
 
     float x, y, z, xp, yp, zp, xa, ya, za, r, bestr = 0, step = 0.25;
-    int i;
     Point result = cen;
 
     sz.x /= 2;
@@ -3705,17 +3705,8 @@ Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
                 Point maybe(xa, ya, za);
                 float minr = Avogadro;
 
-                for (i=0; residues[i]; i++)
-                {
-                    Atom* a = residues[i]->get_nearest_atom(maybe);
-                    if (!a) a = residues[i]->get_atom("CA");
-                    if (!a) a = residues[i]->get_atom(0);
-                    if (a)
-                    {
-                        r = a->loc.get_3d_distance(maybe);
-                        if (r < minr) minr = r;
-                    }
-                }
+                Atom* nearest = get_nearest_atom(maybe);
+                if (nearest) minr = nearest->loc.get_3d_distance(maybe);
 
                 if (minr < 1e9 && minr > bestr)
                 {
@@ -3725,28 +3716,7 @@ Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
             }
         }
     }
-    return result;
-
-    step = 0.25;
-    Point zero(0,0,0);
-    Vector ld(0,0,0);
-    for (i=0; i<10000; i++)
-    {
-        Atom* a = get_nearest_atom(result);
-        Vector d = result.subtract(a->loc);
-        if (ld.r && find_3d_angle(d, ld, zero) > square+hexagonal) step *= 0.666;
-        d.r = step;
-        result = result.add(d);
-        ld = d;
-        // printf("HETATM 9999  DMY DMY     0    %+7.3f %+7.3f %+7.3f   1.00001.00           O \n", result.x, result.y, result.z);
-        if (step < 0.0005) break;
-    }
-    if (pminr)
-    {
-        Atom* a = get_nearest_atom(result);
-        Vector d = result.subtract(a->loc);
-        *pminr = d.r;
-    }
+    if (pminr) *pminr = bestr;
     return result;
 }
 

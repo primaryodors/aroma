@@ -14,7 +14,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
 REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test \
-    test/numeric_test test/clash_selection_test test/entropy_test
+    test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test
 TSTS+=$(REGRESSION_TESTS)
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
