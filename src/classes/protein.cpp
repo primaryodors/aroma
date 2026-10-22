@@ -5047,6 +5047,7 @@ BallesterosWeinstein Protein::get_bw_from_resno(int resno)
 
 int Protein::replace_side_chains_from_other_protein(Protein* other)
 {
+    invalidate_spatial_grid();
     int i, j, l, n = other->get_end_resno(), num_applied = 0;
     std::vector<AARenumber> renumber_later;
 

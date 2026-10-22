@@ -3012,7 +3012,10 @@ void AminoAcid::renumber(int new_resno)
 
 void AminoAcid::delete_sidechain()
 {
+    if (!atoms) return;
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     Atom* latoms[get_atom_count()+4];
+    latoms[0] = nullptr;
     int i, j=0;
     for (i=0; atoms[i]; i++)
     {
@@ -3023,6 +3026,7 @@ void AminoAcid::delete_sidechain()
         }
         else
         {
+            atoms[i]->unbond_all();
             delete atoms[i];
         }
     }
@@ -3031,7 +3035,9 @@ void AminoAcid::delete_sidechain()
         atoms[i] = latoms[i];
 
     atoms[i] = NULL;
+    atcount = i;
     cb_atom = nullptr;
+    clear_cache();
 }
 
 Atom* AminoAcid::previous_residue_C()

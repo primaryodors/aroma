@@ -35,5 +35,15 @@ int main()
     load();
     first = p.get_residue(p.get_start_resno())->get_atom(0);
     assert(p.get_nearest_atom(first->loc)->distance_to(first) < 0.001);
+    AminoAcid* residue = p.get_residue(150);
+    Atom* sidechain = residue->get_CB();
+    assert(sidechain);
+    Point removed_position = sidechain->loc;
+    int old_count = residue->get_atom_count();
+    p.get_nearest_atom(removed_position);
+    residue->delete_sidechain();
+    assert(residue->get_atom_count() < old_count);
+    assert(residue->get_atom(residue->get_atom_count()) == nullptr);
+    assert(p.get_nearest_atom(removed_position));
     puts("Spatial queries passed.");
 }
