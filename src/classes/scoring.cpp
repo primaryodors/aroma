@@ -15,6 +15,53 @@ DockResult::DockResult()
     ;
 }
 
+void DockResult::capture_coordinates(Protein* prot, Molecule* lig, Molecule** waters)
+{
+    mprot = prot;
+    mlig = lig;
+    saved_coordinates.clear();
+    saved_waters.clear();
+    saved_metals.clear();
+    auto save_metal = [&](Atom* a) {
+        if (a && std::find(saved_metals.begin(), saved_metals.end(), a) == saved_metals.end())
+        {
+            saved_metals.push_back(a);
+            saved_coordinates.emplace_back(a, a->loc);
+        }
+    };
+    auto save = [&](Molecule* mol) {
+        if (!mol) return;
+        for (int i=0; i<mol->get_atom_count(); i++)
+        {
+            Atom* a = mol->get_atom(i);
+            if (a) saved_coordinates.emplace_back(a, a->loc);
+        }
+    };
+    if (prot)
+    {
+        for (int r=prot->get_start_resno(); r<=prot->get_end_resno(); r++)
+        {
+            AminoAcid* aa = prot->get_residue(r);
+            save(aa);
+            if (aa) save_metal(aa->coordmtl);
+        }
+        for (int i=0; i<_MAX_MCOORDS; i++)
+            save_metal(prot->_mcoords[i].mtl);
+    }
+    save(lig);
+    if (lig) ligpos.copy_state(lig);
+    if (waters) for (int i=0; waters[i]; i++)
+    {
+        saved_waters.push_back(waters[i]);
+        save(waters[i]);
+    }
+}
+
+void DockResult::restore_coordinates() const
+{
+    for (const auto& saved : saved_coordinates) saved.first->move(saved.second);
+}
+
 DockResult::DockResult(Protein* protein, Molecule* ligand, Point search_size,
     int* addl_resno, int drcount, Molecule** waters, bool is_movie)
 {
@@ -744,6 +791,8 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     }
 
     this->pdbdat = lpdbdat.str();
+
+    capture_coordinates(protein, ligand, waters);
 
     for (i=0; i<end1; i++) stst << final_binding[i] << endl;
 }

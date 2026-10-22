@@ -1014,12 +1014,15 @@ std::string build_outpdb_fname()
     return out_pdb_fn;
 }
 
-void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_pdb_water, Point* tmp_pdb_metal_loc)
+void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
 {
 
     cout << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
     if (output) *output << "Pose: " << pose << endl << "Node: " << lnodeno << endl;
 
+    protein = drjk->mprot;
+    ligand = drjk->mlig;
+    drjk->restore_coordinates();
     drjk->energy_mult = energy_mult;
     drjk->do_output_colors = do_output_colors;
     drjk->include_pdb_data = (output == nullptr);
@@ -1045,16 +1048,7 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_
         {
             AminoAcid* aa = protein->get_residue(j1);
             if (aa) aa->set_pdb_chain('A');
-            if (aa /* && aa->been_flexed */)
-            {
-                // tmp_pdb_residue[j+1][j1].restore_state_relative(aa, "CA");
-                #if _dbg_residue_poses
-                cout << "tmp_pdb_residue[" << (j+1) << "][" << j1 << "].restore_state_relative(" 
-                    << aa->get_name() << ")" << endl;
-                #endif
-            }
         }
-        // tmp_pdb_ligand[j+1].restore_state(ligand);
 
         #if recapture_ejected_ligand
         float r = ligand->get_barycenter().get_3d_distance(nodecens[k]);
@@ -1064,24 +1058,15 @@ void do_pose_output(DockResult* drjk, int lnodeno, float energy_mult, Pose* tmp_
         protein->save_pdb(pfout, ligand);
 
         int atno_offset = protein->last_saved_atom_number;
-        if (waters)
+        for (Molecule* water : drjk->water_molecules())
         {
-            for (j1=0; waters[j1]; j1++)
-            {
-                tmp_pdb_water[j1].restore_state(waters[j1]);
-                waters[j1]->save_pdb(pfout, atno_offset);
-                atno_offset += waters[j1]->get_atom_count();
-            }
+            water->save_pdb(pfout, atno_offset);
+            atno_offset += water->get_atom_count();
         }
 
-        n1 = nmtlcoords;
-        for (j1=0; j1 < n1; j1++)
+        for (Atom* metal : drjk->metal_atoms())
         {
-            if (mtlcoords[j1].mtl)
-            {
-                mtlcoords[j1].mtl->move(tmp_pdb_metal_loc[j1]);
-                mtlcoords[j1].mtl->save_pdb_line(pfout, ++atno_offset);
-            }
+            metal->save_pdb_line(pfout, ++atno_offset);
         }
 
         protein->end_pdb(pfout);
@@ -2655,10 +2640,6 @@ int main(int argc, char** argv)
     if (debug) *debug << "Loaded protein." << endl;
     #endif
 
-    Pose tmp_pdb_residue[poses+1][protein->get_end_resno()+1];
-    Pose tmp_pdb_waters[poses+1][omaxh2o+1];
-    Pose tmp_pdb_ligand[poses+1];
-    Point tmp_pdb_metal_locs[poses+1][nmtlcoords+1];
 
     if (tplset)
     {
@@ -4660,37 +4641,6 @@ _try_again:
                 }
             }
 
-            if (!nodeno) // && outpdb.length())
-            {
-                protein->get_internal_clashes(1, protein->get_end_resno(), false);
-
-                n = protein->get_end_resno();
-                for (j=1; j <= n; j++)
-                {
-                    AminoAcid* aa = protein->get_residue(j);
-                    if (aa)
-                    {
-                        tmp_pdb_residue[pose][j].copy_state(aa);
-                        #if _dbg_residue_poses
-                        cout << "tmp_pdb_residue[" << pose << "][" << j << "].copy_state(" << aa->get_name() << ")" << endl;
-                        #endif
-                    }
-                }
-                if (waters)
-                {
-                    for (j=0; waters[j]; j++)
-                    {
-                        tmp_pdb_waters[pose][j].copy_state(waters[j]);
-                    }
-                }
-                n = nmtlcoords;
-                for (j=0; j < n; j++)
-                {
-                    if (mtlcoords[j].mtl)
-                        tmp_pdb_metal_locs[pose][j] = mtlcoords[j].mtl->loc;
-                }
-                tmp_pdb_ligand[pose].copy_state(ligand);
-            }
 
             if (ligand->stay_close_mine && ligand->stay_close_mine->Z < 2)
             {
@@ -5316,7 +5266,7 @@ _try_again:
                                 fclose(audit);
                             }
                         }
-                        do_pose_output(&dr[j][k], k, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
+                        do_pose_output(&dr[j][k], k, energy_mult);
 
                         if (!k) found_poses++;
                     }
@@ -5382,7 +5332,7 @@ _exitposes:
         pose = 1;
         protein = &pose_proteins[lbi];
         ligand = &pose_ligands[lbi];
-        do_pose_output(&dr[lbi][0], 0, energy_mult, tmp_pdb_waters[pose], tmp_pdb_metal_locs[pose]);
+        do_pose_output(&dr[lbi][0], 0, energy_mult);
 
         if (append_pdb && outpdb_poses)
         {
