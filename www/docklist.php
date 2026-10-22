@@ -239,7 +239,7 @@ foreach ($prots as $protid => $p)
         else $dates[$rowid] = max($dates[$rowid], $fmt);
 
         set_time_limit(600);
-        if (isset($cached[$fname]) /*&& intval($cached[$fname]['nump'])*/ && $fmt < $cachemt)
+        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 2 && $fmt < $cachemt)
         {
             extract($cached[$fname]);
             // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
@@ -299,13 +299,13 @@ foreach ($prots as $protid => $p)
                 {
                     $occl = floatval(substr($ln, 25));
                 }
-                else if (!$icd && substr($ln, 0, 25) == "Internal contact disruption: ")
+                else if (!$icd && substr($ln, 0, 29) == "Internal contact disruption: ")
                 {
-                    $icd = floatval(substr($ln, 25));
+                    $icd = floatval(substr($ln, 29));
                 }
-                else if (!$tds && substr($ln, 0, 19) == "Estimated T_Delta_S: ")
+                else if (!$tds && substr($ln, 0, 21) == "Estimated T_Delta_S: ")
                 {
-                    $tds = floatval(substr($ln, 19));
+                    $tds = floatval(substr($ln, 21));
                 }
                 else if (substr($ln, 0, 6) == "Pose: ") $nump++;
 
@@ -348,6 +348,7 @@ foreach ($prots as $protid => $p)
 
             $cached[$fname] =
             [
+                "metrics_version" => 2,
                 "benerg" => $benerg,
                 "lsfe" => $lsfe,
                 "lsbe" => $lsbe,
@@ -357,6 +358,7 @@ foreach ($prots as $protid => $p)
                 "occl" => $occl,
                 "nump" => $nump,
                 "tds"  => $tds,
+                "icd"  => $icd,
             ];
         }
 
