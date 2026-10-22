@@ -1,4 +1,5 @@
 import pathlib
+import json
 import shutil
 import socket
 import subprocess
@@ -49,6 +50,42 @@ class WebSecurityTest(unittest.TestCase):
             page = response.read().decode()
         self.assertNotIn(value, page)
         self.assertIn("&lt;script&gt;", page)
+
+    def convert(self, **values):
+        body = urllib.parse.urlencode(values).encode()
+        request = urllib.request.Request(self.base + "/smiles_view.php", data=body)
+        with urllib.request.urlopen(request, timeout=30) as response:
+            self.assertIn("no-store", response.headers.get("Cache-Control", ""))
+            return json.load(response)
+
+    @unittest.skipUnless(shutil.which("obabel"), "Open Babel is unavailable")
+    def test_each_response_contains_its_own_structure(self):
+        stale = pathlib.Path("www/test.sdf")
+        before = stale.read_bytes() if stale.exists() else None
+        ethanol = self.convert(smiles="CCO")
+        ethane = self.convert(smiles="CC")
+        self.assertEqual(int(ethanol["sdf"].splitlines()[3][:3]), 9)
+        self.assertEqual(int(ethane["sdf"].splitlines()[3][:3]), 8)
+        self.assertNotEqual(ethanol["sdf"], ethane["sdf"])
+        self.assertEqual(stale.read_bytes() if stale.exists() else None, before)
+
+    def test_transform_shell_text_is_rejected(self):
+        body = urllib.parse.urlencode({"smiles": "CCO", "brot": "C1 C2 90; printf marker"}).encode()
+        request = urllib.request.Request(self.base + "/smiles_view.php", data=body)
+        with self.assertRaises(urllib.error.HTTPError) as result:
+            urllib.request.urlopen(request, timeout=5)
+        self.assertEqual(result.exception.code, 400)
+        self.assertIn("error", json.load(result.exception))
+
+    @unittest.skipUnless(shutil.which("obabel"), "Open Babel is unavailable")
+    def test_conversion_failure_has_no_structure(self):
+        body = urllib.parse.urlencode({"smiles": "not a molecule"}).encode()
+        request = urllib.request.Request(self.base + "/smiles_view.php", data=body)
+        with self.assertRaises(urllib.error.HTTPError) as result:
+            urllib.request.urlopen(request, timeout=30)
+        payload = json.load(result.exception)
+        self.assertIn("error", payload)
+        self.assertNotIn("sdf", payload)
 
 
 if __name__ == "__main__":

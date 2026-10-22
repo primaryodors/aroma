@@ -2,40 +2,20 @@
 
 if (isset($_REQUEST['smiles']))
 {
-    chdir(__DIR__);
-    chdir("..");
-
-    require_once(__DIR__."/chem_process.php");
-    $smiles = $_REQUEST['smiles'];
-    if (!is_string($smiles) || strlen($smiles) > 4096 || strpos($smiles, "\0") !== false)
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Cache-Control: no-store");
+    try
     {
-        http_response_code(400);
-        exit("Invalid molecular input.");
+        require_once(__DIR__."/smiles_convert.php");
+        echo json_encode(convert_viewer_molecule($_REQUEST), JSON_PARTIAL_OUTPUT_ON_ERROR);
     }
-    $cmd = strpos($smiles, '{') === false
-        ? ["obabel", "--gen3d", "-osdf", "-Owww/test.sdf", "-:".$smiles]
-        : ["test/mol_assem_test", $smiles, "www/test.sdf"];
-    if (run_chem_process($cmd) !== 0) exit;
-
-    foreach (["brot", "rflp"] as $option)
+    catch (Throwable $error)
     {
-        if (empty($_REQUEST[$option])) continue;
-        if (!is_string($_REQUEST[$option]) ||
-            !preg_match('/\A[A-Za-z0-9_.+\s-]+\z/', $_REQUEST[$option]))
-        {
-            http_response_code(400);
-            exit("Invalid transformation arguments.");
-        }
-        $args = preg_split('/\s+/', trim($_REQUEST[$option]), -1, PREG_SPLIT_NO_EMPTY);
-        $tool = $option === "brot" ? "test/bond_rotation_test" : "bin/ringflip";
-        if (run_chem_process(array_merge([$tool, "www/test.sdf"], $args)) !== 0) exit;
-        if ($option === "brot")
-        {
-            $c = @file_get_contents("rotated.sdf");
-            if ($c) file_put_contents("www/test.sdf", $c);
-        }
+        $code = $error->getCode();
+        http_response_code(in_array($code, [400, 422, 503, 504], true) ? $code : 500);
+        echo json_encode(["error" => $error->getMessage()], JSON_PARTIAL_OUTPUT_ON_ERROR);
+        error_log("SMILES conversion: ".$error->getMessage());
     }
-
     exit;
 }
 
@@ -241,52 +221,10 @@ var color_scheme = NGL.ColormakerRegistry.addScheme(function (params)
 });
 
 
-function go(smiles_string)
-{
-    $('#gobtn').prop('disabled', true).addClass('grayed');
-    stage.removeAllComponents();
-    stage.setSpin(false);
-    url = "<?php echo $_SERVER["PHP_SELF"]; ?>";
-	$.ajax(
-	{
-		url: url,
-		cache: false,
-		data:
-		{
-			smiles: smiles_string,
-            rflp: $('#rflp')[0].value,
-            brot: $('#brot')[0].value,
-		},
-		success: function(result)
-		{
-            $('#result')[0].value = result;
-            url = "test.sdf";
-            $.ajax(
-            {
-                url: url,
-                cache: false,
-                success: function(response)
-                {
-			        var stringBlob = new Blob( [ response ], { type: 'text/plain'} );
-                    stage.loadFile(stringBlob, { ext: "sdf" }).then( function( comp )
-                    {
-                        var rparam =
-                        {
-                            multipleBond: true,
-                            colorScheme: color_scheme
-                        }
-                        comp.addRepresentation("ball+stick", rparam);
-                        comp.autoView();
-                        $('#gobtn').prop('disabled', false).removeClass('grayed');
-                    });
-                }
-            });
-        }
-    });
-}
 </script>
+<script src="js/smiles_view.js"></script>
 </head>
-<body onload="set_stage(); go($('#smiles')[0].value);">
+<body onload="start_smiles_viewer();">
 <div class="flex-outer">
 <div class="flex-inner" style="width:33%;">
 <label for="smiles">SMILES string:</label>
@@ -304,7 +242,9 @@ function go(smiles_string)
 <input type="text" name="rflp" id="rflp" value="">
 <br>
 
-<input type="button" id="gobtn" value="Go" onclick="go($('#smiles')[0].value);" onchange="go($('#smiles')[0].value);">
+<input type="button" id="gobtn" value="Generate locally" onclick="go(document.getElementById('smiles').value);">
+<input type="button" id="pubchembtn" value="PubChem 3D lookup" onclick="go(document.getElementById('smiles').value, 'pubchem');">
+<p>PubChem lookup sends the SMILES to PubChem and loads an available 3D conformer. Local transformations are unavailable for that lookup.</p>
 <br><br>
 <textarea id="result">
 </textarea>

@@ -12,6 +12,12 @@ Molecule mol("TheMolecule");
 
 int main(int argc, char** argv)
 {
+    const char* output_file = "rotated.sdf";
+    if (argc >= 4 && !strcmp(argv[argc-2], "--output"))
+    {
+        output_file = argv[argc-1];
+        argc -= 2;
+    }
     if (argc > 1)
     {
         if (file_exists(argv[1]))
@@ -117,7 +123,7 @@ int main(int argc, char** argv)
 
     if (save)
     {
-        FILE* fp = fopen("rotated.sdf", "wb");
+        FILE* fp = fopen(output_file, "wb");
         if (!fp)
         {
             cerr << "FAILED to save output SDF." << endl;

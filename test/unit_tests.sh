@@ -34,5 +34,8 @@ done
 if ! python3 -m unittest discover -s test -p '*_test.py'; then
     failures=$((failures+1))
 fi
+if command -v node >/dev/null 2>&1; then
+    if ! node test/viewer_client_test.js; then failures=$((failures+1)); fi
+fi
 printf '%d failing checks\n' "$failures"
 if (( failures > 0 )); then exit 1; fi
