@@ -16,7 +16,7 @@ for name in "${approval_tests[@]}"; do
         failures=$((failures+1))
         continue
     fi
-    if diff -u "test/approved/$test_name.approved" "$output"; then
+    if python3 test/compare_output.py "test/approved/$test_name.approved" "$output"; then
         printf '%s: passed\n' "$test_name"
     else
         printf '%s: output comparison failed\n' "$test_name"
