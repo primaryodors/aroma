@@ -1,12 +1,31 @@
 import pathlib
+import os
 import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
-from data.preparation import PreparationCache
+from data.preparation import PreparationCache, prepared_output_current
 
 
 class PreparationTest(unittest.TestCase):
+    def test_output_refreshes_for_every_dependency(self):
+        with tempfile.TemporaryDirectory() as root:
+            output = pathlib.Path(root) / "pocket.cvty"
+            inputs = [pathlib.Path(root) / name for name in ("model.pdb", "scanner", "options.json", "atoms.dat")]
+            for path in inputs:
+                path.write_text("input")
+                os.utime(path, ns=(1000000000, 1000000000))
+            self.assertFalse(prepared_output_current(output, inputs))
+            output.write_text("cavity")
+            os.utime(output, ns=(2000000000, 2000000000))
+            self.assertTrue(prepared_output_current(output, inputs))
+            for path in inputs:
+                os.utime(path, ns=(3000000000, 3000000000))
+                self.assertFalse(prepared_output_current(output, inputs))
+                os.utime(path, ns=(1000000000, 1000000000))
+            inputs[-1].unlink()
+            self.assertFalse(prepared_output_current(output, inputs))
+
     def test_reuses_scan_and_refreshes_changed_input(self):
         with tempfile.TemporaryDirectory() as root:
             binary = pathlib.Path(root) / "scanner"

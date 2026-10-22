@@ -3,6 +3,17 @@ from pathlib import Path
 import subprocess
 
 
+def prepared_output_current(output, inputs):
+    try:
+        result = Path(output)
+        if not result.is_file():
+            return False
+        modified = result.stat().st_mtime_ns
+        return all(modified >= Path(path).stat().st_mtime_ns for path in inputs)
+    except OSError:
+        return False
+
+
 class PreparationCache:
     def __init__(self, capacity=8):
         self.capacity = capacity

@@ -20,7 +20,7 @@ import data.protutils
 import data.odorutils
 import data.dyncenter
 from data.configutils import state_atom_constraints
-from data.preparation import PreparationCache
+from data.preparation import PreparationCache, prepared_output_current
 
 data.protutils.load_prots()
 # Force memory allocation before loading to prevent namespace crashing
@@ -261,7 +261,9 @@ for rcpid in data.protutils.prots.keys():
                     if ln: newcfg.append("CNTCT "+ln)
 
             cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
-            if not os.path.exists(cavfn) or os.path.getmtime(cavfn) < os.path.getmtime(pdbfn):
+            cavity_inputs = [pdbfn, "bin/cavity_search", "data/cavopts.json",
+                             *sorted(Path("data").glob("*.dat"))]
+            if not prepared_output_current(cavfn, cavity_inputs):
                 with open('data/cavopts.json', 'r') as file:
                     cavopts = json.load(file)
                 cmd = ["bin/cavity_search", "-p", pdbfn, "-o", cavfn]
