@@ -447,6 +447,8 @@ Atom::Atom(const Atom &cf)
     location = cf.location;
     valence = cf.valence;
     origgeo = cf.origgeo;
+    geometry = origgeo;
+    bonded_to = new Bond[abs(geometry)+4];
     at_wt = cf.at_wt;
     vdW_rad = cf.vdW_rad;
     elecn = cf.elecn;

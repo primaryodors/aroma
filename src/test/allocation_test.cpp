@@ -16,6 +16,21 @@ int main()
     Atom unnamed(named);
     assert(unnamed.name[0] == 0 && unnamed.region[0] == 0);
     Molecule m;
+    m.from_smiles("CC(=O)O", false);
+    m.set_name("copy-test");
+    Molecule clone(m);
+    assert(!strcmp(clone.get_name(), m.get_name()));
+    assert(clone.get_atom_count() == m.get_atom_count());
+    assert(clone.get_bond_count(true) == m.get_bond_count(true));
+    for (int i=0; i<m.get_atom_count(); i++)
+    {
+        assert(clone.get_atom(i) != m.get_atom(i));
+        assert(clone.get_atom(i)->mol == &clone);
+        assert(clone.get_atom(i)->loc.get_3d_distance(m.get_atom(i)->loc) < 0.001);
+    }
+    Point original = m.get_atom(0)->loc;
+    clone.get_atom(0)->move(original.add(Point(1,0,0)));
+    assert(m.get_atom(0)->loc.get_3d_distance(original) < 0.001);
     for (int i=0; i<100; i++)
     {
         m.allocate_mandatory_connections(2);

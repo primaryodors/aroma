@@ -152,6 +152,7 @@ Molecule::Molecule(char const* lname, Atom** collection)
 
 Molecule::Molecule(const Molecule &o)
 {
+    set_name(o.get_name());
     if (!o.atcount) return;
 
     echo_iters = o.echo_iters;
@@ -173,6 +174,7 @@ Molecule::Molecule(const Molecule &o)
     for (i=0; i<o.atcount; i++)
     {
         atoms[i] = new Atom(*o.atoms[i]);
+        atoms[i]->mol = this;
     }
     atoms[i] = nullptr;
     atcount = i;
@@ -197,6 +199,7 @@ Molecule::Molecule(const Molecule &o)
         int n;
         for (n=0; o.hisflips[n]; n++);
         hisflips = new HistidineFlip*[n+4];
+        hisflips[n] = nullptr;
         for (i=0; o.hisflips[i]; i++)
         {
             hisflips[i] = new HistidineFlip();
