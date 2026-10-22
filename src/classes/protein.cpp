@@ -8,6 +8,7 @@
 #include "protein.h"
 #include "spatialgrid.h"
 #include <limits>
+#include <unordered_set>
 
 #define _DBG_REACHLIG true
 
@@ -1717,9 +1718,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
 {
     int i, j, sphres = 0;
     float szm = search_size.magnitude()/2;
-    int seql = get_end_resno();
-    bool resno_already[8192];
-    for (i=0; i<8192; i++) resno_already[i] = false;
+    std::unordered_set<int> resno_already;
 
     Point lig_cen = ligand ? ligand->get_barycenter() : nodecen;
     float max_lig_d2 = 0.0f;
@@ -1738,13 +1737,13 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
 
     for (i=0; i<SPHREACH_MAX; i++) reaches_spheroid[i] = NULL;
 
-    for (i=1; i<seql && residues[i]; i++)
+    for (i=0; residues && residues[i]; i++)
     {
-        AminoAcid* aa = residues[i-1];
+        AminoAcid* aa = residues[i];
         if (!aa) continue;
 
         int resno = aa->get_residue_no();
-        if (resno_already[resno]) continue;
+        if (resno_already.count(resno)) continue;
 
         if (excl_resno)
         {
@@ -1756,7 +1755,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         if (!ip && aa->priority)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1776,12 +1775,12 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             else continue;
         }
 
-        Atom *la, *na;
-        ligand->mutual_closest_atoms(reinterpret_cast<Molecule*>(aa), &la, &na);
-        if (la->distance_to(na) < _INTERA_R_CUTOFF)
+        Atom *la = nullptr, *na = nullptr;
+        if (ligand) ligand->mutual_closest_atoms(reinterpret_cast<Molecule*>(aa), &la, &na);
+        if (la && na && la->distance_to(na) < _INTERA_R_CUTOFF)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1792,10 +1791,10 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             {
                 if (addl_resno[j] == resno)
                 {
-                    if (!resno_already[resno])
+                    if (!resno_already.count(resno))
                     {
                         reaches_spheroid[sphres++] = aa;
-                        resno_already[resno] = true;
+                        resno_already.insert(resno);
                         #if _DBG_REACHLIG
                         if (debug)
                         {
@@ -1816,15 +1815,15 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         Atom* cb = aa->get_CB();
 
         Point pt = ca->loc;
-        Atom* a = ligand->get_nearest_atom(pt);
+        Atom* a = ligand ? ligand->get_nearest_atom(pt) : nullptr;
         Point pt2;
         if (a) pt2 = a->loc;
-        else   pt2 = ligand->get_barycenter();
+        else   pt2 = lig_cen;
 
         if (pt2.get_3d_distance(ca->loc) < szm)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1842,10 +1841,10 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
                 {*/
             if (pt.get_3d_distance(pt2) < 4)
             {
-                    if (!resno_already[resno])
+                    if (!resno_already.count(resno))
                     {
                         reaches_spheroid[sphres++] = aa;
-                        resno_already[resno] = true;
+                        resno_already.insert(resno);
                         #if _DBG_REACHLIG
                         if (debug)
                         {
@@ -1878,7 +1877,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         if (dir.r <= 1)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             #if _DBG_REACHLIG
             if (debug)
             {
