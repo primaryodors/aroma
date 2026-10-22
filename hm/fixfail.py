@@ -392,9 +392,9 @@ while True:
     # print(seq)
 
     os.chdir("hm")
-    cmd = ["python3", "hm/build_alignment_file.py"]
+    cmd = [sys.executable, "build_alignment_file.py"]
     data.globals.wait_cool_cpu()
-    subprocess.run(cmd)
+    subprocess.run(cmd, check=True)
 
     # scan ali file for protid
     alidat = ""
