@@ -889,42 +889,33 @@ std::string Cavity::resnos_as_string(Protein* p)
 
 int Cavity::resnos_as_array(Protein *p, int *output)
 {
-    int i, j, l, m, n;
-
-    n = p->get_end_resno();
-    bool included[n+1];
-    int tmp[256];
-
-    for (i=0; i<n; i++) included[i] = false;
-
-    if (!partials) partials = (CPartial*)spartials;
-    for (i=0; i<pallocd; i++)
+    if (output) output[0] = 0;
+    if (!p) return 0;
+    const int n = p->get_end_resno();
+    if (n < 1) return 0;
+    std::vector<unsigned char> included(n+1, 0);
+    std::vector<int> tmp(n+2);
+    partials = reinterpret_cast<CPartial*>(spartials);
+    const int partial_count = count_partials();
+    for (int i=0; i<partial_count; i++)
     {
         if (partials[i].s.radius)
         {
-            m = partials[i].resnos_as_array(p, tmp);
-            for (j=0; j<m; j++)
-            {
-                included[tmp[j]] = true;
-            }
+            const int m = partials[i].resnos_as_array(p, tmp.data());
+            for (int j=0; j<m; j++)
+                if (tmp[j] >= 1 && tmp[j] <= n) included[tmp[j]] = true;
         }
     }
 
-    if (!output)
-    {
-        for (i=1; i<n; i++)
-            if (included[i]) l++;
-    }
-    else
-    {
-        l=0;
-        for (i=1; i<n; i++)
+    int count = 0;
+    for (int i=1; i<=n; i++)
+        if (included[i])
         {
-            if (included[i]) output[l++] = i;
+            if (output) output[count] = i;
+            count++;
         }
-        output[l] = 0;
-    }
-    return l;
+    if (output) output[count] = 0;
+    return count;
 }
 
 std::string CPartial::resnos_as_string(Protein* p)
