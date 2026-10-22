@@ -5,6 +5,7 @@ import os.path
 import json
 import subprocess
 from collections.abc import Iterable
+from pathlib import Path
 
 if len(sys.argv) < 3:
     print("Both a protein and a ligand are required.")
@@ -19,6 +20,7 @@ import data.protutils
 import data.odorutils
 import data.dyncenter
 from data.configutils import state_atom_constraints
+from data.preparation import PreparationCache
 
 data.protutils.load_prots()
 # Force memory allocation before loading to prevent namespace crashing
@@ -68,6 +70,7 @@ if len(sys.argv) > 3:
         if sys.argv[i] == "resume": onlymissing = True
 
 processed = 0
+contact_cache = PreparationCache()
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
     sbf = data.protutils.subfamily_from_protid(rcpid)
@@ -245,8 +248,8 @@ for rcpid in data.protutils.prots.keys():
             if not skipdock:
                 cmd = ["bin/ic", pdbfn, "-3.0", "nooil"]
                 print(" ".join(cmd))
-                data.globals.wait_cool_cpu()
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                proc = contact_cache.run(cmd, [pdbfn, *sorted(Path("data").glob("*.dat"))],
+                                         before_run=data.globals.wait_cool_cpu)
                 for ln in proc.stdout.decode().split('\n'):
                     # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
                     # CNTCT 77 97
@@ -265,7 +268,7 @@ for rcpid in data.protutils.prots.keys():
                 cmd.extend(cavopts)
                 print(" ".join(cmd))
                 data.globals.wait_cool_cpu()
-                subprocess.run(cmd)
+                subprocess.run(cmd, check=True)
             newcfg.append(f"VCVTY {cavfn}")
 
             if skipdock: break
@@ -333,7 +336,7 @@ for rcpid in data.protutils.prots.keys():
             if "ns" in sys.argv: cmd.append("--ns")
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
-            subprocess.run(cmd)
+            subprocess.run(cmd, check=True)
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config files because you have the debug \"nodelete\" option selected.")
