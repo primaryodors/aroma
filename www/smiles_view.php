@@ -291,7 +291,7 @@ function go(smiles_string)
 <div class="flex-inner" style="width:33%;">
 <label for="smiles">SMILES string:</label>
 <br>
-<input type="text" name="smiles" id="smiles" value="<?php echo @$_REQUEST['s'] ?: "CCO"; ?>" onchange="$('#rflp')[0].value = '';">
+<input type="text" name="smiles" id="smiles" value="<?php echo htmlspecialchars(is_string($_REQUEST['s'] ?? null) ? $_REQUEST['s'] : "CCO", ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8"); ?>" onchange="$('#rflp')[0].value = '';">
 <br>
 
 <label for="rflp">Bond rotations (optional) format Atom1 Atom2 angle_deg:</label>
