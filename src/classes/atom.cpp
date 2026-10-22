@@ -432,10 +432,10 @@ Atom::Atom(const Atom &cf)
     residue = cf.residue;
     aaletter = cf.aaletter;
     strcpy(aa3let, cf.aa3let);
-    region = new char[cf.region ? strlen(cf.region) : 8];
+    region = new char[cf.region ? strlen(cf.region)+1 : 8]{};
     if (cf.region) strcpy(region, cf.region);
     is_backbone = cf.is_backbone;
-    name = new char[cf.name ? strlen(cf.name) : 8];
+    name = new char[cf.name ? strlen(cf.name)+1 : 8]{};
     if (cf.name) strcpy(name, cf.name);
     mirror_geo = cf.mirror_geo;
     flip_mirror = cf.flip_mirror;

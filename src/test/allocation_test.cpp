@@ -5,6 +5,16 @@
 
 int main()
 {
+    Atom named("C");
+    named.name = const_cast<char*>("C1");
+    named.region = const_cast<char*>("TM6");
+    Atom copied(named);
+    assert(!strcmp(copied.name, "C1"));
+    assert(!strcmp(copied.region, "TM6"));
+    assert(copied.name != named.name && copied.region != named.region);
+    named.name = named.region = nullptr;
+    Atom unnamed(named);
+    assert(unnamed.name[0] == 0 && unnamed.region[0] == 0);
     Molecule m;
     for (int i=0; i<100; i++)
     {
