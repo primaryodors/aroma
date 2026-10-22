@@ -288,7 +288,9 @@ int main(int argc, char** argv)
     std::vector<std::vector<std::string>> outputs(n + 1);
     std::vector<float> res_ttls(n + 1, 0.0f);
 
-    #pragma omp parallel for schedule(dynamic) num_threads(num_threads)
+    // Interaction evaluation updates shared atom caches and force accumulators.
+    if (num_threads > 1)
+        cerr << "Contact scanning runs serially to preserve consistent results." << endl;
     for (int i=1; i<=n; i++)
     {
         AminoAcid* aa = p.get_residue(i);

@@ -2572,6 +2572,11 @@ int main(int argc, char** argv) try
         }
     }
 
+    if (num_threads > 1)
+    {
+        cerr << "Docking runs serially; use separate processes for parallel screening." << endl;
+        num_threads = 1;
+    }
     std::unique_ptr<Protein[]> pose_proteins(new Protein[poses+1]);
     std::unique_ptr<Molecule[]> pose_ligands(new Molecule[poses+1]);
     protein = &pose_proteins[0]; // new Protein(protid);
