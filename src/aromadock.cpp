@@ -13,6 +13,9 @@
 #include <omp.h>
 #endif
 #include "classes/dynamic.h"
+#include "classes/configtext.h"
+#include <map>
+#include <memory>
 #include "classes/search.h"
 #include "classes/scoring.h"
 #include "classes/cavity.h"
@@ -26,7 +29,7 @@ using namespace std;
 std::string get_fttl_no_path_or_ext(const char* filename)
 {
     char buffer[256];
-    strcpy(buffer, filename);
+    copy_config_text(buffer, filename);
     int i, n = strlen(buffer);
     for (i=n; i>0; i--)
     {
@@ -997,12 +1000,12 @@ void vestibule_callback(int iter, Molecule** mols)
 std::string build_outpdb_fname()
 {
     char protn[64];
-    strcpy(protn, strrchr(protfname, '/')+1);
+    copy_config_text(protn, config_basename(protfname));
     char* dot = strchr(protn, '.');
     if (dot) *dot = 0;
 
     char lign[64];
-    strcpy(lign, strrchr(ligfname, '/')+1);
+    copy_config_text(lign, config_basename(ligfname));
     dot = strchr(lign, '.');
     if (dot) *dot = 0;
 
@@ -1163,6 +1166,52 @@ Point pocketcen_from_config_words(char** words, Point* old_pocketcen)
 int interpret_config_line(char** words)
 {
     int i, j;
+    if (!words || !words[0]) return 0;
+    int count = 0;
+    while (count < 100 && words[count])
+    {
+        if (strlen(words[count]) >= 256) throw std::invalid_argument("Configuration token is too long.");
+        count++;
+    }
+    const std::map<std::string, int> minimum = {
+        {"BRIDGE",2}, {"CEN",1}, {"CNTCT",1}, {"DEBUG",1},
+        {"DISAPPEAR",3}, {"REAPPEAR",3}, {"ELIM",1}, {"EXCL",2},
+        {"FLEX",1}, {"FLXR",1}, {"STCR",1}, {"H2O",1},
+        {"ITER",1}, {"ITERS",1}, {"LIG",1}, {"COPYLIG",1},
+        {"ISO",1}, {"FORM",1}, {"SMILES",1}, {"MCOORD",3},
+        {"NODEPDB",2}, {"OUT",1}, {"OUTPDB",2}, {"PATH",2},
+        {"PERRES",1}, {"PERBTYP",1}, {"ELIMITEM",1}, {"OUTLPS",1},
+        {"OUTPROX",1}, {"OUTCLSHA",1}, {"OUTPCLSH",1}, {"OUTMC",1},
+        {"OUTVDWR",1}, {"OUTPDBL",1}, {"OUTPDBR",1}, {"POSE",1},
+        {"THREADS",1}, {"THREAD",1}, {"T",1}, {"PROT",1},
+        {"REQSR",2}, {"RETRY",1}, {"RLIM",1}, {"SIZE",1},
+        {"SOFT",1}, {"NODEL",2}, {"TEMPLATE",1}, {"CAVS",1},
+        {"CFLEE",1}, {"VCVTY",1}, {"VESTIBULE",2}, {"ATOMTO",2}
+    };
+    auto rule = minimum.find(words[0]);
+    if (rule != minimum.end() && count <= rule->second)
+        throw std::invalid_argument(std::string("Missing arguments for ")+words[0]);
+    auto bounded_integer = [&](int low, int high) {
+        char* end = nullptr;
+        long value = std::strtol(words[1], &end, 10);
+        if (!end || *end || value < low || value > high)
+            throw std::invalid_argument(std::string("Invalid value for ")+words[0]);
+    };
+    std::string option = words[0];
+    if (option == "POSE") bounded_integer(1, 1024);
+    if (option == "H2O") bounded_integer(0, 1024);
+    if (option == "ITER" || option == "ITERS") bounded_integer(0, 1000000);
+    if (option == "PATH") bounded_integer(1, 255);
+    if (option == "SIZE" && count != 2 && count != 4)
+        throw std::invalid_argument("SIZE accepts one or three dimensions.");
+    if (option == "CEN" || option == "PATH")
+    {
+        int start = option == "PATH" ? 2 : 1;
+        bool residue_mode = !strcmp(words[start], "RES");
+        if (residue_mode || !strcmp(words[start], "ABS") || !strcmp(words[start], "REL")) start++;
+        if (count < start + (residue_mode ? 1 : 3))
+            throw std::invalid_argument("Incomplete pocket coordinates.");
+    }
 
     optsecho = "";
 
@@ -1204,6 +1253,8 @@ int interpret_config_line(char** words)
         }
         else
         {
+            if (count < 3 || n_soft_contact >= SOFT_CNTCTS_MAX)
+                throw std::invalid_argument("Invalid soft contact count.");
             soft_contact_a[n_soft_contact].set(words[1]);
             soft_contact_b[n_soft_contact].set(words[2]);
             n_soft_contact++;
@@ -1246,6 +1297,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "DISAPPEAR"))
     {
+        if (nappears >= 32) throw std::invalid_argument("Too many appearance settings.");
         int diter = atoi(words[1]);
         appears[nappears].disappear_iter = diter;
         if (diter > last_appear_iter) last_appear_iter = diter;
@@ -1255,6 +1307,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "REAPPEAR"))
     {
+        if (nappears >= 32) throw std::invalid_argument("Too many appearance settings.");
         int riter = atoi(words[1]);
         appears[nappears].reappear_iter = riter;
         if (riter > last_appear_iter) last_appear_iter = riter;
@@ -1350,7 +1403,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "LIG"))
     {
-        strcpy(ligfname, words[1]);
+        copy_config_text(ligfname, words[1]);
         ligset = true;
         if (ligcmd) smset = smcmd;
         return 1;
@@ -1363,6 +1416,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "ISO"))
     {
+        if (isomers.size() >= 63) throw std::invalid_argument("Too many ligand forms.");
         isomers.push_back(words[1]);
         return 1;
     }
@@ -1371,12 +1425,13 @@ int interpret_config_line(char** words)
         // Even though no constraint requires a form to be an isomer,
         // e.g. hydrolyzed forms of lactones are allowed, in the code we
         // treat them identically to isomers since there's no difference in processing.
+        if (isomers.size() >= 63) throw std::invalid_argument("Too many ligand forms.");
         isomers.push_back(words[1]);
         return 1;
     }
     else if (!strcmp(words[0], "SMILES"))
     {
-        strcpy(smiles, words[1]);
+        copy_config_text(smiles, words[1]);
         smset = true;
         return 1;
     }
@@ -1399,9 +1454,11 @@ int interpret_config_line(char** words)
             if (words[i][0] == '#') break;
             ResiduePlaceholder rp;
             rp.set(words[i]);
+            if (mcr.ncoordres >= 15) throw std::invalid_argument("Too many metal contacts.");
             mcr.coordres[mcr.ncoordres++] = rp;
         }
 
+        if (nmtlcoords >= 16) throw std::invalid_argument("Too many metal sites.");
         mtlcoords[nmtlcoords++] = mcr;
         return i-1;
     }
@@ -1412,7 +1469,7 @@ int interpret_config_line(char** words)
     else if (!strcmp(words[0], "NODEPDB"))
     {
         activation_node = atoi(words[1]);
-        strcpy(protafname, words[2]);
+        copy_config_text(protafname, words[2]);
         optsecho = "Active PDB " + (std::string)protafname + " for node " + to_string(activation_node);
     }
     else if (!strcmp(words[0], "NOFAIL"))
@@ -1426,7 +1483,7 @@ int interpret_config_line(char** words)
             cout << "Missing output file name; check config file." << endl << flush;
             throw 0xbadf12e;
         }
-        strcpy(outfname, words[1]);
+        copy_config_text(outfname, words[1]);
         optsecho = "Output file is " + (std::string)outfname;
         return 1;
     }
@@ -1563,7 +1620,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "PROT"))
     {
-        strcpy(protfname, words[1]);
+        copy_config_text(protfname, words[1]);
         char* c = strchr(protfname, ':');
         if (c)
         {
@@ -1636,7 +1693,7 @@ int interpret_config_line(char** words)
             if (words[3])
             {
                 if (strlen(words[3]) > 3) words[3][3] = 0;
-                strcpy(copyfrom_ligname, words[3]);
+                copy_config_text(copyfrom_ligname, words[3]);
                 lf++;
                 if (words[4])
                 {
@@ -1673,7 +1730,8 @@ int interpret_config_line(char** words)
             search_size.z = atof(words[3]);
         }
         else search_size.z = search_size.y = search_size.x;
-        if (!search_size.x || !search_size.y || !search_size.z)
+        if (!isfinite(search_size.x) || !isfinite(search_size.y) || !isfinite(search_size.z) ||
+            search_size.x <= 0 || search_size.y <= 0 || search_size.z <= 0)
         {
             cout << "Pocket size cannot be zero in any dimension." << endl << flush;
             throw 0xbad512e;
@@ -1698,6 +1756,7 @@ int interpret_config_line(char** words)
             else
             {
                 int j = atoi(words[i]);
+                if (nsoftrgna >= 32) throw std::invalid_argument("Too many soft regions.");
                 if (j) softrgn_allowed[nsoftrgna++] = j;
                 #if _dbg_soft
                 cout << "Allowed soft region: " << j << endl;
@@ -1710,6 +1769,7 @@ int interpret_config_line(char** words)
         ResiduePlaceholder rpsr, rper;
         rpsr.set(words[1]);
         rper.set(words[2]);
+        if (nsoftnodel >= 32) throw std::invalid_argument("Too many protected regions.");
         soft_nodel_start[nsoftnodel] = rpsr;
         soft_nodel_end[nsoftnodel] = rper;
         nsoftnodel++;
@@ -1726,11 +1786,11 @@ int interpret_config_line(char** words)
         tplset = (strcmp(words[1], "off") != 0) && (strcmp(words[1], "OFF") != 0);
         if (tplset)
         {
-            strcpy(tplfname, words[1]);
+            copy_config_text(tplfname, words[1]);
             if (words[2])
             {
                 tprfset = true;
-                strcpy(tplrfnam, words[2]);
+                copy_config_text(tplrfnam, words[2]);
             }
         }
         return 1;
@@ -1747,7 +1807,7 @@ int interpret_config_line(char** words)
     }
     else if (!strcmp(words[0], "VCVTY"))
     {
-        strcpy(cvtyfname, words[1]);
+        copy_config_text(cvtyfname, words[1]);
         return 1;
     }
     #if enable_vestibules
@@ -1761,10 +1821,12 @@ int interpret_config_line(char** words)
             else if (!strcmp(words[j], "GRABBER")) do_grabbers = !(do_holders = false);
             else if (do_holders)
             {
+                if (nvestibule_holder >= MAX_VESTIBULE) throw std::invalid_argument("Too many vestibule holders.");
                 vestibule_holder[nvestibule_holder++].set(words[j]);
             }
             else if (do_grabbers)
             {
+                if (nvestibule_grabber >= MAX_VESTIBULE) throw std::invalid_argument("Too many vestibule grabbers.");
                 vestibule_grabber[nvestibule_grabber++].set(words[j]);
             }
             j++;
@@ -1784,7 +1846,9 @@ void read_config_file(FILE* pf)
     while (!feof(pf))
     {
         buffer[0] = 0;
-        char* wgas = fgets(buffer, 1015, pf);
+        char* wgas = fgets(buffer, sizeof(buffer), pf);
+        if (!wgas) break;
+        if (!strchr(buffer, '\n') && !feof(pf)) throw std::invalid_argument("Configuration line is too long.");
         char* hash = strchr(buffer, '#');
         if (hash) *hash = 0;
         origbuff = buffer;
@@ -1952,7 +2016,7 @@ void apply_protein_specific_settings(Protein* p)
     choose_cen_buf();
 
     char buffer[1024];
-    strcpy(buffer, CEN_buf[cenbuf_idx].c_str());
+    copy_config_text(buffer, CEN_buf[cenbuf_idx].c_str());
     char** words = chop_spaced_words(buffer);
     pocketcen = pocketcen_from_config_words(words, nullptr);
     loneliest = protein->find_loneliest_point(pocketcen, search_size);
@@ -1973,7 +2037,7 @@ void apply_protein_specific_settings(Protein* p)
     for (i=0; i<n; i++)
     {
         char buffer[1024];
-        strcpy(buffer, atomto[i].c_str());
+        copy_config_text(buffer, atomto[i].c_str());
         char** words = chop_spaced_words(buffer);
 
         if (!words[1]) throw -1;
@@ -2381,7 +2445,25 @@ void apply_protein_specific_settings(Protein* p)
     reconnect_bridges();
 }
 
-int main(int argc, char** argv)
+int interpret_cli_option(int argc, char** argv, int& index)
+{
+    std::string command = argv[index]+2;
+    for (char& c : command) if (c >= 'a' && c <= 'z') c -= 'a'-'A';
+    char* words[100] = {};
+    words[0] = &command[0];
+    int count = 1;
+    origbuff = command;
+    while (index+1 < argc && std::strncmp(argv[index+1], "--", 2) && std::strcmp(argv[index+1], "-t"))
+    {
+        if (count >= 95) throw std::invalid_argument("Too many option arguments.");
+        words[count++] = argv[++index];
+        origbuff += " ";
+        origbuff += argv[index];
+    }
+    return interpret_config_line(words);
+}
+
+int main(int argc, char** argv) try
 {
     strcpy(splash, "\n        ***     ******      ****    ***    ***     ***     *****       ****      ****   **    **     \n       ** **    **   **    **  **   ****  ****    ** **    **  **     **  **    **  **  **    **     \n      **   **   **    **  **    **  ** **** **   **   **   **   **   **    **  **       **    **     \n     **     **  **   **   **    **  **  **  **  **     **  **    **  **    **  **       **   **      \n     *********  ******    **    **  **  **  **  *********  **    **  **    **  **       ******       \n     **     **  **   **   **    **  **      **  **     **  **    **  **    **  **       **   **      \n     **     **  **    **  **    **  **      **  **     **  **   **   **    **  **       **    **     \n     **     **  **    **   **  **   **      **  **     **  **  **     **  **    **  **  **    **     \n     **     **  **    **    ****    **      **  **     **  *****       ****      ****   **    **     \n");
     bool dosplash = true;
@@ -2405,21 +2487,22 @@ int main(int argc, char** argv)
     begin_debug_file();
     #endif
 
-    strcpy(configfname, "example.config");
+    copy_config_text(configfname, "example.config");
 
     smcmd = false;
     for (i=1; i<argc; i++)
     {
-        if (argv[i][0] == '-' && argv[i][1] == '-')
+        if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
         {
-            argv[i] += 2;
-            for (j=0; argv[i][j]; j++) if (argv[i][j] >= 'a' && argv[i][j] <= 'z') argv[i][j] &= 0x5f;
-            j = interpret_config_line(&argv[i]);
+            dosplash = false;
+        }
+        else if (argv[i][0] == '-' && argv[i][1] == '-')
+        {
+            j = interpret_cli_option(argc, argv, i);
             if (ligset) ligcmd = true;
             if (smset) smcmd = true;
             // if (optsecho.size()) cout << optsecho << endl;
-            argv[i] -= 2;
-            i += j;
+
         }
         else if (!strcmp(argv[i], "-t") && i+1 < argc)
         {
@@ -2442,7 +2525,7 @@ int main(int argc, char** argv)
                 char* ext = &dot[1];
                 if (!strcmp(ext, "config"))
                 {
-                    strcpy(configfname, argv[i]);
+                    copy_config_text(configfname, argv[i]);
                     configset = true;
                 }
             }
@@ -2462,20 +2545,21 @@ int main(int argc, char** argv)
     char protid[255];
     char* slash = strrchr(protfname, '/');
     if (!slash) slash = strrchr(protfname, '\\');
-    strcpy(protid, slash ? slash+1 : protfname );
+    copy_config_text(protid, slash ? slash+1 : protfname );
     char* dot = strchr(protid, '.');
     if (dot) *dot = 0;
 
     for (i=1; i<argc; i++)
     {
-        if (argv[i][0] == '-' && argv[i][1] == '-')
+        if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
         {
-            argv[i] += 2;
-            for (j=0; argv[i][j]; j++) if (argv[i][j] >= 'a' && argv[i][j] <= 'z') argv[i][j] &= 0x5f;
-            j = interpret_config_line(&argv[i]);
+            dosplash = false;
+        }
+        else if (argv[i][0] == '-' && argv[i][1] == '-')
+        {
+            j = interpret_cli_option(argc, argv, i);
             if (optsecho.size()) cout << optsecho << endl;
-            argv[i] -= 2;
-            i += j;
+
         }
         else if (!strcmp(argv[i], "-t") && i+1 < argc)
         {
@@ -2488,8 +2572,8 @@ int main(int argc, char** argv)
         }
     }
 
-    Protein pose_proteins[poses+1];
-    Molecule pose_ligands[poses+1];
+    std::unique_ptr<Protein[]> pose_proteins(new Protein[poses+1]);
+    std::unique_ptr<Molecule[]> pose_ligands(new Molecule[poses+1]);
     protein = &pose_proteins[0]; // new Protein(protid);
     pf = fopen(protfname, "r");
     if (!pf)
@@ -2570,11 +2654,11 @@ int main(int argc, char** argv)
         char tmp[512], protn[64];
         *(pcntp++) = 0;
         *(pcntp++) = 0;
-        strcpy(protn, strrchr(protfname, '/')+1);
+        copy_config_text(protn, config_basename(protfname));
         char* dot = strchr(protn, '.');
         if (dot) *dot = 0;
         sprintf(tmp, "%s%s%s", outfname, protn, pcntp);
-        strcpy(outfname, tmp);
+        copy_config_text(outfname, tmp);
     }
 
     char* pcntl = strstr(outfname, "%l");
@@ -2583,11 +2667,11 @@ int main(int argc, char** argv)
         char tmp[512], lign[64];
         *(pcntl++) = 0;
         *(pcntl++) = 0;
-        strcpy(lign, strrchr(ligfname, '/')+1);
+        copy_config_text(lign, config_basename(ligfname));
         char* dot = strchr(lign, '.');
         if (dot) *dot = 0;
         sprintf(tmp, "%s%s%s", outfname, lign, pcntl);
-        strcpy(outfname, tmp);
+        copy_config_text(outfname, tmp);
     }
 
     #if _DBG_SPACEDOUT
@@ -2628,6 +2712,7 @@ int main(int argc, char** argv)
             if (!got) break;
             CPartial cp;
             int cno = cp.from_cvty_line(buffer);
+            if (cno < 0 || cno >= 256) throw std::invalid_argument("Invalid cavity number.");
             cvtys[cno].add_partial(cp);
             if (cno+1 > ncvtys) ncvtys = cno+1;
         }
@@ -2939,10 +3024,9 @@ int main(int argc, char** argv)
 
     i = poses*(triesleft+1)+8;
     j = pathnodes+pathpad;
-    DockResult dr[i][j];
-
-    float rgnxform_r[i][pathnodes+2][PROT_MAX_RGN], rgnxform_theta[i][pathnodes+2][PROT_MAX_RGN], rgnxform_y[i][pathnodes+2][PROT_MAX_RGN];
-    float rgnrot_alpha[i][pathnodes+2][PROT_MAX_RGN], rgnrot_w[i][pathnodes+2][PROT_MAX_RGN], rgnrot_u[i][pathnodes+2][PROT_MAX_RGN];
+    std::vector<DockResult> result_storage(i*j);
+    std::vector<DockResult*> dr(i);
+    for (int row=0; row<i; row++) dr[row] = &result_storage[row*j];
 
     int drcount = 0, qpr;
 
@@ -3018,6 +3102,7 @@ int main(int argc, char** argv)
             }
             else if (buffer[0] == 'T' && buffer[1] == 'E' && buffer[2] == 'R')
             {
+                if (npreconf >= 50) throw std::invalid_argument("Too many external poses.");
                 preconforms[npreconf].copy_state(ligand);
                 npreconf++;
             }
@@ -3410,7 +3495,7 @@ _try_again:
             {
                 for (i=0; i<states.size(); i++)
                 {
-                    strcpy(buffer, states[i].c_str());
+                    copy_config_text(buffer, states[i].c_str());
                     char** words = chop_spaced_words(buffer);
                     if (atoi(words[1]) == nodeno)
                     {
@@ -3441,7 +3526,7 @@ _try_again:
                 }
 
                 // nodecen = nodecen.add(&path[nodeno]);
-                strcpy(buffer, pathstrs[nodeno].c_str());
+                copy_config_text(buffer, pathstrs[nodeno].c_str());
                 if (!strlen(buffer))
                 {
                     cerr << "Error in config file: path node " << nodeno << " is missing." << endl;
@@ -5487,3 +5572,14 @@ _exitposes:
 
 
 
+
+catch (const std::exception& error)
+{
+    std::cerr << "Configuration error: " << error.what() << std::endl;
+    return 2;
+}
+catch (int error)
+{
+    std::cerr << "Docking error: " << std::hex << error << std::endl;
+    return 2;
+}
