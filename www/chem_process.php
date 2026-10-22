@@ -1,5 +1,26 @@
 <?php
 
+function chem_python(): string
+{
+    $root = dirname(__DIR__);
+    $configured = getenv("AROMA_PYTHON");
+    if ($configured) $candidates = [$configured];
+    elseif (is_file("$root/venvname") && ($environment = trim(file_get_contents("$root/venvname"))) !== "")
+    {
+        if ($environment[0] !== "/") $environment = "$root/$environment";
+        $candidates = ["$environment/bin/python3", "$environment/bin/python"];
+    }
+    else
+    {
+        $candidates = ["/usr/local/bin/python3", "/usr/bin/python3"];
+        foreach (explode(PATH_SEPARATOR, getenv("PATH") ?: "") as $directory)
+            if ($directory !== "") $candidates[] = "$directory/python3";
+    }
+    foreach ($candidates as $candidate)
+        if (is_file($candidate) && is_executable($candidate)) return $candidate;
+    throw new RuntimeException("The configured Python interpreter is unavailable.", 503);
+}
+
 function chem_process_result(array $arguments, ?string $directory = null, float $timeout = 20.0): array
 {
     foreach (["proc_open", "proc_get_status", "proc_terminate", "proc_close"] as $function)
