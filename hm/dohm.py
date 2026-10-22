@@ -633,6 +633,8 @@ SAVE $outf
     ic_cmd = ["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"]
     for bw in pinned_bw:
         ic_cmd.extend(["pin", bw])
+    for resno in sorted(set(dsres1 + dsres2)):
+        ic_cmd.extend(["pin", str(resno)])
     subprocess.run(ic_cmd)
 
     # 10. Clean up temporary files

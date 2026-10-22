@@ -584,6 +584,8 @@ SAVE $outf
     subprocess.run(cmd)
 
     cmd = ["bin/ic", f"pdbs/{fam}/{protid}.{mode}.pdb", "minc", "save"]
+    for resno in sorted({resno for pair in source_disulfides for resno in pair}):
+        cmd.extend(["pin", str(resno)])
     print(" ".join(cmd))
     data.globals.wait_cool_cpu()
     subprocess.run(cmd)
