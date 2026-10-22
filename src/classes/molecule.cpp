@@ -6830,18 +6830,16 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
         // Nonstandard feature.
         if (smilesstr[i] == '{')
         {
-            char* aname = new char[15];
-            i++;
-            j=0;
-            while (smilesstr[i] != '}' && j<15)
-            {
-                aname[j] = smilesstr[i];
-                i++;
-                j++;
-            }
-            aname[j] = 0;
+            const char* start = smilesstr+i+1;
+            const char* end = strchr(start, '}');
+            if (!preva || !end || end == start || end-start > 14)
+                throw std::invalid_argument("Invalid atom label in molecular input.");
+            std::size_t length = end-start;
+            char* aname = new char[length+1];
+            memcpy(aname, start, length);
+            aname[length] = 0;
             preva->name = aname;
-            //i++;
+            i = end-smilesstr;
             continue;
         }
 

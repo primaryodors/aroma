@@ -37,6 +37,12 @@ function convert_viewer_molecule(array $request): array
     $smiles = $request["smiles"] ?? null;
     if (!is_string($smiles) || trim($smiles) === "" || strlen($smiles) > 4096 || strpos($smiles, "\0") !== false)
         throw new RuntimeException("Enter a valid SMILES string.", 400);
+    if (strpos($smiles, "{") !== false || strpos($smiles, "}") !== false)
+    {
+        $plain = preg_replace('/\{[A-Za-z][A-Za-z0-9_]{0,13}\}/', '', $smiles);
+        if (strlen($smiles) > 255 || strpbrk($plain, "{}") !== false)
+            throw new RuntimeException("Custom atom labels accept up to 14 letters or digits in a short molecular input.", 400);
+    }
     $transforms = [];
     foreach (["brot", "rflp"] as $option)
     {

@@ -77,6 +77,14 @@ class WebSecurityTest(unittest.TestCase):
         self.assertEqual(result.exception.code, 400)
         self.assertIn("error", json.load(result.exception))
 
+    def test_malformed_atom_label_is_rejected(self):
+        body = urllib.parse.urlencode({"smiles": "C{ABCDEFGHIJKLMNO}"}).encode()
+        request = urllib.request.Request(self.base + "/smiles_view.php", data=body)
+        with self.assertRaises(urllib.error.HTTPError) as result:
+            urllib.request.urlopen(request, timeout=5)
+        self.assertEqual(result.exception.code, 400)
+        self.assertIn("error", json.load(result.exception))
+
     @unittest.skipUnless(shutil.which("obabel"), "Open Babel is unavailable")
     def test_conversion_failure_has_no_structure(self):
         body = urllib.parse.urlencode({"smiles": "not a molecule"}).encode()
