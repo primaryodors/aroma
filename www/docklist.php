@@ -239,7 +239,7 @@ foreach ($prots as $protid => $p)
         else $dates[$rowid] = max($dates[$rowid], $fmt);
 
         set_time_limit(600);
-        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 2 && $fmt < $cachemt)
+        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 3 && $fmt < $cachemt)
         {
             extract($cached[$fname]);
             // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
@@ -265,6 +265,12 @@ foreach ($prots as $protid => $p)
             $tds = 0;
             foreach ($lines as $ln) 
             {
+                if (substr($ln, 0, 6) == "Pose: ")
+                {
+                    $nump++;
+                    continue;
+                }
+                if ($nump > 1) continue;
                 if (substr($ln, 0, 21) == "Disqualified because:" || substr($ln, 0, 25) == "Disqualified for reasons.")
                 {
                     $benerg = 1000;
@@ -307,7 +313,6 @@ foreach ($prots as $protid => $p)
                 {
                     $tds = floatval(substr($ln, 21));
                 }
-                else if (substr($ln, 0, 6) == "Pose: ") $nump++;
 
                 if ($mode == "active" && $nump < 2 && false!==strpos($ln, "~(ligand)"))
                 {
@@ -348,7 +353,7 @@ foreach ($prots as $protid => $p)
 
             $cached[$fname] =
             [
-                "metrics_version" => 2,
+                "metrics_version" => 3,
                 "benerg" => $benerg,
                 "lsfe" => $lsfe,
                 "lsbe" => $lsbe,
