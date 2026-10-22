@@ -1602,7 +1602,7 @@ void AminoAcid::load_aa_defs()
                         tbdctr = 0;
                         proline_like = false;
 
-                        if (tmpbdefs) delete tmpbdefs;
+                        if (tmpbdefs) delete[] tmpbdefs;
                     }
 
                     if (!aa_defs[idx]._1let)

@@ -3418,7 +3418,7 @@ _try_again:
                         // delete[] b;
                     }
 
-                    delete sidechain_bondrots[i];
+                    delete[] sidechain_bondrots[i];
                 }
             }
 

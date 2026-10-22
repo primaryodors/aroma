@@ -71,37 +71,15 @@ float Cavity::residue_intersection(Cavity *other, Protein* p)
 
 void Cavity::unify(Cavity* cavfrom)
 {
-    int i, j, n;
-
-    n = 0;
-    if (!partials) partials = (CPartial*)spartials;
-    if (partials) for (; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
-    j = n;
-    if (cavfrom->partials)
-    {
-        for (i=0; i<cavfrom->pallocd && cavfrom->partials[i].s.radius >= min_partial_radius; i++);
-        n += i;
-    }
-    if (n > pallocd)
-    {
-        pallocd += n + 256;
-        CPartial* oldpart = partials;
-        partials = new CPartial[pallocd+4];
-        spartials = (SPartial*)partials;
-        j=0;
-        if (oldpart)
-        {
-            for (i=0; oldpart[i].s.radius >= min_partial_radius; i++) partials[i] = oldpart[i];
-            j = i;
-            delete oldpart;
-        }
-    }
-
-    if (cavfrom->partials)
-    {
-        for (i=0; cavfrom->partials[i].s.radius >= min_partial_radius; i++) partials[i+j] = cavfrom->partials[i];
-        delete cavfrom->partials;
-    }
+    if (!cavfrom || cavfrom == this) return;
+    int count = cavfrom->count_partials();
+    for (int i=0; i<count; i++) add_partial(cavfrom->spartials[i]);
+    partials = reinterpret_cast<CPartial*>(spartials);
+    delete[] cavfrom->spartials;
+    cavfrom->spartials = nullptr;
+    cavfrom->partials = nullptr;
+    cavfrom->pallocd = 0;
+    cached_volume = cavfrom->cached_volume = -1;
 }
 
 int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr)

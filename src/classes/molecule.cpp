@@ -5425,9 +5425,9 @@ void Molecule::remove_mandatory_connection(Molecule* rmvmol)
 
 void Molecule::delete_mandatory_connections()
 {
-    if (last_mc_binding) delete last_mc_binding;
+    if (last_mc_binding) delete[] last_mc_binding;
     last_mc_binding = nullptr;
-    if (mandatory_connection) delete mandatory_connection;
+    if (mandatory_connection) delete[] mandatory_connection;
     mandatory_connection = nullptr;
     #if _dbg_mand_conn
     cout << "No more mandatory connections." << endl;

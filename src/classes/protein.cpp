@@ -848,7 +848,7 @@ float Protein::get_intermol_clashes(Molecule *ligand, int startres, int endres)
 
 Interaction Protein::get_intermol_binding(Molecule* ligand)
 {
-    AminoAcid** laminos = new AminoAcid*[SPHREACH_MAX+4];
+    AminoAcid* laminos[SPHREACH_MAX+4];
     Point search_size(0,0,0);
     int cres = get_residues_can_clash_ligand(laminos, ligand, ligand->get_barycenter(), search_size, nullptr);
     if (!cres) return 0;
@@ -858,7 +858,6 @@ Interaction Protein::get_intermol_binding(Molecule* ligand)
     {
         result += laminos[i]->Molecule::get_intermol_binding(ligand);
     }
-    delete laminos;
     return result;
 }
 
