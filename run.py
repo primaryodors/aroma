@@ -18,6 +18,7 @@ import data.globals
 import data.protutils
 import data.odorutils
 import data.dyncenter
+from data.configutils import state_atom_constraints
 
 data.protutils.load_prots()
 # Force memory allocation before loading to prevent namespace crashing
@@ -321,16 +322,8 @@ for rcpid in data.protutils.prots.keys():
 
             if pocket:
                 # TODO: bridge, flxr, and stcr
-                if suff != "inactive" and "atomtoa" in pocket:
-                    if isinstance(pocket["atomtoa"], str):
-                        pocket["atomtoa"] = [pocket["atomtoa"]]
-                    for a2 in pocket["atomtoa"]:
-                        newcfga += "\n" + "ATOMTO " + a2
-                if suff == "inactive" and "atomtoi" in pocket:
-                    if isinstance(pocket["atomtoa"], str):
-                        pocket["atomtoa"] = [pocket["atomtoa"]]
-                    for a2 in pocket["atomtoa"]:
-                        newcfga += "\n" + "ATOMTO " + a2
+                for a2 in state_atom_constraints(pocket, suff):
+                    newcfga += "\nATOMTO " + a2
 
             with open("tmp/" + conffn, 'w') as f:
                 f.write(newcfga + "\n\n")
