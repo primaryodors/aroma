@@ -1493,7 +1493,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     {
         ligand->rotate(lv, step);
         enew = ligand->get_intermol_clashes((Molecule**)rs);
-        if (enew < bb_clash_avoidance_threshold || enew < e)
+        if (enew < e)
         {
             p.copy_state(ligand);
             e = enew;

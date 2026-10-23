@@ -24,7 +24,7 @@ for name in "${approval_tests[@]}"; do
     fi
 done
 
-for name in spatial pose_state allocation result_state numeric clash_selection entropy pocket_search smiles_input cavity_residue soft_scoring protonation disulfide atom_target soft_disulfide; do
+for name in spatial pose_state allocation result_state numeric clash_selection entropy pocket_search smiles_input cavity_residue soft_scoring protonation disulfide atom_target soft_disulfide target_rotation; do
     if ! "test/${name}_test"; then
         printf '%s: regression failed\n' "$name"
         failures=$((failures+1))
