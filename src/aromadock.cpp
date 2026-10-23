@@ -5105,7 +5105,8 @@ _try_again:
             if ((pose==1 && !nodeno) || best_worst_clash > dr[drcount][nodeno].worst_energy) best_worst_clash = dr[drcount][nodeno].worst_energy;
 
             #if reuse_best_pose
-            if (!aa_best_pose || best_pose_energy > btot)
+            // Covalent poses have different ligand and residue atom lists from a fresh pose.
+            if (!ligand->glued_to_mol() && (!aa_best_pose || best_pose_energy > btot))
             {
                 float cp = 0;
                 for (i=0; i<ncvtys; i++)
