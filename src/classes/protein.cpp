@@ -3875,15 +3875,18 @@ bool Protein::disulfide_bond(int resno1, int resno2)
                 {
                     S2 = res2->get_atom(k);
                     if (!S2) continue;
-                    if (S2->Z == 10 && S2->get_family() == CHALCOGEN)
+                    if (S2->Z == S1->Z && S2->get_family() == CHALCOGEN)
                     {
                         H2 = S2->is_bonded_to("H");
                         if (H2)
                         {
                             if (!res1->mclashables) set_clashables(res1->get_residue_no());
                             if (!res2->mclashables) set_clashables(res2->get_residue_no());
-                            res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
-                            res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
+                            if (fabs(S1->distance_to(S2) - 2.07) >= 0.25)
+                            {
+                                res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
+                                res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
+                            }
 
                             float r = S1->loc.get_3d_distance(S2->loc);
                             if (fabs(r - 2.07) < 0.25)
