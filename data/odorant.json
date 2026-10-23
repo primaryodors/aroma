@@ -37067,7 +37067,7 @@
     "d7cc5c1ba68a1fcb8b47d01f11084945":
     {
         "full_name": "habanolide",
-        "smiles": "C1CCCCCCOC(=O)/C=C/CCCCC1",
+        "smiles": "C1CCCC/C=C/CCCOC(=O)CCCC1",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
