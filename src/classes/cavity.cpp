@@ -9,7 +9,9 @@ int cav_resmin = -99999, cav_resmax = 99999;
 float Cavity::cavity_intersection(Cavity* other)
 {
     float result = 0;
-    if (!partials) partials = (CPartial*)spartials;
+    if (!other) return result;
+    partials = reinterpret_cast<CPartial*>(spartials);
+    other->partials = reinterpret_cast<CPartial*>(other->spartials);
     if (!partials || !pallocd || !other->partials || !other->pallocd) return result;
     int i, j;
 
@@ -661,7 +663,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
     Atom*     matom[10];
     float     score[10];
     int matches = 0;
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
 
     int i, j, l, m, n;
     float f, f0;
@@ -826,7 +828,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
 
 int Cavity::resnos(Protein* p, AminoAcid** result)
 {
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
     if (!partials || !pallocd) return 0;
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];
@@ -857,7 +859,7 @@ int Cavity::resnos(Protein* p, AminoAcid** result)
 
 std::string Cavity::resnos_as_string(Protein* p)
 {
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
     if (!partials || !pallocd) return (std::string)"";
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];
@@ -1016,7 +1018,8 @@ int Cavity::estimate_multiplicity(Molecule* ligand)
 
 bool Cavity::has_priority()
 {
-    if (!pallocd) return false;
+    if (!pallocd || !spartials) return false;
+    partials = reinterpret_cast<CPartial*>(spartials);
     int i;
     for (i=0; i<pallocd; i++)
     {

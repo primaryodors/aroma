@@ -32,7 +32,7 @@ class Cavity : public Space
     float residue_intersection(Cavity* other, Protein* p);
     void unify(Cavity* cavfrom);
     int estimate_multiplicity(Molecule* ligand);
-    CPartial* get_partial_by_idx(int idx) { if (!partials) partials = (CPartial*)spartials; return &partials[idx]; }
+    CPartial* get_partial_by_idx(int idx) { return reinterpret_cast<CPartial*>(Space::get_partial_by_idx(idx)); }
     bool has_priority();
 
     protected:
