@@ -13,7 +13,7 @@ Box Space::boundingbox()
             if (spartials[i].s.radius <= 0) break;
             Point size = Point(spartials[i].s.radius, spartials[i].s.radius, spartials[i].s.radius);
             Point corner1 = spartials[i].s.center.subtract(size);
-            Point corner2 = spartials[i].s.center.subtract(size);
+            Point corner2 = spartials[i].s.center.add(size);
             if (!i) result = Box(corner1, corner2);
             else result = result.outer(Box(corner1, corner2));
         }

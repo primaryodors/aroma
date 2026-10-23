@@ -14,7 +14,7 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
 REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test \
-    test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test test/smiles_input_test test/cavity_residue_test test/soft_scoring_test test/protonation_test test/disulfide_test test/atom_target_test test/soft_disulfide_test test/target_rotation_test test/primary_target_test test/soft_covalent_test test/repack_state_test test/cavity_intersection_test test/cavity_storage_test test/space_containment_test test/space_atom_test
+    test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test test/smiles_input_test test/cavity_residue_test test/soft_scoring_test test/protonation_test test/disulfide_test test/atom_target_test test/soft_disulfide_test test/target_rotation_test test/primary_target_test test/soft_covalent_test test/repack_state_test test/cavity_intersection_test test/cavity_storage_test test/space_containment_test test/space_atom_test test/space_bounds_test
 TSTS+=$(REGRESSION_TESTS)
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
