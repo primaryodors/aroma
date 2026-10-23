@@ -202,6 +202,22 @@ SoftRegion::SoftRegion(const SoftRegion& sr)
     }
 }
 
+bool SoftRegion::check_disulfide_constraints(Protein* prot)
+{
+    for (int i=0; contacts && i<allocated && contacts[i].local; ++i)
+    {
+        if (!contacts[i].is_disulfide) continue;
+        AminoAcid* first = prot->get_residue(contacts[i].local);
+        AminoAcid* second = prot->get_residue(contacts[i].distant);
+        if (!first || !second) return false;
+        Atom* sg1 = first->get_atom("SG");
+        Atom* sg2 = second->get_atom("SG");
+        if (!sg1 || !sg2 || fabs(sg1->distance_to(sg2)-2.07f) > 0.25f)
+            return false;
+    }
+    return true;
+}
+
 bool SoftRegion::check_chain_constraints(Protein* prot)
 {
     AminoAcid *aapre=nullptr, *aanrs=nullptr, *saa, *eaa;
@@ -462,7 +478,8 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 }
                 #endif
 
-                if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore 
+                if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore
+                    || !softrgns[i].check_disulfide_constraints(protein)
                     || (pushmagn > pullmagn && !softrgns[i].check_chain_constraints(protein)))
                 {
                     protein->undo();
@@ -595,7 +612,9 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 protein->rotate_piece(softrgns[i].rgn.start, softrgns[i].rgn.end, CX, rot.v, rot.a);
                 cafter = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                     + protein->get_intermol_clashes(ligand) + softrgns[i].contact_anomaly(protein, -1, false, true);
-                if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore || !softrgns[i].check_chain_constraints(protein))
+                if (cafter > (1.0-contact_energy_allowance_for_optimization)*cbefore
+                    || !softrgns[i].check_disulfide_constraints(protein)
+                    || !softrgns[i].check_chain_constraints(protein))
                     protein->undo();
                 else if (audit) fprintf(audit, "Accepted soft dock rotation from %g to %g.\n", cbefore, cafter);
             }

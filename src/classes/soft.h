@@ -44,6 +44,7 @@ class SoftRegion
     void add_contact(int local, int distant, Protein* p, bool paired = false, bool is_disulfide = false);
     void link_region(SoftRegion* prev);
     bool check_chain_constraints(Protein* prot);
+    bool check_disulfide_constraints(Protein* prot);
     void optimize_contact(Protein *p, int i);
     SoftRegion();
     ~SoftRegion();

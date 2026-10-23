@@ -4812,7 +4812,7 @@ _try_again:
                     if (!first || !second) continue;
                     Atom* sg1 = first->get_atom("SG");
                     Atom* sg2 = second->get_atom("SG");
-                    if (!sg1 || !sg2 || sg1->distance_to(sg2) <= disulfide_rupture_threshold) continue;
+                    if (!sg1 || !sg2 || fabs(sg1->distance_to(sg2)-2.07f) <= 0.25f) continue;
                     first->movability = second->movability = MOV_FORCEFLEX;
                     first->conform_atom_to_location(sg1, sg2, 20, 2.8);
                     second->conform_atom_to_location(sg2, sg1, 20, 2.5);
