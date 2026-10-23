@@ -127,7 +127,7 @@ int main(int argc, char** argv)
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reasonable"))
         {
             i++;
-            reasonable_fit_threshold = atoi(argv[i]);
+            reasonable_fit_threshold = atof(argv[i]);
         }
         else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nout"))
         {
