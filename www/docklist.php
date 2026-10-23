@@ -239,7 +239,7 @@ foreach ($prots as $protid => $p)
         else $dates[$rowid] = max($dates[$rowid], $fmt);
 
         set_time_limit(600);
-        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 3 && $fmt < $cachemt)
+        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 4 && $fmt < $cachemt)
         {
             extract($cached[$fname]);
             // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
@@ -263,6 +263,9 @@ foreach ($prots as $protid => $p)
             $occl = 0;
             $icd = 0;
             $tds = 0;
+            $is_fallback = preg_match('/(?:^|\n)0 pose\(s\) found[.]/', $c)
+                || strpos($c, 'NOFAIL:') !== false
+                || strpos($c, 'You may be able to obtain a successful dock by trying again after running the following command:') !== false;
             foreach ($lines as $ln) 
             {
                 if (substr($ln, 0, 6) == "Pose: ")
@@ -271,7 +274,7 @@ foreach ($prots as $protid => $p)
                     continue;
                 }
                 if ($nump > 1) continue;
-                if (substr($ln, 0, 21) == "Disqualified because:" || substr($ln, 0, 25) == "Disqualified for reasons.")
+                if ($is_fallback || substr($ln, 0, 21) == "Disqualified because:" || substr($ln, 0, 25) == "Disqualified for reasons.")
                 {
                     $benerg = 1000;
                     $lsfe = $lsbe = $phfe = $phbe = $ewde = $occl = $tds = $nump = 0;
@@ -353,7 +356,7 @@ foreach ($prots as $protid => $p)
 
             $cached[$fname] =
             [
-                "metrics_version" => 3,
+                "metrics_version" => 4,
                 "benerg" => $benerg,
                 "lsfe" => $lsfe,
                 "lsbe" => $lsbe,
