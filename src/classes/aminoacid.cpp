@@ -3816,7 +3816,9 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->distance_to(target);
+    if (od) bestr = fabs(bestr-od);
+    if (!imc) bestr -= distance_to_nearest_mclashables_atom();
     bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
@@ -3880,7 +3882,9 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
     if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->loc.get_3d_distance(t);
+    if (od) bestr = fabs(bestr-od);
+    if (!imc) bestr -= 0.1 * distance_to_nearest_mclashables_atom();
     bool CACB;
     for (iter = 0; iter < iters; iter++)
     {

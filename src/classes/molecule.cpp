@@ -5658,7 +5658,8 @@ void Molecule::conform_atom_to_location(Atom *a, Atom *target, int iters, float 
     float oc = get_internal_clashes();
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->distance_to(target);
+    if (od) bestr = fabs(bestr-od);
     for (iter = 0; iter < iters; iter++)
     {
         float r;
@@ -5711,7 +5712,8 @@ void Molecule::conform_atom_to_location(int i, Point t, int iters, float od)
     float oc = get_internal_clashes();
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->loc.get_3d_distance(t);
+    if (od) bestr = fabs(bestr-od);
     for (iter = 0; iter < iters; iter++)
     {
         float r;
