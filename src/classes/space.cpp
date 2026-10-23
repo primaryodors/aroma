@@ -1,4 +1,5 @@
 #include "space.h"
+#include <cmath>
 
 
 Box Space::boundingbox()
@@ -9,7 +10,7 @@ Box Space::boundingbox()
         int i;
         for (i=0; i<pallocd; i++)
         {
-            if (spartials[i].s.radius < min_partial_radius) break;
+            if (spartials[i].s.radius <= 0) break;
             Point size = Point(spartials[i].s.radius, spartials[i].s.radius, spartials[i].s.radius);
             Point corner1 = spartials[i].s.center.subtract(size);
             Point corner2 = spartials[i].s.center.subtract(size);
@@ -28,7 +29,7 @@ float Space::partial_intersects_cavity(SPartial p)
     float result = 0;
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         // float inter = sphere_intersection(spartials[i].s.radius, p.s.radius, p.s.center.get_3d_distance(spartials[i].s.center));
         float inter = spartials[i].s.radius + p.s.radius - p.s.center.get_3d_distance(spartials[i].s.center);
         // inter /= p.s.volume();
@@ -41,7 +42,9 @@ float Space::partial_intersects_cavity(SPartial p)
 
 void Space::add_partial(SPartial p)
 {
-    if (!p.s.center.x && !p.s.center.y && !p.s.center.z) return;
+    if (!std::isfinite(p.s.radius) || p.s.radius <= 0
+        || !std::isfinite(p.s.center.x) || !std::isfinite(p.s.center.y)
+        || !std::isfinite(p.s.center.z)) return;
 
     if (!pallocd)
     {
@@ -81,7 +84,7 @@ void Space::output_ngl_js(FILE* fp)
     fprintf(fp, "    position: new Float32Array( [ ");
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         if (i) fprintf(fp, ", ");
         fprintf(fp, "%f, %f, %f", spartials[i].s.center.x, spartials[i].s.center.y, spartials[i].s.center.z);
         if (!(i%5)) fprintf(fp, "\n\t\t");
@@ -90,7 +93,7 @@ void Space::output_ngl_js(FILE* fp)
     fprintf(fp, "    color: new Float32Array( [ ");
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         if (i) fprintf(fp, ", ");
         if (spartials[i].priority) fprintf(fp, "0.0, 1.0, 0.0");
         else if (spartials[i].metallic) fprintf(fp, "0.7, 0.5, 0.3");
@@ -107,7 +110,7 @@ void Space::output_ngl_js(FILE* fp)
     fprintf(fp, "    radius: new Float32Array( [ ");
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         if (i) fprintf(fp, ", ");
         fprintf(fp, "%f", spartials[i].s.radius);
         if (!(i%5)) fprintf(fp, "\n\t\t");
@@ -123,10 +126,10 @@ void Space::output_ngl_js(FILE* fp)
 
 int Space::count_partials()
 {
-    if (!pallocd) return 0;
+    if (!pallocd || !spartials) return 0;
     int i;
-    for (i=0; i<pallocd; i++) if (spartials[i].s.radius < min_partial_radius) return i;
-    return 0;
+    for (i=0; i<pallocd; i++) if (spartials[i].s.radius <= 0) return i;
+    return pallocd;
 }
 
 Point Space::get_center()
@@ -136,7 +139,7 @@ Point Space::get_center()
     Point foravg[pallocd+4];
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         foravg[j] = spartials[i].s.center;
         foravg[j].weight = spartials[i].s.radius;
         j++;
@@ -173,16 +176,16 @@ float Space::get_volume()
     float result = 0;
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         result += spartials[i].s.volume();
     }
 
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         for (j=i+1; j<pallocd; j++)
         {
-            if (spartials[j].s.radius < min_partial_radius) break;
+            if (spartials[j].s.radius <= 0) break;
             result -= sphere_intersection(spartials[i].s.radius, spartials[j].s.radius, spartials[i].s.center.get_3d_distance(spartials[j].s.center));
         }
     }
@@ -363,7 +366,7 @@ SPartial* Space::point_inside_pocket(Point pt)
     float rbest = Avogadro;
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         float r = spartials[i].s.center.get_3d_distance(pt);
         if (r < spartials[i].s.radius && r < rbest)
         {
@@ -386,7 +389,7 @@ float Space::sphere_inside_pocket(Sphere s, SPartial** p)
     SPartial *p0 = nullptr, *p1 = nullptr;
     for (i=0; i<pallocd; i++)
     {
-        if (spartials[i].s.radius < min_partial_radius) break;
+        if (spartials[i].s.radius <= 0) break;
         float r = spartials[i].s.center.get_3d_distance(s.center);
         if (!p0 || r < br)
         {
@@ -431,6 +434,7 @@ float Space::atom_inside_pocket(Atom *a, bool match_attributes)
     Sphere s = a->get_sphere();
     for (i=0; i<pallocd; i++)
     {
+        if (!(spartials[i].s.radius > 0)) break;
         float f = s.intersection(spartials[i].s);
         if (f >= 0.99999) return f;
         if (f > best) best = f;
