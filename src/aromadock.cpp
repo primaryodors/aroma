@@ -5487,7 +5487,13 @@ _exitposes:
             lbi = 0;
         }
         pose = 1;
+        dr[lbi][0].disqualified = true;
+        if (dr[lbi][0].disqualify_reason.empty())
+            dr[lbi][0].disqualify_reason = "No candidate passed all output filters. ";
         do_pose_output(&dr[lbi][0], 0, energy_mult);
+        cout << "0 pose(s) found." << endl;
+        if (output) *output << "0 pose(s) found." << endl;
+        if (debug) *debug << "0 pose(s) found." << endl;
 
         if (append_pdb && outpdb_poses)
         {

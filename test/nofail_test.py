@@ -40,6 +40,7 @@ class NoFailTest(unittest.TestCase):
             self.assertIn("Pose: 1", report)
             self.assertIn("\nTotal: 0\n", report)
             self.assertIn("Disqualified because:", report)
+            self.assertIn("0 pose(s) found.", report)
             self.assertIn("PDBDAT:", report)
             self.assertNotIn("Missing PDB data", report)
             self.assertIn("ATOM  ", coordinates)
