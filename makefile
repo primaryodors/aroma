@@ -138,7 +138,7 @@ test/atom_test: src/test/atom_test.cpp $(OBJ)/point.o $(OBJ)/atom.o
 test/molecule_test: src/test/molecule_test.cpp $(OBJS)
 	$(CPL) src/test/molecule_test.cpp $(OBJS) -o test/molecule_test $(CFLAGS)
 
-test/ring_test: src/test/ring_test.cpp $(OBJ)/molecule.o
+test/ring_test: src/test/ring_test.cpp $(OBJS)
 	$(CPL) src/test/ring_test.cpp $(OBJS) -o test/ring_test $(CFLAGS)
 
 test/pi_stack_test: src/test/pi_stack_test.cpp $(OBJS)
@@ -174,7 +174,7 @@ test/protein_test: src/test/protein_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/p
 test/ageo_test: src/test/ageo_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/protein.o
 	$(CPL) src/test/ageo_test.cpp $(OBJS) -o test/ageo_test $(CFLAGS)
 
-test/chirality_test: src/test/chirality_test.cpp $(OBJ)/molecule.o
+test/chirality_test: src/test/chirality_test.cpp $(OBJS)
 	$(CPL) src/test/chirality_test.cpp $(OBJS) -o test/chirality_test $(CFLAGS)
 
 test/backbone_test: src/test/backbone_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/protein.o
