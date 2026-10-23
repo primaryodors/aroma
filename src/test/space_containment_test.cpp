@@ -37,5 +37,23 @@ int main()
 {
     check_falloff(false);
     check_falloff(true);
-    puts("Sphere containment decreases continuously across cavity boundaries.");
+    SPartial near, far, middle;
+    near.s.center = Point(1,0,0);
+    far.s.center = Point(1,20,0);
+    middle.s.center = Point(7,3,0);
+    near.s.radius = far.s.radius = middle.s.radius = 3;
+    Space first, second;
+    first.add_partial(near);
+    first.add_partial(far);
+    first.add_partial(middle);
+    second.add_partial(near);
+    second.add_partial(middle);
+    second.add_partial(far);
+    Sphere atom;
+    atom.center = Point(1,3,0);
+    atom.radius = 1.7;
+    float score = first.sphere_inside_pocket(atom);
+    assert(score > 0 && score < 1);
+    assert(std::fabs(score-second.sphere_inside_pocket(atom)) < 0.00001);
+    puts("Sphere containment decreases continuously and ignores sphere insertion order.");
 }

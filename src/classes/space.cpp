@@ -400,7 +400,7 @@ float Space::sphere_inside_pocket(Sphere s, SPartial** p)
         else if (!p1 || r < br1)
         {
             p1 = &spartials[i];
-            br1 = br;
+            br1 = r;
         }
     }
 
