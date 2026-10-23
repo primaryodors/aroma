@@ -706,6 +706,7 @@ float Protein::get_internal_clashes(int sr, int er, bool repack, int repack_iter
                 MovabilityType wasmov[n+4];
 
                 l = m = 0;
+                wasmov[l] = residues[i]->movability;
                 interactors[l++] = residues[i];
                 #if _dbg_repack
                 std::string dbgresstr;
