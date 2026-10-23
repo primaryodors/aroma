@@ -36,14 +36,13 @@ float Cavity::cavity_intersection(Cavity* other)
 
 float Cavity::residue_intersection(Cavity *other, Protein* p)
 {
-    if (!pallocd || !partials || !other->pallocd || !other->partials) return 0;
-    int i, j, l, m, n;
-    for (n=0; n<other->pallocd && other->partials[n].s.radius >= min_partial_radius; n++);
-    int other_resnos[n*8+16];
-    m = other->resnos_as_array(p, other_resnos);
-    for (n=0; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
-    int my_resnos[n*8+16];
-    n = resnos_as_array(p, my_resnos);
+    if (!other || !p || !spartials || !other->spartials) return 0;
+    std::vector<int> other_resnos(p->get_end_resno()+2);
+    std::vector<int> my_resnos(p->get_end_resno()+2);
+    const int m = other->resnos_as_array(p, other_resnos.data());
+    const int n = resnos_as_array(p, my_resnos.data());
+    if (!n) return 0;
+    int i, j, l;
 
     l=0;
     for (i=0; i<n; i++)
