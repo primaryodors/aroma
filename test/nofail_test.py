@@ -30,7 +30,7 @@ class NoFailTest(unittest.TestCase):
             config.write_text(
                 f"PROT {receptor}\nLIG sdf/propionic_acid.sdf\n"
                 "CEN 100 100 100\nSIZE 2 2 2\nPOSE 2\nITERS 1\n"
-                f"SEARCH CF\nELIM -1e20\nOUT {dock}\nOUTPDB 1 {pdb}\nNOFAIL\n"
+                f"SEARCH CF\nELIM -1e20\nOUT {dock}\nOUTPDB 1 {pdb}\nNOFAIL\nAPPENDPROT\n"
             )
             result = subprocess.run([os.environ.get("AROMA_BIN", "bin/aromadock"), str(config)],
                                     text=True, capture_output=True, timeout=90)
@@ -45,6 +45,13 @@ class NoFailTest(unittest.TestCase):
             self.assertNotIn("Missing PDB data", report)
             self.assertIn("ATOM  ", coordinates)
             self.assertIn("HETATM", coordinates)
+            original = report.split("\nOriginal PDB:\n", 1)[1]
+            def positions(lines):
+                return {(line[22:26].strip(), line[12:16].strip()):
+                        tuple(float(line[start:start + 8]) for start in (30, 38, 46))
+                        for line in lines if line.startswith("ATOM  ")
+                        and not line[12:16].strip().lstrip("123").startswith("H")}
+            self.assertEqual(positions(selected), positions(original.splitlines()))
 
 
 if __name__ == "__main__":

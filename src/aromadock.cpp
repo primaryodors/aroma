@@ -5594,7 +5594,6 @@ _exitposes:
             }
             protein->load_pdb(pf);
             fclose(pf);
-            apply_protein_specific_settings(protein);
             FILE* pf = fopen(outfname, "ab");
             fprintf(pf, "\nOriginal PDB:\n");
             protein->save_pdb(pf);
@@ -5613,7 +5612,6 @@ _exitposes:
         }
         protein->load_pdb(pf);
         fclose(pf);
-        apply_protein_specific_settings(protein);
 
         pf = fopen(itersfname.c_str(), "ab");
         if (pf)
