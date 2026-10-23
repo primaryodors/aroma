@@ -62,6 +62,7 @@ class SoftRegion
 };
 
 void soft_docking_iteration(Protein* protein, Molecule* ligand, int nsoftrgn, SoftRegion* softrgns, float softness);
+void undo_soft_translation(Protein* protein, Molecule* ligand, Pose& ligand_was);
 
 extern float soft_contact_elasticity;
 

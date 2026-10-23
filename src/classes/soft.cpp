@@ -297,6 +297,15 @@ void SoftRegion::add_contact(int local, int distant, Protein* p, bool paired, bo
     contacts[i].local = contacts[i].distant = 0;
 }
 
+void undo_soft_translation(Protein* protein, Molecule* ligand, Pose& ligand_was)
+{
+    protein->undo();
+    #if move_ligand_with_soft_motion
+    // The protein snapshot already contains atoms of a covalently attached ligand.
+    if (!ligand->glued_to_mol()) ligand_was.restore_state(ligand, true);
+    #endif
+}
+
 void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, SoftRegion* softrgns, float softness)
 {
     int i, j, l;
@@ -423,8 +432,9 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                 cbefore = protein->get_internal_clashes(softrgns[i].rgn.start, softrgns[i].rgn.end, repack_soft_clashes, soft_repack_iterations)
                     + clbefore + softrgns[i].contact_anomaly(protein, -1, false, true);
 
+                Pose ligand_was;
                 #if move_ligand_with_soft_motion
-                Pose ligand_was(ligand);
+                ligand_was.copy_state(ligand);
                 #endif
 
                 // Perform soft motion
@@ -482,10 +492,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                     || !softrgns[i].check_disulfide_constraints(protein)
                     || (pushmagn > pullmagn && !softrgns[i].check_chain_constraints(protein)))
                 {
-                    protein->undo();
-                    #if move_ligand_with_soft_motion
-                    ligand_was.restore_state(ligand, true);
-                    #endif
+                    undo_soft_translation(protein, ligand, ligand_was);
                     cafter = cbefore;
                     clafter = clbefore;
 
@@ -533,10 +540,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                         }
                         if (dist > disulfide_rupture_threshold)
                         {
-                            protein->undo();
-                            #if move_ligand_with_soft_motion
-                            ligand_was.restore_state(ligand, true);
-                            #endif
+                            undo_soft_translation(protein, ligand, ligand_was);
                             cafter = cbefore;
                             clafter = clbefore;
                             break_loop = true;
@@ -572,10 +576,7 @@ void soft_docking_iteration(Protein *protein, Molecule* ligand, int nsoftrgn, So
                         float dissoc_energy = -tic.init_binding_energy;
                         if (dissoc_energy > 0)
                         {
-                            protein->undo();
-                            #if move_ligand_with_soft_motion
-                            ligand_was.restore_state(ligand, true);
-                            #endif
+                            undo_soft_translation(protein, ligand, ligand_was);
                             cafter = cbefore;
                             clafter = clbefore;
                             break_loop = true;
