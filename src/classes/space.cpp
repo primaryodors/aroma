@@ -409,7 +409,7 @@ float Space::sphere_inside_pocket(Sphere s, SPartial** p)
         float r = s.center.get_distance_to_line(p0->s.center, p1->s.center);
         float rlim = 1.414*(fmax(p0->s.radius, p1->s.radius) - s.radius + global_clash_allowance);
         if (r <= rlim) result = 1;
-        else if ((r - rlim) < s.radius) result = (r - rlim) / s.radius;
+        else if ((r - rlim) < s.radius) result = 1 - (r - rlim) / s.radius;
         else result = 0;
     }
     else if (p0)
@@ -417,7 +417,7 @@ float Space::sphere_inside_pocket(Sphere s, SPartial** p)
         float r = s.center.get_3d_distance(p0->s.center);
         float rlim = p0->s.radius - s.radius + global_clash_allowance;
         if (r <= rlim) result = 1;
-        else if ((r - rlim) < s.radius) result = (r - rlim) / s.radius;
+        else if ((r - rlim) < s.radius) result = 1 - (r - rlim) / s.radius;
         else result = 0;
     }
 
