@@ -12,6 +12,14 @@ int main()
     assert(water);
     delete water;
     ligand.check_glued_bond();
+    Pose anchor_placement(lysine);
+    Point ligand_position = ligand.get_atom(0)->loc;
+    Bond** rotations = lysine->get_rotatable_bonds();
+    assert(rotations && rotations[0]);
+    rotations[0]->rotate(0.5);
+    anchor_placement.restore_state(lysine);
+    ligand.check_glued_bond();
+    assert(ligand.get_atom(0)->loc.get_3d_distance(ligand_position) < 0.00001);
     Pose ligand_was(&ligand);
     Point original = ligand.get_atom(0)->loc;
     Vector step = Point(4,0,0);

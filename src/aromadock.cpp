@@ -4490,7 +4490,8 @@ _try_again:
                     if (resb) for (i=0; resb[i]; i++)
                     {
                         float best = ligand->contained_by_space(gcav);
-                        float theta, besth=0, step = hexagonal/2;
+                        Pose best_placement(g_bbr->pri_res);
+                        float theta, step = hexagonal/2;
                         for (theta=0; theta<M_PI*2; theta+=step)
                         {
                             resb[i]->rotate(step);
@@ -4498,10 +4499,10 @@ _try_again:
                             if (ltry > best)
                             {
                                 best = ltry;
-                                besth = theta;
+                                best_placement.copy_state(g_bbr->pri_res);
                             }
                         }
-                        resb[i]->rotate(besth);
+                        best_placement.restore_state(g_bbr->pri_res);
                     }
                 }
 
