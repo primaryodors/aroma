@@ -5109,14 +5109,9 @@ _try_again:
             // Covalent poses have different ligand and residue atom lists from a fresh pose.
             if (!ligand->glued_to_mol() && (!aa_best_pose || best_pose_energy > btot))
             {
-                float cp = 0;
-                for (i=0; i<ncvtys; i++)
-                {
-                    if (!cvtys[i].count_partials()) continue;
-                    cp += cvtys[i].molecule_inside_pocket(ligand);
-                }
+                float cp = Cavity::heavy_atom_containment(ligand, cvtys, ncvtys);
 
-                if (!ncvtys || cp >= min_cvty_ctnmt/2)
+                if (!ncvtys || cp >= min_cvty_ctnmt)
                 {
                     n = protein->get_end_resno();
                     l = max(1, (int)isomers.size());
@@ -5325,15 +5320,14 @@ _try_again:
                 }
                 dr[j][nodeno].ligpos.restore_state(ligand);
 
-                if (ncvtys && gcav)
+                if (ncvtys)
                 {
                     dr[j][nodeno].disqualified = true;
                     int cno;
-                    float cp = 0;
+                    float cp = Cavity::heavy_atom_containment(ligand, cvtys, ncvtys);
                     for (cno = 0; cno < ncvtys; cno++)
                     {
                         if (!cvtys[cno].count_partials()) continue;
-                        cp += cvtys[cno].molecule_inside_pocket(ligand);
                         float cc = cvtys[cno].cavity_filling(ligand);
                         if (!isfinite(cc)) continue;
                         if (!isfinite(dr[j][nodeno].cavity_filling) || cc > dr[j][nodeno].cavity_filling)
@@ -5341,7 +5335,9 @@ _try_again:
                     }
 
                     if (cp >= min_cvty_ctnmt) dr[j][nodeno].disqualified = false;
-                    if (dr[j][nodeno].disqualified) dr[j][nodeno].disqualify_reason += (std::string)"Cavity containment. ";
+                    if (dr[j][nodeno].disqualified)
+                        dr[j][nodeno].disqualify_reason += "Heavy-atom cavity containment " + std::to_string(cp)
+                            + " below " + std::to_string(min_cvty_ctnmt) + ". ";
                 }
 
                 if (dr[j][nodeno].disqualified)

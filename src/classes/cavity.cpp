@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <cmath>
 #include "cavity.h"
 
 float cav_xmax = Avogadro, cav_xmin = -Avogadro, cav_ymax = Avogadro, cav_ymin = -Avogadro, cav_zmax = Avogadro, cav_zmin = -Avogadro;
@@ -452,6 +453,27 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
 
     if (n) result /= n;
     return result;
+}
+
+float Cavity::heavy_atom_containment(Molecule* ligand, Cavity* cavities, int count)
+{
+    if (!ligand || !cavities || count <= 0) return 0;
+    float total = 0;
+    int heavy_atoms = 0;
+    for (int i=0; i<ligand->get_atom_count(); i++)
+    {
+        Atom* atom = ligand->get_atom(i);
+        if (!atom || atom->Z < 2) continue;
+        float best = 0;
+        for (int c=0; c<count; c++)
+        {
+            float fraction = cavities[c].sphere_inside_pocket(atom->get_sphere());
+            if (std::isfinite(fraction)) best = std::max(best, std::min(1.f, fraction));
+        }
+        total += best;
+        heavy_atoms++;
+    }
+    return heavy_atoms ? total / heavy_atoms : 0;
 }
 
 float Cavity::cavity_filling(Molecule *m)

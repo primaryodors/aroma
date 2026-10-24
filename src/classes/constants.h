@@ -302,7 +302,7 @@
 #define default_cavity_stuffing 0.03
 #define flexional_give_coefficient 0.75
 #define min_cavmatch_ctainmt 0.6
-#define min_cvty_ctnmt 0.25
+#define min_cvty_ctnmt 0.75
 #define min_dist_bounding_box 0.5
 #define min_partial_radius (1.7+1.1/2)
 #define occlusion_as_disqualify_reason 1

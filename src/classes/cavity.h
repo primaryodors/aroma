@@ -19,6 +19,7 @@ class Cavity : public Space
     public:
     static int scan_in_protein(Protein* p, Cavity* results, int results_max, Progressbar* pgb = nullptr);
     float molecule_inside_pocket(Molecule* m, bool match_attributes = false);
+    static float heavy_atom_containment(Molecule* ligand, Cavity* cavities, int count);
     float cavity_filling(Molecule* m);
     float polarity_match(Molecule *m);
     float containment_violations(Molecule *m, float stop_if_more_than = -1);
