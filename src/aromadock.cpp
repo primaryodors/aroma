@@ -18,6 +18,7 @@
 #include <memory>
 #include "classes/search.h"
 #include "classes/scoring.h"
+#include "classes/pose_contact.h"
 #include "classes/cavity.h"
 #include "classes/soft.h"
 #include "classes/appear.h"
@@ -221,9 +222,8 @@ int last_appear_iter = 0;
 #if reuse_best_pose
 Pose ligand_best_pose[64];
 Pose* aa_best_pose = nullptr;
-float best_pose_energy;
-
-Atom *best_ligand_stays, *best_ligand_stays_other;
+float best_pose_energy[64] = {};
+PoseContactSnapshot best_pose_contacts[64];
 #endif
 
 ICHelixGroup hg;
@@ -2581,6 +2581,7 @@ int main(int argc, char** argv) try
     }
     std::unique_ptr<Protein[]> pose_proteins(new Protein[poses+1]);
     std::unique_ptr<Molecule[]> pose_ligands(new Molecule[poses+1]);
+    std::vector<int> pose_isomers(poses+1, 0);
     protein = &pose_proteins[0]; // new Protein(protid);
     pf = fopen(protfname, "r");
     if (!pf)
@@ -2961,6 +2962,7 @@ int main(int argc, char** argv) try
         {
             ligand->make_multimer(copylig);
         }
+        pose_isomers[l] = isono;
     }
     ligand = &pose_ligands[0];
     cout << endl;
@@ -3148,6 +3150,7 @@ _try_again:
     float best_energy = 0, best_acc_energy = 0, best_worst_clash = 0;
     for (pose = 1; pose <= poses; pose++)
     {
+        isono = pose_isomers[pose];
         nodeno = 0;         // makes life easier when doing vestibules
         nodeoff = 0;        // "
         soft_contact_elasticity = initial_soft_contact_elasticity;
@@ -4005,8 +4008,7 @@ _try_again:
                     }
 
                     ligand_best_pose[isono].restore_state(ligand);
-                    ligand->stay_close_mine = best_ligand_stays;
-                    ligand->stay_close_other = best_ligand_stays_other;
+                    best_pose_contacts[isono].restore(ligand, protein);
                 }
                 else if (pdpst == pst_best_binding)
                 #else
@@ -5107,7 +5109,9 @@ _try_again:
 
             #if reuse_best_pose
             // Covalent poses have different ligand and residue atom lists from a fresh pose.
-            if (!ligand->glued_to_mol() && (!aa_best_pose || best_pose_energy > btot))
+            if (!ligand->glued_to_mol() && !ligand->stay_close_water
+                && !dr[drcount][nodeno].disqualified
+                && (!ligand_best_pose[isono].has_data() || best_pose_energy[isono] > btot))
             {
                 float cp = Cavity::heavy_atom_containment(ligand, cvtys, ncvtys);
 
@@ -5122,10 +5126,9 @@ _try_again:
                         if (!aa) continue;
                         aa_best_pose[i+n*isono].copy_state(aa);
                     }
-                    best_pose_energy = btot;
+                    best_pose_energy[isono] = btot;
                     ligand_best_pose[isono].copy_state(ligand);
-                    best_ligand_stays = ligand->stay_close_mine;
-                    best_ligand_stays_other = ligand->stay_close_other;
+                    best_pose_contacts[isono].capture(ligand);
                 }
             }
             #endif
