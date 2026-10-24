@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdio>
 #include "../classes/soft.h"
+#include "../classes/scoring.h"
 
 int main()
 {
@@ -8,8 +9,10 @@ int main()
     protein.add_sequence("AKA");
     AminoAcid* lysine = protein.get_residue(2);
     Molecule ligand("acetaldehyde", "CC=O");
+    lysine->been_flexed = ligand.been_flexed = false;
     Molecule* water = ligand.create_Schiff_base(lysine);
     assert(water);
+    assert(lysine->been_flexed && ligand.been_flexed);
     delete water;
     ligand.check_glued_bond();
     Pose anchor_placement(lysine);
@@ -41,5 +44,22 @@ int main()
     assert(free_ligand.get_atom(0)->loc.get_3d_distance(free_original) < 0.00001);
     assert(lysine->get_CA_location().get_3d_distance(protein_original) < 0.00001);
     ligand.check_glued_bond();
+    lysine->been_flexed = false;
+    lysine->is_ic_res = false;
+    AminoAcid* no_reaches[] = {nullptr};
+    DockResult exported(&protein, &ligand, 0, no_reaches, nullptr, 1, nullptr, true);
+    assert(lysine->been_flexed);
+    assert(exported.pdbdat.find(" NZ ") != std::string::npos);
+
+    Protein reverse_protein;
+    reverse_protein.add_sequence("AKA");
+    AminoAcid* reverse_lysine = reverse_protein.get_residue(2);
+    Molecule reverse_ligand("acetaldehyde", "CC=O");
+    reverse_lysine->been_flexed = reverse_ligand.been_flexed = false;
+    water = reverse_lysine->create_Schiff_base(&reverse_ligand);
+    assert(water);
+    delete water;
+    assert(reverse_lysine->been_flexed && reverse_ligand.been_flexed);
+    reverse_ligand.check_glued_bond();
     puts("Soft rollback preserves covalent bonds and restores free ligands.");
 }

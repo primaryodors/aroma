@@ -758,6 +758,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     {
         AminoAcid* laa = protein->get_residue(resno);
         if (!laa) continue;
+        if (ligand->glued_to_mol() == laa) laa->been_flexed = true;
         if (!laa->been_flexed && !laa->coordmtl && !laa->is_ic_res)
         {
             if (laa->distance_to(ligand) > 5) continue;
