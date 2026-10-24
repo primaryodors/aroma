@@ -2,37 +2,20 @@
 
 if (isset($_REQUEST['smiles']))
 {
-    chdir(__DIR__);
-    chdir("..");
-
-    $smilesu = escapeshellarg($_REQUEST['smiles']);
-    if (false===strpos($_REQUEST['smiles'], '{'))
-        $cmd = "obabel --gen3d -osdf -O\"www/test.sdf\" -:$smilesu 2>&1";
-    else
-        $cmd = "test/mol_assem_test \"{$_REQUEST['smiles']}\" www/test.sdf";
-    echo ("$cmd\n");
-    passthru($cmd);
-
-    if (@$_REQUEST["brot"])
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Cache-Control: no-store");
+    try
     {
-        $brot = escapeshellarg($_REQUEST['brot']);
-        $brot = str_replace(' ', "' '", $brot);
-        $cmd = "test/bond_rotation_test \"www/test.sdf\" $brot";
-        echo ("$cmd\n");
-        passthru($cmd);
-        $c = @file_get_contents("rotated.sdf");
-        if ($c) file_put_contents("www/test.sdf", $c);
+        require_once(__DIR__."/smiles_convert.php");
+        echo json_encode(convert_viewer_molecule($_REQUEST), JSON_PARTIAL_OUTPUT_ON_ERROR);
     }
-
-    if (@$_REQUEST["rflp"])
+    catch (Throwable $error)
     {
-        $rflp = escapeshellarg($_REQUEST['rflp']);
-        $rflp = str_replace(' ', "' '", $rflp);
-        $cmd = "bin/ringflip \"www/test.sdf\" $rflp";
-        echo ("$cmd\n");
-        passthru($cmd);
+        $code = $error->getCode();
+        http_response_code(in_array($code, [400, 422, 503, 504], true) ? $code : 500);
+        echo json_encode(["error" => $error->getMessage()], JSON_PARTIAL_OUTPUT_ON_ERROR);
+        error_log("SMILES conversion: ".$error->getMessage());
     }
-
     exit;
 }
 
@@ -238,57 +221,15 @@ var color_scheme = NGL.ColormakerRegistry.addScheme(function (params)
 });
 
 
-function go(smiles_string)
-{
-    $('#gobtn').prop('disabled', true).addClass('grayed');
-    stage.removeAllComponents();
-    stage.setSpin(false);
-    url = "<?php echo $_SERVER["PHP_SELF"]; ?>";
-	$.ajax(
-	{
-		url: url,
-		cache: false,
-		data:
-		{
-			smiles: smiles_string,
-            rflp: $('#rflp')[0].value,
-            brot: $('#brot')[0].value,
-		},
-		success: function(result)
-		{
-            $('#result')[0].value = result;
-            url = "test.sdf";
-            $.ajax(
-            {
-                url: url,
-                cache: false,
-                success: function(response)
-                {
-			        var stringBlob = new Blob( [ response ], { type: 'text/plain'} );
-                    stage.loadFile(stringBlob, { ext: "sdf" }).then( function( comp )
-                    {
-                        var rparam =
-                        {
-                            multipleBond: true,
-                            colorScheme: color_scheme
-                        }
-                        comp.addRepresentation("ball+stick", rparam);
-                        comp.autoView();
-                        $('#gobtn').prop('disabled', false).removeClass('grayed');
-                    });
-                }
-            });
-        }
-    });
-}
 </script>
+<script src="js/smiles_view.js"></script>
 </head>
-<body onload="set_stage(); go($('#smiles')[0].value);">
+<body onload="start_smiles_viewer();">
 <div class="flex-outer">
 <div class="flex-inner" style="width:33%;">
 <label for="smiles">SMILES string:</label>
 <br>
-<input type="text" name="smiles" id="smiles" value="<?php echo @$_REQUEST['s'] ?: "CCO"; ?>" onchange="$('#rflp')[0].value = '';">
+<input type="text" name="smiles" id="smiles" value="<?php echo htmlspecialchars(is_string($_REQUEST['s'] ?? null) ? $_REQUEST['s'] : "CCO", ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8"); ?>" onchange="$('#rflp')[0].value = '';">
 <br>
 
 <label for="rflp">Bond rotations (optional) format Atom1 Atom2 angle_deg:</label>

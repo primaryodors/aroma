@@ -13,6 +13,8 @@
 
 using namespace std;
 
+std::atomic<std::uint64_t> Atom::spatial_revision{0};
+
 /*const char* elements[] = {"n","H","He","Li","Be","B","C","N","O","F","Ne","Na","Mg","Al","Si","P","S","Cl","Ar","K","Ca","Sc","Ti","V","Cr","Mn","Fe","Co","Ni","Cu","Zn","Ga","Ge","As","Se","Br","Kr","Rb","Sr","Y","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd","In","Sn","Sb","Te","I","Xe","Cs","Ba","La","Ce","Pr","Nd","Pm","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu","Hf","Ta","W","Re","Os","Ir","Pt","Au","Hg","Tl","Pb","Bi","Po","At","Rn","Fr","Ra","Ac","Th","Pa","U","Np","Pu","Am","Cm","Bk","Cf","Es","Fm","Md","No","Lr",
 						  "Rf","Db","Sg","Bh","Hs","Mt","Ds","Rg","Cn","Nh","Fl","Mc","Lv","Ts","Og",NULL
 						 };*/
@@ -430,10 +432,10 @@ Atom::Atom(const Atom &cf)
     residue = cf.residue;
     aaletter = cf.aaletter;
     strcpy(aa3let, cf.aa3let);
-    region = new char[cf.region ? strlen(cf.region) : 8];
+    region = new char[cf.region ? strlen(cf.region)+1 : 8]{};
     if (cf.region) strcpy(region, cf.region);
     is_backbone = cf.is_backbone;
-    name = new char[cf.name ? strlen(cf.name) : 8];
+    name = new char[cf.name ? strlen(cf.name)+1 : 8]{};
     if (cf.name) strcpy(name, cf.name);
     mirror_geo = cf.mirror_geo;
     flip_mirror = cf.flip_mirror;
@@ -445,6 +447,8 @@ Atom::Atom(const Atom &cf)
     location = cf.location;
     valence = cf.valence;
     origgeo = cf.origgeo;
+    geometry = origgeo;
+    bonded_to = new Bond[abs(geometry)+4];
     at_wt = cf.at_wt;
     vdW_rad = cf.vdW_rad;
     elecn = cf.elecn;
@@ -615,6 +619,7 @@ bool Atom::move(Point* pt, bool delgeo)
     }
     #endif
 
+    spatial_revision.fetch_add(1, std::memory_order_relaxed);
     location = *pt;
     location.weight = at_wt;
     if (delgeo)

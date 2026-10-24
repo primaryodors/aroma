@@ -3,7 +3,7 @@ structure:8f76:4    :A:305  :A:Olfactory Receptor family 51 subfamily E member 2
 --------------------------------------------------------------CNFTHATFVLIGIPGLEKAHFWVGFPLLSMYVVAMFGNCIVVFIVR----------------------
 --------------------------------------------------------------------------------TERSLHAPMYLFLCMLAAIDLALSTSTMPKILALF---------------
 ---------------------------------------------------------------WFDSREISFEACLTQMFFIHALSAIESTILLAMAFDRYVAICH------------------------
---------------------------------------------------------------------------------PLRHAAVLNNTVTAQIGIVAVVRGSLFFFPLPLLI---------------
+-------------------------------------------------------------------------------PLRHAAVLNNTVTAQIGIVAVVRGSLFFFPLPLLI----------------
 -----------------------------------------------------KRLAFCHSNVLSHSYCVHQDVMKLAYADTLPNVVYGLTAILLVMGVDVMFISLSYFLIIRTVLQL------------
 --------------------------------------------------------------------------PSKSERAKAFGTCVSHIGVVLAFYVPLIGLSVVHR---------------------
 --------------------------------------------------------------------------FGNSLHPIVRVVMGDIYLLLPPVINPIIYGAK------------------------
@@ -15,7 +15,7 @@ structure:8hti:8    :R:310  :R:Olfactory Receptor family 52 consensus:Homo sapie
 ---------------------------------------------------------------SFHPSSFLLVGIPGLESVHIWISIPFCAMYLIALLGNSTLLFVIK----------------------
 --------------------------------------------------------------------------------TERSLHEPMYYFLAMLAATDLVLSTSTIPKMLAIF---------------
 ---------------------------------------------------------------WFNLKEISFDACLTQMFFIHSFTGMESGVLLAMAFDRYVAICY------------------------
---------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPFPFLL---------------
+-------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPFPFLL----------------
 -----------------------------------------------------KRLPFCGTNIIPHTYCEHMGVAKLACADIKVNIIYGLFVALLIVGLDVILIALSYVLILRAVFRL------------
 --------------------------------------------------------------------------PSQDARLKALSTCGSHICVILAFYTPAFFSFLTHR---------------------
 --------------------------------------------------------------------------FGHHIPPYIHILLANLYLLVPPMLNPIIYGVK------------------------
@@ -27,7 +27,7 @@ structure:9wg4:12   :R:310  :R:Olfactory Receptor family 52 engineered E8 pocket
 -------------------------------------------------------------------SSFLLVGIPGLESVHIWISIPFCAMYLIALLGNSTLLFVIK----------------------
 --------------------------------------------------------------------------------TERSLHEPMYYFLAMLAATDLVLSTSTIPKMLAIF---------------
 ---------------------------------------------------------------WFNLKEISFDACLTQMFFIHSFTAMESGVLLAMAFDRYVAICY------------------------
---------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPLPFLL---------------
+-------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPLPFLL----------------
 -----------------------------------------------------KRLPF---NIIPHTYCEHMGVAKLA------NIIYGLFNILLLVGLDVILIALSYVLILRAVFRL------------
 --------------------------------------------------------------------------PSQDARLKALSTCGSHICVILAFYTPAFFSFLTHR---------------------
 -------------------------------------------------------------------------------FPYIHILLANLYLLVPPMLNPIIYGVKTK----------------------
@@ -39,7 +39,7 @@ structure:8w77:11   :A:294  :A:Olfactory Receptor family 52 consensus, apo state
 -------------------------------------------------------------------PSSFLLVIPGLESVHIWISIPFCAMYLIALLGNSTLLFVIK----------------------
 ------------------------------------------------------------------------------------LHEPMYYFLAMLAATDLVLSTSTIPKMLAIF---------------
 ---------------------------------------------------------------WFNLKEISFDACLTQMFFIHSFTGMESGVLLAMAFDRYVAICY------------------------
---------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPFPFLL---------------
+-------------------------------------------------------------------------------PLRYTTILTNKVIGKIGMAVVLRAVLLVIPFPFLL----------------
 -----------------------------------------------------KRL-----NIIPHTYCEHMGVAKL----IKVNIIYGLFVALLIVGLDVILIALSYVLILRA----------------
 --------------------------------------------------------------------------------LKALSTCGSHICVILAFYTPAFFSFLTHR---------------------
 --------------------------------------------------------------------------FGHHIPPYIHILLANLYLLVPPMLNPIIY---------------------------

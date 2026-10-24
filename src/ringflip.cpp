@@ -42,9 +42,21 @@ int main(int argc, char** argv)
     }
 
     FILE* fp = fopen(filename.c_str(), "r");
+    if (!fp)
+    {
+        cerr << "Could not read the SDF file." << endl;
+        return 1;
+    }
     char buffer[65536];
     int got = fread(buffer, sizeof(char), 65535, fp);
+    bool complete = got < 65535 || feof(fp);
     fclose(fp);
+    if (!got || !complete)
+    {
+        cerr << "The SDF file is empty or exceeds the input limit." << endl;
+        return 1;
+    }
+    buffer[got] = 0;
 
     Molecule m("TheMolecule");
     m.from_sdf(buffer);

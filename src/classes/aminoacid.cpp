@@ -1602,7 +1602,7 @@ void AminoAcid::load_aa_defs()
                         tbdctr = 0;
                         proline_like = false;
 
-                        if (tmpbdefs) delete tmpbdefs;
+                        if (tmpbdefs) delete[] tmpbdefs;
                     }
 
                     if (!aa_defs[idx]._1let)
@@ -2281,17 +2281,18 @@ void AminoAcid::set_conditional_basicity(Molecule** nearby_mols)
 
             if (proton) return;
 
-            // Create a hydrogen atom and attach it to the bare nitrogen.
-            // Save a pointer to the hydrogen atom for later.
+            // Reuse a loaded proton before creating another hydrogen.
+            // Keep its pointer for later deprotonation.
             char temp[255];
             strcpy(temp, protonated->name);
             temp[0] = 'H';
-            proton = add_atom("H", temp, protonated, 1);
+            proton = protonated->is_bonded_to("H");
+            if (!proton) proton = add_atom("H", temp, protonated, 1);
             proton->residue = residue_no;
             strcpy(proton->aa3let, aadef->_3let);
 
             // Set charge of the heavy atom.
-            protonated->increment_charge(1);
+            if (protonated->get_charge() < 0.2) protonated->increment_charge(1);
 
             #if _dbg_cond_basic
             cout << "Added protonation and incremented charge!" << endl << endl;
@@ -3012,7 +3013,10 @@ void AminoAcid::renumber(int new_resno)
 
 void AminoAcid::delete_sidechain()
 {
+    if (!atoms) return;
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     Atom* latoms[get_atom_count()+4];
+    latoms[0] = nullptr;
     int i, j=0;
     for (i=0; atoms[i]; i++)
     {
@@ -3023,6 +3027,7 @@ void AminoAcid::delete_sidechain()
         }
         else
         {
+            atoms[i]->unbond_all();
             delete atoms[i];
         }
     }
@@ -3031,7 +3036,9 @@ void AminoAcid::delete_sidechain()
         atoms[i] = latoms[i];
 
     atoms[i] = NULL;
+    atcount = i;
     cb_atom = nullptr;
+    clear_cache();
 }
 
 Atom* AminoAcid::previous_residue_C()
@@ -3809,7 +3816,9 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->distance_to(target);
+    if (od) bestr = fabs(bestr-od);
+    if (!imc) bestr -= distance_to_nearest_mclashables_atom();
     bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
@@ -3873,7 +3882,9 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
     if (mclashables && !imc) oc += get_intermol_clashes(mclashables);
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->loc.get_3d_distance(t);
+    if (od) bestr = fabs(bestr-od);
+    if (!imc) bestr -= 0.1 * distance_to_nearest_mclashables_atom();
     bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
@@ -3894,7 +3905,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
                 b[j]->rotate(step, false, true);
                 r = a->loc.get_3d_distance(t);
                 if (od) r = fabs(r-od);
-                if (!imc) r -= distance_to_nearest_mclashables_atom();
+                if (!imc) r -= 0.1 * distance_to_nearest_mclashables_atom();
 
                 #if _dbg_atom_pointing
                 cout << " " << bestr;
@@ -3902,7 +3913,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
 
                 float c = get_internal_clashes();
                 if (mclashables && !imc) c += get_intermol_clashes(mclashables);
-                if (r < bestr) // && (CACB || c < oc+clash_limit_per_aa))
+                if (r < bestr && (/* CACB || */ c < oc+clash_limit_per_aa))
                 {
                     bestr = r;
                     best.copy_state(this);

@@ -5,6 +5,7 @@ import os.path
 import json
 import subprocess
 from collections.abc import Iterable
+from pathlib import Path
 
 if len(sys.argv) < 3:
     print("Both a protein and a ligand are required.")
@@ -18,6 +19,8 @@ import data.globals
 import data.protutils
 import data.odorutils
 import data.dyncenter
+from data.configutils import state_atom_constraints
+from data.preparation import PreparationCache, prepared_output_current
 
 data.protutils.load_prots()
 # Force memory allocation before loading to prevent namespace crashing
@@ -67,6 +70,7 @@ if len(sys.argv) > 3:
         if sys.argv[i] == "resume": onlymissing = True
 
 processed = 0
+contact_cache = PreparationCache()
 for rcpid in data.protutils.prots.keys():
     fam = data.protutils.family_from_protid(rcpid)
     sbf = data.protutils.subfamily_from_protid(rcpid)
@@ -193,7 +197,7 @@ for rcpid in data.protutils.prots.keys():
                 else "inverse agonist" if isinv \
                 else "non-agonist" if isemp \
                 else "unknown activity"
-            print(f"Beginning {rcpid}:{suff} ~ {o["full_name"]} ({acvmsg})...")
+            print(f"Beginning {rcpid}:{suff} ~ {o['full_name']} ({acvmsg})...")
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             with open("example.config", "r") as f:
                 cfg = f.read()
@@ -231,6 +235,7 @@ for rcpid in data.protutils.prots.keys():
                 if int(fam[2:]) < 50: softness = "1.0"
                 else: softness = "0.1"
                 newcfg.append("SOFT " + softness + " 2 3 4 5 6 7")
+            newcfg.append("NODEL 4.60 45.40")
             newcfg.append("NODEL 45.52 5.39")
             newcfg.append("NODEL 7.49 7.55")
             # newcfg.append("OUTBBP")
@@ -243,8 +248,8 @@ for rcpid in data.protutils.prots.keys():
             if not skipdock:
                 cmd = ["bin/ic", pdbfn, "-3.0", "nooil"]
                 print(" ".join(cmd))
-                data.globals.wait_cool_cpu()
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                proc = contact_cache.run(cmd, [pdbfn, *sorted(Path("data").glob("*.dat"))],
+                                         before_run=data.globals.wait_cool_cpu)
                 for ln in proc.stdout.decode().split('\n'):
                     # Tyr35(1.43).OH-Ser75(2.55).OG: 3.56535 Å; -4.99529 kJ/mol.
                     # CNTCT 77 97
@@ -256,14 +261,16 @@ for rcpid in data.protutils.prots.keys():
                     if ln: newcfg.append("CNTCT "+ln)
 
             cavfn = f"{pdbdir}/{rcpid}.{suff}.cvty"
-            if not os.path.exists(cavfn) or os.path.getmtime(cavfn) < os.path.getmtime(pdbfn):
+            cavity_inputs = [pdbfn, "bin/cavity_search", "data/cavopts.json",
+                             *sorted(Path("data").glob("*.dat"))]
+            if not prepared_output_current(cavfn, cavity_inputs):
                 with open('data/cavopts.json', 'r') as file:
                     cavopts = json.load(file)
                 cmd = ["bin/cavity_search", "-p", pdbfn, "-o", cavfn]
                 cmd.extend(cavopts)
                 print(" ".join(cmd))
                 data.globals.wait_cool_cpu()
-                subprocess.run(cmd)
+                subprocess.run(cmd, check=True)
             newcfg.append(f"VCVTY {cavfn}")
 
             if skipdock: break
@@ -320,25 +327,18 @@ for rcpid in data.protutils.prots.keys():
 
             if pocket:
                 # TODO: bridge, flxr, and stcr
-                if suff != "inactive" and "atomtoa" in pocket:
-                    if isinstance(pocket["atomtoa"], str):
-                        pocket["atomtoa"] = [pocket["atomtoa"]]
-                    for a2 in pocket["atomtoa"]:
-                        newcfga += "\n" + "ATOMTO " + a2
-                if suff == "inactive" and "atomtoi" in pocket:
-                    if isinstance(pocket["atomtoa"], str):
-                        pocket["atomtoa"] = [pocket["atomtoa"]]
-                    for a2 in pocket["atomtoa"]:
-                        newcfga += "\n" + "ATOMTO " + a2
+                for a2 in state_atom_constraints(pocket, suff):
+                    newcfga += "\nATOMTO " + a2
 
             with open("tmp/" + conffn, 'w') as f:
                 f.write(newcfga + "\n\n")
 
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             cmd = ["bin/aromadock", "tmp/" + conffn]
+            if "ns" in sys.argv: cmd.append("--ns")
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
-            subprocess.run(cmd)
+            subprocess.run(cmd, check=True)
 
         if os.path.exists("tmp/nodelete"):
             print("Warning: not deleting temporary config files because you have the debug \"nodelete\" option selected.")

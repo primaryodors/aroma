@@ -152,6 +152,7 @@ Molecule::Molecule(char const* lname, Atom** collection)
 
 Molecule::Molecule(const Molecule &o)
 {
+    if (o.get_name()) set_name(o.get_name());
     if (!o.atcount) return;
 
     echo_iters = o.echo_iters;
@@ -173,6 +174,7 @@ Molecule::Molecule(const Molecule &o)
     for (i=0; i<o.atcount; i++)
     {
         atoms[i] = new Atom(*o.atoms[i]);
+        atoms[i]->mol = this;
     }
     atoms[i] = nullptr;
     atcount = i;
@@ -197,6 +199,7 @@ Molecule::Molecule(const Molecule &o)
         int n;
         for (n=0; o.hisflips[n]; n++);
         hisflips = new HistidineFlip*[n+4];
+        hisflips[n] = nullptr;
         for (i=0; o.hisflips[i]; i++)
         {
             hisflips[i] = new HistidineFlip();
@@ -245,6 +248,7 @@ Pose::Pose(Molecule* m)
 
 Pose::Pose(const Pose &p)
 {
+    if (!p.sz) return;
     sz = p.sz;
     saved_atom_locs = new Point[sz+4];
     saved_atom_Z = new int[sz+4];
@@ -254,7 +258,7 @@ Pose::Pose(const Pose &p)
     {
         saved_atom_locs[i] = p.saved_atom_locs[i];
         saved_atom_Z[i] = p.saved_atom_Z[i];
-        saved_atom_name[i] = new char[16];
+        saved_atom_name[i] = new char[strlen(p.saved_atom_name[i])+1];
         strcpy(saved_atom_name[i], p.saved_atom_name[i]);
     }
     nsaved_atom = p.nsaved_atom;
@@ -263,40 +267,15 @@ Pose::Pose(const Pose &p)
 
 Pose::Pose(Pose &&p) noexcept
 {
-    sz = p.sz;
-    saved_atom_locs = new Point[sz+4];
-    saved_atom_Z = new int[sz+4];
-    saved_atom_name = new char*[sz+4];
-    int i;
-    for (i=0; i<sz; i++)
-    {
-        saved_atom_locs[i] = p.saved_atom_locs[i];
-        saved_atom_Z[i] = p.saved_atom_Z[i];
-        saved_atom_name[i] = new char[16];
-        strcpy(saved_atom_name[i], p.saved_atom_name[i]);
-    }
-    nsaved_atom = p.nsaved_atom;
-    saved_from = p.saved_from;
+    *this = std::move(p);
 }
 
 Pose &Pose::operator=(const Pose &p)
 {
     if (this != &p)
     { 
-        sz = p.sz;
-        saved_atom_locs = new Point[sz+4];
-        saved_atom_Z = new int[sz+4];
-        saved_atom_name = new char*[sz+4];
-        int i;
-        for (i=0; i<sz; i++)
-        {
-            saved_atom_locs[i] = p.saved_atom_locs[i];
-            saved_atom_Z[i] = p.saved_atom_Z[i];
-            saved_atom_name[i] = new char[16];
-            strcpy(saved_atom_name[i], p.saved_atom_name[i]);
-        }
-        nsaved_atom = p.nsaved_atom;
-        saved_from = p.saved_from;
+        Pose copy(p);
+        *this = std::move(copy);
     }
     return *this;
 }
@@ -305,20 +284,18 @@ Pose &Pose::operator=(Pose &&p) noexcept
 {
     if (this != &p)
     { 
+        deallocate();
         sz = p.sz;
-        saved_atom_locs = new Point[sz+4];
-        saved_atom_Z = new int[sz+4];
-        saved_atom_name = new char*[sz+4];
-        int i;
-        for (i=0; i<sz; i++)
-        {
-            saved_atom_locs[i] = p.saved_atom_locs[i];
-            saved_atom_Z[i] = p.saved_atom_Z[i];
-            saved_atom_name[i] = new char[16];
-            strcpy(saved_atom_name[i], p.saved_atom_name[i]);
-        }
+        saved_atom_locs = p.saved_atom_locs;
+        saved_atom_Z = p.saved_atom_Z;
+        saved_atom_name = p.saved_atom_name;
         nsaved_atom = p.nsaved_atom;
         saved_from = p.saved_from;
+        p.saved_atom_locs = nullptr;
+        p.saved_atom_Z = nullptr;
+        p.saved_atom_name = nullptr;
+        p.sz = p.nsaved_atom = 0;
+        p.saved_from = nullptr;
     }
     return *this;
 }
@@ -344,6 +321,8 @@ void Pose::deallocate()
         delete[] saved_atom_name;
     }
     saved_atom_name = nullptr;
+    sz = nsaved_atom = 0;
+    saved_from = nullptr;
 }
 
 float Pose::position_error(Pose *relative_to)
@@ -366,9 +345,7 @@ float Pose::position_error(Pose *relative_to)
 
 void Pose::reset()
 {
-    sz = 0;
-    nsaved_atom = 0;
-    saved_from = nullptr;
+    deallocate();
 }
 
 bool Pose::has_data()
@@ -378,21 +355,24 @@ bool Pose::has_data()
 
 void Pose::copy_state(Molecule* m)
 {
-    if (sz != m->get_atom_count()) deallocate();
-    sz = m->get_atom_count();
-    int i;
-    if (saved_from != m) deallocate();
-    if (!nsaved_atom || saved_from != m)
+    if (!m || !m->get_atom_count())
     {
+        deallocate();
+        return;
+    }
+    if (sz != m->get_atom_count() || saved_from != m) deallocate();
+    int i;
+    if (!saved_atom_locs)
+    {
+        sz = m->get_atom_count();
         saved_from = m;
-        if (!m || !m->atoms) return;
 
         saved_atom_locs = new Point[sz+4];
         saved_atom_Z = new int[sz+4];
         saved_atom_name = new char*[sz+4];
         for (i=0; i<sz; i++)
         {
-            saved_atom_name[i] = new char[16];
+            saved_atom_name[i] = new char[1];
             saved_atom_name[i][0] = 0;
         }
     }
@@ -402,13 +382,19 @@ void Pose::copy_state(Molecule* m)
         saved_atom_locs[i] = m->atoms[i]->loc;
         saved_atom_locs[i].weight = m->atoms[i]->get_atomic_weight();       // Important for restore_state_relative.
         saved_atom_Z[i] = m->atoms[i]->Z;
-        strcpy(saved_atom_name[i], m->atoms[i]->name);
+        if (strcmp(saved_atom_name[i], m->atoms[i]->name))
+        {
+            delete[] saved_atom_name[i];
+            saved_atom_name[i] = new char[strlen(m->atoms[i]->name)+1];
+            strcpy(saved_atom_name[i], m->atoms[i]->name);
+        }
     }
-    sz = i;
+    nsaved_atom = i;
 }
 
 void Pose::restore_state(Molecule* m, bool ap)
 {
+    if (!m || !m->atoms || !nsaved_atom) return;
     if (!ap && !m->is_residue() && m->glued_to)
     {
         #if _dbg_soft_motions
@@ -450,6 +436,7 @@ void Pose::restore_state(Molecule* m, bool ap)
 
 void Pose::restore_state_relative(Molecule *m, const char *ran)
 {
+    if (!m || !m->atoms || !nsaved_atom) return;
     if (!m->is_residue() && m->glued_to) return;
     if (!m || !m->atoms || !sz) return;
     int i, n;    
@@ -521,6 +508,7 @@ float Pose::total_atom_motions()
 
 void Molecule::delete_atom(Atom* a)
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!a) return;
     paths = nullptr;
 
@@ -565,6 +553,7 @@ void Molecule::delete_atom(Atom* a)
 
 void Molecule::delete_all_atoms()
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!atoms) return;
     if (paths) delete[] paths;
     paths = nullptr;
@@ -701,6 +690,7 @@ void Molecule::add_existing_atom(Atom* a)
 
 void Molecule::append_existing_atom(Atom *a)
 {
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!atoms) atcount = 0;
     else for (atcount=0; atoms[atcount]; atcount++);     // Get count.
 
@@ -5267,10 +5257,9 @@ void Molecule::minimize_internal_clashes()
     }
 
     int numrb = 0;
-    for (i=0; b[i]; i++) numrb = i;
+    for (i=0; b[i]; i++) numrb = i+1;
 
-    float angle[numrb];
-    for (i=0; i<numrb; i++) angle[i] = M_PI;
+    std::vector<float> angle(numrb, M_PI);
 
     for (i=0; i<numrb; i++)
     {
@@ -5438,9 +5427,9 @@ void Molecule::remove_mandatory_connection(Molecule* rmvmol)
 
 void Molecule::delete_mandatory_connections()
 {
-    if (last_mc_binding) delete last_mc_binding;
+    if (last_mc_binding) delete[] last_mc_binding;
     last_mc_binding = nullptr;
-    if (mandatory_connection) delete mandatory_connection;
+    if (mandatory_connection) delete[] mandatory_connection;
     mandatory_connection = nullptr;
     #if _dbg_mand_conn
     cout << "No more mandatory connections." << endl;
@@ -5669,7 +5658,8 @@ void Molecule::conform_atom_to_location(Atom *a, Atom *target, int iters, float 
     float oc = get_internal_clashes();
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->distance_to(target);
+    if (od) bestr = fabs(bestr-od);
     for (iter = 0; iter < iters; iter++)
     {
         float r;
@@ -5722,7 +5712,8 @@ void Molecule::conform_atom_to_location(int i, Point t, int iters, float od)
     float oc = get_internal_clashes();
 
     Pose best(this);
-    float bestr = Avogadro;
+    float bestr = a->loc.get_3d_distance(t);
+    if (od) bestr = fabs(bestr-od);
     for (iter = 0; iter < iters; iter++)
     {
         float r;
@@ -6844,18 +6835,16 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
         // Nonstandard feature.
         if (smilesstr[i] == '{')
         {
-            char* aname = new char[15];
-            i++;
-            j=0;
-            while (smilesstr[i] != '}' && j<15)
-            {
-                aname[j] = smilesstr[i];
-                i++;
-                j++;
-            }
-            aname[j] = 0;
+            const char* start = smilesstr+i+1;
+            const char* end = strchr(start, '}');
+            if (!preva || !end || end == start || end-start > 14)
+                throw std::invalid_argument("Invalid atom label in molecular input.");
+            std::size_t length = end-start;
+            char* aname = new char[length+1];
+            memcpy(aname, start, length);
+            aname[length] = 0;
             preva->name = aname;
-            //i++;
+            i = end-smilesstr;
             continue;
         }
 
@@ -7224,6 +7213,7 @@ float Molecule::close_loop(Atom** path, float lcard)
 
     first = path[0];
     if (!first) return 0;
+    last = first;
 
     for (i=0; path[i]; i++)
     {
@@ -7267,7 +7257,7 @@ float Molecule::close_loop(Atom** path, float lcard)
     float anomaly = fsb_lsb_anomaly(first, last, lcard, bond_length);
     float iclash = get_internal_clashes();
     float oclash = iclash;
-    float bondrot[ringsize];
+    std::vector<float> bondrot(ringsize);
 
     for (i=0; i<ringsize; i++) bondrot[i] = M_PI/2*randsgn();
 
@@ -8499,6 +8489,7 @@ bool mclash_delta(void* mol, float previous_mclashes)
 {
     return reinterpret_cast<Molecule*>(mol)->get_total_mclashes() <= previous_mclashes;
 }
+
 bool Molecule::identify_Schiff_amine(Atom **N, Atom **H1, Atom **H2)
 {
     int i;

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 #include <fstream>
 #include <math.h>
 
@@ -19,6 +20,17 @@ enum PoseSearchType
     pst_copyfrom,
     pst_external
 };
+
+struct TrackedInternalContact
+{
+    int res1 = 0;
+    int res2 = 0;
+    bool is_salt_bridge = false;
+    float init_binding_energy = 0;
+};
+
+extern std::vector<std::pair<int, int>> active_disulfides;
+extern std::vector<TrackedInternalContact> tracked_internal_contacts;
 
 // Default search algorithm if not specified by config file or command line args.
 #define default_search_algorithm pst_best_binding

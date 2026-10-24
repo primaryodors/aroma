@@ -7,6 +7,8 @@
 #include <strings.h>
 #include "protein.h"
 #include "spatialgrid.h"
+#include <limits>
+#include <unordered_set>
 
 #define _DBG_REACHLIG true
 
@@ -241,6 +243,7 @@ Protein::~Protein()
 
 bool Protein::add_residue(const int resno, const char aaletter)
 {
+    invalidate_spatial_grid();
     int i;
 
     if (!residues)
@@ -442,10 +445,13 @@ Point Protein::get_atom_location(int resno, const char* aname)
 
 SpatialGrid* Protein::get_spatial_grid()
 {
+    const auto revision = Atom::spatial_revision.load(std::memory_order_relaxed);
+    if (spatial_grid && spatial_grid->revision != revision) invalidate_spatial_grid();
     if (!spatial_grid)
     {
         spatial_grid = new SpatialGrid(7.0f);
         spatial_grid->build(residues);
+        spatial_grid->revision = revision;
     }
     return spatial_grid;
 }
@@ -470,31 +476,20 @@ Atom* Protein::get_nearest_atom(Point pt, int sr, int er)
         if (a) return a;
     }
 
-    int i;
-    float bestr = Avogadro;
+    float best_d2 = std::numeric_limits<float>::infinity();
     Atom* result = nullptr;
-    float range = 1;
-    while (range < 500)
+    for (int i=0; residues[i]; i++)
     {
-        for (i=0; residues[i]; i++)
+        int resno = residues[i]->get_residue_no();
+        if ((sr && resno < sr) || (er && resno > er)) continue;
+        Atom* a = residues[i]->get_nearest_atom(pt);
+        if (!a) continue;
+        float d2 = a->loc.get_3d_distance_squared(pt);
+        if (d2 < best_d2)
         {
-            int resno = residues[i]->get_residue_no();
-            if (resno < sr || resno > er) continue;
-
-            float rca = residues[i]->get_CA_location().get_3d_distance(pt);
-            if (rca > residues[i]->get_reach()*range) continue;
-            Atom* a = residues[i]->get_nearest_atom(pt);
-            if (!a) continue;
-            float r = a->loc.get_3d_distance(pt);
-            if (r < bestr)
-            {
-                result = a;
-                bestr = r;
-            }
+            result = a;
+            best_d2 = d2;
         }
-
-        if (result) break;
-        range *= 3.3333;
     }
 
     return result;
@@ -711,6 +706,7 @@ float Protein::get_internal_clashes(int sr, int er, bool repack, int repack_iter
                 MovabilityType wasmov[n+4];
 
                 l = m = 0;
+                wasmov[l] = residues[i]->movability;
                 interactors[l++] = residues[i];
                 #if _dbg_repack
                 std::string dbgresstr;
@@ -854,7 +850,7 @@ float Protein::get_intermol_clashes(Molecule *ligand, int startres, int endres)
 
 Interaction Protein::get_intermol_binding(Molecule* ligand)
 {
-    AminoAcid** laminos = new AminoAcid*[SPHREACH_MAX+4];
+    AminoAcid* laminos[SPHREACH_MAX+4];
     Point search_size(0,0,0);
     int cres = get_residues_can_clash_ligand(laminos, ligand, ligand->get_barycenter(), search_size, nullptr);
     if (!cres) return 0;
@@ -864,7 +860,6 @@ Interaction Protein::get_intermol_binding(Molecule* ligand)
     {
         result += laminos[i]->Molecule::get_intermol_binding(ligand);
     }
-    delete laminos;
     return result;
 }
 
@@ -964,6 +959,7 @@ void Protein::set_name_from_pdb_name(const char* pdb_name)
 
 int Protein::load_pdb(FILE* is, int rno, char chain)
 {
+    invalidate_spatial_grid();
     AminoAcid* restmp[65536];
     char buffer[1024];
     Atom* a;
@@ -1723,9 +1719,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
 {
     int i, j, sphres = 0;
     float szm = search_size.magnitude()/2;
-    int seql = get_end_resno();
-    bool resno_already[8192];
-    for (i=0; i<8192; i++) resno_already[i] = false;
+    std::unordered_set<int> resno_already;
 
     Point lig_cen = ligand ? ligand->get_barycenter() : nodecen;
     float max_lig_d2 = 0.0f;
@@ -1744,13 +1738,13 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
 
     for (i=0; i<SPHREACH_MAX; i++) reaches_spheroid[i] = NULL;
 
-    for (i=1; i<seql && residues[i]; i++)
+    for (i=0; residues && residues[i]; i++)
     {
-        AminoAcid* aa = residues[i-1];
+        AminoAcid* aa = residues[i];
         if (!aa) continue;
 
         int resno = aa->get_residue_no();
-        if (resno_already[resno]) continue;
+        if (resno_already.count(resno)) continue;
 
         if (excl_resno)
         {
@@ -1762,7 +1756,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         if (!ip && aa->priority)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1782,12 +1776,12 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             else continue;
         }
 
-        Atom *la, *na;
-        ligand->mutual_closest_atoms(reinterpret_cast<Molecule*>(aa), &la, &na);
-        if (la->distance_to(na) < _INTERA_R_CUTOFF)
+        Atom *la = nullptr, *na = nullptr;
+        if (ligand) ligand->mutual_closest_atoms(reinterpret_cast<Molecule*>(aa), &la, &na);
+        if (la && na && la->distance_to(na) < _INTERA_R_CUTOFF)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1798,10 +1792,10 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
             {
                 if (addl_resno[j] == resno)
                 {
-                    if (!resno_already[resno])
+                    if (!resno_already.count(resno))
                     {
                         reaches_spheroid[sphres++] = aa;
-                        resno_already[resno] = true;
+                        resno_already.insert(resno);
                         #if _DBG_REACHLIG
                         if (debug)
                         {
@@ -1822,15 +1816,15 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         Atom* cb = aa->get_CB();
 
         Point pt = ca->loc;
-        Atom* a = ligand->get_nearest_atom(pt);
+        Atom* a = ligand ? ligand->get_nearest_atom(pt) : nullptr;
         Point pt2;
         if (a) pt2 = a->loc;
-        else   pt2 = ligand->get_barycenter();
+        else   pt2 = lig_cen;
 
         if (pt2.get_3d_distance(ca->loc) < szm)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             if (sphres >= SPHREACH_MAX-2) break;
             continue;
         }
@@ -1848,10 +1842,10 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
                 {*/
             if (pt.get_3d_distance(pt2) < 4)
             {
-                    if (!resno_already[resno])
+                    if (!resno_already.count(resno))
                     {
                         reaches_spheroid[sphres++] = aa;
-                        resno_already[resno] = true;
+                        resno_already.insert(resno);
                         #if _DBG_REACHLIG
                         if (debug)
                         {
@@ -1884,7 +1878,7 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
         if (dir.r <= 1)
         {
             reaches_spheroid[sphres++] = aa;
-            resno_already[resno] = true;
+            resno_already.insert(resno);
             #if _DBG_REACHLIG
             if (debug)
             {
@@ -2688,6 +2682,7 @@ void Protein::make_helix(int startres, int endres, int stopat, float phi, float 
 
 void Protein::delete_residue(int resno)
 {
+    invalidate_spatial_grid();
     if (!resno) return;
     // if (resno > get_seq_length()) return;
     if (!residues) return;
@@ -3680,10 +3675,10 @@ Atom* Protein::region_pivot_atom(Region rgn, Atom** oa)
 
 Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
 {
-    if (!residues) return cen;
+    if (pminr) *pminr = 0;
+    if (!residues || sz.x <= 0 || sz.y <= 0 || sz.z <= 0) return cen;
 
     float x, y, z, xp, yp, zp, xa, ya, za, r, bestr = 0, step = 0.25;
-    int i;
     Point result = cen;
 
     sz.x /= 2;
@@ -3711,17 +3706,8 @@ Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
                 Point maybe(xa, ya, za);
                 float minr = Avogadro;
 
-                for (i=0; residues[i]; i++)
-                {
-                    Atom* a = residues[i]->get_nearest_atom(maybe);
-                    if (!a) a = residues[i]->get_atom("CA");
-                    if (!a) a = residues[i]->get_atom(0);
-                    if (a)
-                    {
-                        r = a->loc.get_3d_distance(maybe);
-                        if (r < minr) minr = r;
-                    }
-                }
+                Atom* nearest = get_nearest_atom(maybe);
+                if (nearest) minr = nearest->loc.get_3d_distance(maybe);
 
                 if (minr < 1e9 && minr > bestr)
                 {
@@ -3731,28 +3717,7 @@ Point Protein::find_loneliest_point(Point cen, Point sz, float* pminr)
             }
         }
     }
-    return result;
-
-    step = 0.25;
-    Point zero(0,0,0);
-    Vector ld(0,0,0);
-    for (i=0; i<10000; i++)
-    {
-        Atom* a = get_nearest_atom(result);
-        Vector d = result.subtract(a->loc);
-        if (ld.r && find_3d_angle(d, ld, zero) > square+hexagonal) step *= 0.666;
-        d.r = step;
-        result = result.add(d);
-        ld = d;
-        // printf("HETATM 9999  DMY DMY     0    %+7.3f %+7.3f %+7.3f   1.00001.00           O \n", result.x, result.y, result.z);
-        if (step < 0.0005) break;
-    }
-    if (pminr)
-    {
-        Atom* a = get_nearest_atom(result);
-        Vector d = result.subtract(a->loc);
-        *pminr = d.r;
-    }
+    if (pminr) *pminr = bestr;
     return result;
 }
 
@@ -3911,15 +3876,18 @@ bool Protein::disulfide_bond(int resno1, int resno2)
                 {
                     S2 = res2->get_atom(k);
                     if (!S2) continue;
-                    if (S2->Z == 10 && S2->get_family() == CHALCOGEN)
+                    if (S2->Z == S1->Z && S2->get_family() == CHALCOGEN)
                     {
                         H2 = S2->is_bonded_to("H");
                         if (H2)
                         {
                             if (!res1->mclashables) set_clashables(res1->get_residue_no());
                             if (!res2->mclashables) set_clashables(res2->get_residue_no());
-                            res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
-                            res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
+                            if (fabs(S1->distance_to(S2) - 2.07) >= 0.25)
+                            {
+                                res1->conform_atom_to_location(S1->name, S2->loc, 20, 2.07);
+                                res2->conform_atom_to_location(S2->name, S1->loc, 20, 2.07);
+                            }
 
                             float r = S1->loc.get_3d_distance(S2->loc);
                             if (fabs(r - 2.07) < 0.25)
@@ -3970,6 +3938,161 @@ bool Protein::add_connection_if_not_exists(Bond *b)
     }
 
     return added;
+}
+
+std::vector<std::pair<int, int>> Protein::get_disulfide_residues()
+{
+    std::vector<std::pair<int, int>> results;
+
+    // 1. Check connections from PDB CONECT records
+    for (size_t i = 0; i < connections.size(); i++)
+    {
+        Bond* b = connections[i];
+        if (b && b->atom1 && b->atom2)
+        {
+            if (b->atom1->Z == 16 && b->atom2->Z == 16)
+            {
+                int r1 = b->atom1->residue;
+                int r2 = b->atom2->residue;
+                if (r1 && r2 && r1 != r2)
+                {
+                    if (r1 > r2) std::swap(r1, r2);
+                    bool exists = false;
+                    for (size_t k = 0; k < results.size(); k++)
+                    {
+                        if (results[k].first == r1 && results[k].second == r2)
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) results.push_back(std::make_pair(r1, r2));
+                }
+            }
+        }
+    }
+
+    // 2. Scan all cysteine SG-SG pairs under 2.5 A (covers PDBs without explicit CONECT records)
+    int end_rn = get_end_resno();
+    for (int i = 1; i <= end_rn; i++)
+    {
+        AminoAcid* aa1 = get_residue(i);
+        if (!aa1 || (aa1->get_letter() != 'C' && !aa1->is_thiol())) continue;
+        Atom* sg1 = aa1->get_atom("SG");
+        if (!sg1) continue;
+
+        for (int j = i + 1; j <= end_rn; j++)
+        {
+            AminoAcid* aa2 = get_residue(j);
+            if (!aa2 || (aa2->get_letter() != 'C' && !aa2->is_thiol())) continue;
+            Atom* sg2 = aa2->get_atom("SG");
+            if (!sg2) continue;
+
+            float d = sg1->loc.get_3d_distance(sg2->loc);
+            if (d <= 2.5f)
+            {
+                int r1 = i, r2 = j;
+                bool exists = false;
+                for (size_t k = 0; k < results.size(); k++)
+                {
+                    if (results[k].first == r1 && results[k].second == r2)
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) results.push_back(std::make_pair(r1, r2));
+            }
+        }
+    }
+
+    return results;
+}
+
+std::pair<int, int> Protein::get_span_to_nearest_helix(int resno)
+{
+    AminoAcid* aa = get_residue(resno);
+    if (!aa) return std::make_pair(resno, resno);
+
+    if (aa->is_alpha_helix()) return std::make_pair(resno, resno);
+
+    for (int i = 0; i < PROT_MAX_RGN; i++)
+    {
+        if (regions[i].start && resno >= regions[i].start && resno <= regions[i].end)
+            return std::make_pair(resno, resno);
+    }
+
+    int n = get_end_resno();
+    int up_helix_end = 0;
+    int down_helix_start = 0;
+
+    // Scan upstream towards N-terminus
+    for (int d = resno - 1; d >= 1; d--)
+    {
+        AminoAcid* a = get_residue(d);
+        if (!a) continue;
+        bool in_hx = a->is_alpha_helix();
+        if (!in_hx)
+        {
+            for (int r = 0; r < PROT_MAX_RGN; r++)
+            {
+                if (regions[r].start && d >= regions[r].start && d <= regions[r].end)
+                {
+                    in_hx = true;
+                    break;
+                }
+            }
+        }
+        if (in_hx)
+        {
+            up_helix_end = d;
+            break;
+        }
+    }
+
+    // Scan downstream towards C-terminus
+    for (int u = resno + 1; u <= n; u++)
+    {
+        AminoAcid* a = get_residue(u);
+        if (!a) continue;
+        bool in_hx = a->is_alpha_helix();
+        if (!in_hx)
+        {
+            for (int r = 0; r < PROT_MAX_RGN; r++)
+            {
+                if (regions[r].start && u >= regions[r].start && u <= regions[r].end)
+                {
+                    in_hx = true;
+                    break;
+                }
+            }
+        }
+        if (in_hx)
+        {
+            down_helix_start = u;
+            break;
+        }
+    }
+
+    if (up_helix_end && down_helix_start)
+    {
+        int dist_up = resno - up_helix_end;
+        int dist_down = down_helix_start - resno;
+        if (dist_up <= dist_down)
+            return std::make_pair(up_helix_end, resno);
+        else
+            return std::make_pair(resno, down_helix_start);
+    }
+    else if (up_helix_end)
+    {
+        return std::make_pair(up_helix_end, resno);
+    }
+    else if (down_helix_start)
+    {
+        return std::make_pair(resno, down_helix_start);
+    }
+
+    return std::make_pair(resno, resno);
 }
 
 void Protein::upright()
@@ -4928,6 +5051,7 @@ BallesterosWeinstein Protein::get_bw_from_resno(int resno)
 
 int Protein::replace_side_chains_from_other_protein(Protein* other)
 {
+    invalidate_spatial_grid();
     int i, j, l, n = other->get_end_resno(), num_applied = 0;
     std::vector<AARenumber> renumber_later;
 

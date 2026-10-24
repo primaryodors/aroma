@@ -127,7 +127,7 @@ int main(int argc, char** argv)
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reasonable"))
         {
             i++;
-            reasonable_fit_threshold = atoi(argv[i]);
+            reasonable_fit_threshold = atof(argv[i]);
         }
         else if (!strcmp(argv[i], "-n") || !strcmp(argv[i], "--nout"))
         {
@@ -170,6 +170,9 @@ int main(int argc, char** argv)
     bool  cfvalid[nligconf+2];
     float cfscore[nligconf+2];
 
+    m.optimize();
+    m.minimize_internal_clashes();
+    Pose straightened(&m);
     Bond** rotb = m.get_rotatable_bonds(true);
 
     cout << "Generating conformers..." << endl << flush;
@@ -179,9 +182,7 @@ int main(int argc, char** argv)
     pb.maximum = nligconf-1;
     for (i=0; i<nligconf; i++)
     {
-        // Straighten the ligand.
-        m.optimize();
-        m.minimize_internal_clashes();
+        straightened.restore_state(&m);
 
         // Center the conformer in a random partial.
         j = rand() % cvty.count_partials();

@@ -23,6 +23,16 @@ class DockResult
     DockResult merge(DockResult* other);
 
     float total_pose_enthalpy();
+    void capture_coordinates(Protein* prot, Molecule* lig, Molecule** waters = nullptr);
+    void restore_coordinates() const;
+    bool has_coordinates() const { return mprot && mlig && !saved_coordinates.empty(); }
+    bool is_better_fallback_than(const DockResult* other) const
+    {
+        return has_coordinates() && (!other || !other->has_coordinates()
+            || (std::isfinite(kJmol) && (!std::isfinite(other->kJmol) || kJmol < other->kJmol)));
+    }
+    const std::vector<Molecule*>& water_molecules() const { return saved_waters; }
+    const std::vector<Atom*>& metal_atoms() const { return saved_metals; }
 
     static void entropy(DockResult* dr, int rows, int columns);
 
@@ -118,6 +128,11 @@ class DockResult
 
     bool disqualified = false;
     std::string disqualify_reason = "";
+
+    private:
+    std::vector<std::pair<Atom*, Point>> saved_coordinates;
+    std::vector<Molecule*> saved_waters;
+    std::vector<Atom*> saved_metals;
 };
 
 extern float init_total_binding_by_type[_INTER_TYPES_LIMIT];

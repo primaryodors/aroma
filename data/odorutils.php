@@ -333,91 +333,14 @@ function check_isomers($ligname, $randomize=true)
 
 function ensure_sdf_exists($ligname)
 {
-	$pwd = getcwd();
-	chdir(__DIR__);
-	chdir("..");
-	$cmd = "python3 -c \"import data.globals; import data.odorutils; data.odorutils.load_odors(); data.odorutils.ensure_sdf_exists('$ligname')\"";
-	if (file_exists("venvname"))
-	{
-		$venvname = trim(file_get_contents("venvname"));
-		$cmd = "source $venvname/bin/activate; $cmd; deactivate";
-	}
-	exec($cmd);
-	return;
-
-	$o = find_odorant($ligname);
-	if (!$o) die("Odorant not found $ligname.\n");
-	$isomers = check_isomers($ligname);
-	$lignamei = $isomers ? $isomers[0] : $ligname;
-
-	chdir(__DIR__);
-	chdir("..");
-
-	if (isset($o["isomers"]))
-	{
-		$fullname = str_replace(" ", "_", $o["full_name"]);
-		$first = true;
-		foreach ($o["isomers"] as $iso => $ismiles)
-		{
-			$parts = explode("|", $ismiles);
-			$ismiles = $parts[0];
-			if (isset($o["preiso"]))
-			{
-				$l = strlen($o["preiso"]);
-				$isoname = substr($fullname, 0, $l).$iso."-".substr($fullname, $l);
-				$isofname = "sdf/$isoname.sdf";
-			}
-			else $isofname = "sdf/$iso-$fullname.sdf";
-
-			if (!file_exists($isofname) || filesize($isofname) < 20)
-			{
-				$isofname = substr(escapeshellarg($isofname), 1, -1);
-				if (false===strpos($ismiles, "{")) $cmd = "python3 -c \"import data.odorutils; data.odorutils.smiles_to_sdf(\\\"$ismiles\\\", \\\"$isofname\\\")\" "; // $cmd = "obabel -:\"$ismiles\" --gen3D -osdf -O'$isofname'";
-				else $cmd = "test/mol_assem_test \"$ismiles\" '$isofname'";
-				// echo "$cmd\n";			// this breaks the web app.
-				exec($cmd);
-				if (@$parts[1])
-				{
-					$sub4 = substr($parts[1], 0, 4);
-					$rest = substr($parts[1], 4);
-					switch ($sub4)
-					{
-						case "rflp":
-						$cmd = "bin/ringflip '$isofname' $rest";
-						// echo "$cmd\n";
-						exec($cmd);
-						break;
-
-						default:
-						die("Unknown modifier $sub4.\n");
-					}
-				}
-
-				if ($first)
-				{
-					if (file_exists("sdf/$fullname.sdf")) unlink("sdf/$fullname.sdf");
-					copy("sdf/$iso-$fullname.sdf", "sdf/$fullname.sdf");
-					$first = false;
-				}
-			}
-		}
-	}
-	else
-	{
-		$sdfname = str_replace(" ", "_", "sdf/$lignamei.sdf");
-		if (!file_exists($sdfname) || filesize($sdfname) < 20)
-		{
-			$smiles = $o["smiles"];
-			$fullname = str_replace(" ", "_", $o["full_name"]);
-			$ffname = escapeshellarg("sdf/$fullname.sdf");
-			$cmd = "obabel -:\"$smiles\" --gen3D -osdf -O$ffname";
-			// echo "$cmd\n";
-			exec($cmd);
-		}
-	}
-
-	chdir($pwd);
-	return;
+    if (!is_string($ligname) || strpos($ligname, "\0") !== false)
+        throw new InvalidArgumentException("Invalid odorant name.");
+    require_once(__DIR__."/../www/chem_process.php");
+    $script = "import sys; import data.globals; import data.odorutils; "
+        ."data.odorutils.load_odors(); data.odorutils.ensure_sdf_exists(sys.argv[1])";
+    $result = chem_process_result([chem_python(), "-c", $script, $ligname], dirname(__DIR__), 120.0);
+    if ($result["status"] !== 0)
+        throw new RuntimeException("Odorant generation failed: ".trim($result["output"]));
 }
 
 function get_at_wt($element)

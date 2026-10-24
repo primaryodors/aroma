@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <stdexcept>
 #include <fstream>
 #include <sys/stat.h>
 // #include <stdio.h>
@@ -23,6 +24,9 @@ std::ofstream *debug = nullptr;
 bool last_iter = false;
 float pre_ligand_multimol_radius = default_pre_ligand_multimol_radius;
 float pre_ligand_flex_radius = default_pre_ligand_flex_radius;
+
+std::vector<std::pair<int, int>> active_disulfides;
+std::vector<TrackedInternalContact> tracked_internal_contacts;
 
 char asterisk[5] = "*";
 
@@ -66,7 +70,7 @@ char** chop_spaced_words(char* line, char separator)
 {
     if (!line[0]) return nullptr;
 
-    char** retval = new char*[100];
+    char** retval = new char*[100]();
     int i, j=0;
 
     if (separator == ' ' && line[0] == '\t') line[0] = separator;
@@ -75,8 +79,14 @@ char** chop_spaced_words(char* line, char separator)
     {
         if (line[i] == '"')
         {
+            if (j >= 99)
+            {
+                delete[] retval;
+                throw std::invalid_argument("Too many text fields.");
+            }
             retval[j++] = &line[i++];
             for (; line[i] && line[i] != '"'; i++);		// Get to next quote character.
+            if (!line[i]) break;
             bool last = false;
             if (!line[i+1]) last = true;
             if (line[i] == '"') line[++i] = '\0';
