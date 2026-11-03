@@ -1,0 +1,77 @@
+"""End-to-end REEC regression checks using a short receptor fragment."""
+import json
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+CODES = dict(zip(
+    'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+    'ACDEFGHIKLMNPQRSTVWY'))
+
+
+class ReecCLI(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='reec-')
+        self.addCleanup(self.temp.cleanup)
+        self.work = Path(self.temp.name)
+        self.template = ROOT / 'testdata/reec-small.pdb'
+        self.sequence = ''.join(CODES[s[17:20]] for s in self.template.read_text().splitlines()
+                                if s.startswith('ATOM  ') and s[12:16].strip() == 'CA')
+        self.ali = self.work / 'model.ali'
+        self.ali.write_text(f'>P1;model\nsequence:model::::::::\n{self.sequence}*\n')
+        self.output = self.work / 'model.pdb'
+
+    def run_model(self, *extra):
+        return subprocess.run([str(ROOT / 'bin/reec'), '--alignment', str(self.ali),
+                               '--template', str(self.template), '--output', str(self.output),
+                               '--iterations', '1500', *extra], cwd=ROOT, capture_output=True, text=True)
+
+    def test_relaxation_and_complete_sequence(self):
+        result = self.run_model()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads(Path(str(self.output) + '.json').read_text())
+        self.assertTrue(report['valid'])
+        self.assertLess(report['final_energy'], report['initial_energy'])
+        self.assertLess(report['max_bond_error'], .08)
+        self.assertEqual(report['chirality_errors'], 0)
+        self.assertEqual(report['severe_clashes'], 0)
+        residues = {int(s[22:26]): s[17:20] for s in self.output.read_text().splitlines()
+                    if s.startswith('ATOM  ')}
+        self.assertEqual(''.join(CODES[residues[r]] for r in sorted(residues)), self.sequence)
+
+    def test_impossible_contact_retains_previous_output(self):
+        self.output.write_text('previous model\n')
+        contacts = self.work / 'contacts.txt'
+        contacts.write_text('contact hard 1 N 1 CA 8 9 100\n')
+        result = self.run_model('--contacts', str(contacts))
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertEqual(self.output.read_text(), 'previous model\n')
+        self.assertFalse(json.loads(Path(str(self.output) + '.json').read_text())['valid'])
+
+    def test_invalid_atom_fails_explicitly(self):
+        contacts = self.work / 'contacts.txt'
+        contacts.write_text('contact hard 1 ABSENT 2 CA 2 3 10\n')
+        result = self.run_model('--contacts', str(contacts))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('Unknown atom', result.stderr)
+        self.assertFalse(self.output.exists())
+
+    def test_unterminated_alignment_is_rejected(self):
+        self.ali.write_text('>P1;model\nsequence:model::::::::\nAAA\n')
+        result = self.run_model()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('Incomplete PIR', result.stderr)
+
+    def test_aligned_template_mismatch_is_rejected(self):
+        self.ali.write_text('>P1;tpl\nstructure:tpl:FIRST:A:LAST:A::::\n'
+                            + 'A' * len(self.sequence) + '*\n>P1;model\nsequence:model::::::::\n'
+                            + self.sequence + '*\n')
+        result = self.run_model('--template', f'tpl={self.template}')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('sequence mismatch', result.stderr)
+
+
+if __name__ == '__main__':
+    unittest.main()

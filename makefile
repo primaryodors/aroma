@@ -18,7 +18,7 @@ REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test tes
 TSTS+=$(REGRESSION_TESTS)
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
-	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
+	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
 all: $(DIRS) \
 	 $(OBJS) \
 	 $(DOBJ) \
@@ -270,3 +270,15 @@ $(BIN)/poslig: src/poslig.cpp $(OBJS)
 	$(CPL) src/poslig.cpp $(OBJS) -o $(BIN)/poslig $(CFLAGS)
 
 test/pose_contact_test: src/classes/pose_contact.h
+
+reec: $(BIN)/reec
+
+$(BIN)/reec: src/reec.cpp $(OBJS) | $(BIN)
+	$(CPL) src/reec.cpp $(OBJS) -o $(BIN)/reec $(CFLAGS)
+
+test/reec_test: src/test/reec_test.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+check-reec: $(BIN)/reec test/reec_test
+	./test/reec_test
+	python3 test/reec_cli_test.py
