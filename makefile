@@ -282,3 +282,4 @@ test/reec_test: src/test/reec_test.cpp src/reec.cpp $(OBJS)
 check-reec: $(BIN)/reec test/reec_test
 	./test/reec_test
 	python3 test/reec_cli_test.py
+	python3 test/reec_backend_test.py

@@ -50,6 +50,23 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(self.output.read_text(), 'previous model\n')
         self.assertFalse(json.loads(Path(str(self.output) + '.json').read_text())['valid'])
 
+    def test_fixed_ligand_coordinates_and_contact(self):
+        first = next(s for s in self.template.read_text().splitlines()
+                     if s.startswith('ATOM  ') and s[12:16].strip() == 'CA')
+        xyz = [float(first[i:i+8]) for i in (30, 38, 46)]
+        xyz[0] += 4
+        environment = self.work / 'ligand.pdb'
+        line = (f'HETATM    1  C1  LIG A 999    {xyz[0]:8.3f}{xyz[1]:8.3f}{xyz[2]:8.3f}'
+                '  1.00  0.00           C')
+        environment.write_text(line + '\nEND\n')
+        contacts = self.work / 'contacts.txt'
+        contacts.write_text('contact hard 1 CA 999 C1 3.8 4.2 100\n')
+        result = self.run_model('--environment', str(environment), '--contacts', str(contacts))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        ligand = next(s for s in self.output.read_text().splitlines() if s.startswith('HETATM'))
+        self.assertEqual(ligand[30:54], line[30:54])
+        self.assertEqual(json.loads(Path(str(self.output) + '.json').read_text())['mandatory_violations'], 0)
+
     def test_invalid_atom_fails_explicitly(self):
         contacts = self.work / 'contacts.txt'
         contacts.write_text('contact hard 1 ABSENT 2 CA 2 3 10\n')

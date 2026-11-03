@@ -58,3 +58,32 @@ The overlap measure uses project van der Waals radii and is not the MolProbity c
 External validation is still valuable. The [wwPDB validation guide](https://www.wwpdb.org/validation/2016/XrayValidationReportHelp)
 describes independent bond, angle, chirality, torsion, and clash assessments; REEC's report does not
 replace those assessments.
+
+## Python workflows
+
+MODELLER remains the default. Select REEC explicitly, or set `AROMA_HM_BACKEND=reec`:
+
+```sh
+python3 hm/dohm.py OR1A1 --backend reec --output tmp/OR1A1.reec.pdb
+python3 hm/fixfail.py OR5K1 \
+  out/OR5/OR5K1/OR5K1~hazelnut_pyrazine.active.model1.pdb \
+  --backend reec --skip-reshape --output tmp/OR5K1.reec.pdb
+```
+
+The dohm adapter uses the existing alignment builder and composite template creator. Explicit
+`--template FILE` arguments bypass composite construction; `--alignment FILE` optionally supplies
+the corresponding PIR rows. The fixfail adapter runs the existing receptor-class IC reshape by
+default, then rebuilds and relaxes the complete target sequence. `--skip-reshape` repairs the input
+conformation directly. Both adapters accept `--iterations`, `--models`, and repeated `--contacts`.
+
+The adapters preserve declared source disulfides, receptor-specific cysteine topology,
+Y/H6.55–D/E45.51, and the Class I R/K4.52–D/E5.50 salt bridge. The Y5.58–Y7.53 interaction is a soft
+preference. Output carries receptor BW and helix metadata. Publication occurs after final REEC
+validation; no subsequent unconstrained IC relaxation alters the result.
+
+Fixed ligand heavy atoms from a repair input participate in steric scoring and retain their exact
+coordinates. The executable also accepts `--environment FILE.pdb` for that purpose. Ligand contact
+pairs in fixfail use the existing `LIGAND_ATOM RES:ATOM` syntax. `reset`, `fit`, `predock`, `dock`, and
+`loop` actions are available; docking actions publish to the normal receptor path. For reviewable
+local experiments, use `--output` with no docking action. Failed numerical reports are retained as
+`tmp/RECEPTOR.reec-failure.json`.

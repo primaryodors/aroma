@@ -17,6 +17,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 sys.path.append(root_dir)
 
+from reec_backend import requested, entrypoint, run_dohm
+if requested(sys.argv[1:]):
+    sys.exit(entrypoint(run_dohm, sys.argv[1:]))
+
 try:
     from modeller import *
     from modeller.automodel import *
