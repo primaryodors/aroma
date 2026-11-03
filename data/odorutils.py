@@ -139,16 +139,39 @@ def check_forms(ligname, randomize=True):
             result.append(form+"-"+odor["full_name"])
     return result
 
+def _sdf_matches_smiles(path, smiles):
+    if not os.path.isfile(path):
+        return False
+    expected = Chem.MolFromSmiles(smiles.split("|", 1)[0])
+    if expected is None:
+        return True
+    try:
+        supplier = Chem.SDMolSupplier(path, removeHs=True)
+        cached = supplier[0] if len(supplier) else None
+        return (cached is not None
+                and cached.GetNumAtoms() == expected.GetNumAtoms()
+                and cached.GetNumBonds() == expected.GetNumBonds()
+                and cached.HasSubstructMatch(expected, useChirality=True))
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
+def _ensure_sdf_current(smiles, path):
+    # A molecular graph cannot verify geometry directives such as ring flips.
+    if "|" not in smiles and _sdf_matches_smiles(path, smiles):
+        return
+    smiles_to_sdf(smiles, path)
+    if not _sdf_matches_smiles(path, smiles):
+        raise RuntimeError(f"Generated SDF does not match the odorant structure: {path}")
+
+
 def ensure_sdf_exists(odorant):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
     o = find_odorant(odorant)
-    if "sdfname" in o:
-        result = o["sdfname"]
-    else:
-        output_file = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
-        smiles_to_sdf(o['smiles'], output_file)
-        o["sdfname"] = result = output_file
+    result = o.get("sdfname", "sdf/" + o['full_name'].replace(' ', '_') + ".sdf")
+    _ensure_sdf_current(o['smiles'], result)
+    o["sdfname"] = result
 
     isomers = check_isomers(o['full_name'])
     forms = check_forms(o['full_name'])
@@ -160,8 +183,7 @@ def ensure_sdf_exists(odorant):
                     fname = ("sdf/" + (o["full_name"][0:l] + iso + "-" + o["full_name"][l:])).replace(' ', '_') + ".sdf"
                 else:
                     fname = ("sdf/" + iso + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
-                if not os.path.exists(fname):
-                    smiles_to_sdf(o["isomers"][iso], fname)
+                _ensure_sdf_current(o["isomers"][iso], fname)
     if forms:
         if len(forms):
             for form in o["forms"].keys():
@@ -170,8 +192,7 @@ def ensure_sdf_exists(odorant):
                     fname = ("sdf/" + (o["full_name"][0:l] + form + "-" + o["full_name"][l:])).replace(' ', '_') + ".sdf"
                 else:
                     fname = ("sdf/" + form + "-"+o["full_name"]).replace(' ', '_') + ".sdf"
-                if not os.path.exists(fname):
-                    smiles_to_sdf(o["forms"][form], fname)
+                _ensure_sdf_current(o["forms"][form], fname)
     return result
 
 def smiles_to_sdf(smiles, output_file):

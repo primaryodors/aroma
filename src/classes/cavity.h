@@ -19,6 +19,7 @@ class Cavity : public Space
     public:
     static int scan_in_protein(Protein* p, Cavity* results, int results_max, Progressbar* pgb = nullptr);
     float molecule_inside_pocket(Molecule* m, bool match_attributes = false);
+    static float heavy_atom_containment(Molecule* ligand, Cavity* cavities, int count);
     float cavity_filling(Molecule* m);
     float polarity_match(Molecule *m);
     float containment_violations(Molecule *m, float stop_if_more_than = -1);
@@ -32,7 +33,7 @@ class Cavity : public Space
     float residue_intersection(Cavity* other, Protein* p);
     void unify(Cavity* cavfrom);
     int estimate_multiplicity(Molecule* ligand);
-    CPartial* get_partial_by_idx(int idx) { if (!partials) partials = (CPartial*)spartials; return &partials[idx]; }
+    CPartial* get_partial_by_idx(int idx) { return reinterpret_cast<CPartial*>(Space::get_partial_by_idx(idx)); }
     bool has_priority();
 
     protected:

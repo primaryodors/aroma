@@ -33,8 +33,9 @@ int main(int argc, char** argv)
         {
             Atom* a = aa->get_atom(j);
             if (!a) continue;
-            int ag = a->get_geometry();
             Vector* abgeo = a->get_geometry_aligned_to_bonds(true);
+            int ag = a->get_geometry();
+            if (!abgeo) continue;
 
             for (k=0; k<ag; k++)
             {
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
                 Vector AB = b->atom2->loc.subtract(a->loc);
 
                 float theta;
-                for (l=0; l<=ag; l++)
+                for (l=0; l<ag; l++)
                 {
                     float th = find_3d_angle(AB, abgeo[l], Point(0,0,0));
                     if (!l || th < theta) theta = th;

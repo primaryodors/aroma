@@ -13,7 +13,6 @@ odors = []
 
 def wait_cool_cpu():
     cmd = ["sensors"]
-    time.sleep(2)           # In case this thread's previous step heated the CPU.
     while 1:
         try:
             proc = subprocess.run(cmd, stdout=subprocess.PIPE)
@@ -34,8 +33,8 @@ def wait_cool_cpu():
                 pieces = condensed.split(' ')
                 temp = float(re.sub("[^0-9.-]", "", pieces[1]))
                 rhigh = re.search("(high|crit)\\s+=\\s+[+-]?[0-9.]+", ln)
-                strhigh = rhigh.group()
-                high = float(re.sub("[^0-9.-]", "", strhigh))
+                strhigh = rhigh.group() if rhigh else ""
+                high = float(re.sub("[^0-9.-]", "", strhigh)) if rhigh else 75
                 if strhigh[0:4] == "high":
                     offset = -10
                 elif strhigh[0:4] == "crit":

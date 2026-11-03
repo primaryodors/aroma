@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <cmath>
 #include "cavity.h"
 
 float cav_xmax = Avogadro, cav_xmin = -Avogadro, cav_ymax = Avogadro, cav_ymin = -Avogadro, cav_zmax = Avogadro, cav_zmin = -Avogadro;
@@ -9,7 +10,9 @@ int cav_resmin = -99999, cav_resmax = 99999;
 float Cavity::cavity_intersection(Cavity* other)
 {
     float result = 0;
-    if (!partials) partials = (CPartial*)spartials;
+    if (!other) return result;
+    partials = reinterpret_cast<CPartial*>(spartials);
+    other->partials = reinterpret_cast<CPartial*>(other->spartials);
     if (!partials || !pallocd || !other->partials || !other->pallocd) return result;
     int i, j;
 
@@ -36,14 +39,13 @@ float Cavity::cavity_intersection(Cavity* other)
 
 float Cavity::residue_intersection(Cavity *other, Protein* p)
 {
-    if (!pallocd || !partials || !other->pallocd || !other->partials) return 0;
-    int i, j, l, m, n;
-    for (n=0; n<other->pallocd && other->partials[n].s.radius >= min_partial_radius; n++);
-    int other_resnos[n*8+16];
-    m = other->resnos_as_array(p, other_resnos);
-    for (n=0; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
-    int my_resnos[n*8+16];
-    n = resnos_as_array(p, my_resnos);
+    if (!other || !p || !spartials || !other->spartials) return 0;
+    std::vector<int> other_resnos(p->get_end_resno()+2);
+    std::vector<int> my_resnos(p->get_end_resno()+2);
+    const int m = other->resnos_as_array(p, other_resnos.data());
+    const int n = resnos_as_array(p, my_resnos.data());
+    if (!n) return 0;
+    int i, j, l;
 
     l=0;
     for (i=0; i<n; i++)
@@ -71,37 +73,15 @@ float Cavity::residue_intersection(Cavity *other, Protein* p)
 
 void Cavity::unify(Cavity* cavfrom)
 {
-    int i, j, n;
-
-    n = 0;
-    if (!partials) partials = (CPartial*)spartials;
-    if (partials) for (; n<pallocd && partials[n].s.radius >= min_partial_radius; n++);
-    j = n;
-    if (cavfrom->partials)
-    {
-        for (i=0; i<cavfrom->pallocd && cavfrom->partials[i].s.radius >= min_partial_radius; i++);
-        n += i;
-    }
-    if (n > pallocd)
-    {
-        pallocd += n + 256;
-        CPartial* oldpart = partials;
-        partials = new CPartial[pallocd+4];
-        spartials = (SPartial*)partials;
-        j=0;
-        if (oldpart)
-        {
-            for (i=0; oldpart[i].s.radius >= min_partial_radius; i++) partials[i] = oldpart[i];
-            j = i;
-            delete oldpart;
-        }
-    }
-
-    if (cavfrom->partials)
-    {
-        for (i=0; cavfrom->partials[i].s.radius >= min_partial_radius; i++) partials[i+j] = cavfrom->partials[i];
-        delete cavfrom->partials;
-    }
+    if (!cavfrom || cavfrom == this) return;
+    int count = cavfrom->count_partials();
+    for (int i=0; i<count; i++) add_partial(cavfrom->spartials[i]);
+    partials = reinterpret_cast<CPartial*>(spartials);
+    delete[] cavfrom->spartials;
+    cavfrom->spartials = nullptr;
+    cavfrom->partials = nullptr;
+    cavfrom->pallocd = 0;
+    cached_volume = cavfrom->cached_volume = -1;
 }
 
 int Cavity::scan_in_protein(Protein* p, Cavity* cavs, int cmax, Progressbar* pbr)
@@ -475,6 +455,27 @@ float Cavity::molecule_inside_pocket(Molecule* m, bool mattr)
     return result;
 }
 
+float Cavity::heavy_atom_containment(Molecule* ligand, Cavity* cavities, int count)
+{
+    if (!ligand || !cavities || count <= 0) return 0;
+    float total = 0;
+    int heavy_atoms = 0;
+    for (int i=0; i<ligand->get_atom_count(); i++)
+    {
+        Atom* atom = ligand->get_atom(i);
+        if (!atom || atom->Z < 2) continue;
+        float best = 0;
+        for (int c=0; c<count; c++)
+        {
+            float fraction = cavities[c].sphere_inside_pocket(atom->get_sphere());
+            if (std::isfinite(fraction)) best = std::max(best, std::min(1.f, fraction));
+        }
+        total += best;
+        heavy_atoms++;
+    }
+    return heavy_atoms ? total / heavy_atoms : 0;
+}
+
 float Cavity::cavity_filling(Molecule *m)
 {
     float empties = 0.0f;
@@ -684,7 +685,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
     Atom*     matom[10];
     float     score[10];
     int matches = 0;
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
 
     int i, j, l, m, n;
     float f, f0;
@@ -849,7 +850,7 @@ float Cavity::match_ligand(Molecule* ligand, Atom** match_atom, CPartial** match
 
 int Cavity::resnos(Protein* p, AminoAcid** result)
 {
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
     if (!partials || !pallocd) return 0;
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];
@@ -880,7 +881,7 @@ int Cavity::resnos(Protein* p, AminoAcid** result)
 
 std::string Cavity::resnos_as_string(Protein* p)
 {
-    if (!partials) partials = (CPartial*)spartials;
+    partials = reinterpret_cast<CPartial*>(spartials);
     if (!partials || !pallocd) return (std::string)"";
     int i, j, n=p->get_end_resno();
     bool resincluded[n+4];
@@ -911,42 +912,33 @@ std::string Cavity::resnos_as_string(Protein* p)
 
 int Cavity::resnos_as_array(Protein *p, int *output)
 {
-    int i, j, l, m, n;
-
-    n = p->get_end_resno();
-    bool included[n+1];
-    int tmp[256];
-
-    for (i=0; i<n; i++) included[i] = false;
-
-    if (!partials) partials = (CPartial*)spartials;
-    for (i=0; i<pallocd; i++)
+    if (output) output[0] = 0;
+    if (!p) return 0;
+    const int n = p->get_end_resno();
+    if (n < 1) return 0;
+    std::vector<unsigned char> included(n+1, 0);
+    std::vector<int> tmp(n+2);
+    partials = reinterpret_cast<CPartial*>(spartials);
+    const int partial_count = count_partials();
+    for (int i=0; i<partial_count; i++)
     {
         if (partials[i].s.radius)
         {
-            m = partials[i].resnos_as_array(p, tmp);
-            for (j=0; j<m; j++)
-            {
-                included[tmp[j]] = true;
-            }
+            const int m = partials[i].resnos_as_array(p, tmp.data());
+            for (int j=0; j<m; j++)
+                if (tmp[j] >= 1 && tmp[j] <= n) included[tmp[j]] = true;
         }
     }
 
-    if (!output)
-    {
-        for (i=1; i<n; i++)
-            if (included[i]) l++;
-    }
-    else
-    {
-        l=0;
-        for (i=1; i<n; i++)
+    int count = 0;
+    for (int i=1; i<=n; i++)
+        if (included[i])
         {
-            if (included[i]) output[l++] = i;
+            if (output) output[count] = i;
+            count++;
         }
-        output[l] = 0;
-    }
-    return l;
+    if (output) output[count] = 0;
+    return count;
 }
 
 std::string CPartial::resnos_as_string(Protein* p)
@@ -1048,7 +1040,8 @@ int Cavity::estimate_multiplicity(Molecule* ligand)
 
 bool Cavity::has_priority()
 {
-    if (!pallocd) return false;
+    if (!pallocd || !spartials) return false;
+    partials = reinterpret_cast<CPartial*>(spartials);
     int i;
     for (i=0; i<pallocd; i++)
     {

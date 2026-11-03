@@ -25,13 +25,18 @@ In lieu of a receptor, you may specify:
 Regarding expression rates, it was found by Verbeurgt et al (2014) that each olfactory receptor is expressed in a subset of individuals.
 They searched whole olfactory mucosa of 26 cadavers for RNA signatures of the ORs and found that some receptors were expressed in all subjects,
 while others ranged from common to rare in their expression rates. Therefore, AromaDock allows filtering for only those receptors expressed
-at or above some user specified percentage. Interestingly, no subject in the study expressed the full set of all ~400 receptors.
+at or above some user specified percentage. No subject in the study expressed the full set of all ~400 receptors.
 
 In lieu of an odorant, you may specify:
 - `all` meaning all odorants in the database;
-- `emp` meaning all empirical pairs for the receptor(s);
+- `emp` meaning all empirical pairs (i.e. known agonists and known non-agonists) for the receptor(s);
 - `ago` meaning all known agonists of the receptor(s);
+- `top` meaning the strongest known agonist of each receptor;
 - a perceptual note from the odorants in the database, such as `citrus`, `dairy`, or `acrid`.
+
+You may also optionally specify:
+- `noa` meaning do not run an active-state dock;
+- `noi` meaning do not run an inactive-state dock;
 
 
 # Web Application

@@ -1393,7 +1393,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
 
 void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt, bool nooil)
 {
-    if (!bbr || !bbr->protein) return;
+    if (!bbr || !bbr->protein || !bbr->pri_res || !bbr->pri_tgt) return;
     ligand->movability = MOV_ALL;
     Pose p(ligand);
 
@@ -1426,10 +1426,10 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         || (fabs(bbr->pri_res->hydrophilicity()) >= hydrophilicity_cutoff
             && fabs(bbr->pri_tgt->polarity()) >= hydrophilicity_cutoff
             );
-    bool secpol = bbr->sec_res->coordmtl
+    bool secpol = bbr->sec_res && bbr->sec_tgt && (bbr->sec_res->coordmtl
         || (fabs(bbr->sec_res->hydrophilicity()) >= hydrophilicity_cutoff
             && fabs(bbr->sec_tgt->polarity()) >= hydrophilicity_cutoff
-            );
+            ));
     bool tertpol = (bbr->tert_res && bbr->tert_tgt) ? (bbr->tert_res->coordmtl
         || (fabs(bbr->tert_res->hydrophilicity()) >= hydrophilicity_cutoff
             && fabs(bbr->tert_tgt->polarity()) >= hydrophilicity_cutoff
@@ -1493,7 +1493,7 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
     {
         ligand->rotate(lv, step);
         enew = ligand->get_intermol_clashes((Molecule**)rs);
-        if (enew < bb_clash_avoidance_threshold || enew < e)
+        if (enew < e)
         {
             p.copy_state(ligand);
             e = enew;

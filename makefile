@@ -13,6 +13,10 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
+REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test \
+    test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test test/smiles_input_test test/cavity_residue_test test/soft_scoring_test test/protonation_test test/disulfide_test test/atom_target_test test/soft_disulfide_test test/target_rotation_test test/primary_target_test test/soft_covalent_test test/repack_state_test test/cavity_intersection_test test/cavity_storage_test test/space_containment_test test/space_atom_test test/space_bounds_test test/cavity_coverage_test test/pose_contact_test
+TSTS+=$(REGRESSION_TESTS)
+
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
 all: $(DIRS) \
@@ -22,7 +26,7 @@ all: $(DIRS) \
 	 $(APPS)
 code: $(DIRS) $(OBJS) $(DOBJ) $(TSTS) $(APPS)
 apps: $(APPS)
-tests: $(TSTS)
+tests: $(TSTS) $(BIN)/ringflip
 aromadock: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/aromadock
 phew: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/phew
 ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
@@ -30,7 +34,7 @@ ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
 CPL=g++
 
 # Common flags for all modes
-CFLAGS=-O3 -flto -fopenmp -ffast-math -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
+CFLAGS=-O3 -flto -fopenmp -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
 
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g
@@ -134,7 +138,7 @@ test/atom_test: src/test/atom_test.cpp $(OBJ)/point.o $(OBJ)/atom.o
 test/molecule_test: src/test/molecule_test.cpp $(OBJS)
 	$(CPL) src/test/molecule_test.cpp $(OBJS) -o test/molecule_test $(CFLAGS)
 
-test/ring_test: src/test/ring_test.cpp $(OBJ)/molecule.o
+test/ring_test: src/test/ring_test.cpp $(OBJS)
 	$(CPL) src/test/ring_test.cpp $(OBJS) -o test/ring_test $(CFLAGS)
 
 test/pi_stack_test: src/test/pi_stack_test.cpp $(OBJS)
@@ -170,7 +174,7 @@ test/protein_test: src/test/protein_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/p
 test/ageo_test: src/test/ageo_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/protein.o
 	$(CPL) src/test/ageo_test.cpp $(OBJS) -o test/ageo_test $(CFLAGS)
 
-test/chirality_test: src/test/chirality_test.cpp $(OBJ)/molecule.o
+test/chirality_test: src/test/chirality_test.cpp $(OBJS)
 	$(CPL) src/test/chirality_test.cpp $(OBJS) -o test/chirality_test $(CFLAGS)
 
 test/backbone_test: src/test/backbone_test.cpp $(OBJS) $(OBJ)/aminoacid.o $(OBJ)/protein.o
@@ -218,9 +222,12 @@ test/moves_with_test: src/test/moves_with_test.cpp $(OBJS)
 test/occlusion_test: src/test/occlusion_test.cpp $(OBJS)
 	$(CPL) src/test/occlusion_test.cpp $(OBJS) -o test/occlusion_test $(CFLAGS)
 
+$(REGRESSION_TESTS): test/%: src/test/%.cpp $(OBJS) $(DOBJ) makefile
+	$(CPL) $< $(OBJS) $(DOBJ) -o $@ $(CFLAGS)
+
 # Apps
 
-$(BIN)/aromadock: src/aromadock.cpp $(OBJS) $(DOBJ)
+$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h $(OBJS) $(DOBJ)
 	$(CPL) src/aromadock.cpp $(OBJS) $(DOBJ) -o $(BIN)/aromadock $(CFLAGS)
 
 $(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)
@@ -261,3 +268,5 @@ $(BIN)/molfix: src/molfix.cpp $(OBJS)
 
 $(BIN)/poslig: src/poslig.cpp $(OBJS)
 	$(CPL) src/poslig.cpp $(OBJS) -o $(BIN)/poslig $(CFLAGS)
+
+test/pose_contact_test: src/classes/pose_contact.h

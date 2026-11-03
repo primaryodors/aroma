@@ -4,9 +4,14 @@ chdir(__DIR__);
 chdir("..");
 
 require_once("data/protutils.php");
-$dofix = @$argv[1] == "fix";
-$start = @$argv[2];
-$nochk = (@$argv[2] == "nochk" || @$argv[3] == "nochk") ? "nochk" : "";
+$dofix = array_search("fix", $argv);
+
+foreach ($prots as $rcpid => $p)
+    if (array_search($rcpid, $argv)) $start = $rcpid;
+
+$nochk = array_search("nochk", $argv) ? "nochk" : "";
+$force = array_search("force", $argv);
+if ($force) $dofix = true;
 $errors = 0;
 $byfam = [];
 $ttlfam = [];
@@ -32,12 +37,13 @@ foreach ($prots as $rcpid => $p)
         else $ttlfam[$famno]++;
     }
 
-    if (!file_exists("pdbs/$fam/$rcpid.active.pdb"))
+    $fe = file_exists("pdbs/$fam/$rcpid.active.pdb");
+    if ($force || !$fe)
     {
-        echo "$rcpid active PDB is missing.\n";
+        if (!$fe) echo "$rcpid active PDB is missing.\n";
         if ($famno) $byfam[$famno]++;
         $errors++;
-        if (file_exists("pdbs/$fam/$rcpid.inactive.pdb") && $dofix) passthru("php -f hm/dohm.php $rcpid $nochk");
+        if (file_exists("pdbs/$fam/$rcpid.inactive.pdb") && $dofix) passthru("python3 hm/dohm.py $rcpid $nochk");
         continue;
     }
 }

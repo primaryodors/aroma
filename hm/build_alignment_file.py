@@ -214,7 +214,7 @@ def main():
                 
             fp.write("\n\n" + cpl_content)
             
-        print("Execution complete. Alignment file forged.", file=sys.stderr)
+        print("Execution complete. Alignment file built.", file=sys.stderr)
     except Exception as e:
         print(f"FATAL ERROR: Failed to write {out_ali_path} - {e}", file=sys.stderr)
         sys.exit(1)
