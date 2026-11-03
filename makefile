@@ -72,6 +72,8 @@ $(TMP):
 
 # Classes
 
+$(OBJS): | $(OBJ)
+
 $(OBJ)/misc.o: src/classes/misc.h src/classes/misc.cpp src/classes/constants.h makefile
 	$(CPL) -c src/classes/misc.cpp -o $(OBJ)/misc.o $(CFLAGS)
 

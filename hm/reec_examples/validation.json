@@ -1,0 +1,282 @@
+{
+  "engine": "REEC",
+  "date": "2026-11-03",
+  "iterations_per_candidate": 9000,
+  "candidate_count": 2,
+  "distance_units": "Angstrom",
+  "cases": [
+    {
+      "receptor": "OR5K1",
+      "residues": 308,
+      "workflow": "fixfail, supplied docked conformation",
+      "model": "tmp/reec-showcase/OR5K1.active.pdb",
+      "initial_severe_overlaps": 621,
+      "final_severe_overlaps": 0,
+      "template_ca_rmsd": 0.52379013,
+      "max_backbone_bond_error": 0.0027908816801958114,
+      "max_peptide_angle_error_degrees": 0.6522188344423796,
+      "max_peptide_twist_error_degrees": 0.45063093854116687,
+      "mandatory_violations": 0,
+      "independent_review_passed": true,
+      "contacts": [
+        {
+          "kind": "disulfide",
+          "res1": 97,
+          "atom1": "SG",
+          "res2": 179,
+          "atom2": "SG",
+          "distance": 2.0492703579567073,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "disulfide",
+          "res1": 169,
+          "atom1": "SG",
+          "res2": 189,
+          "atom2": "SG",
+          "distance": 2.0498424329689344,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "contact",
+          "res1": 259,
+          "atom1": "OH",
+          "res2": 180,
+          "atom2": "OD1",
+          "distance": 3.2003434190723996,
+          "min": 2.5,
+          "max": 3.2,
+          "hard": true,
+          "violation": 0.00034341907239943126
+        },
+        {
+          "kind": "contact",
+          "res1": 218,
+          "atom1": "OH",
+          "res2": 290,
+          "atom2": "OH",
+          "distance": 4.087278067369529,
+          "min": 3,
+          "max": 5,
+          "hard": false,
+          "violation": 0
+        }
+      ],
+      "disulfides": [
+        {
+          "residues": [
+            97,
+            179
+          ],
+          "distance": 2.0492703579567073,
+          "angles": [
+            103.72012861639085,
+            103.82593141181961
+          ],
+          "torsion": -89.11762513200266
+        },
+        {
+          "residues": [
+            169,
+            189
+          ],
+          "distance": 2.0498424329689344,
+          "angles": [
+            103.70812466777014,
+            103.75700620130344
+          ],
+          "torsion": 88.98008011398403
+        }
+      ],
+      "ligand_heavy_atoms": 11,
+      "ligand_coordinate_rmsd": 0.0
+    },
+    {
+      "receptor": "OR1A1",
+      "residues": 309,
+      "workflow": "dohm, composite experimental template",
+      "model": "tmp/reec-showcase/OR1A1.active.pdb",
+      "initial_severe_overlaps": 114,
+      "final_severe_overlaps": 0,
+      "template_ca_rmsd": 0.57394151,
+      "max_backbone_bond_error": 0.0024465070655586008,
+      "max_peptide_angle_error_degrees": 0.4473580201448186,
+      "max_peptide_twist_error_degrees": 0.6831564782399653,
+      "mandatory_violations": 0,
+      "independent_review_passed": true,
+      "contacts": [
+        {
+          "kind": "disulfide",
+          "res1": 97,
+          "atom1": "SG",
+          "res2": 179,
+          "atom2": "SG",
+          "distance": 2.049884386983812,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "disulfide",
+          "res1": 169,
+          "atom1": "SG",
+          "res2": 189,
+          "atom2": "SG",
+          "distance": 2.0488506534152267,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "contact",
+          "res1": 258,
+          "atom1": "OH",
+          "res2": 180,
+          "atom2": "OD1",
+          "distance": 3.1994358877777174,
+          "min": 2.5,
+          "max": 3.2,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "contact",
+          "res1": 217,
+          "atom1": "OH",
+          "res2": 288,
+          "atom2": "OH",
+          "distance": 5.006894246935919,
+          "min": 3,
+          "max": 5,
+          "hard": false,
+          "violation": 0.00689424693591878
+        }
+      ],
+      "disulfides": [
+        {
+          "residues": [
+            97,
+            179
+          ],
+          "distance": 2.049884386983812,
+          "angles": [
+            103.7466066845731,
+            103.71147506856364
+          ],
+          "torsion": -89.98528052412895
+        },
+        {
+          "residues": [
+            169,
+            189
+          ],
+          "distance": 2.0488506534152267,
+          "angles": [
+            103.69069881441621,
+            103.62419200829348
+          ],
+          "torsion": -91.876898996593
+        }
+      ]
+    },
+    {
+      "receptor": "OR52E8",
+      "residues": 317,
+      "workflow": "fixfail, Class I IC reshape and full target rebuild",
+      "model": "tmp/reec-showcase/OR52E8.active.pdb",
+      "initial_severe_overlaps": 1170,
+      "final_severe_overlaps": 0,
+      "template_ca_rmsd": 0.87110554,
+      "max_backbone_bond_error": 0.008089697119517902,
+      "max_peptide_angle_error_degrees": 1.304314977845138,
+      "max_peptide_twist_error_degrees": 1.2747134403481084,
+      "mandatory_violations": 0,
+      "independent_review_passed": true,
+      "contacts": [
+        {
+          "kind": "disulfide",
+          "res1": 103,
+          "atom1": "SG",
+          "res2": 185,
+          "atom2": "SG",
+          "distance": 2.049625087668474,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "disulfide",
+          "res1": 175,
+          "atom1": "SG",
+          "res2": 195,
+          "atom2": "SG",
+          "distance": 2.0495270186069763,
+          "min": 1.95,
+          "max": 2.15,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "contact",
+          "res1": 157,
+          "atom1": "NH2",
+          "res2": 215,
+          "atom2": "OD1",
+          "distance": 3.599095580836942,
+          "min": 2.6,
+          "max": 3.6,
+          "hard": true,
+          "violation": 0
+        },
+        {
+          "kind": "contact",
+          "res1": 223,
+          "atom1": "OH",
+          "res2": 297,
+          "atom2": "OH",
+          "distance": 5.033506332567786,
+          "min": 3,
+          "max": 5,
+          "hard": false,
+          "violation": 0.03350633256778579
+        }
+      ],
+      "disulfides": [
+        {
+          "residues": [
+            103,
+            185
+          ],
+          "distance": 2.049625087668474,
+          "angles": [
+            103.68886548459687,
+            103.65079653635024
+          ],
+          "torsion": -89.3818819792495
+        },
+        {
+          "residues": [
+            175,
+            195
+          ],
+          "distance": 2.0495270186069763,
+          "angles": [
+            103.80048812957807,
+            103.74686971218964
+          ],
+          "torsion": -89.54068126269469
+        }
+      ]
+    }
+  ],
+  "scope": "Structural validation of local homology models; docking efficacy was not benchmarked."
+}

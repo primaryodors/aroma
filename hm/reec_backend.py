@@ -195,16 +195,90 @@ def metadata(rcp, source=None, provenance=''):
     return lines
 
 
-def publish(model, destination, remarks):
+def receptor_frame(rcp, text):
+    """Use the same membrane and BW anchors as UPRIGHT/BWCENTER, by rigid rotation."""
+    from reec_review import sub, dot, cross
+
+    def unit(v):
+        length = math.sqrt(dot(v, v))
+        if length < 1e-8:
+            raise ValueError('Degenerate receptor orientation anchors')
+        return tuple(x / length for x in v)
+
+    def mean(points):
+        return tuple(sum(p[i] for p in points) / len(points) for i in range(3))
+
+    lines = text.splitlines()
+    ca = {int(s[22:26]): tuple(float(s[i:i+8]) for i in (30, 38, 46))
+          for s in lines if s.startswith('ATOM  ') and s[12:16].strip() == 'CA'}
+    extracellular, cytoplasmic = [], []
+    regions = pu.prots[rcp]['region']
+    if any(f'TMR{h}' not in regions for h in range(1, 8)):
+        raise ValueError('Receptor orientation requires TMR1 through TMR7 annotations')
+    for helix in range(1, 8):
+        region = regions[f'TMR{helix}']
+        start = [ca[n] for n in range(region['start'], region['start'] + 4)]
+        end = [ca[n] for n in range(region['end'] - 3, region['end'] + 1)]
+        extracellular.extend(start if helix % 2 else end)
+        cytoplasmic.extend(end if helix % 2 else start)
+    y = unit(sub(mean(extracellular), mean(cytoplasmic)))
+    centers = []
+    for name in ('TMR1', 'TMR4'):
+        region = regions[name]
+        centers.append(mean([ca[n] for n in range(region['start'], region['end'] + 1)]))
+    direction = sub(centers[1], centers[0])
+    z = unit(sub(direction, tuple(c * dot(direction, y) for c in y)))
+    x = cross(y, z)
+    center = mean([ca[pu.resno_from_bw(rcp, f'{h}.50')] for h in range(1, 8)])
+    for i, line in enumerate(lines):
+        if line.startswith(('ATOM  ', 'HETATM')):
+            point = sub(tuple(float(line[j:j+8]) for j in (30, 38, 46)), center)
+            values = [dot(point, axis) for axis in (x, y, z)]
+            if any(v < -999.999 or v > 9999.999 for v in values):
+                raise ValueError('Oriented coordinates exceed PDB capacity')
+            lines[i] = line[:30] + ''.join(f'{v:8.3f}' for v in values) + line[54:]
+    return '\n'.join(lines) + '\n'
+
+
+def publish(model, destination, remarks, orient=None):
+    from reec_review import inspect
+    destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    text = '\n'.join(remarks) + '\n' + model.read_text()
+    body = model.read_text()
+    if orient:
+        body = receptor_frame(orient, body)
+    text = '\n'.join(remarks) + '\n' + body
     temp = destination.with_name(destination.name + f'.reec-{os.getpid()}')
+    temp_report = Path(str(temp) + '.json')
+    report = json.loads(Path(str(model) + '.json').read_text())
+    if not report.get('valid'):
+        raise ValueError('A failed model cannot be published')
+    # Re-evaluate selected contact distances after PDB coordinate rounding.
+    atoms = {(int(s[22:26]), s[12:16].strip()): tuple(float(s[i:i+8]) for i in (30, 38, 46))
+             for s in body.splitlines() if s.startswith(('ATOM  ', 'HETATM'))}
+    for contact in report['contacts']:
+        distance = math.dist(atoms[contact['res1'], contact['atom1']],
+                             atoms[contact['res2'], contact['atom2']])
+        contact['distance'] = distance
+        contact['violation'] = max(0, contact['min'] - distance, distance - contact['max'])
+    report['mandatory_violations'] = sum(c['hard'] and c['violation'] > .05 for c in report['contacts'])
+    if report['mandatory_violations']:
+        raise ValueError('Mandatory contacts failed after PDB coordinate rounding')
     try:
         temp.write_text(text)
+        temp_report.write_text(json.dumps(report, indent=2) + '\n')
+        review = inspect(temp)
+        if not review['valid']:
+            raise ValueError(f'Serialized PDB failed independent review: {review["failures"]}')
+        report['serialized_geometry'] = {k: v for k, v in review.items()
+                                         if k not in ('model', 'optimizer_report')}
+        report['receptor_frame'] = bool(orient)
+        temp_report.write_text(json.dumps(report, indent=2) + '\n')
         os.replace(temp, destination)
+        os.replace(temp_report, str(destination) + '.json')
     finally:
         temp.unlink(missing_ok=True)
-    shutil.copyfile(str(model) + '.json', str(destination) + '.json')
+        temp_report.unlink(missing_ok=True)
 
 
 def model(rcp, args, work, templates, alignment, contacts, environment=None, fit_environment=False):
@@ -236,7 +310,7 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
 
 
 def run_dohm(argv):
-    args = parser().parse_args(argv)
+    args = parser().parse_intermixed_args(argv)
     rcp, state = receptor(args.receptor)
     if state != 'active':
         raise ValueError('dohm produces active models; use fixfail for an inactive model')
@@ -262,13 +336,13 @@ def run_dohm(argv):
                        and any(s.startswith('HETATM') for s in source.read_text().splitlines()) else None)
         contacts = receptor_contacts(rcp, [source])
         output = model(rcp, args, work, templates, alignment, contacts, environment, bool(environment))
-        publish(output, destination, metadata(rcp, source, provenance))
+        publish(output, destination, metadata(rcp, source, provenance), orient=rcp)
     print(f'REEC homology model: {destination}')
     return 0
 
 
 def run_fixfail(argv):
-    args = parser(True).parse_args(argv)
+    args = parser(True).parse_intermixed_args(argv)
     rcp, state = receptor(args.receptor)
     family = pu.family_from_protid(rcp)
     original = ROOT / 'pdbs' / family / f'{rcp}.{state}.pdb'

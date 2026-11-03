@@ -2,10 +2,13 @@
 import json
 import subprocess
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'hm'))
+import reec_review
 CODES = dict(zip(
     'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
     'ACDEFGHIKLMNPQRSTVWY'))
@@ -24,9 +27,13 @@ class ReecCLI(unittest.TestCase):
         self.output = self.work / 'model.pdb'
 
     def run_model(self, *extra, template=None):
-        return subprocess.run([str(ROOT / 'bin/reec'), '--alignment', str(self.ali),
+        result = subprocess.run([str(ROOT / 'bin/reec'), '--alignment', str(self.ali),
                                '--template', str(template or self.template), '--output', str(self.output),
                                '--iterations', '1500', *extra], cwd=ROOT, capture_output=True, text=True)
+        if result.returncode == 0:
+            review = reec_review.inspect(self.output)
+            self.assertTrue(review['valid'], review['failures'])
+        return result
 
     def test_relaxation_and_complete_sequence(self):
         result = self.run_model()
@@ -112,6 +119,54 @@ class ReecCLI(unittest.TestCase):
         report = json.loads(Path(str(self.output) + '.json').read_text())
         self.assertEqual(report['mandatory_violations'], 0)
         self.assertIn(report['contacts'][0]['atom2'], ('N', 'CA'))
+
+    def test_ligand_superposition_into_template_frame(self):
+        original = self.template.read_text()
+        first = next(s for s in original.splitlines() if s.startswith('ATOM  ')
+                     and s[12:16].strip() == 'CA')
+        x, y, z = (float(first[i:i+8]) for i in (30, 38, 46))
+        x += 4
+        ligand = f'HETATM    1  C1  LIG A 999    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           C'
+        environment = self.work / 'environment.pdb'
+        environment.write_text(original.replace('END', '') + ligand + '\nEND\n')
+        rotated = self.work / 'reference.pdb'
+        lines = []
+        for line in original.splitlines():
+            if line.startswith('ATOM  '):
+                a, b, c = (float(line[i:i+8]) for i in (30, 38, 46))
+                line = line[:30] + f'{-b+8:8.3f}{a-4:8.3f}{c+3:8.3f}' + line[54:]
+            lines.append(line)
+        rotated.write_text('\n'.join(lines) + '\n')
+        result = self.run_model('--environment', str(environment), '--fit-environment', template=rotated)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result_line = next(s for s in self.output.read_text().splitlines() if s.startswith('HETATM'))
+        actual = [float(result_line[i:i+8]) for i in (30, 38, 46)]
+        for a, b in zip(actual, (-y+8, x-4, z+3)):
+            self.assertAlmostEqual(a, b, places=2)
+
+    def test_arg_and_pro_mutations_use_standard_geometry(self):
+        sequence = list(self.sequence)
+        sequence[2] = 'R'
+        sequence[4] = 'P'
+        self.ali.write_text('>P1;model\nsequence:model::::::::\n' + ''.join(sequence) + '*\n')
+        result = self.run_model('--iterations', '4500')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        lines = self.output.read_text().splitlines()
+        self.assertTrue(any(s.startswith('ATOM  ') and s[17:20] == 'ARG' for s in lines))
+        self.assertTrue(any(s.startswith('ATOM  ') and s[17:20] == 'PRO' for s in lines))
+
+    def test_disulfide_is_covalent_and_serialized(self):
+        sequence = list(self.sequence)
+        sequence[3] = 'C'
+        self.ali.write_text('>P1;model\nsequence:model::::::::\n' + ''.join(sequence) + '*\n')
+        contacts = self.work / 'disulfide.txt'
+        contacts.write_text('disulfide 1 4\n')
+        result = self.run_model('--contacts', str(contacts), '--iterations', '9000', '--models', '2')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads(Path(str(self.output) + '.json').read_text())
+        self.assertEqual(report['contacts'][0]['kind'], 'disulfide')
+        self.assertAlmostEqual(report['contacts'][0]['distance'], 2.05, delta=.03)
+        self.assertIn('CONECT', self.output.read_text())
 
     def test_invalid_atom_fails_explicitly(self):
         contacts = self.work / 'contacts.txt'

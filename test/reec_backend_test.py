@@ -46,6 +46,45 @@ class ReecBackend(unittest.TestCase):
         self.assertIn('REMARK 800 SITE BW 4.50 148', lines)
         self.assertIn('REMARK 650 HELIX TMR4 137 163', lines)
 
+    def test_rigid_receptor_frame_centers_bw_anchors(self):
+        import math
+        rcp = 'OR51E2'
+        points = {n: (n % 7, n % 11, n % 5) for n in range(1, len(backend.pu.prots[rcp]['sequence']) + 1)}
+        for helix in range(1, 8):
+            region = backend.pu.prots[rcp]['region'][f'TMR{helix}']
+            for n in range(region['start'], region['end'] + 1):
+                u = (n - region['start']) / (region['end'] - region['start'])
+                points[n] = (10*math.cos(helix), (1 if helix % 2 else -1)*(15-30*u),
+                             10*math.sin(helix))
+        text = ''.join(f'ATOM  {n:5d}  CA  ALA A{n:4d}    {p[0]:8.3f}{p[1]:8.3f}{p[2]:8.3f}  1.00  0.00           C\n'
+                       for n, p in points.items())
+        result = backend.receptor_frame(rcp, text)
+        ca = {int(s[22:26]): tuple(float(s[i:i+8]) for i in (30, 38, 46)) for s in result.splitlines()}
+        anchors = [ca[backend.pu.resno_from_bw(rcp, f'{h}.50')] for h in range(1, 8)]
+        for axis in range(3):
+            self.assertAlmostEqual(sum(p[axis] for p in anchors)/7, 0, places=3)
+        self.assertAlmostEqual(math.dist(points[30], points[210]), math.dist(ca[30], ca[210]), delta=.003)
+
+    def test_publication_rejects_invalid_candidates(self):
+        import json
+        with tempfile.TemporaryDirectory(prefix='reec-publication-') as temporary:
+            work = Path(temporary)
+            model = work / 'candidate.pdb'
+            model.write_text((ROOT / 'testdata/reec-small.pdb').read_text())
+            destination = work / 'published.pdb'
+            destination.write_text('previous model\n')
+            for validity in (False, True):
+                with self.subTest(reported_valid=validity):
+                    Path(str(model) + '.json').write_text(json.dumps({'valid': validity, 'contacts': []}))
+                    with self.assertRaises(ValueError):
+                        backend.publish(model, destination, [])
+                    self.assertEqual(destination.read_text(), 'previous model\n')
+            self.assertFalse(list(work.glob('*.reec-*')))
+
+    def test_legacy_options_can_follow_backend_selection(self):
+        args = backend.parser().parse_intermixed_args(['OR1A1', '--backend', 'reec', 'nodel'])
+        self.assertEqual(args.legacy, ['nodel'])
+
     def test_composite_rows_pad_trailing_gaps(self):
         with tempfile.TemporaryDirectory(prefix='reec-adapter-') as temporary:
             work = Path(temporary)

@@ -106,3 +106,25 @@ path applies that fit automatically. Ligand heavy-atom CONECT records are carrie
 Hydrogen bonds use heavy-atom distance bounds; hydrogen placement and directional scoring are outside
 the current optimizer. Inactive fixfail repair is supported; the `reset` action constructs active
 models and is rejected for inactive repair.
+
+## Independent publication audit
+
+REEC normalizes backbone bond and angle references and enforces named L alpha centers and the
+standard isoleucine/threonine beta centers. Peptide planarity has an explicit signed-volume term;
+publication also limits its maximum volume deviation to 0.25 cubic Angstroms. Disulfides have an
+explicit 2.05 A covalent bond target included in the maximum bond-error metric.
+
+The Python adapters independently audit the written PDB before replacing a destination. This
+checks standard heavy-atom inventories, serialized backbone lengths, peptide angles and twist,
+named stereochemistry, disulfide geometry, and mandatory distances. The dohm path additionally
+applies a rigid membrane orientation and BW centering using the same anchor definitions as the
+project's UPRIGHT/BWCENTER workflow. It transforms both receptor and ligand together and audits
+those final coordinates. Fixfail retains the supplied coordinate frame.
+
+```sh
+python3 hm/reec_review.py tmp/receptor.pdb --output tmp/receptor.review.json
+```
+
+Add `--plot tmp/receptor.png` for a validation plot; Matplotlib is optional. Regression checks also
+apply this independent audit to every successful CLI fixture. The [worked examples](reec_examples/README.md)
+include two receptor classes, a composite template, an IC reshape, and a ligand-bearing failed dock.

@@ -420,7 +420,7 @@ namespace reec {
         std::vector<std::pair<int,int>> alternatives;
     };
     struct Stats {
-        double score=0,bond_max=0,angle_max=0,overlap_max=0,ca_rmsd=0;
+        double score=0,bond_max=0,angle_max=0,overlap_max=0,ca_rmsd=0,planarity_max=0;
         int severe=0,chirality=0,hard_fail=0;
     };
     struct Model {
@@ -491,6 +491,23 @@ namespace reec {
                     ideal.emplace_back(a->loc);
                 }
             }
+            // Normalize peptide references while retaining the library's sidechain topology.
+            // Some cached residue conformers have nonstandard carbonyl lengths or handedness.
+            const double radians=std::acos(-1.)/180;
+            for(size_t r=1;r<=seq.size();++r) {
+                int ni=id(r,"N"),ca=id(r,"CA"),ci=id(r,"C"),oi=id(r,"O");
+                Frame frame(ideal[ni],ideal[ca],ideal[ci]);
+                V old_oxygen=ideal[oi]-ideal[ci];
+                V transverse=old_oxygen-frame.x*old_oxygen.dot(frame.x);
+                if(transverse.norm()<1e-6) transverse=frame.y;
+                ideal[ni]=ideal[ca]+frame.x*(1.458*std::cos(111.2*radians))+frame.y*(1.458*std::sin(111.2*radians));
+                ideal[ci]=ideal[ca]+frame.x*1.525;
+                ideal[oi]=ideal[ci]+frame.x*(1.231*std::cos(59.2*radians))+transverse.unit()*(1.231*std::sin(59.2*radians));
+                if(ids.count({r,"OXT"})) {
+                    V u=(ideal[ca]-ideal[ci]).unit(),v=(ideal[oi]-ideal[ci]).unit();
+                    ideal[id(r,"OXT")]=ideal[ci]+(u+v).unit()*(-1.25);
+                }
+            }
             xyz=ideal;
             adj.resize(nodes.size());
             for(size_t i=0;i<nodes.size();++i)for(size_t j=i+1;j<nodes.size();++j)if(nodes[i].res==nodes[j].res&&nodes[i].atom->is_bonded_to(nodes[j].atom)) {
@@ -522,11 +539,26 @@ namespace reec {
                     torsions.push_back({a,int(b),c,d,0,.3});
             }
             for(size_t a=0;a<adj.size();++a)if(adj[a].size()>=3) {
+                if(nodes[a].name=="CA") continue;
+                if(nodes[a].name=="CB" && (seq[nodes[a].res-1]=='I' || seq[nodes[a].res-1]=='T')) continue;
                 int b=adj[a][0],c=adj[a][1],d=adj[a][2];
                 double v=(ideal[b]-ideal[a]).dot((ideal[c]-ideal[a]).cross(ideal[d]-ideal[a]));
                 volumes.push_back( {
                     int(a),b,c,d,v,100
                 });
+            }
+            // Named signed volumes enforce standard L alpha centers and I/T beta centers.
+            for(size_t r=1;r<=seq.size();++r) {
+                if(ids.count({r,"CB"})) {
+                    int ca=id(r,"CA"),nn=id(r,"N"),cc=id(r,"C"),cb=id(r,"CB");
+                    double v=(ideal[nn]-ideal[ca]).dot((ideal[cc]-ideal[ca]).cross(ideal[cb]-ideal[ca]));
+                    volumes.push_back({ca,nn,cc,cb,std::fabs(v),100});
+                }
+                if(seq[r-1]=='I' || seq[r-1]=='T') {
+                    int cb=id(r,"CB"),ca=id(r,"CA"),branch=id(r,seq[r-1]=='I'?"CG1":"OG1"),other=id(r,"CG2");
+                    double v=(ideal[ca]-ideal[cb]).dot((ideal[branch]-ideal[cb]).cross(ideal[other]-ideal[cb]));
+                    volumes.push_back({cb,ca,branch,other,std::fabs(v),100});
+                }
             }
             const int n=seq.size();
             // Standard trans peptide geometry: 1.329 A C-N, 116.2/121.7 degree angles.
@@ -555,6 +587,7 @@ namespace reec {
                 volumes.push_back( {
                     c,id(r,"CA"),id(r,"O"),nn,0,100
                 });
+                volumes.push_back({c,id(r,"CA"),nn,id(r+1,"CA"),0,100});
             }
             for(size_t aidx=0;aidx<adj.size();++aidx) {
                 excluded.insert( {
@@ -657,6 +690,26 @@ namespace reec {
                     }
                 }
             }
+            // Repair initial sidechain handedness without distorting covalent distances.
+            for(int r=1;r<=n;++r) {
+                if(!ids.count({r,"CB"})) continue;
+                int ca=id(r,"CA"),nn=id(r,"N"),cc=id(r,"C"),cb=id(r,"CB");
+                V normal=(xyz[nn]-xyz[ca]).cross(xyz[cc]-xyz[ca]).unit();
+                if((xyz[cb]-xyz[ca]).dot(normal)<0 && seq[r-1]!='P') {
+                    for(size_t i=0;i<nodes.size();++i) if(nodes[i].res==r && !nodes[i].backbone) {
+                        V v=xyz[i]-xyz[ca];xyz[i]=xyz[i]-normal*(2*v.dot(normal));
+                    }
+                }
+                if(seq[r-1]=='I' || seq[r-1]=='T') {
+                    int branch=id(r,seq[r-1]=='I'?"CG1":"OG1"),other=id(r,"CG2");
+                    normal=(xyz[ca]-xyz[cb]).cross(xyz[branch]-xyz[cb]).unit();
+                    if((xyz[other]-xyz[cb]).dot(normal)<0) {
+                        for(size_t i=0;i<nodes.size();++i) if(nodes[i].res==r && !nodes[i].backbone && int(i)!=cb) {
+                            V v=xyz[i]-xyz[cb];xyz[i]=xyz[i]-normal*(2*v.dot(normal));
+                        }
+                    }
+                }
+            }
             anchors=xyz;
             // Each template contributes a soft, rotation-invariant local fold restraint.
             for(auto& t:templates) for(int r=0;r<n;++r) if(t.mapping[r]>=0)
@@ -696,6 +749,7 @@ namespace reec {
             disulfides.push_back(p);
             int x=id(a,"SG"),y=id(b,"SG");
             edge(x,y);
+            pair(x,y,2.05,3000,true);
             excluded.insert(std::minmax(x,y));
             for(int v:adj[x])excluded.insert(std::minmax(v,y));
             for(int v:adj[y])excluded.insert(std::minmax(v,x));
@@ -1030,6 +1084,10 @@ namespace reec {
                 if(p.bond)s.bond_max=std::max(s.bond_max,err);
                 else s.angle_max=std::max(s.angle_max,err);
             }
+            for(auto v:volumes) if(std::fabs(v.value)<.1) {
+                double actual=(xyz[v.b]-xyz[v.a]).dot((xyz[v.c]-xyz[v.a]).cross(xyz[v.d]-xyz[v.a]));
+                s.planarity_max=std::max(s.planarity_max,std::fabs(actual-v.value));
+            }
             for(auto v:volumes)if(std::fabs(v.value)>.5) {
                 double actual=(xyz[v.b]-xyz[v.a]).dot((xyz[v.c]-xyz[v.a]).cross(xyz[v.d]-xyz[v.a]));
                 if(actual*v.value<=0)++s.chirality;
@@ -1065,6 +1123,7 @@ namespace reec {
               << ",\n  \"max_bond_error\": " << after.bond_max
               << ",\n  \"max_geometry_distance_error\": " << after.angle_max
               << ",\n  \"template_ca_rmsd\": " << after.ca_rmsd
+              << ",\n  \"max_planarity_volume_error\": " << after.planarity_max
               << ",\n  \"chirality_errors\": " << after.chirality
               << ",\n  \"mandatory_violations\": " << after.hard_fail
               << ",\n  \"contacts\": [";
@@ -1217,7 +1276,7 @@ int main(int argc,char** argv) {
                 m.minimize(iterations/3+(stage==2?iterations%3:0));
             }
             Stats s=m.stats();
-            bool ok=s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18&&s.severe==0;
+            bool ok=s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18&&s.planarity_max<=.25&&s.severe==0;
             std::cout<<"Candidate energy "<<s.score<<" bond error "<<s.bond_max<<" geometry error "<<s.angle_max<<" severe clashes "
             <<s.severe<<" mandatory violations "<<s.hard_fail<<"\n";
             if((ok&&!valid)||(ok==valid&&s.score<best_score)) {
