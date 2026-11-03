@@ -45,17 +45,34 @@ def command(args):
     subprocess.run([str(x) for x in args], cwd=ROOT, check=True)
 
 
+@contextlib.contextmanager
+def workspace(prefix, keep=False):
+    path = Path(tempfile.mkdtemp(prefix=prefix, dir=ROOT / 'tmp'))
+    try:
+        yield path
+    except BaseException:
+        print(f'REEC work files retained: {path}', file=sys.stderr)
+        raise
+    else:
+        if keep:
+            print(f'REEC work files retained: {path}')
+        else:
+            shutil.rmtree(path)
+
+
 def parser(repair=False):
     p = argparse.ArgumentParser(description='REEC receptor repair' if repair else 'REEC homology modeling')
     p.add_argument('receptor')
     p.add_argument('legacy', nargs='*')
     p.add_argument('--backend', choices=['reec', 'modeller'], default='reec')
     p.add_argument('--template', action='append', default=[], help='PDB template; repeat for an ensemble')
+    p.add_argument('--chain', default='A', help='Template protein chain')
     p.add_argument('--alignment', type=Path, help='PIR alignment; target ID is the receptor ID')
     p.add_argument('--contacts', type=Path, action='append', default=[])
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
     p.add_argument('--iterations', type=int, default=6000)
     p.add_argument('--models', type=int, default=2)
+    p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
     return p
 
@@ -128,6 +145,13 @@ def receptor_contacts(rcp, sources=()):
     return lines
 
 
+def template_argument(value):
+    if '=' in value:
+        name, path = value.split('=', 1)
+        return f'{name}={Path(path).resolve()}'
+    return str(Path(value).resolve())
+
+
 def target_alignment(rcp, path):
     path.write_text(f'>P1;{rcp}\nsequence:{rcp}:1:A::::::\n{pu.prots[rcp]["sequence"]}*\n')
 
@@ -161,6 +185,7 @@ def metadata(rcp, source=None, provenance=''):
         lines = [s for s in Path(source).read_text().splitlines()
                  if s.startswith(('REMARK   1 ', 'REMARK 265 HM_TEMPLATES'))]
     if provenance:
+        lines = [s for s in lines if not s.startswith('REMARK 265 HM_TEMPLATES')]
         lines.append(f'REMARK 265 HM_TEMPLATES: {provenance}')
     for name, region in pu.prots[rcp].get('region', {}).items():
         if name.startswith(('TMR', 'HXR')):
@@ -182,19 +207,21 @@ def publish(model, destination, remarks):
     shutil.copyfile(str(model) + '.json', str(destination) + '.json')
 
 
-def model(rcp, args, work, templates, alignment, contacts, environment=None):
+def model(rcp, args, work, templates, alignment, contacts, environment=None, fit_environment=False):
     contact_file = work / 'receptor.contacts'
     contact_file.write_text('\n'.join(contacts) + '\n')
     result = work / 'result.pdb'
     cmd = [ROOT / 'bin/reec', '--alignment', alignment, '--target', rcp,
            '--output', result, '--iterations', args.iterations, '--models', args.models,
-           '--contacts', contact_file]
+           '--contacts', contact_file, '--chain', args.chain]
     for template in templates:
         cmd.extend(['--template', template])
     for contact in args.contacts:
         cmd.extend(['--contacts', contact.resolve()])
     if environment:
         cmd.extend(['--environment', environment])
+        if fit_environment:
+            cmd.append('--fit-environment')
     try:
         command(cmd)
     except subprocess.CalledProcessError:
@@ -220,11 +247,10 @@ def run_dohm(argv):
     source = ROOT / 'pdbs' / family / f'{rcp}.inactive.pdb'
     destination = args.output or ROOT / 'pdbs' / family / f'{rcp}.active.pdb'
     command(['make', 'bin/reec'])
-    with tempfile.TemporaryDirectory(prefix=f'{rcp}-reec-', dir=ROOT / 'tmp') as temporary:
-        work = Path(temporary)
+    with workspace(f'{rcp}-reec-', args.keep_work or 'nodel' in args.legacy) as work:
         provenance = ''
         if args.template:
-            templates = [str(Path(t).resolve()) for t in args.template]
+            templates = [template_argument(t) for t in args.template]
             alignment = args.alignment.resolve() if args.alignment else work / 'target.ali'
             if not args.alignment:
                 target_alignment(rcp, alignment)
@@ -232,9 +258,10 @@ def run_dohm(argv):
             if args.alignment:
                 raise ValueError('--alignment also requires --template')
             alignment, templates, provenance = composite_alignment(rcp, work)
-        environment = source if 'riglig' in args.legacy else None
+        environment = (source if 'riglig' in args.legacy and source.exists()
+                       and any(s.startswith('HETATM') for s in source.read_text().splitlines()) else None)
         contacts = receptor_contacts(rcp, [source])
-        output = model(rcp, args, work, templates, alignment, contacts, environment)
+        output = model(rcp, args, work, templates, alignment, contacts, environment, bool(environment))
         publish(output, destination, metadata(rcp, source, provenance))
     print(f'REEC homology model: {destination}')
     return 0
@@ -271,6 +298,8 @@ def run_fixfail(argv):
         raise ValueError('Ligand contacts use pairs: LIGAND_ATOM RES:ATOM')
     if any(x in requested_actions for x in ('fit', 'predock', 'dock', 'loop')) and not odor:
         raise ValueError('Docking and fitting actions require a ligand or docked PDB')
+    if 'reset' in requested_actions and state == 'inactive':
+        raise ValueError('Reset builds an active model; omit reset for inactive repair')
     if 'reset' in requested_actions:
         reset_argv = [rcp, '--backend', 'reec', '--iterations', str(args.iterations),
                       '--models', str(args.models)]
@@ -279,9 +308,10 @@ def run_fixfail(argv):
     attempts = 100 if 'loop' in requested_actions else 1
     for attempt in range(attempts):
         print(f'REEC fixfail attempt {attempt + 1}/{attempts}', flush=True)
-        with tempfile.TemporaryDirectory(prefix=f'{rcp}-reec-fix-', dir=ROOT / 'tmp') as temporary:
-            work = Path(temporary)
+        with workspace(f'{rcp}-reec-fix-', args.keep_work) as work:
             template = work / 'repair.pdb'
+            if 'predock' in requested_actions:
+                command(['/bin/bash', './dock.sh', rcp, odor['full_name'], 'noi'])
             if 'fit' in requested_actions:
                 from data import odorutils
                 sdf = odorutils.ensure_sdf_exists(odor['full_name'])
@@ -290,8 +320,6 @@ def run_fixfail(argv):
                          sdf, '-a', '-c', '65536', '-n', '1', '-o', template])
             else:
                 shutil.copyfile(input_path, template)
-            if 'predock' in requested_actions:
-                command(['/bin/bash', './dock.sh', rcp, odor['full_name'], 'noi'])
             if not args.skip_reshape:
                 manifest = ('OR_ClassI' if rcp.startswith('OR') and int(re.sub(r'\D', '', family)) >= 50
                             else 'OR_ClassII' if rcp.startswith('OR') else 'TAAR' if rcp.startswith('TAAR')
@@ -315,7 +343,7 @@ def run_fixfail(argv):
                         raise ValueError(f'Ambiguous or absent ligand atom: {ligand_atom}')
                     residue, atom = receptor_atom.split(':', 1)
                     contacts.append(f'contact hard {residue} {atom} {matches.pop()} {ligand_atom} 2.7 3.8 100')
-            templates = [str(template)] + [str(Path(t).resolve()) for t in args.template]
+            templates = [str(template)] + [template_argument(t) for t in args.template]
             output = model(rcp, args, work, templates, alignment, contacts, environment)
             publish(output, destination, metadata(rcp, original))
         if 'dock' not in requested_actions and 'loop' not in requested_actions:

@@ -87,3 +87,22 @@ pairs in fixfail use the existing `LIGAND_ATOM RES:ATOM` syntax. `reset`, `fit`,
 `loop` actions are available; docking actions publish to the normal receptor path. For reviewable
 local experiments, use `--output` with no docking action. Failed numerical reports are retained as
 `tmp/RECEPTOR.reec-failure.json`.
+
+## Sampling and geometry details
+
+Every supplied template contributes soft CA distance bounds for nearby residues; these supplement
+local initialization and positional anchors. Alkyl bonds have a threefold torsion preference.
+Alternate starts rotate selected sidechains around CA–CB in 120-degree increments before relaxation.
+Proline rings are excluded from this move. The final terminal carboxyl OXT is constructed explicitly.
+Disulfides also restrain C–S–S angles and the central torsion through cross-link distances, allowing
+either handedness. The approximate 104-degree angle and 90-degree torsion are consistent with
+[published stereochemical modeling criteria](https://repository.ias.ac.in/4123/1/312.pdf).
+
+The report includes selected atom alternatives, fixed ligand counts, and template CA RMS displacement.
+`--keep-work` retains alignment, template, contact, and result files; the existing `nodel` option does
+the same in dohm. Failed runs retain their workspace for diagnosis. `--fit-environment` rigidly fits
+a ligand's source protein to the first template before adding fixed ligand atoms. The dohm `riglig`
+path applies that fit automatically. Ligand heavy-atom CONECT records are carried into the output.
+Hydrogen bonds use heavy-atom distance bounds; hydrogen placement and directional scoring are outside
+the current optimizer. Inactive fixfail repair is supported; the `reset` action constructs active
+models and is rejected for inactive repair.

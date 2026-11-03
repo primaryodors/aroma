@@ -11,6 +11,7 @@ int main()
     model.anchor_weight.assign(4, .3);
     model.geometry.push_back({0,1,1.2,1.2,5,true});
     model.volumes.push_back({0,1,2,3,2.0,3});
+    model.torsions.push_back({0,1,2,3,0,.7});
     Contact contact{1,2,"CA","CA","contact",2.5,3.0,4,true,{{1,2}}};
     model.contacts.push_back(contact);
     XYZ gradient;
