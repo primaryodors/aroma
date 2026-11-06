@@ -167,6 +167,26 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(report['contacts'][0]['kind'], 'disulfide')
         self.assertAlmostEqual(report['contacts'][0]['distance'], 2.05, delta=.03)
         self.assertIn('CONECT', self.output.read_text())
+        loaded = subprocess.run([str(ROOT / 'test/reec_test'), str(self.output)], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(loaded.returncode, 0, loaded.stdout + loaded.stderr)
+
+    def test_explicit_environment_hydrogens(self):
+        first = next(s for s in self.template.read_text().splitlines()
+                     if s.startswith('ATOM  ') and s[12:16].strip() == 'CA')
+        x,y,z = [float(first[i:i+8]) for i in (30,38,46)]
+        environment = self.work / 'environment.pdb'
+        environment.write_text(
+            f'HETATM    1  C1  LIG A 999    {x+4:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           C\n'
+            f'HETATM    2  H2  LIG A 999    {x+4.36:8.3f}{y+1.03:8.3f}{z:8.3f}  1.00  0.00           H\nEND\n')
+        contacts = self.work / 'contacts.txt'
+        contacts.write_text('contact hard 1 CA 999 H2 3 6 100\n')
+        result = self.run_model('--environment', str(environment), '--environment-hydrogens', '--contacts', str(contacts))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads(Path(str(self.output) + '.json').read_text())
+        self.assertEqual(report['fixed_atoms'], 2)
+        lines = [s for s in self.output.read_text().splitlines() if s.startswith(('ATOM  ', 'HETATM'))]
+        self.assertEqual(report['heavy_atoms'], sum(s[76:78].strip() != 'H' for s in lines))
+        self.assertTrue(any(s[12:16].strip() == 'H2' for s in lines))
 
     def test_invalid_atom_fails_explicitly(self):
         contacts = self.work / 'contacts.txt'

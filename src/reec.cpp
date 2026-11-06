@@ -799,7 +799,7 @@ namespace reec {
             }
         }
         // Ligands remain rigid. Their coordinates still contribute to steric and contact terms.
-        void environment(const std::string& path, const RigidFit& fit=RigidFit()) {
+        void environment(const std::string& path, const RigidFit& fit=RigidFit(), bool include_hydrogens=false) {
             std::ifstream f(path);
             if (!f) throw std::runtime_error("Cannot read fixed environment: " + path);
             std::string s;
@@ -840,7 +840,7 @@ namespace reec {
             Point point(p.x,p.y,p.z);
                 std::unique_ptr<Atom> atom(new Atom(element.c_str(),&point));
                 if(atom->Z<=0)throw std::runtime_error("Unknown environment element");
-                if(atom->Z==1)continue;
+                if(atom->Z==1&&!include_hydrogens)continue;
                 int i=nodes.size();
                 ids[ {
                     r,name
@@ -1114,7 +1114,7 @@ namespace reec {
             if(!f) throw std::runtime_error("Cannot write report");
             f << std::setprecision(8)
               << "{\n  \"engine\": \"REEC\",\n  \"valid\": " << (valid?"true":"false")
-              << ",\n  \"heavy_atoms\": " << nodes.size()
+              << ",\n  \"heavy_atoms\": " << std::count_if(nodes.begin(),nodes.end(),[](const Node& n){return n.atom->Z>1;})
               << ",\n  \"fixed_atoms\": " << fixed_records.size()
               << ",\n  \"initial_energy\": " << before.score
               << ",\n  \"final_energy\": " << after.score
@@ -1176,9 +1176,9 @@ namespace reec {
                 fprintf(f,"ATOM  %5d %-4s %3s A%4d    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n",serial,atom.c_str(),names[codes.find(aa->get_letter())].c_str(),
                 n.res,xyz[i].x,xyz[i].y,xyz[i].z,Atom::esym_from_Z(n.atom->Z));
             }
-            fprintf(f,"TER\n");
             for(auto p:disulfides)fprintf(f,"CONECT%5d%5d\n",serials[id(p.first,"SG")],serials[id(p.second,"SG")]);
             for(auto p:fixed_links)fprintf(f,"CONECT%5d%5d\n",serials[p.first],serials[p.second]);
+            fprintf(f,"TER\n");
             fprintf(f,"END\n");
             bool failed=std::ferror(f);
             if(std::fclose(f))failed=true;
@@ -1189,7 +1189,7 @@ namespace reec {
         }
     };
     void help() {
-        std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+        std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
     }
 }
 #ifndef REEC_NO_MAIN
@@ -1198,12 +1198,13 @@ int main(int argc,char** argv) {
     try {
         std::cout.setf(std::ios::unitbuf);
         std::string ali,out,target,report,environment;
-        bool fit_environment=false;
+        bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
         int iterations=3000,models=1;
         for(int i=1;i<argc;++i) {
             std::string a=argv[i];
+            if(a=="--environment-hydrogens") { environment_hydrogens=true;continue; }
             if(a=="--fit-environment") { fit_environment=true;continue; }
             if(a=="--help"||a=="-h") {
                 help();
@@ -1258,7 +1259,7 @@ int main(int argc,char** argv) {
                 env.mapping=align(seq,env);
                 fit=superpose(env,t[0]);
             }
-            m.environment(environment,fit);
+            m.environment(environment,fit,environment_hydrogens);
         }
         for(auto& path:contact_files)m.read_contacts(path);
         Stats initial=m.stats();

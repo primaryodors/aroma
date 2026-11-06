@@ -128,3 +128,10 @@ python3 hm/reec_review.py tmp/receptor.pdb --output tmp/receptor.review.json
 Add `--plot tmp/receptor.png` for a validation plot; Matplotlib is optional. Regression checks also
 apply this independent audit to every successful CLI fixture. The [worked examples](reec_examples/README.md)
 include two receptor classes, a composite template, an IC reshape, and a ligand-bearing failed dock.
+
+Explicit ligand hydrogens can participate as fixed steric obstacles with
+`--environment-hydrogens`. Their supplied coordinates and connectivity are retained; the report's
+heavy-atom count excludes them. This supports a ligand conformer prepared with explicit hydrogen
+geometry before receptor relaxation. Connection records precede `TER`, matching the native
+protein reader's chain termination behavior, so disulfides reload as covalent bonds and retain
+correct sulfur valence during subsequent hydrogen preparation.

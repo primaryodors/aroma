@@ -2,9 +2,30 @@
 #include "../reec.cpp"
 #include <cassert>
 
-int main()
+int main(int argc, char** argv)
 {
     using namespace reec;
+    if(argc==2)
+    {
+        Protein protein;
+        FILE* file=fopen(argv[1],"r");assert(file);
+        protein.load_pdb(file);fclose(file);
+        int links=0;
+        for(int a=1;a<=protein.get_end_resno();++a)
+            for(int b=a+1;b<=protein.get_end_resno();++b)
+            {
+                Atom* first=protein.get_atom(a,"SG"),*second=protein.get_atom(b,"SG");
+                if(!first||!second||first->distance_to(second)>2.3)continue;
+                assert(first->get_bond_between(second));
+                protein.get_residue(a)->hydrogenate();
+                protein.get_residue(b)->hydrogenate();
+                assert(!first->is_bonded_to("H")&&!second->is_bonded_to("H"));
+                ++links;
+            }
+        assert(links>0);
+        std::cout<<"REEC disulfides reload as covalent bonds.\n";
+        return 0;
+    }
     Model model;
     model.xyz = {{0,0,0}, {1.5,.1,0}, {.2,1.4,.2}, {.1,.3,1.6}};
     model.anchors = model.xyz;
