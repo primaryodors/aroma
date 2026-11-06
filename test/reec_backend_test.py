@@ -85,6 +85,68 @@ class ReecBackend(unittest.TestCase):
         args = backend.parser().parse_intermixed_args(['OR1A1', '--backend', 'reec', 'nodel'])
         self.assertEqual(args.legacy, ['nodel'])
 
+    def test_fixfail_preserves_coordinates_omitted_by_dock_export(self):
+        import math
+        codes = dict(zip(
+            'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+            'ACDEFGHIKLMNPQRSTVWY'))
+        lines = [line for line in (ROOT / 'testdata/reec-small.pdb').read_text().splitlines()
+                 if line.startswith('ATOM  ')]
+        numbers = sorted({int(line[22:26]) for line in lines})
+        numbering = {old: i + 1 for i, old in enumerate(numbers)}
+        lines = [line[:22] + f'{numbering[int(line[22:26])]:4d}' + line[26:] for line in lines]
+        sequence = ''.join(codes[line[17:20]] for line in lines if line[12:16].strip() == 'CA')
+        omitted = {1, 2, len(sequence) // 2}
+        with tempfile.TemporaryDirectory(prefix='reec-clipped-repair-') as temporary:
+            root = Path(temporary)
+            (root / 'tmp').mkdir()
+            raw = root / 'raw.pdb'
+            raw.write_text('\n'.join(lines + ['TER', 'END']) + '\n')
+            alignment = root / 'reference.ali'
+            alignment.write_text(f'>P1;OR1A1\nsequence:OR1A1:1:A::::::\n{sequence}*\n')
+            normalized = root / 'normalized.pdb'
+            subprocess.run([str(ROOT / 'bin/reec'), '--alignment', str(alignment),
+                            '--template', str(raw), '--target', 'OR1A1', '--output', str(normalized),
+                            '--iterations', '1500', '--models', '1'], cwd=ROOT,
+                           capture_output=True, text=True, check=True)
+            lines = [line for line in normalized.read_text().splitlines() if line.startswith('ATOM  ')]
+            family = root / 'pdbs' / 'OR1'
+            family.mkdir(parents=True)
+            original = family / 'OR1A1.active.pdb'
+            original.write_text('\n'.join(lines + ['TER', 'END']) + '\n')
+            clipped = root / 'clipped.pdb'
+            clipped.write_text('\n'.join([line for line in lines if int(line[22:26]) not in omitted]
+                                         + ['TER', 'END']) + '\n')
+            destination = root / 'repaired.pdb'
+            baseline = root / 'full-repair.pdb'
+            messages = []
+            def command(args):
+                if str(args[0]) == 'make':
+                    return
+                actual = [str(item) for item in args]
+                actual[0] = str(ROOT / 'bin' / Path(actual[0]).name)
+                result = subprocess.run(actual, cwd=ROOT, capture_output=True, text=True, check=True)
+                messages.append(result.stdout)
+            entry = dict(backend.pu.prots['OR1A1'], sequence=sequence)
+            with patch.object(backend, 'ROOT', root), \
+                    patch.object(backend, 'receptor', return_value=('OR1A1', 'active')), \
+                    patch.dict(backend.pu.prots, {'OR1A1': entry}), \
+                    patch.object(backend, 'receptor_contacts', return_value=[]), \
+                    patch.object(backend, 'command', side_effect=command):
+                backend.run_fixfail(['OR1A1', str(original), '--skip-reshape',
+                                     '--iterations', '1500', '--models', '1', '--output', str(baseline)])
+                backend.run_fixfail(['OR1A1', str(clipped), '--skip-reshape',
+                                     '--iterations', '1500', '--models', '1', '--output', str(destination)])
+            reference_ca = {int(line[22:26]): tuple(float(line[i:i+8]) for i in (30, 38, 46))
+                            for line in baseline.read_text().splitlines()
+                            if line.startswith('ATOM  ') and line[12:16].strip() == 'CA'}
+            restored = {int(line[22:26]): tuple(float(line[i:i+8]) for i in (30, 38, 46))
+                        for line in destination.read_text().splitlines()
+                        if line.startswith('ATOM  ') and line[12:16].strip() == 'CA'}
+            for residue in omitted:
+                self.assertLess(math.dist(reference_ca[residue], restored[residue]), .5,
+                                f'Residue {residue}: ' + '\n'.join(messages))
+
     def test_composite_rows_pad_trailing_gaps(self):
         with tempfile.TemporaryDirectory(prefix='reec-adapter-') as temporary:
             work = Path(temporary)

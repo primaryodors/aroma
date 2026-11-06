@@ -152,8 +152,28 @@ def template_argument(value):
     return str(Path(value).resolve())
 
 
-def target_alignment(rcp, path):
-    path.write_text(f'>P1;{rcp}\nsequence:{rcp}:1:A::::::\n{pu.prots[rcp]["sequence"]}*\n')
+def target_alignment(rcp, path, template=None, chain='A'):
+    sequence = pu.prots[rcp]['sequence']
+    prefix = ''
+    if template:
+        codes = dict(zip(
+            'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+            'ACDEFGHIKLMNPQRSTVWY'))
+        present = set()
+        numbered = True
+        for line in Path(template).read_text().splitlines():
+            if not line.startswith('ATOM  ') or line[12:16].strip() != 'CA' or line[21] not in (' ', chain):
+                continue
+            number = int(line[22:26])
+            if not 1 <= number <= len(sequence) or codes.get(line[17:20]) != sequence[number-1] or number in present:
+                numbered = False
+                break
+            present.add(number)
+        if numbered and present:
+            row = ''.join(amino if i in present else '-' for i, amino in enumerate(sequence, 1))
+            name = Path(template).stem
+            prefix = f'>P1;{name}\nstructureX:{name}:FIRST:{chain}::::::\n{row}*\n'
+    path.write_text(prefix + f'>P1;{rcp}\nsequence:{rcp}:1:A::::::\n{sequence}*\n')
 
 
 def composite_alignment(rcp, work):
@@ -404,7 +424,7 @@ def run_fixfail(argv):
                 command([ROOT / 'bin/ic', template, shape, 'save'])
             alignment = args.alignment.resolve() if args.alignment else work / 'target.ali'
             if not args.alignment:
-                target_alignment(rcp, alignment)
+                target_alignment(rcp, alignment, template, args.chain)
             contacts = receptor_contacts(rcp, [original, input_path])
             ligand_lines = [s for s in template.read_text().splitlines() if s.startswith('HETATM')]
             environment = template if ligand_lines else None
@@ -418,6 +438,8 @@ def run_fixfail(argv):
                     residue, atom = receptor_atom.split(':', 1)
                     contacts.append(f'contact hard {residue} {atom} {matches.pop()} {ligand_atom} 2.7 3.8 100')
             templates = [str(template)] + [template_argument(t) for t in args.template]
+            if original.exists():
+                templates.append(str(original))
             output = model(rcp, args, work, templates, alignment, contacts, environment)
             publish(output, destination, metadata(rcp, original))
         if 'dock' not in requested_actions and 'loop' not in requested_actions:

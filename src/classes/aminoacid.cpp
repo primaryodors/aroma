@@ -2237,6 +2237,8 @@ void AminoAcid::set_conditional_basicity(Molecule** nearby_mols)
     {
         if (found_hbond)
         {
+            const auto original_motion = movability;
+            const auto acid_motion = found_mol->movability;
             if (found_mol->is_residue())
             {
                 movability = MOV_PINNED;
@@ -2287,7 +2289,43 @@ void AminoAcid::set_conditional_basicity(Molecule** nearby_mols)
             strcpy(temp, protonated->name);
             temp[0] = 'H';
             proton = protonated->is_bonded_to("H");
-            if (!proton) proton = add_atom("H", temp, protonated, 1);
+            if (!proton)
+            {
+                proton = add_atom("H", temp, protonated, 1);
+                // Conditional protonation must not introduce overlapping hydrogens.
+                // Loaded protons retain their existing state and follow the reuse path.
+                bool collision = false;
+                auto inspect_hydrogens = [&](Molecule* molecule)
+                {
+                    for (int atom_index = 0; atom_index < molecule->get_atom_count(); ++atom_index)
+                    {
+                        Atom* other = molecule->get_atom(atom_index);
+                        if (other != proton && other->Z == 1 && proton->distance_to(other) < 1.5)
+                        {
+                            collision = true;
+                            break;
+                        }
+                    }
+                };
+                inspect_hydrogens(this);
+                for (int neighbor = 0; nearby_mols[neighbor] && !collision; ++neighbor)
+                    inspect_hydrogens(nearby_mols[neighbor]);
+                // Some callers supply acids only; neutral protein neighbors still obstruct a proton.
+                if (protein && !collision)
+                    for (int residue = protein->get_start_resno(); residue <= protein->get_end_resno() && !collision; ++residue)
+                    {
+                        AminoAcid* neighbor = protein->get_residue(residue);
+                        if (neighbor && neighbor != this) inspect_hydrogens(neighbor);
+                    }
+                if (collision)
+                {
+                    delete_atom(proton);
+                    proton = nullptr;
+                    movability = original_motion;
+                    found_mol->movability = acid_motion;
+                    return;
+                }
+            }
             proton->residue = residue_no;
             strcpy(proton->aa3let, aadef->_3let);
 
