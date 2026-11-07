@@ -924,6 +924,8 @@ std::ostream& operator<<(std::ostream& output, const DockResult& dr)
     if (dr.out_per_res_e)
     {
         output << "BENERG:" << endl;
+        if (kcal) output << "# (kcal/mol)" << endl;
+        else output << "# (kJ/mol)" << endl;
         for (	l=0;
 
                 dr.mkJmol

@@ -143,7 +143,6 @@ bool wet_contact = false;       // If true, place a water molecule between the s
 bool flex = true;
 float kJmol_cutoff = -0.01;
 int pose=1, nodeno=0, iter=0;
-bool kcal = false;
 float drift = initial_drift;
 Molecule** gcfmols = NULL;
 int activation_node = -1;		// Default is never.
