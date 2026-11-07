@@ -130,8 +130,38 @@ static void check_neutral_protein_obstacle(bool blocked)
     if (blocked) assert(histidine->movability == motion);
 }
 
+static void check_flip_after_proton_removal()
+{
+    AminoAcid histidine('H', nullptr, false);
+    assert(histidine.hisflips && histidine.hisflips[0]);
+    HistidineFlip* flip = histidine.hisflips[0];
+    Atom* original = flip->H;
+    Atom* donor = original->get_bond_by_idx(0)->atom2;
+    Atom* other = donor == flip->N1 ? flip->N2 : flip->N1;
+    const int count = histidine.get_atom_count();
+
+    histidine.delete_atom(original);
+    histidine.do_histidine_flip(flip);
+    assert(histidine.get_atom_count() == count - 1);
+    assert(!donor->is_bonded_to("H") && !other->is_bonded_to("H"));
+
+    Atom* replacement = histidine.add_atom("H", "replacement", other, 1);
+    for (int repeat = 0; repeat < 4; ++repeat)
+    {
+        Atom* before = replacement->get_bond_by_idx(0)->atom2;
+        histidine.do_histidine_flip(flip);
+        Atom* after = replacement->get_bond_by_idx(0)->atom2;
+        assert(after && after != before);
+        assert(after == donor || after == other);
+        assert(flip->H == replacement);
+        assert(after->is_bonded_to(replacement));
+        assert(histidine.get_atom_count() == count);
+    }
+}
+
 int main()
 {
+    check_flip_after_proton_removal();
     check_state(false);
     check_state(true);
     check_steric_protonation(false, false);

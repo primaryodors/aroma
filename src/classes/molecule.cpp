@@ -5321,7 +5321,18 @@ void Molecule::minimize_internal_clashes()
 
 void Molecule::do_histidine_flip(HistidineFlip* hf)
 {
+    if (!hf || !hf->C || !hf->N1 || !hf->N2) return;
     if (hf->N1->get_charge() >= 0.2 || hf->N2->get_charge() >= 0.2) return;
+
+    // Conditional protonation can remove or replace the cached hydrogen.
+    // Resolve the current tautomer from its bonds before moving any atoms.
+    Atom* first = hf->N1->is_bonded_to("H");
+    Atom* second = hf->N2->is_bonded_to("H");
+    if (first && second) return;
+    Atom* hydrogen = first ? first : second;
+    if (!hydrogen || atom_idx_from_ptr(hydrogen) < 0) return;
+    hf->H = hydrogen;
+    Atom* was_bonded = first ? hf->N1 : hf->N2;
 
     Point ptC  = hf->C->loc;
     Point ptN1 = hf->N1->loc;
@@ -5334,7 +5345,6 @@ void Molecule::do_histidine_flip(HistidineFlip* hf)
     Point newloc = rotate3D(ptH, Navg, ptC.subtract(Navg), M_PI);
     hf->H->move(newloc);
 
-    Atom* was_bonded = hf->H->get_bond_by_idx(0)->atom2;
     hf->H->unbond(was_bonded);
     float rN1 = newloc.get_3d_distance(ptN1), rN2 = newloc.get_3d_distance(ptN2);
     Atom* new_bonded = (rN1 > rN2) ? hf->N2 : hf->N1;
