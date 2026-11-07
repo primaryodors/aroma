@@ -519,6 +519,9 @@ struct Model
     std::vector<Pair> geometry;
     std::vector<Volume> volumes;
     std::vector<Volume> torsions;
+    std::vector<Volume> dihedral_restraints;
+    std::vector<std::pair<int,int>> mobile_ranges;
+    std::vector<double> original_anchor_weight;
     std::vector<Contact> contacts;
     std::map<std::pair<int,std::string>,int> ids;
     std::vector<std::vector<int>> adj;
@@ -939,6 +942,35 @@ struct Model
                     add_disulfide(integer(a),integer(b));
                     continue;
                 }
+                if(kind=="dihedral")
+                {
+                    std::string r[4], atom[4], mean, deviation, extra;
+                    for(int i=0;i<4;++i)
+                        if(!(ss>>r[i]>>atom[i]))throw std::runtime_error("Expected four dihedral atoms");
+                    if(!(ss>>mean>>deviation)||(ss>>extra))throw std::runtime_error("Expected dihedral mean and deviation in radians");
+                    double sd=number(deviation);
+                    if(sd<=0)throw std::runtime_error("Invalid dihedral deviation");
+                    dihedral_restraints.push_back({id(integer(r[0]),atom[0]),id(integer(r[1]),atom[1]),
+                        id(integer(r[2]),atom[2]),id(integer(r[3]),atom[3]),number(mean),1/(sd*sd)});
+                    continue;
+                }
+                if(kind=="mobile")
+                {
+                    std::string first,last,extra;
+                    if(!(ss>>first>>last)||(ss>>extra))throw std::runtime_error("Expected mobile FIRST LAST");
+                    int start=integer(first),end=integer(last);
+                    if(start<1||end<start||end>protein.get_end_resno())throw std::runtime_error("Invalid mobile residue range");
+                    mobile_ranges.push_back({start,end});
+                    if(original_anchor_weight.empty())original_anchor_weight=anchor_weight;
+                    for(size_t i=0;i<nodes.size();++i)
+                    {
+                        bool mobile=false;
+                        for(auto range:mobile_ranges)
+                            if(nodes[i].res>=range.first&&nodes[i].res<=range.second)mobile=true;
+                        anchor_weight[i]=original_anchor_weight[i]*(mobile?.25:1);
+                    }
+                    continue;
+                }
                 Contact c;
                 std::string mode,r1,r2,lo,hi,w,extra;
                 if(!(ss>>mode>>r1>>c.a1>>r2>>c.a2>>lo>>hi>>w)||(ss>>extra))throw std::runtime_error("Expected contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT");
@@ -1109,6 +1141,39 @@ struct Model
         g[t.d]+=gw;
         return t.weight*(1+4*cosine*cosine*cosine-3*cosine);
     }
+    static double dihedral_value(const XYZ& x,const Volume& t)
+    {
+        V u=x[t.b]-x[t.a],v=x[t.c]-x[t.b],w=x[t.d]-x[t.c];
+        V n=u.cross(v),m=v.cross(w);
+        return std::atan2(n.cross(m).dot(v)/std::max(1e-12,v.norm()),n.dot(m));
+    }
+    static double restrained_dihedral(const XYZ& x,XYZ& g,const Volume& t)
+    {
+        const int atoms[]={t.a,t.b,t.c,t.d};
+        const Volume local{0,1,2,3,t.value,t.weight};
+        auto energy=[&](const XYZ& points)
+        {
+            double error=std::remainder(dihedral_value(points,local)-t.value,2*std::acos(-1.));
+            return t.weight*error*error;
+        };
+        XYZ shifted={x[t.a],x[t.b],x[t.c],x[t.d]};
+        const double step=1e-6;
+        for(int local_atom=0;local_atom<4;++local_atom)for(int axis=0;axis<3;++axis)
+        {
+            int atom=atoms[local_atom];
+            double* position=axis==0?&shifted[local_atom].x:axis==1?&shifted[local_atom].y:&shifted[local_atom].z;
+            *position+=step;
+            double plus=energy(shifted);
+            *position-=2*step;
+            double minus=energy(shifted);
+            *position+=step;
+            double derivative=(plus-minus)/(2*step);
+            if(axis==0)g[atom].x+=derivative;
+            else if(axis==1)g[atom].y+=derivative;
+            else g[atom].z+=derivative;
+        }
+        return energy(shifted);
+    }
     void alternate_start(int candidate)
     {
         refresh(xyz);
@@ -1160,6 +1225,7 @@ struct Model
             g[v.a]+=(gb+gc+gd)*(-1);
         }
         for(auto& t:torsions) e+=torsion_energy(x,g,t);
+        for(auto& t:dihedral_restraints)e+=restrained_dihedral(x,g,t);
         for(size_t i=0; i<x.size(); ++i)
         {
             V v=x[i]-anchors[i];
@@ -1345,6 +1411,8 @@ struct Model
             return n.atom->Z>1;
         })
                 << ",\n  \"fixed_atoms\": " << fixed_records.size()
+                << ",\n  \"dihedral_restraints\": " << dihedral_restraints.size()
+                << ",\n  \"mobile_ranges\": " << mobile_ranges.size()
                 << ",\n  \"initial_energy\": " << before.score
                 << ",\n  \"final_energy\": " << after.score
                 << ",\n  \"initial_severe_clashes\": " << before.severe
@@ -1430,7 +1498,7 @@ struct Model
 };
 void help()
 {
-    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
 }
 }
 #ifndef REEC_NO_MAIN
@@ -1440,7 +1508,7 @@ int main(int argc,char** argv)
     try
     {
         std::cout.setf(std::ios::unitbuf);
-        std::string ali,out,target,report,environment;
+        std::string ali,out,target,report,environment,candidate_prefix;
         bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
@@ -1471,6 +1539,7 @@ int main(int argc,char** argv)
             else if(a=="--target")target=v;
             else if(a=="--contacts")contact_files.push_back(v);
             else if(a=="--report")report=v;
+            else if(a=="--candidate-prefix")candidate_prefix=v;
             else if(a=="--environment")environment=v;
             else if(a=="--chain")
             {
@@ -1539,6 +1608,12 @@ int main(int argc,char** argv)
             }
             Stats s=m.stats();
             bool ok=s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18&&s.planarity_max<=.25&&s.severe==0;
+            if(!candidate_prefix.empty())
+            {
+                std::string path=candidate_prefix+"."+std::to_string(candidate)+".pdb";
+                m.report(path+".json",initial,s,ok);
+                if(ok)m.save(path,s);
+            }
             std::cout<<"Candidate energy "<<s.score<<" bond error "<<s.bond_max<<" geometry error "<<s.angle_max<<" severe clashes "
                      <<s.severe<<" mandatory violations "<<s.hard_fail<<"\n";
             if((ok&&!valid)||(ok==valid&&s.score<best_score))

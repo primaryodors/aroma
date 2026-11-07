@@ -63,6 +63,11 @@ All of the active models under the `pdbs/` folder have been created with the `hm
 with other utilities such as `bin/ic`. To create your own active-state homology models, simply run `php -f hm/dohm.php OR###` from the `aroma/`
 project root folder, replacing `OR###` with the ID of the receptor you wish to model. WARNING: This action WILL OVERWRITE existing active models.
 
+The Python entry points are `python3 hm/dohm.py OR###` and `python3 hm/fixfail.py ...`.
+REEC (Restrained Ensemble Energy Conformer) is their default modeling engine; pass `--backend modeller` to select MODELLER.
+Preparation, restraint definitions, postprocessing, and retries live in these scripts and run for both engines.
+`hm/modeling_backend.py` adapts the numerical modeling calls. Changes to the workflow stay in the entry point scripts.
+
 You can also adjust an active-state model if a known agonist fails to dock, by running `hm/fixfail.py` from the `aroma/` folder. The receptor ID 
 and the docked PDB model are the only required parameters. WARNING: This action WILL OVERWRITE existing active models. An example usage might be:
 

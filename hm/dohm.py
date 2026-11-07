@@ -18,18 +18,8 @@ root_dir = os.path.dirname(script_dir)
 sys.path.append(root_dir)
 
 from pathlib import Path
-from reec_backend import requested, entrypoint, run_dohm, legacy_backend_args, validated_alignment
-if requested(sys.argv[1:], default='reec'):
-    sys.exit(entrypoint(run_dohm, sys.argv[1:]))
-sys.argv[1:] = legacy_backend_args(sys.argv[1:])
-
-try:
-    from modeller import *
-    from modeller.automodel import *
-except ImportError:
-    print("FATAL ERROR: This feature requires MODELLER.", file=sys.stderr)
-    print("Please see: https://salilab.org/modeller/ to obtain this third party software.", file=sys.stderr)
-    sys.exit(1)
+from reec_backend import validated_alignment, receptor, directory
+from modeling_backend import options as backend_options, api as backend_api, construct, custom_alignment, publication_guard, finalize
 
 import data.protutils as pu
 
@@ -50,12 +40,23 @@ def execute_alignment_builder():
         print("FATAL ERROR: Alignment builder failed.", file=sys.stderr)
         sys.exit(1)
 
-def main():
+def main(argv=None):
+    options = backend_options(sys.argv[1:] if argv is None else argv)
+    unknown = set(options.legacy) - {'nodel', 'riglig'}
+    if unknown:
+        raise ValueError(f'Unknown options: {sorted(unknown)}')
+    engine = backend_api(options)
+    Environ, AutoModel = engine.Environ, engine.AutoModel
+    secondary_structure, forms, features, physical = engine.secondary_structure, engine.forms, engine.features, engine.physical
+    autosched, refine = engine.autosched, engine.refine
+    sys.argv = [sys.argv[0], options.receptor] + options.legacy
     if len(sys.argv) < 2:
         print("Usage:\npython3 hm/dohm.py PROTID [riglig] [nodel]\n", file=sys.stderr)
         sys.exit(1)
 
-    rcpid = sys.argv[1].upper()
+    rcpid, state = receptor(options.receptor)
+    if state != 'active':
+        raise ValueError('dohm produces active models; use fixfail for inactive repair')
     riglig = "riglig" in sys.argv
     nodel = "nodel" in sys.argv
 
@@ -71,9 +72,14 @@ def main():
     famno_str = re.sub(r"[^0-9]", "", fam)
     famno = int(famno_str) if famno_str else 0
 
-    validated = validated_alignment(rcpid, Path(script_dir))
+    output_pdb = options.output or Path(root_dir) / 'pdbs' / fam / f'{rcpid}.active.pdb'
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    model_knowns = f'{rcpid}_tpl'
+    validated = (custom_alignment(options, rcpid, Path(script_dir)) if options.template
+                 else validated_alignment(rcpid, Path(script_dir)))
     if validated:
-        alignment, _, tplsused = validated
+        alignment, templates, tplsused = validated
+        model_knowns = tuple(value.split('=', 1)[0] for value in templates)
         hm_ali_file = str(alignment)
         os.chdir(script_dir)
     else:
@@ -158,7 +164,7 @@ def main():
         except Exception:
             pass
 
-    # 5. Define Native MODELLER Class
+    # 5. Define model callbacks shared by both engines
     env = Environ()
     env.io.atom_files_directory = ['.', './tpl']
     if riglig:
@@ -360,12 +366,12 @@ def main():
                     pass
 
     # 6. Execute Homology Model
-    print(f"Initiating MODELLER for {rcpid}...", file=sys.stderr)
-    a = AromaModel(env, alnfile=hm_ali_file, knowns=f'{rcpid}_tpl', sequence=rcpid)
+    print(f"Initiating {options.backend.upper()} for {rcpid}...", file=sys.stderr)
+    a = construct(AromaModel, env, alnfile=hm_ali_file, knowns=model_knowns, sequence=rcpid)
     a.starting_model = 0
-    a.ending_model = 9
+    a.ending_model = a.starting_model + options.models - 1 if options.models is not None else 9
     a.library_schedule = autosched.slow
-    a.max_var_iterations = 1000
+    a.max_var_iterations = options.iterations if options.iterations is not None else 1000
 
     if rcpid in ["OR2AE1", "OR2AG1", "OR2AG2"]:
         a.md_level = refine.very_slow
@@ -389,269 +395,273 @@ def main():
     best_pdb = best_model['name']
     print(f"Best model generated: {best_pdb} with molpdf {best_model['molpdf']}")
 
-    # 8. Post-Processing Script Generation (.phew)
-    adjustments = ""
-    if famno < 50:
-        adjustments += 'IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48\n'
-        adjustments += 'IF $45.51 = "D" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
-        adjustments += 'IF $45.51 = "E" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
-    elif famno in [51, 52]:
-        adjustments += 'ATOMTO %6.59 EXTENT @4.57\n'
-    elif rcpid == "OR56B2":
-        adjustments += 'ATOMTO %6.58 EXTENT @4.57\n'
+    with publication_guard(output_pdb):
+        # 8. Post-Processing Script Generation (.phew)
+        adjustments = ""
+        if famno < 50:
+            adjustments += 'IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48\n'
+            adjustments += 'IF $45.51 = "D" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
+            adjustments += 'IF $45.51 = "E" AND $6.55 = "Y" THEN BRIDGE %45.51 %6.55\n'
+        elif famno in [51, 52]:
+            adjustments += 'ATOMTO %6.59 EXTENT @4.57\n'
+        elif rcpid == "OR56B2":
+            adjustments += 'ATOMTO %6.58 EXTENT @4.57\n'
 
-    if famsub == "OR5K":
-        adjustments += 'ATOMTO %45.49 EXTENT @2.58\n'
+        if famsub == "OR5K":
+            adjustments += 'ATOMTO %45.49 EXTENT @2.58\n'
 
-    dsphew = ""
-    for idx, r1 in enumerate(dsres1):
-        r2 = dsres2[idx]
-        dsphew += f"""
-MEASURE {r1} SG {r2} SG &d
-IF &d > 3 GOTO _nodisulf{idx}
-DELATOM {r1} HG
-DELATOM {r2} HG
-CONECT {r1} SG {r2} SG
-_nodisulf{idx}:
-"""
+        dsphew = ""
+        for idx, r1 in enumerate(dsres1):
+            r2 = dsres2[idx]
+            dsphew += f"""
+    MEASURE {r1} SG {r2} SG &d
+    IF &d > 3 GOTO _nodisulf{idx}
+    DELATOM {r1} HG
+    DELATOM {r2} HG
+    CONECT {r1} SG {r2} SG
+    _nodisulf{idx}:
+    """
 
-    phew_script = f"""LET $rcpid = "{rcpid}"
-LET $inpf = "pdbs/{fam}/{rcpid}.inactive.pdb"
-LET $mdld = "hm/{best_pdb}"
-LOAD $inpf A I
-LET %rcpseqln = %SEQLENI
-LOAD $mdld A A
+        phew_script = f"""LET $rcpid = "{rcpid}"
+    LET $inpf = "pdbs/{fam}/{rcpid}.inactive.pdb"
+    LET $mdld = "hm/{best_pdb}"
+    LOAD $inpf A I
+    LET %rcpseqln = %SEQLENI
+    LOAD $mdld A A
 
-BWCOPY I A
-STRAND I
-UPRIGHT I
-BWCENTER
+    BWCOPY I A
+    STRAND I
+    UPRIGHT I
+    BWCENTER
 
-STRAND A
-IF "{tplsused}" = "" REMARK 265 HM_TEMPLATES: none
-ELSE REMARK 265 HM_TEMPLATES: {tplsused}
+    STRAND A
+    IF "{tplsused}" = "" REMARK 265 HM_TEMPLATES: none
+    ELSE REMARK 265 HM_TEMPLATES: {tplsused}
 
-HYDRO
+    HYDRO
 
-UNCHAIN I
-UNCHAIN O
-STRAND A
-UPRIGHT
-BWCENTER
-{adjustments}
-{dsphew}
-LET $outf = "pdbs/{fam}/{rcpid}.active.pdb"
-SAVE $outf
-"""
+    UNCHAIN I
+    UNCHAIN O
+    STRAND A
+    UPRIGHT
+    BWCENTER
+    {adjustments}
+    {dsphew}
+    LET $outf = "{output_pdb}"
+    SAVE $outf
+    """
 
-    phew_path = f"{rcpid}.hm.phew"
-    with open(phew_path, "w") as f:
-        f.write(phew_script)
+        phew_path = f"{rcpid}.hm.phew"
+        with open(phew_path, "w") as f:
+            f.write(phew_script)
 
-    # 9. Adapt output file for AromaDock compatibility
-    print("Running orientation and internal coordinates...", file=sys.stderr)
-    os.chdir(root_dir)
-    subprocess.run(["./bin/phew", f"hm/{phew_path}"])
+        # 9. Adapt output file for AromaDock compatibility
+        print("Running orientation and internal coordinates...", file=sys.stderr)
+        os.chdir(root_dir)
+        subprocess.run(["./bin/phew", f"hm/{phew_path}"], check=True)
 
-    # Radial Outward/Inward Field: flex pocket aliphatics out and hydrophilics in
-    active_pdb_rel = f"pdbs/{fam}/{rcpid}.active.pdb"
-    pinned_bw = []
-    if os.path.exists(active_pdb_rel):
-        bw50 = {}
-        tmrs = []
-        res = {}
-        atom_list = []
-        with open(active_pdb_rel, "r") as f:
-            for line in f:
-                if line.startswith("REMARK 800 SITE BW "):
-                    parts = line.split()
-                    if len(parts) >= 6:
-                        bw_tag = parts[4]
-                        rnum = int(parts[5])
-                        h = int(bw_tag.split(".")[0])
-                        bw50[h] = rnum
-                elif line.startswith("REMARK 650 HELIX TMR"):
-                    parts = line.split()
-                    if len(parts) >= 6:
-                        h = int(parts[3][3:])
-                        s = int(parts[4])
-                        e = int(parts[5])
-                        tmrs.append((h, s, e))
-                elif line.startswith("ATOM"):
-                    try:
-                        rnum = int(line[22:26].strip())
-                        aname = line[12:16].strip()
-                        resn = line[17:20].strip()
-                        x = float(line[30:38])
-                        y = float(line[38:46])
-                        z = float(line[46:54])
-                        if rnum not in res:
-                            res[rnum] = \
-                            {
-                                'name': resn,
-                                'atoms': {},
-                                'h': None,
-                                'bw': None,
-                            }
-                        res[rnum]['atoms'][aname] = (x, y, z)
-                        atom_list.append((x, y, z, rnum, aname))
-                    except ValueError:
-                        pass
+        # Radial Outward/Inward Field: flex pocket aliphatics out and hydrophilics in
+        active_pdb_rel = str(output_pdb)
+        pinned_bw = []
+        if os.path.exists(active_pdb_rel):
+            bw50 = {}
+            tmrs = []
+            res = {}
+            atom_list = []
+            with open(active_pdb_rel, "r") as f:
+                for line in f:
+                    if line.startswith("REMARK 800 SITE BW "):
+                        parts = line.split()
+                        if len(parts) >= 6:
+                            bw_tag = parts[4]
+                            rnum = int(parts[5])
+                            h = int(bw_tag.split(".")[0])
+                            bw50[h] = rnum
+                    elif line.startswith("REMARK 650 HELIX TMR"):
+                        parts = line.split()
+                        if len(parts) >= 6:
+                            h = int(parts[3][3:])
+                            s = int(parts[4])
+                            e = int(parts[5])
+                            tmrs.append((h, s, e))
+                    elif line.startswith("ATOM"):
+                        try:
+                            rnum = int(line[22:26].strip())
+                            aname = line[12:16].strip()
+                            resn = line[17:20].strip()
+                            x = float(line[30:38])
+                            y = float(line[38:46])
+                            z = float(line[46:54])
+                            if rnum not in res:
+                                res[rnum] = \
+                                {
+                                    'name': resn,
+                                    'atoms': {},
+                                    'h': None,
+                                    'bw': None,
+                                }
+                            res[rnum]['atoms'][aname] = (x, y, z)
+                            atom_list.append((x, y, z, rnum, aname))
+                        except ValueError:
+                            pass
 
-        for h, s, e in tmrs:
-            for rnum in range(s, e + 1):
-                if rnum in res:
-                    res[rnum]['h'] = h
-                    if h in bw50:
-                        bwpos = 50 + rnum - bw50[h]
-                        res[rnum]['bw'] = f"{h}.{bwpos}"
+            for h, s, e in tmrs:
+                for rnum in range(s, e + 1):
+                    if rnum in res:
+                        res[rnum]['h'] = h
+                        if h in bw50:
+                            bwpos = 50 + rnum - bw50[h]
+                            res[rnum]['bw'] = f"{h}.{bwpos}"
 
-        tip_atoms = \
-        {
-            'LEU': ['CD1', 'CD2'],
-            'ILE': ['CD1'],
-            'VAL': ['CG1', 'CG2'],
-            'MET': ['CE'],
-            '-SER': ['OG'],
-            '-THR': ['OG1'],
-            '-ASN': ['CG'],
-            '-GLN': ['CD'],
-            '-ASP': ['CG'],
-            '-GLU': ['CD'],
-        }
+            tip_atoms = \
+            {
+                'LEU': ['CD1', 'CD2'],
+                'ILE': ['CD1'],
+                'VAL': ['CG1', 'CG2'],
+                'MET': ['CE'],
+                '-SER': ['OG'],
+                '-THR': ['OG1'],
+                '-ASN': ['CG'],
+                '-GLN': ['CD'],
+                '-ASP': ['CG'],
+                '-GLU': ['CD'],
+            }
 
-        # Identify BSRs within Y coordinate range
-        bsr_rnums = []
-        for h, s, e in tmrs:
-            for rnum in range(s, e + 1):
-                bw = res.get(rnum, {}).get('bw')
-                if bw in pu.bsrs:
-                    if rnum in res and 'CA' in res[rnum]['atoms']:
-                        ca = res[rnum]['atoms']['CA']
-                        if -2.0 <= ca[1] <= 20.0:
-                            bsr_rnums.append(rnum)
+            # Identify BSRs within Y coordinate range
+            bsr_rnums = []
+            for h, s, e in tmrs:
+                for rnum in range(s, e + 1):
+                    bw = res.get(rnum, {}).get('bw')
+                    if bw in pu.bsrs:
+                        if rnum in res and 'CA' in res[rnum]['atoms']:
+                            ca = res[rnum]['atoms']['CA']
+                            if -2.0 <= ca[1] <= 20.0:
+                                bsr_rnums.append(rnum)
 
-        bsrcen = [0.0, 0.0, 0.0]
-        for rnum in bsr_rnums:
-            ca = res[rnum]['atoms']['CA']
-            bsrcen[0] += ca[0]
-            bsrcen[1] += ca[1]
-            bsrcen[2] += ca[2]
+            bsrcen = [0.0, 0.0, 0.0]
+            for rnum in bsr_rnums:
+                ca = res[rnum]['atoms']['CA']
+                bsrcen[0] += ca[0]
+                bsrcen[1] += ca[1]
+                bsrcen[2] += ca[2]
 
-        if bsr_rnums:
-            bsrcen[0] /= len(bsr_rnums)
-            bsrcen[1] /= len(bsr_rnums)
-            bsrcen[2] /= len(bsr_rnums)
-        print(f"bsrcen {bsrcen}")
+            if bsr_rnums:
+                bsrcen[0] /= len(bsr_rnums)
+                bsrcen[1] /= len(bsr_rnums)
+                bsrcen[2] /= len(bsr_rnums)
+            print(f"bsrcen {bsrcen}")
 
-        def dist_pt_to_seg(p, a, b):
-            dx = b[0] - a[0]
-            dy = b[1] - a[1]
-            dz = b[2] - a[2]
-            l2 = dx * dx + dy * dy + dz * dz
-            if l2 == 0:
-                return math.sqrt((p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2 + (p[2] - a[2]) ** 2)
-            t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy + (p[2] - a[2]) * dz) / l2))
-            proj_x = a[0] + t * dx
-            proj_y = a[1] + t * dy
-            proj_z = a[2] + t * dz
-            return math.sqrt((p[0] - proj_x) ** 2 + (p[1] - proj_y) ** 2 + (p[2] - proj_z) ** 2)
+            def dist_pt_to_seg(p, a, b):
+                dx = b[0] - a[0]
+                dy = b[1] - a[1]
+                dz = b[2] - a[2]
+                l2 = dx * dx + dy * dy + dz * dz
+                if l2 == 0:
+                    return math.sqrt((p[0] - a[0]) ** 2 + (p[1] - a[1]) ** 2 + (p[2] - a[2]) ** 2)
+                t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy + (p[2] - a[2]) * dz) / l2))
+                proj_x = a[0] + t * dx
+                proj_y = a[1] + t * dy
+                proj_z = a[2] + t * dz
+                return math.sqrt((p[0] - proj_x) ** 2 + (p[1] - proj_y) ** 2 + (p[2] - proj_z) ** 2)
 
-        sub_atoms = [a for a in atom_list if -5.0 <= a[1] <= 25.0]
+            sub_atoms = [a for a in atom_list if -5.0 <= a[1] <= 25.0]
 
-        repoint_cmds = []
-        for h, s, e in tmrs:
-            for rnum in range(s, e + 1):
-                if rnum not in res:
-                    continue
-                if rnum in dspotr1 or rnum in dspotr2:
-                    continue
-                resn = res[rnum]['name']
-                resnm = f"-{resn}"
-                point_sign = 0
-                tip_atom_name = None
-                if resn in tip_atoms:
-                    point_sign = 5.0
-                    tip_atom_name = tip_atoms[resn][0]
-                elif resnm in tip_atoms:
-                    point_sign = -5.0
-                    tip_atom_name = tip_atoms[resnm][0]
-                    resn = resnm
-                else:
-                    continue
+            repoint_cmds = []
+            for h, s, e in tmrs:
+                for rnum in range(s, e + 1):
+                    if rnum not in res:
+                        continue
+                    if rnum in dspotr1 or rnum in dspotr2:
+                        continue
+                    resn = res[rnum]['name']
+                    resnm = f"-{resn}"
+                    point_sign = 0
+                    tip_atom_name = None
+                    if resn in tip_atoms:
+                        point_sign = 5.0
+                        tip_atom_name = tip_atoms[resn][0]
+                    elif resnm in tip_atoms:
+                        point_sign = -5.0
+                        tip_atom_name = tip_atoms[resnm][0]
+                        resn = resnm
+                    else:
+                        continue
 
-                atoms = res[rnum]['atoms']
-                if 'CA' not in atoms or tip_atom_name not in atoms:
-                    continue
-                ca = atoms['CA']
-                y_ca = ca[1]
-                if not (-2.0 <= y_ca <= 20.0):
-                    continue
+                    atoms = res[rnum]['atoms']
+                    if 'CA' not in atoms or tip_atom_name not in atoms:
+                        continue
+                    ca = atoms['CA']
+                    y_ca = ca[1]
+                    if not (-2.0 <= y_ca <= 20.0):
+                        continue
 
-                is_bsr = (rnum in bsr_rnums)
-                has_los = False
-                if not is_bsr:
-                    for br in bsr_rnums:
-                        if res[rnum]['h'] == res[br]['h']:
-                            continue
-                        ca_b = res[br]['atoms']['CA']
-                        obstructed = False
-                        for ax, ay, az, arnum, aname in sub_atoms:
-                            if arnum == rnum or arnum == br:
+                    is_bsr = (rnum in bsr_rnums)
+                    has_los = False
+                    if not is_bsr:
+                        for br in bsr_rnums:
+                            if res[rnum]['h'] == res[br]['h']:
                                 continue
-                            if dist_pt_to_seg((ax, ay, az), ca, ca_b) < 1.5:
-                                obstructed = True
-                                break
-                        if not obstructed:
-                            if dist_pt_to_seg(bsrcen, ca, ca_b) < 10.0:
-                                has_los = True
-                                break
+                            ca_b = res[br]['atoms']['CA']
+                            obstructed = False
+                            for ax, ay, az, arnum, aname in sub_atoms:
+                                if arnum == rnum or arnum == br:
+                                    continue
+                                if dist_pt_to_seg((ax, ay, az), ca, ca_b) < 1.5:
+                                    obstructed = True
+                                    break
+                            if not obstructed:
+                                if dist_pt_to_seg(bsrcen, ca, ca_b) < 10.0:
+                                    has_los = True
+                                    break
 
-                if not (is_bsr or has_los):
-                    continue
+                    if not (is_bsr or has_los):
+                        continue
 
-                dx = ca[0] - bsrcen[0]
-                dz = ca[2] - bsrcen[2]
-                r_ca_p = math.sqrt(dx * dx + dz * dz)
-                if r_ca_p < 0.1:
-                    continue
-                ux = dx / r_ca_p
-                uz = dz / r_ca_p
+                    dx = ca[0] - bsrcen[0]
+                    dz = ca[2] - bsrcen[2]
+                    r_ca_p = math.sqrt(dx * dx + dz * dz)
+                    if r_ca_p < 0.1:
+                        continue
+                    ux = dx / r_ca_p
+                    uz = dz / r_ca_p
 
-                if point_sign < 0:
-                    tgt_x = bsrcen[0]
-                    tgt_y = bsrcen[1]
-                    tgt_z = bsrcen[2]
-                else:
-                    tgt_x = ca[0] + point_sign * ux
-                    tgt_y = ca[1]
-                    tgt_z = ca[2] + point_sign * uz
+                    if point_sign < 0:
+                        tgt_x = bsrcen[0]
+                        tgt_y = bsrcen[1]
+                        tgt_z = bsrcen[2]
+                    else:
+                        tgt_x = ca[0] + point_sign * ux
+                        tgt_y = ca[1]
+                        tgt_z = ca[2] + point_sign * uz
 
-                repoint_cmds.append(f"ATOMTO {rnum} {tip_atom_name} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
-                if res[rnum]['bw']:
-                    pinned_bw.append(res[rnum]['bw'])
-                else:
-                    pinned_bw.append(str(rnum))
+                    repoint_cmds.append(f"ATOMTO {rnum} {tip_atom_name} [{tgt_x:.2f},{tgt_y:.2f},{tgt_z:.2f}]")
+                    if res[rnum]['bw']:
+                        pinned_bw.append(res[rnum]['bw'])
+                    else:
+                        pinned_bw.append(str(rnum))
 
-        if repoint_cmds:
-            radial_phew = f"hm/{rcpid}.radial.phew"
-            with open(radial_phew, "w") as f:
-                f.write(f"LOAD {active_pdb_rel} A A\n")
-                for cmd in repoint_cmds:
-                    f.write(f"{cmd}\n")
-                f.write(f"SAVE {active_pdb_rel}\n")
-            subprocess.run(["./bin/phew", radial_phew])
+            if repoint_cmds:
+                radial_phew = f"hm/{rcpid}.radial.phew"
+                with open(radial_phew, "w") as f:
+                    f.write(f"LOAD {active_pdb_rel} A A\n")
+                    for cmd in repoint_cmds:
+                        f.write(f"{cmd}\n")
+                    f.write(f"SAVE {active_pdb_rel}\n")
+                subprocess.run(["./bin/phew", radial_phew], check=True)
 
-    ic_cmd = ["./bin/ic", f"pdbs/{fam}/{rcpid}.active.pdb", "5.0", "save", "minc"]
-    for bw in pinned_bw:
-        ic_cmd.extend(["pin", bw])
-    for resno in sorted(set(dsres1 + dsres2)):
-        ic_cmd.extend(["pin", str(resno)])
-    subprocess.run(ic_cmd)
+        ic_cmd = ["./bin/ic", str(output_pdb), "5.0", "save", "minc"]
+        for bw in pinned_bw:
+            ic_cmd.extend(["pin", bw])
+        for resno in sorted(set(dsres1 + dsres2)):
+            ic_cmd.extend(["pin", str(resno)])
+        subprocess.run(ic_cmd, check=True)
+
+        with directory(script_dir):
+            finalize(a, output_pdb, best_pdb)
 
     # 10. Clean up temporary files
     os.chdir(script_dir)
-    target_pdb = os.path.join(root_dir, "pdbs", fam, f"{rcpid}.active.pdb")
+    target_pdb = str(output_pdb)
     if os.path.exists(target_pdb) and os.path.getmtime(target_pdb) > os.path.getmtime(phew_path):
         if not nodel:
             print("Cleaning up temporary MODELLER artifacts...", file=sys.stderr)

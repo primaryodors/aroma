@@ -53,6 +53,8 @@ def inspect(path):
             point = tuple(float(line[i:i+8]) for i in (30, 38, 46))
             all_atoms[int(line[22:26]), line[12:16].strip()] = point
         if line.startswith('ATOM  '):
+            if line[12:16].strip().lstrip('0123456789').startswith('H'):
+                continue
             no = int(line[22:26])
             name = line[12:16].strip()
             residue = residues.setdefault(no, {'type': line[17:20], 'atoms': {}})

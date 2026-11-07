@@ -1,5 +1,6 @@
 """Adapter contract checks; imports and help work without MODELLER."""
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -44,7 +45,8 @@ class ReecBackend(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / 'hm/dohm.py'), '--help'],
                                 env=environment, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('REEC homology modeling', result.stdout)
+        self.assertIn('Receptor homology modeling', result.stdout)
+        self.assertIn('REEC or MODELLER', result.stdout)
 
     def test_validated_or5k_alignments(self):
         codes = dict(zip(
@@ -81,14 +83,12 @@ class ReecBackend(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('REEC', result.stdout)
 
-    def test_conserved_contacts(self):
-        contacts = backend.receptor_contacts('OR1A1')
-        self.assertIn('disulfide 97 179', contacts)
-        self.assertIn('disulfide 169 189', contacts)
-        self.assertIn('contact hard 258 OH 180 OD1|OD2 2.5 3.2 100', contacts)
-        contacts = backend.receptor_contacts('OR51E2')
-        self.assertIn('disulfide 4 168', contacts)
-        self.assertIn('contact hard 150 NE|NH1|NH2 209 OD1|OD2 2.6 3.6 100', contacts)
+    def test_workflow_compatibility_calls_original_scripts(self):
+        import dohm, fixfail
+        for function, module in ((backend.run_dohm, dohm), (backend.run_fixfail, fixfail)):
+            with patch.object(module, 'main', return_value=17) as shared:
+                self.assertEqual(function(['OR1A1']), 17)
+                shared.assert_called_once_with(['OR1A1'])
 
     def test_metadata_contains_bw_and_helices(self):
         lines = backend.metadata('OR51E2')
@@ -177,15 +177,20 @@ class ReecBackend(unittest.TestCase):
                 result = subprocess.run(actual, cwd=ROOT, capture_output=True, text=True, check=True)
                 messages.append(result.stdout)
             entry = dict(backend.pu.prots['OR1A1'], sequence=sequence)
+            import modeling_backend as engines
             with patch.object(backend, 'ROOT', root), \
-                    patch.object(backend, 'receptor', return_value=('OR1A1', 'active')), \
                     patch.dict(backend.pu.prots, {'OR1A1': entry}), \
-                    patch.object(backend, 'receptor_contacts', return_value=[]), \
-                    patch.object(backend, 'command', side_effect=command):
-                backend.run_fixfail(['OR1A1', str(original), '--skip-reshape',
-                                     '--iterations', '1500', '--models', '1', '--output', str(baseline)])
-                backend.run_fixfail(['OR1A1', str(clipped), '--skip-reshape',
-                                     '--iterations', '1500', '--models', '1', '--output', str(destination)])
+                    patch.object(backend, 'command', side_effect=command), backend.directory(root):
+                for source, target in ((original, baseline), (clipped, destination)):
+                    shutil.copyfile(source, root / 'repair.pdb')
+                    args = engines.options(['OR1A1', '--iterations', '1500', '--models', '1'])
+                    env = engines.Environment(args)
+                    env.io.atom_files_directory = [str(root)]
+                    model = engines.construct(engines.ReecModel, env, alnfile=alignment,
+                                              knowns='repair', sequence='OR1A1', references=[original])
+                    model.max_var_iterations, model.ending_model = 1500, 0
+                    model.make()
+                    shutil.copyfile(root / model.outputs[0]['name'], target)
             reference_ca = {int(line[22:26]): tuple(float(line[i:i+8]) for i in (30, 38, 46))
                             for line in baseline.read_text().splitlines()
                             if line.startswith('ATOM  ') and line[12:16].strip() == 'CA'}
@@ -196,14 +201,15 @@ class ReecBackend(unittest.TestCase):
                 self.assertLess(math.dist(reference_ca[residue], restored[residue]), .5,
                                 f'Residue {residue}: ' + '\n'.join(messages))
 
-    def test_composite_rows_pad_trailing_gaps(self):
+    def test_shared_alignment_rows_pad_trailing_gaps(self):
+        import modeling_backend as engines
         with tempfile.TemporaryDirectory(prefix='reec-adapter-') as temporary:
             work = Path(temporary)
-            (work / 'allgpcr.ali').write_text('>P1;OR1A1\nsequence:OR1A1::::::::\n--AAA----*\n')
-            with patch.object(backend, 'HM', work), patch.object(backend, 'command'), \
-                    patch.object(backend.pu, 'custom_pdb_template', return_value='tpl\n--AAA*'):
-                alignment, _, _ = backend.composite_alignment('OR1A1', work)
-            rows = [s for s in alignment.read_text().splitlines() if s.endswith('*')]
+            source = work / 'source.ali'
+            source.write_text('>P1;tpl\nstructure:tpl:FIRST:A:LAST:A::::\n--AAA*\n'
+                              '>P1;OR1A1\nsequence:OR1A1::::::::\n--AAA----*\n')
+            destination = engines.protein_alignment(source, ['tpl'], 'OR1A1', work / 'protein.ali')
+            rows = [line for line in destination.read_text().splitlines() if line.endswith('*')]
             self.assertEqual(rows, ['--AAA----*', '--AAA----*'])
 
 
