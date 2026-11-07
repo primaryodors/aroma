@@ -285,14 +285,14 @@ while True:
             bleed = 4
             EXR2hxstart = data.protutils.resno_from_bw(protid, "45.50")
             EXR2hxend = data.protutils.resno_from_bw(protid, "45.57")
-            return Selection(self.residue_range("1:A", f"{prot["region"]["TMR1"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR1"]["end"]-bleed}:A", f"{prot["region"]["TMR2"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR2"]["end"]-bleed}:A", f"{prot["region"]["TMR3"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR3"]["end"]-bleed}:A", f"{prot["region"]["TMR4"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR4"]["end"]-bleed}:A", f"{EXR2hxstart-1}:A"),
-                             self.residue_range(f"{EXR2hxend+1}:A", f"{prot["region"]["TMR5"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR5"]["end"]-bleed}:A", f"{prot["region"]["TMR6"]["start"]+bleed}:A"),
-                             self.residue_range(f"{prot["region"]["TMR6"]["end"]-bleed}:A", f"{prot["region"]["TMR7"]["start"]+bleed}:A"),
+            return Selection(self.residue_range("1:A", f"{prot['region']['TMR1']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR1']['end']-bleed}:A", f"{prot['region']['TMR2']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR2']['end']-bleed}:A", f"{prot['region']['TMR3']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR3']['end']-bleed}:A", f"{prot['region']['TMR4']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR4']['end']-bleed}:A", f"{EXR2hxstart-1}:A"),
+                             self.residue_range(f"{EXR2hxend+1}:A", f"{prot['region']['TMR5']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR5']['end']-bleed}:A", f"{prot['region']['TMR6']['start']+bleed}:A"),
+                             self.residue_range(f"{prot['region']['TMR6']['end']-bleed}:A", f"{prot['region']['TMR7']['start']+bleed}:A"),
                              )
 
         def special_restraints(self, aln):

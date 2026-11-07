@@ -145,7 +145,7 @@ A tool for finding possible duplicate entries in the odorants database.
 Updates the receptors database with information from the data/sequences_aligned.txt file. WARNING: This script WILL OVERWRITE data/receptor.json.
 
 `hm/dohm.php`
-The homology modeling utility. Requires MODELLER in order to run. WARNING: This script WILL OVERWRITE receptor PDB models.
+The homology modeling utility. Uses REEC by default; select MODELLER with `--backend modeller`. OR5K receptors use the tracked `pdbs/_validated/OR5K1.active.pdb` template. WARNING: This script WILL OVERWRITE receptor PDB models.
 
 `hm/fixfail.py`
 A script for recreating new active-state homology models based off of failed agonist docks. WARNING: This script WILL OVERWRITE existing models.

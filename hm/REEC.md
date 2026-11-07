@@ -61,7 +61,14 @@ replace those assessments.
 
 ## Python workflows
 
-MODELLER remains the default. Select REEC explicitly, or set `AROMA_HM_BACKEND=reec`:
+`dohm.py` defaults to REEC. Select MODELLER explicitly with `--backend modeller`,
+or set `AROMA_HM_BACKEND=modeller`. The explicit command-line option takes precedence
+over the environment. `fixfail.py` retains its existing backend default.
+
+OR5K receptors use `pdbs/_validated/OR5K1.active.pdb` as their default template,
+with explicit GPCR-aligned template and target rows. This also applies when selecting
+MODELLER. In the REEC workflow, an explicit `--template` overrides the default.
+Other receptor subfamilies retain composite template selection.
 
 ```sh
 python3 hm/dohm.py OR1A1 --backend reec --output tmp/OR1A1.reec.pdb

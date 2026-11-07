@@ -18,8 +18,8 @@ from data import protutils as pu
 from data.disulfides import pdb_disulfides
 
 
-def requested(args):
-    backend = os.environ.get('AROMA_HM_BACKEND', 'modeller')
+def requested(args, default='modeller'):
+    backend = os.environ.get('AROMA_HM_BACKEND', default)
     for i, arg in enumerate(args):
         if arg == '--backend' and i + 1 < len(args):
             backend = args[i + 1]
@@ -28,6 +28,20 @@ def requested(args):
     if backend not in ('reec', 'modeller'):
         raise ValueError('Backend must be reec or modeller')
     return backend == 'reec'
+
+
+def legacy_backend_args(args):
+    result = []
+    index = 0
+    while index < len(args):
+        if args[index] == '--backend':
+            index += 2
+        elif args[index].startswith('--backend='):
+            index += 1
+        else:
+            result.append(args[index])
+            index += 1
+    return result
 
 
 @contextlib.contextmanager
@@ -174,6 +188,51 @@ def target_alignment(rcp, path, template=None, chain='A'):
             name = Path(template).stem
             prefix = f'>P1;{name}\nstructureX:{name}:FIRST:{chain}::::::\n{row}*\n'
     path.write_text(prefix + f'>P1;{rcp}\nsequence:{rcp}:1:A::::::\n{sequence}*\n')
+
+
+def validated_alignment(rcp, work, chain='A'):
+    if not re.fullmatch(r'OR5K\d+', rcp):
+        return None
+    source = ROOT / 'pdbs' / '_validated' / 'OR5K1.active.pdb'
+    if not source.is_file():
+        raise ValueError(f'Validated OR5K1 template is missing: {source}')
+    rows = {}
+    for line in (ROOT / 'data' / 'sequences_aligned.txt').read_text().splitlines():
+        parts = line.split()
+        if parts and parts[0] in ('OR5K1', rcp):
+            rows[parts[0]] = parts[1]
+    for name in ('OR5K1', rcp):
+        if name not in rows or rows[name].replace('-', '') != pu.prots[name]['sequence']:
+            raise ValueError(f'GPCR alignment does not match the sequence for {name}')
+    codes = dict(zip(
+        'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+        'ACDEFGHIKLMNPQRSTVWY'))
+    present = {}
+    for line in source.read_text().splitlines():
+        if not line.startswith('ATOM  ') or line[12:16].strip() != 'CA' or line[21] not in (' ', chain):
+            continue
+        number = int(line[22:26])
+        sequence = pu.prots['OR5K1']['sequence']
+        if (line[26].strip() or number in present or not 1 <= number <= len(sequence)
+                or codes.get(line[17:20]) != sequence[number-1]):
+            raise ValueError('Validated OR5K1 residue numbering does not match its sequence')
+        present[number] = True
+    if not present:
+        raise ValueError(f'Validated OR5K1 has no CA atoms in chain {chain}')
+    position = 0
+    template_row = ''
+    for amino in rows['OR5K1']:
+        if amino != '-':
+            position += 1
+        template_row += amino if amino == '-' or position in present else '-'
+    width = max(len(template_row), len(rows[rcp]))
+    template = work / f'{rcp}_tpl.pdb'
+    shutil.copyfile(source, template)
+    ali = work / f'{rcp}.validated.ali'
+    ali.write_text(f'>P1;{rcp}_tpl\nstructureX:{rcp}_tpl:FIRST:{chain}:LAST:{chain}::::\n'
+                   f'{template_row.ljust(width, "-")}*\n>P1;{rcp}\nsequence:{rcp}:1:A::::::\n'
+                   f'{rows[rcp].ljust(width, "-")}*\n')
+    return ali, [f'{rcp}_tpl={template}'], 'pdbs/_validated/OR5K1.active.pdb'
 
 
 def composite_alignment(rcp, work):
@@ -351,7 +410,8 @@ def run_dohm(argv):
         else:
             if args.alignment:
                 raise ValueError('--alignment also requires --template')
-            alignment, templates, provenance = composite_alignment(rcp, work)
+            alignment, templates, provenance = (validated_alignment(rcp, work, args.chain)
+                                                or composite_alignment(rcp, work))
         environment = (source if 'riglig' in args.legacy and source.exists()
                        and any(s.startswith('HETATM') for s in source.read_text().splitlines()) else None)
         contacts = receptor_contacts(rcp, [source])

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Executes homology modeling using MODELLER for a specific GPCR target.
+Builds GPCR homology models with REEC by default; MODELLER is optional.
 """
 
 import os
@@ -17,9 +17,11 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 sys.path.append(root_dir)
 
-from reec_backend import requested, entrypoint, run_dohm
-if requested(sys.argv[1:]):
+from pathlib import Path
+from reec_backend import requested, entrypoint, run_dohm, legacy_backend_args, validated_alignment
+if requested(sys.argv[1:], default='reec'):
     sys.exit(entrypoint(run_dohm, sys.argv[1:]))
+sys.argv[1:] = legacy_backend_args(sys.argv[1:])
 
 try:
     from modeller import *
@@ -69,62 +71,68 @@ def main():
     famno_str = re.sub(r"[^0-9]", "", fam)
     famno = int(famno_str) if famno_str else 0
 
-    # 1. Update Alignments
-    execute_alignment_builder()
+    validated = validated_alignment(rcpid, Path(script_dir))
+    if validated:
+        alignment, _, tplsused = validated
+        hm_ali_file = str(alignment)
+        os.chdir(script_dir)
+    else:
+        # 1. Update Alignments
+        execute_alignment_builder()
 
-    # 2. Extract Target Alignment Data
-    allgpcr_path = os.path.join(script_dir, "allgpcr.ali")
-    if not os.path.exists(allgpcr_path):
-        print(f"FATAL ERROR: {allgpcr_path} not generated.", file=sys.stderr)
-        sys.exit(1)
+        # 2. Extract Target Alignment Data
+        allgpcr_path = os.path.join(script_dir, "allgpcr.ali")
+        if not os.path.exists(allgpcr_path):
+            print(f"FATAL ERROR: {allgpcr_path} not generated.", file=sys.stderr)
+            sys.exit(1)
 
-    with open(allgpcr_path, "r", encoding="utf-8") as f:
-        lines = f.read().split("\n")
+        with open(allgpcr_path, "r", encoding="utf-8") as f:
+            lines = f.read().split("\n")
 
-    tgtali = ""
-    alnhdr = ""
-    p1ln = ""
-    reading_tgtali = False
-    prevln = ""
+        tgtali = ""
+        alnhdr = ""
+        p1ln = ""
+        reading_tgtali = False
+        prevln = ""
 
-    for ln in lines:
-        if ln.startswith("sequence"):
-            pieces = ln.split(':')
-            if len(pieces) > 1 and pieces[1].strip() == rcpid:
-                alnhdr = ln
-                p1ln = prevln
-                reading_tgtali = True
-        elif reading_tgtali:
-            tgtali += ln + "\n"
-            if '*' in ln:
-                reading_tgtali = False
-                break
-        prevln = ln
+        for ln in lines:
+            if ln.startswith("sequence"):
+                pieces = ln.split(':')
+                if len(pieces) > 1 and pieces[1].strip() == rcpid:
+                    alnhdr = ln
+                    p1ln = prevln
+                    reading_tgtali = True
+            elif reading_tgtali:
+                tgtali += ln + "\n"
+                if '*' in ln:
+                    reading_tgtali = False
+                    break
+            prevln = ln
 
-    if not tgtali:
-        print(f"FATAL ERROR: Target sequence for {rcpid} not found in allgpcr.ali.", file=sys.stderr)
-        sys.exit(1)
+        if not tgtali:
+            print(f"FATAL ERROR: Target sequence for {rcpid} not found in allgpcr.ali.", file=sys.stderr)
+            sys.exit(1)
 
-    # 3. Build Custom Template
-    # We must ensure we are in the hm/ directory for template writing
-    os.chdir(script_dir)
+        # 3. Build Custom Template
+        # We must ensure we are in the hm/ directory for template writing
+        os.chdir(script_dir)
 
-    result_str = pu.custom_pdb_template(tgtali, rcpid, f"{rcpid}_tpl.pdb")
-    pieces = result_str.split("\n", 1)
-    tplsused = pieces[0]
-    tplali = pieces[1] if len(pieces) > 1 else ""
+        result_str = pu.custom_pdb_template(tgtali, rcpid, f"{rcpid}_tpl.pdb")
+        pieces = result_str.split("\n", 1)
+        tplsused = pieces[0]
+        tplali = pieces[1] if len(pieces) > 1 else ""
 
-    with open(f"{rcpid}.knowns", "w") as f:
-        f.write(tplsused)
+        with open(f"{rcpid}.knowns", "w") as f:
+            f.write(tplsused)
 
-    hm_ali_file = f"{rcpid}.hm.ali"
-    with open(hm_ali_file, "w") as f:
-        f.write(f">P1;{rcpid}_tpl\n")
-        f.write(f"structure:{rcpid}_tpl:FIRST:A:LAST :A:Olfactory Receptor template:Rhombopteryx nessiteras: 4.00: 0.25\n")
-        f.write(f"{tplali}\n\n")
-        f.write(f"{p1ln}\n")
-        f.write(f"{alnhdr}\n")
-        f.write(f"{tgtali}\n\n")
+        hm_ali_file = f"{rcpid}.hm.ali"
+        with open(hm_ali_file, "w") as f:
+            f.write(f">P1;{rcpid}_tpl\n")
+            f.write(f"structure:{rcpid}_tpl:FIRST:A:LAST :A:Olfactory Receptor template:Rhombopteryx nessiteras: 4.00: 0.25\n")
+            f.write(f"{tplali}\n\n")
+            f.write(f"{p1ln}\n")
+            f.write(f"{alnhdr}\n")
+            f.write(f"{tgtali}\n\n")
 
     # 4. Formulate Structural Constraints
     do_tmr_helix_restraints = True

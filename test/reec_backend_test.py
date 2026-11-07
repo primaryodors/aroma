@@ -18,12 +18,61 @@ class ReecBackend(unittest.TestCase):
         backend.pu.load_prots()
 
     def test_backend_selection(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(backend.requested([], default='reec'))
+            self.assertFalse(backend.requested([]))
+            for args in (['--backend', 'modeller'], ['--backend=modeller']):
+                self.assertFalse(backend.requested(args, default='reec'))
         with patch.dict(os.environ, {'AROMA_HM_BACKEND': 'reec'}):
             self.assertTrue(backend.requested([]))
             self.assertFalse(backend.requested(['--backend', 'modeller']))
+        with patch.dict(os.environ, {'AROMA_HM_BACKEND': 'modeller'}):
+            self.assertFalse(backend.requested([], default='reec'))
+            self.assertTrue(backend.requested(['--backend=reec'], default='reec'))
         self.assertTrue(backend.requested(['--backend=reec']))
         with self.assertRaises(ValueError):
             backend.requested(['--backend', 'invalid'])
+
+    def test_modeller_backend_options_leave_legacy_arguments_intact(self):
+        for args in (['--backend', 'modeller', 'OR5K2', 'nodel'],
+                     ['OR5K2', '--backend=modeller', 'nodel']):
+            self.assertEqual(backend.legacy_backend_args(args), ['OR5K2', 'nodel'])
+
+    def test_dohm_help_defaults_to_reec(self):
+        environment = dict(os.environ)
+        environment.pop('AROMA_HM_BACKEND', None)
+        result = subprocess.run([sys.executable, str(ROOT / 'hm/dohm.py'), '--help'],
+                                env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('REEC homology modeling', result.stdout)
+
+    def test_validated_or5k_alignments(self):
+        codes = dict(zip(
+            'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+            'ACDEFGHIKLMNPQRSTVWY'))
+        source = ROOT / 'pdbs/_validated/OR5K1.active.pdb'
+        template_sequence = ''.join(codes[line[17:20]] for line in source.read_text().splitlines()
+                                    if line.startswith('ATOM  ') and line[12:16].strip() == 'CA')
+        with tempfile.TemporaryDirectory(prefix='reec-validated-') as temporary:
+            work = Path(temporary)
+            for receptor in ('OR5K1', 'OR5K2', 'OR5K3', 'OR5K4'):
+                with self.subTest(receptor=receptor):
+                    alignment, templates, provenance = backend.validated_alignment(receptor, work)
+                    rows = [s[:-1] for s in alignment.read_text().splitlines() if s.endswith('*')]
+                    self.assertEqual(len(rows[0]), len(rows[1]))
+                    self.assertEqual(rows[0].replace('-', ''), template_sequence)
+                    self.assertEqual(rows[1].replace('-', ''), backend.pu.prots[receptor]['sequence'])
+                    self.assertEqual(templates, [f'{receptor}_tpl={work / (receptor + "_tpl.pdb")}'])
+                    self.assertEqual((work / f'{receptor}_tpl.pdb').read_bytes(), source.read_bytes())
+                    self.assertEqual(provenance, 'pdbs/_validated/OR5K1.active.pdb')
+            self.assertIsNone(backend.validated_alignment('OR5A1', work))
+            self.assertIsNone(backend.validated_alignment('OR5K20P', work))
+
+    def test_validated_or5k_template_is_mandatory(self):
+        with tempfile.TemporaryDirectory(prefix='reec-validated-missing-') as temporary:
+            with patch.object(backend, 'ROOT', Path(temporary)):
+                with self.assertRaisesRegex(ValueError, 'Validated OR5K1 template is missing'):
+                    backend.validated_alignment('OR5K2', Path(temporary))
 
     def test_entrypoints_help_without_modeller(self):
         for name in ('dohm', 'fixfail'):
