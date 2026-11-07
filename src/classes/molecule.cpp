@@ -8288,6 +8288,19 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
     if (!atoms) return 0;
     int ac = get_atom_count();
 
+    // Cartesian mutations cannot preserve planar rings. Keep their input
+    // coordinates fixed; torsional optimization moves these rings as units.
+    std::vector<bool> fixed_ring_atom(ac, false);
+    if (rings) for (int ri=0; rings[ri]; ++ri)
+    {
+        if (!rings[ri]->is_coplanar() && !ring_is_aromatic(ri)) continue;
+        for (int ai=0; ai<rings[ri]->get_atom_count(); ++ai)
+        {
+            int idx = atom_idx_from_ptr(rings[ri]->get_atom(ai));
+            if (idx >= 0 && idx < ac) fixed_ring_atom[idx] = true;
+        }
+    }
+
     Point parents[2][ac];
     Point population[ps][ac];
     float anomalies[ps];
@@ -8327,6 +8340,11 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
                     break;
 
                     default:
+                    if (fixed_ring_atom[j])
+                    {
+                        population[i][j] = parents[0][j];
+                        break;
+                    }
                     int which_parent = rand() & 0x1;
                     population[i][j].x = parents[which_parent][j].x;
                     if (frand(0, 1) < mr) population[i][j].x += frand(-atom_displacement, atom_displacement);
