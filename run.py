@@ -8,8 +8,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 if len(sys.argv) < 3:
-    print("Both a protein and a ligand are required.")
-    exit
+    print("Usage: python3 run.py RECEPTOR ODORANT [options]")
+    sys.exit(2)
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.getcwd())
