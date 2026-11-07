@@ -48,6 +48,21 @@ class ReecCLI(unittest.TestCase):
                     if s.startswith('ATOM  ')}
         self.assertEqual(''.join(CODES[residues[r]] for r in sorted(residues)), self.sequence)
 
+    def test_candidate_export(self):
+        prefix = self.work / 'candidate'
+        result = self.run_model('--models', '2', '--candidate-prefix', str(prefix))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        scores = []
+        for index in range(2):
+            path = Path(f'{prefix}.{index}.pdb')
+            report = json.loads(Path(str(path)+'.json').read_text())
+            if report['valid']:
+                self.assertTrue(reec_review.inspect(path)['valid'])
+                scores.append(report['final_energy'])
+        best = json.loads(Path(str(self.output)+'.json').read_text())
+        self.assertTrue(scores)
+        self.assertAlmostEqual(min(scores), best['final_energy'])
+
     def test_impossible_contact_retains_previous_output(self):
         self.output.write_text('previous model\n')
         contacts = self.work / 'contacts.txt'
@@ -195,6 +210,43 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('Unknown atom', result.stderr)
         self.assertFalse(self.output.exists())
+
+    def test_dihedral_and_mobile_restraints(self):
+        import math
+        atoms = {}
+        numbering = {}
+        for line in self.template.read_text().splitlines():
+            if not line.startswith('ATOM  '):
+                continue
+            number = int(line[22:26])
+            numbering.setdefault(number, len(numbering)+1)
+            atoms[numbering[number], line[12:16].strip()] = tuple(float(line[i:i+8]) for i in (30,38,46))
+        angle = math.radians(reec_review.dihedral(atoms[1,'N'], atoms[1,'CA'], atoms[1,'C'], atoms[2,'N']))
+        contacts = self.work / 'restraints.txt'
+        contacts.write_text(f'dihedral 1 N 1 CA 1 C 2 N {angle} 0.5\nmobile 1 3\n')
+        result = self.run_model('--contacts', str(contacts))
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        report = json.loads(Path(str(self.output)+'.json').read_text())
+        self.assertEqual(report['dihedral_restraints'], 1)
+        self.assertEqual(report['mobile_ranges'], 1)
+
+    def test_shared_phew_and_ic_postprocessing(self):
+        import modeling_backend as engines
+        result = self.run_model()
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        processed = self.work / 'postprocessed.pdb'
+        script = self.work / 'post.phew'
+        script.write_text(f'LOAD {self.output} A A\nHYDRO\nSAVE {processed}\n')
+        subprocess.run([str(ROOT/'bin/phew'), str(script)], cwd=ROOT,
+                       check=True, capture_output=True, text=True)
+        subprocess.run([str(ROOT/'bin/ic'), str(processed), 'minc', 'save'], cwd=ROOT,
+                       check=True, capture_output=True, text=True)
+        model = object.__new__(engines.ReecModel)
+        model.outputs = [{'name': str(self.output)}]
+        engines.finalize(model, processed)
+        report = json.loads(Path(str(processed)+'.json').read_text())
+        self.assertTrue(report['valid'])
+        self.assertTrue(report['serialized_geometry']['valid'])
 
     def test_unterminated_alignment_is_rejected(self):
         self.ali.write_text('>P1;model\nsequence:model::::::::\nAAA\n')

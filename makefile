@@ -282,7 +282,8 @@ $(BIN)/reec: src/reec.cpp $(OBJS) | $(BIN)
 test/reec_test: src/test/reec_test.cpp src/reec.cpp $(OBJS)
 	$(CPL) src/test/reec_test.cpp $(OBJS) -o $@ $(CFLAGS)
 
-check-reec: $(BIN)/reec test/reec_test
+check-reec: $(BIN)/reec test/reec_test $(BIN)/phew $(BIN)/ic
 	./test/reec_test
 	python3 test/reec_cli_test.py
 	python3 test/reec_backend_test.py
+	python3 test/hm_workflow_test.py
