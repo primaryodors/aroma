@@ -1607,7 +1607,9 @@ void Molecule::optimize()
         b[i]->rotate(thbest);
     }
 
-    refine_structure();
+    // Docking preparation preserves input bond lengths and angles. Cartesian
+    // structure repair can distort substituents even when ring atoms are fixed.
+    minimize_internal_clashes();
 }
 
 Space *Molecule::to_space()
@@ -6434,7 +6436,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!i) cout << "final " << -benerg << " " << endl << flush;
             #endif
 
-            if (!ares && flipped_rings) a->refine_structure(100);
+            if (!ares && flipped_rings) a->minimize_internal_clashes();
 
             if (!i && !ares)
             {
