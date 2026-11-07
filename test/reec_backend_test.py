@@ -212,6 +212,54 @@ class ReecBackend(unittest.TestCase):
             rows = [line for line in destination.read_text().splitlines() if line.endswith('*')]
             self.assertEqual(rows, ['--AAA----*', '--AAA----*'])
 
+    def test_ligand_repair_preserves_environment_alignment_frame(self):
+        import modeling_backend as engines
+        codes = dict(zip(
+            'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+            'ACDEFGHIKLMNPQRSTVWY'))
+        protein = [line for line in (ROOT / 'testdata/reec-small.pdb').read_text().splitlines()
+                   if line.startswith('ATOM  ')]
+        sequence = ''.join(codes[line[17:20]] for line in protein if line[12:16].strip() == 'CA')
+        first = next(line for line in protein if line[12:16].strip() == 'CA')
+        x, y, z = (float(first[i:i+8]) for i in (30, 38, 46))
+        ligand = [f'HETATM 9001  C1  LIG A 999    {x+4:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           C',
+                  f'HETATM 9002  C2  LIG A 999    {x+5.5:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           C']
+        with tempfile.TemporaryDirectory(prefix='reec-ligand-repair-') as temporary:
+            work = Path(temporary)
+            (work / 'tmp').mkdir()
+            template = work / 'repair.pdb'
+            template.write_text('\n'.join(protein + ligand + ['CONECT 9001 9002', 'END']) + '\n')
+            alignment = work / 'repair.ali'
+            alignment.write_text(f'>P1;repair\nstructure:repair:FIRST:A:LAST:A::::\n{sequence}.*\n'
+                                 f'>P1;fragment\nsequence:fragment::::::::\n{sequence}.*\n')
+            captured = []
+
+            def command(args):
+                if str(args[0]) == 'make':
+                    return
+                actual = [str(item) for item in args]
+                environment = Path(actual[actual.index('--environment') + 1])
+                captured.append(environment.read_text())
+                actual[0] = str(ROOT / 'bin/reec')
+                subprocess.run(actual, cwd=ROOT, capture_output=True, text=True, check=True)
+
+            args = engines.options(['OR1A2', '--iterations', '1500', '--models', '1'])
+            env = engines.Environment(args)
+            env.io.atom_files_directory = [str(work)]
+            env.io.hetatm = True
+            with patch.object(backend, 'ROOT', work), \
+                    patch.object(backend, 'command', side_effect=command), backend.directory(work):
+                model = engines.ReecModel(env, alignment, 'repair', 'fragment')
+                model.max_var_iterations, model.ending_model = 1500, 0
+                model.make()
+                output = (work / model.outputs[0]['name']).read_text()
+            self.assertTrue(any(line.startswith('ATOM  ') for line in captured[0].splitlines()))
+            atoms = [line for line in output.splitlines() if line.startswith('HETATM')]
+            self.assertEqual(len(atoms), 2)
+            for actual, original in zip(atoms, ligand):
+                self.assertEqual(actual[30:54], original[30:54])
+            self.assertIn('CONECT' + atoms[0][6:11] + atoms[1][6:11], output)
+
 
 if __name__ == '__main__':
     unittest.main()

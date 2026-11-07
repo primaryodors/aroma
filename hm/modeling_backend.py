@@ -277,9 +277,9 @@ class ReecModel:
             environment = None
             if records:
                 environment = work / 'environment.pdb'
-                # Use one template's ligand coordinates; ensembles must not duplicate atoms.
+                # Retain the protein frame for ligand alignment; only HETATM records become fixed atoms.
                 environment.write_text('\n'.join(line for line in self.template_paths()[0][1].read_text().splitlines()
-                                                  if line.startswith(('HETATM', 'CONECT'))) + '\n')
+                                                  if line.startswith(('ATOM  ', 'HETATM', 'CONECT', 'ENDMDL'))) + '\n')
             engine_args = SimpleNamespace(iterations=self.max_var_iterations,
                 models=self.ending_model-self.starting_model+1, contacts=args.contacts, chain=args.chain,
                 candidate_prefix=work / 'candidate')
