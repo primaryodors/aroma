@@ -475,7 +475,8 @@ def main(argv=None):
         a.starting_model = 0
         a.ending_model   = a.starting_model + options.models - 1 if options.models is not None else 9
         a.library_schedule = autosched.slow
-        a.max_var_iterations = options.iterations if options.iterations is not None else 300
+        # REEC performs three minimization stages; its CLI default is 3000 total steps.
+        a.max_var_iterations = options.iterations if options.iterations is not None else (3000 if options.backend == 'reec' else 300)
 
         data.globals.wait_cool_cpu()
         a.make()
@@ -550,7 +551,7 @@ def main(argv=None):
         MEASURE %5.39 "SD" %5.43 "SG" &sdist
         ECHO "5.39:SD - 5.43:SG distance: " &sdist
         _not_Cu_539:
-        IF $5.46 != "M" GOTO _not_Cu_539
+        IF $5.46 != "M" GOTO _not_Cu_546
         MEASURE %5.46 "SD" %5.42 "SG" &sdist
         ECHO "5.46:SD - 5.42:SG distance: " &sdist
         MEASURE %5.46 "SD" %5.43 "SG" &sdist
@@ -568,7 +569,8 @@ def main(argv=None):
             os.chdir("..")
             phewfn = f"hm/{protid}.{mode}.hm.phew"
             with open(phewfn, "w") as f:
-                f.write(phewcode)
+                # PHEW resolves labels against whole lines, including whitespace.
+                f.write('\n'.join(line.strip() for line in phewcode.splitlines()) + '\n')
             cmd = ["bin/phew", phewfn]
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)
