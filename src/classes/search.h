@@ -53,6 +53,7 @@ class BestBindingResult
     LigandTarget* tert_tgt = nullptr;
     float probability = 0;
     float cached_score = 0;
+    float pri_availability = 1, sec_availability = 1, tert_availability = 1;
 
     protected:
     float entropic_score = 0;
@@ -61,6 +62,10 @@ class BestBindingResult
 class Search
 {
     public:
+    static float polar_site_availability(Protein* protein, AminoAcid* residue, Point pocket_center,
+        Cavity* container = nullptr);
+    static std::vector<int> pocket_cavity_candidates(Protein* protein, Cavity* cavities, int count,
+        const std::vector<int>& anchors, const std::vector<bool>& eligible);
     static void do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocket_cen);
     static void copy_ligand_position_from_file(Protein* protein, Molecule* ligand, const char* filename, const char* ligname, int auth_resno);
 

@@ -3913,10 +3913,38 @@ _try_again:
                     Molecule* pmets = protein->metals_as_molecule();
                     int npmets = pmets->get_atom_count();
 
+                    std::vector<int> bb_cavities;
+                    if (pdpst == pst_best_binding)
+                    {
+                        std::vector<bool> eligible(ncvtys, true);
+                        for (i=0; i<ncvtys; ++i)
+                        {
+                            if (any_priority && !cvtys[i].has_priority()) eligible[i] = false;
+                            if (npmets)
+                            {
+                                bool contains_metal = false;
+                                for (j=0; j<npmets; ++j)
+                                    if (cvtys[i].point_inside_pocket(pmets->get_atom(j)->loc)) contains_metal = true;
+                                if (!contains_metal) eligible[i] = false;
+                            }
+                        }
+                        // Locate the declared pocket before rewarding individual anchors.
+                        // A small adjacent cleft must not win on one preferred polar residue.
+                        bb_cavities = Search::pocket_cavity_candidates(protein, cvtys, ncvtys, center_resnos, eligible);
+                        if (getenv("AROMA_BB_TRACE"))
+                        {
+                            cerr << "BB cavity candidates:";
+                            for (int index : bb_cavities) cerr << " " << index;
+                            cerr << endl;
+                        }
+                    }
+
                     while (!gcav)
                     {
                         for (i=0; i<ncvtys; i++)
                         {
+                            if (!bb_cavities.empty()
+                                && std::find(bb_cavities.begin(), bb_cavities.end(), i) == bb_cavities.end()) continue;
                             if (any_priority && !cvtys[i].has_priority())
                             {
                                 if (frand(0,1) >= 0.01) continue;
