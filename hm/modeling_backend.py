@@ -1,0 +1,359 @@
+"""Model-engine adapters; workflow orchestration stays in dohm.py and fixfail.py."""
+from dataclasses import dataclass
+from contextlib import contextmanager
+import importlib
+import json
+import math
+from pathlib import Path
+import re
+import shutil
+from types import SimpleNamespace
+
+import reec_backend as reec
+
+
+def options(argv, repair=False):
+    args = reec.parser(repair).parse_intermixed_args(
+        ['--help' if value == 'help' else value for value in argv])
+    args.backend = 'reec' if reec.requested(argv, default='reec') else 'modeller'
+    if args.iterations is not None and args.iterations < 1:
+        raise ValueError('Iterations must be positive')
+    if args.models is not None and args.models < 1:
+        raise ValueError('Models must be positive')
+    for name in ('alignment', 'output'):
+        value = getattr(args, name)
+        if value is not None:
+            setattr(args, name, value.resolve())
+    args.contacts = [value.resolve() for value in args.contacts]
+    args.template = [reec.template_argument(value) for value in args.template]
+    if not repair and args.alignment and not args.template:
+        raise ValueError('--alignment also requires --template')
+    return args
+
+
+def forwarded_options(args):
+    result = ['--backend', args.backend, '--chain', args.chain]
+    for name in ('iterations', 'models', 'alignment'):
+        value = getattr(args, name)
+        if value is not None:
+            result.extend(['--'+name, str(value)])
+    for name in ('template', 'contacts'):
+        for value in getattr(args, name):
+            result.extend(['--'+name, str(value)])
+    if args.keep_work:
+        result.append('--keep-work')
+    return result
+
+
+def pir_rows(path):
+    return {name.strip(): (description.strip(), ''.join(row.split()))
+            for name, description, row in re.findall(
+                r'^>P1;([^\n]+)\n([^\n]+)\n([^*]*)\*', Path(path).read_text(), re.M)}
+
+
+def custom_alignment(args, receptor, work):
+    """Prepare the same explicit templates and PIR rows for either engine."""
+    from Bio.Align import PairwiseAligner, substitution_matrices
+    codes = dict(zip('ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+                     'ACDEFGHIKLMNPQRSTVWY'))
+    templates, sequences = [], {}
+    for item in args.template:
+        if '=' in item:
+            name, filename = item.split('=', 1)
+        else:
+            filename, name = item, Path(item).stem
+        if not re.fullmatch(r'[A-Za-z0-9_.-]+', name) or name == receptor:
+            raise ValueError(f'Invalid template ID: {name}')
+        source = Path(filename)
+        target = work / (name+'.pdb')
+        if source.resolve() != target.resolve():
+            shutil.copyfile(source, target)
+        sequences[name] = ''.join(codes[line[17:20]] for line in target.read_text().splitlines()
+                                 if line.startswith('ATOM  ') and line[12:16].strip() == 'CA'
+                                 and line[21] in (' ', args.chain))
+        if not sequences[name]:
+            raise ValueError(f'Template has no protein CA atoms: {source}')
+        templates.append(f'{name}={target}')
+    if args.alignment:
+        rows = pir_rows(args.alignment)
+        if receptor in rows and all(name in rows for name in sequences):
+            return args.alignment, templates, ' '.join(args.template)
+    target_sequence = reec.pu.prots[receptor]['sequence']
+    aligner = PairwiseAligner()
+    aligner.substitution_matrix = substitution_matrices.load('BLOSUM62')
+    aligner.open_gap_score, aligner.extend_gap_score = -10, -.5
+    aligned, widths = {}, [0]*(len(target_sequence)+1)
+    for name, sequence in sequences.items():
+        pair = aligner.align(target_sequence, sequence)[0]
+        insertions, residues, position = ['']*len(widths), [], 0
+        for target, template in zip(pair[0], pair[1]):
+            if target == '-':
+                insertions[position] += template
+            else:
+                residues.append(template)
+                position += 1
+        widths = [max(width, len(chars)) for width, chars in zip(widths, insertions)]
+        aligned[name] = insertions, residues
+    output = work / f'{receptor}.custom.ali'
+    text = ''
+    for name, (insertions, residues) in aligned.items():
+        row = ''.join(insertions[i].ljust(widths[i], '-') + residues[i] for i in range(len(target_sequence)))
+        row += insertions[-1].ljust(widths[-1], '-')
+        text += f'>P1;{name}\nstructure:{name}:FIRST:{args.chain}:LAST:{args.chain}::::\n{row}*\n'
+    row = ''.join('-'*widths[i]+amino for i, amino in enumerate(target_sequence))+'-'*widths[-1]
+    output.write_text(text+f'>P1;{receptor}\nsequence:{receptor}:1:A::::::\n{row}*\n')
+    return output, templates, ' '.join(args.template)
+
+
+def protein_alignment(source, knowns, target, destination):
+    """REEC receives protein columns; its fixed environment carries ligand atoms."""
+    rows = pir_rows(source)
+    selected = {name: rows[name] for name in (*knowns, target) if name in rows}
+    if target not in selected:
+        raise ValueError(f'Target is absent from alignment: {target}')
+    width = max(len(row) for _, row in selected.values())
+    padded = {name: (description, row.ljust(width, '-')) for name, (description, row) in selected.items()}
+    target_row = padded[target][1]
+    columns = [i for i, amino in enumerate(target_row) if amino != '.']
+    text = ''
+    for name, (description, row) in padded.items():
+        protein = ''.join(row[i] for i in columns)
+        if '.' in protein or '/' in protein:
+            raise ValueError('REEC accepts a single protein chain plus a separate ligand environment')
+        text += f'>P1;{name}\n{description}\n{protein}*\n'
+    destination.write_text(text)
+    return destination
+
+
+def api(args):
+    if args.backend == 'modeller':
+        modeller = importlib.import_module('modeller')
+        automodel = importlib.import_module('modeller.automodel')
+        return SimpleNamespace(**{name: getattr(modeller, name) for name in
+            ('Environ', 'Selection', 'RigidBody', 'secondary_structure', 'forms', 'features', 'physical')},
+            AutoModel=automodel.AutoModel, DOPEHRLoopModel=automodel.DOPEHRLoopModel,
+            autosched=automodel.autosched, refine=automodel.refine)
+    return SimpleNamespace(Environ=lambda: Environment(args), AutoModel=ReecModel,
+        DOPEHRLoopModel=ReecModel, Selection=lambda *ranges: ranges, RigidBody=lambda value: value,
+        secondary_structure=SimpleNamespace(Alpha=lambda value: ('alpha', value)),
+        forms=SimpleNamespace(Gaussian=Gaussian),
+        features=SimpleNamespace(Distance=lambda *atoms: ('distance', atoms),
+                                 Dihedral=lambda *atoms: ('dihedral', atoms)),
+        physical=SimpleNamespace(xy_distance='distance', chi1_dihedral='dihedral', chi2_dihedral='dihedral'),
+        autosched=SimpleNamespace(slow='slow'), refine=SimpleNamespace(very_slow='very_slow'))
+
+
+@dataclass(frozen=True)
+class Atom:
+    name: str
+    residue: int
+
+
+class Atoms:
+    def __getitem__(self, value):
+        name, residue, *_ = value.split(':')
+        return Atom(name, int(residue))
+
+
+class Residues:
+    def __init__(self, model):
+        self.model = model
+
+    def __getitem__(self, value):
+        if value == -1:
+            records = self.model.environment_records()
+            residue = int(records[-1][22:26]) if records else len(reec.pu.prots[self.model.sequence]['sequence'])
+        else:
+            residue = int(str(value).split(':')[0])
+        return SimpleNamespace(intnum=residue)
+
+
+@dataclass(frozen=True)
+class Gaussian:
+    group: object
+    feature: tuple
+    mean: float
+    stdev: float
+
+
+class Restraints:
+    def __init__(self):
+        self.items = []
+        self.rigid_bodies = []
+
+    def add(self, value):
+        self.items.append(value)
+
+
+class Environment:
+    def __init__(self, args):
+        self.options = args
+        self.io = SimpleNamespace(atom_files_directory=['.'], hetatm=False)
+
+
+class ReecModel:
+    """Execute the scripts' model callbacks against the REEC numerical engine."""
+    def __init__(self, env, alnfile, knowns, sequence):
+        self.env, self.alnfile, self.sequence = env, Path(alnfile).resolve(), sequence
+        self.knowns = (knowns,) if isinstance(knowns, str) else tuple(knowns)
+        self.starting_model, self.ending_model, self.max_var_iterations = 0, 9, 1000
+        self.atoms, self.residues, self.restraints = Atoms(), Residues(self), Restraints()
+        self.outputs = []
+        self.loop = SimpleNamespace(outputs=self.outputs)
+        self.disulfides = []
+        self.reference_templates = []
+
+    def residue_range(self, first, last):
+        return int(first.split(':')[0]), int(last.split(':')[0])
+
+    def patch(self, residue_type, residues):
+        if residue_type != 'DISU':
+            raise ValueError(f'Unsupported REEC patch: {residue_type}')
+        self.disulfides.append(tuple(residue.intnum for residue in residues))
+
+    def template_paths(self):
+        result = []
+        for name in self.knowns:
+            matches = [Path(directory) / (str(name) + '.pdb') for directory in self.env.io.atom_files_directory]
+            path = next((path.resolve() for path in matches if path.exists()), None)
+            if path is None:
+                raise ValueError(f'Template PDB not found: {name}')
+            result.append((name, path))
+        return result
+
+    def environment_records(self):
+        if not self.env.io.hetatm:
+            return []
+        return [line for line in self.template_paths()[0][1].read_text().splitlines()
+                if line.startswith('HETATM')]
+
+    def contact_lines(self):
+        lines = [f'disulfide {a} {b}' for a, b in sorted(set(self.disulfides))]
+        for item in self.restraints.items:
+            if isinstance(item, Gaussian):
+                kind, atoms = item.feature
+                fields = ' '.join(f'{atom.residue} {atom.name}' for atom in atoms)
+                if item.stdev <= 0:
+                    raise ValueError('Restraint standard deviation must be positive')
+                if kind == 'distance':
+                    low = max(.01, item.mean-item.stdev)
+                    lines.append(f'contact soft {fields} {low} {item.mean+item.stdev} {1/item.stdev**2}')
+                elif kind == 'dihedral':
+                    lines.append(f'dihedral {fields} {item.mean} {item.stdev}')
+                else:
+                    raise ValueError(f'Unsupported restraint feature: {kind}')
+            elif item[0] == 'alpha':
+                start, end = item[1]
+                for residue in range(start, end-3):
+                    lines.append(f'contact soft {residue} CA {residue+4} CA 5.8 6.4 25')
+                    lines.append(f'contact soft {residue} O {residue+4} N 2.7 3.2 25')
+            else:
+                raise ValueError(f'Unsupported REEC restraint: {item}')
+        if hasattr(self, 'select_loop_atoms'):
+            for start, end in self.select_loop_atoms():
+                if start <= end:
+                    lines.append(f'mobile {start} {end}')
+        environment = {int(line[22:26]) for line in self.environment_records()}
+        for start, end in self.restraints.rigid_bodies:
+            if any(residue not in environment for residue in range(start, end+1)):
+                raise ValueError('REEC rigid bodies currently support ligand residues only')
+        return lines
+
+    def make(self):
+        self.restraints = Restraints()
+        self.disulfides = []
+        if hasattr(self, 'special_patches'):
+            self.special_patches(None)
+        if hasattr(self, 'special_restraints'):
+            self.special_restraints(None)
+        args = self.env.options
+        contacts = self.contact_lines()
+        reec.command(['make', 'bin/reec'])
+        with reec.workspace(f'{self.sequence}-engine-', args.keep_work) as work:
+            rows = pir_rows(self.alnfile)
+            templates = [f'{name}={path}' if name in rows else str(path) for name, path in self.template_paths()]
+            templates.extend(str(Path(path).resolve()) for path in self.reference_templates)
+            records = self.environment_records()
+            environment = None
+            if records:
+                environment = work / 'environment.pdb'
+                # Use one template's ligand coordinates; ensembles must not duplicate atoms.
+                environment.write_text('\n'.join(line for line in self.template_paths()[0][1].read_text().splitlines()
+                                                  if line.startswith(('HETATM', 'CONECT'))) + '\n')
+            engine_args = SimpleNamespace(iterations=self.max_var_iterations,
+                models=self.ending_model-self.starting_model+1, contacts=args.contacts, chain=args.chain,
+                candidate_prefix=work / 'candidate')
+            alignment = protein_alignment(self.alnfile, self.knowns, self.sequence, work / 'protein.ali')
+            output = reec.model(self.sequence, engine_args, work, templates, alignment,
+                                contacts, environment, bool(environment), bool(environment))
+            report = json.loads(Path(str(output)+'.json').read_text())
+            if not report.get('valid'):
+                raise ValueError('REEC returned an invalid model')
+            candidates = []
+            for index in range(engine_args.models):
+                source = Path(f'{engine_args.candidate_prefix}.{index}.pdb')
+                candidate_report = json.loads(Path(str(source)+'.json').read_text())
+                if not candidate_report.get('valid'):
+                    continue
+                destination = Path(f'{self.sequence}.reec.{self.starting_model+index}.pdb').resolve()
+                shutil.copyfile(source, destination)
+                shutil.copyfile(str(source)+'.json', str(destination)+'.json')
+                candidates.append({'name': destination.name, 'molpdf': candidate_report['final_energy'], 'failure': None})
+        self.outputs[:] = candidates
+
+
+def construct(model_class, env, *, references=(), **kwargs):
+    source = Path(kwargs['alnfile']).resolve()
+    rows = pir_rows(source)
+    knowns = kwargs['knowns']
+    names = ((knowns,) if isinstance(knowns, str) else tuple(knowns)) + (kwargs['sequence'],)
+    if all(name in rows for name in names):
+        width = max(len(rows[name][1]) for name in names)
+        normalized = source.with_name(source.stem+'.model.ali')
+        normalized.write_text(''.join(f'>P1;{name}\n{rows[name][0]}\n{rows[name][1].ljust(width, "-")}*\n'
+                                      for name in names))
+        kwargs['alnfile'] = str(normalized)
+    model = model_class(env, **kwargs)
+    if isinstance(model, ReecModel):
+        model.reference_templates = [str(Path(path).resolve()) for path in references]
+    return model
+
+
+@contextmanager
+def publication_guard(destination):
+    """Restore the previous model if shared postprocessing or validation fails."""
+    paths = [Path(destination), Path(str(destination)+'.json')]
+    previous = {path: path.read_bytes() if path.exists() else None for path in paths}
+    try:
+        yield
+    except BaseException:
+        for path, content in previous.items():
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(content)
+        raise
+
+
+def finalize(model, destination, candidate=None):
+    from reec_review import inspect
+    destination = Path(destination)
+    if isinstance(model, ReecModel):
+        report = json.loads(Path(str(Path(candidate or model.outputs[0]['name']).resolve())+'.json').read_text())
+    else:
+        report = {'engine': 'MODELLER', 'contacts': []}
+    atoms = {(int(line[22:26]), line[12:16].strip()): tuple(float(line[i:i+8]) for i in (30,38,46))
+             for line in destination.read_text().splitlines() if line.startswith(('ATOM  ', 'HETATM'))}
+    for contact in report['contacts']:
+        distance = math.dist(atoms[contact['res1'],contact['atom1']], atoms[contact['res2'],contact['atom2']])
+        contact['distance'] = distance
+        contact['violation'] = max(0,contact['min']-distance,distance-contact['max'])
+    path = Path(str(destination)+'.json')
+    path.write_text(json.dumps(report, indent=2)+'\n')
+    review = inspect(destination)
+    if not review['valid']:
+        raise ValueError(f'Postprocessed model failed geometry review: {review["failures"]}')
+    report['valid'] = True
+    report['serialized_geometry'] = {key: value for key, value in review.items()
+                                     if key not in ('model', 'optimizer_report')}
+    path.write_text(json.dumps(report, indent=2)+'\n')
