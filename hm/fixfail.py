@@ -583,7 +583,7 @@ def main(argv=None):
             subprocess.run(cmd, check=True)
 
             with directory(script_dir):
-                finalize(a, output_pdb, model['name'])
+                finalize(a, output_pdb, model['name'], target=protid)
 
         if not "loop" in sys.argv and not "dock" in sys.argv:
             break

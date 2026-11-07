@@ -152,6 +152,7 @@ std::vector<Entry> alignment(const std::string& path)
             done=false;
             continue;
         }
+        if(done&&!a.empty()&&s.find_first_not_of("-* \t")==s.npos)continue;
         if(a.empty()||done)throw std::runtime_error("Unexpected PIR content");
         if(desc)
         {
@@ -169,8 +170,7 @@ std::vector<Entry> alignment(const std::string& path)
                 done=true;
                 break;
             }
-            if(c=='/'||c=='.')throw std::runtime_error("Only a single protein chain is supported in PIR; omit ligand columns");
-            if(c!='-'&&codes.find(c)==codes.npos)throw std::runtime_error("Unsupported residue in PIR");
+            if(c!='-'&&c!='/'&&c!='.'&&codes.find(c)==codes.npos)throw std::runtime_error("Unsupported residue in PIR");
             a.back().seq+=c;
         }
     }
@@ -178,6 +178,11 @@ std::vector<Entry> alignment(const std::string& path)
     std::set<std::string> ids;
     for(auto& e:a)if(e.seq.empty()||!ids.insert(e.id).second)throw std::runtime_error("Empty or duplicate PIR entry");
     return a;
+}
+void protein_row(const Entry& entry)
+{
+    if(entry.seq.find_first_of("/.")!=std::string::npos)
+        throw std::runtime_error("Only a single protein chain is supported in PIR; omit ligand columns: "+entry.id);
 }
 struct Res
 {
@@ -198,6 +203,15 @@ Template pdb(const std::string& arg,char chain)
     auto eq=arg.find('=');
     t.path=eq==arg.npos?arg:arg.substr(eq+1);
     t.id=eq==arg.npos?"":arg.substr(0,eq);
+    if(eq==arg.npos&&arg.size()==4&&std::all_of(arg.begin(),arg.end(),[](unsigned char c){return std::isalnum(c);}))
+    {
+        std::ifstream local(arg);
+        if(!local)
+        {
+            t.id=arg;
+            t.path="hm/tpl/"+arg+".pdb";
+        }
+    }
     std::ifstream f(t.path);
     if(!f)throw std::runtime_error("Cannot read template: "+t.path);
     std::string s;
@@ -337,7 +351,7 @@ void map_template(Template& t,const std::vector<Entry>& entries,const Entry& tar
         t.mapping=align(seq,t);
         return;
     }
-    if(e->seq.size()!=target.seq.size())throw std::runtime_error("PIR rows have different column counts");
+    protein_row(*e);
     auto fields=split(e->desc,':');
     int start=0;
     if(fields.size()>2&&fields[2]!="FIRST"&&!fields[2].empty())
@@ -346,15 +360,17 @@ void map_template(Template& t,const std::vector<Entry>& entries,const Entry& tar
         while(start<int(t.residues.size())&&t.residues[start].no<n)++start;
     }
     int j=start;
-    for(size_t c=0; c<target.seq.size(); ++c)
+    for(size_t c=0; c<std::max(target.seq.size(),e->seq.size()); ++c)
     {
+        char template_aa=c<e->seq.size()?e->seq[c]:'-';
+        char target_aa=c<target.seq.size()?target.seq[c]:'-';
         int k=-1;
-        if(e->seq[c]!='-')
+        if(template_aa!='-')
         {
-            if(j>=int(t.residues.size())||e->seq[c]!=t.residues[j].aa)throw std::runtime_error("PIR/template sequence mismatch in "+t.path+" at column "+std::to_string(c+1));
+            if(j>=int(t.residues.size())||template_aa!=t.residues[j].aa)throw std::runtime_error("PIR/template sequence mismatch in "+t.path+" at column "+std::to_string(c+1));
             k=j++;
         }
-        if(target.seq[c]!='-')t.mapping.push_back(k);
+        if(target_aa!='-')t.mapping.push_back(k);
     }
     if(j!=int(t.residues.size()))throw std::runtime_error("Template contains residues outside PIR row");
 }
@@ -632,6 +648,12 @@ struct Model
         for(size_t b=0; b<adj.size(); ++b)for(int c:adj[b])if(int(b)<c)
                 {
                     Bond* bond=nodes[b].atom->get_bond_between(nodes[c].atom);
+                    // Library movement locks are not chemical rigidity: phi and psi remain free.
+                    const std::string& first=nodes[b].name;
+                    const std::string& second=nodes[c].name;
+                    bool backbone_rotation=(first=="CA"&&(second=="N"||second=="C"))
+                        ||(second=="CA"&&(first=="N"||first=="C"));
+                    if(backbone_rotation)continue;
                     if(bond&&!bond->can_rotate)for(int a:adj[b])for(int d:adj[c])if(a!=c&&d!=int(b)&&a!=d)
                                 {
                                     auto p=std::minmax(a,d);
@@ -1217,6 +1239,7 @@ struct Model
         {
             V b=x[v.b]-x[v.a],c=x[v.c]-x[v.a],d=x[v.d]-x[v.a];
             double err=b.dot(c.cross(d))-v.value,w=v.weight;
+            if(std::fabs(v.value)<.1)w*=3;
             e+=w*err*err;
             V gb=c.cross(d)*(2*w*err),gc=d.cross(b)*(2*w*err),gd=b.cross(c)*(2*w*err);
             g[v.b]+=gb;
@@ -1423,6 +1446,31 @@ struct Model
                 << ",\n  \"max_planarity_volume_error\": " << after.planarity_max
                 << ",\n  \"chirality_errors\": " << after.chirality
                 << ",\n  \"mandatory_violations\": " << after.hard_fail
+                << ",\n  \"geometry_outliers\": [";
+        bool comma=false;
+        for(auto p:geometry)if(p.validate)
+        {
+            double actual=(xyz[p.a]-xyz[p.b]).norm(),error=std::fabs(actual-p.lo);
+            if(error<=(p.bond?.08:.18))continue;
+            if(comma)f<<",";
+            comma=true;
+            f<<"\n    {\"res1\": "<<nodes[p.a].res<<", \"atom1\": "<<std::quoted(nodes[p.a].name)
+             <<", \"res2\": "<<nodes[p.b].res<<", \"atom2\": "<<std::quoted(nodes[p.b].name)
+             <<", \"distance\": "<<actual<<", \"ideal\": "<<p.lo<<", \"error\": "<<error<<"}";
+        }
+        f << "\n  ],\n  \"planarity_outliers\": [";
+        comma=false;
+        for(auto v:volumes)if(std::fabs(v.value)<.1)
+        {
+            double actual=(xyz[v.b]-xyz[v.a]).dot((xyz[v.c]-xyz[v.a]).cross(xyz[v.d]-xyz[v.a]));
+            double error=std::fabs(actual-v.value);
+            if(error<=.25)continue;
+            if(comma)f<<",";
+            comma=true;
+            f<<"\n    {\"residue\": "<<nodes[v.a].res<<", \"atom\": "<<std::quoted(nodes[v.a].name)
+             <<", \"error\": "<<error<<"}";
+        }
+        f << "\n  ]"
                 << ",\n  \"contacts\": [";
         for(size_t i=0; i<contacts.size(); ++i)
         {
@@ -1566,6 +1614,7 @@ int main(int argc,char** argv)
                 chosen=&e;
             }
         if(!chosen)throw std::runtime_error("Target absent from PIR");
+        protein_row(*chosen);
         std::string seq;
         for(char c:chosen->seq)if(c!='-')seq+=c;
         if(seq.size()<2||seq.size()>5000)throw std::runtime_error("Target length outside 2..5000");

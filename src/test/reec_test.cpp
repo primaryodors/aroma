@@ -67,5 +67,27 @@ int main(int argc, char** argv)
     superpose(moving, reference);
     for (size_t i=0; i<points.size(); ++i)
         assert((moving.residues[i].atoms.at("CA")-points[i]).norm() < 1e-8);
+    Template fragment=pdb("testdata/reec-small.pdb",'A');
+    std::string sequence;
+    for(size_t i=0;i<fragment.residues.size();++i)
+    {
+        sequence+=fragment.residues[i].aa;
+        fragment.mapping.push_back(i);
+    }
+    std::vector<Template> templates{fragment};
+    Model backbone;
+    backbone.build(sequence,templates);
+    bool peptide_bond=false;
+    for(auto pair:backbone.geometry)
+    {
+        const Node& first=backbone.nodes[pair.a];
+        const Node& second=backbone.nodes[pair.b];
+        // A fixed CB-O distance would incorrectly freeze the backbone psi torsion.
+        assert(!(first.res==second.res&&((first.name=="CB"&&second.name=="O")
+            ||(first.name=="O"&&second.name=="CB"))));
+        if(pair.bond&&first.res+1==second.res&&first.name=="C"&&second.name=="N")
+            peptide_bond=true;
+    }
+    assert(peptide_bond);
     std::cout << "REEC analytical gradients and rigid template fit pass.\n";
 }

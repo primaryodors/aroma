@@ -335,13 +335,19 @@ def publication_guard(destination):
         raise
 
 
-def finalize(model, destination, candidate=None):
+def finalize(model, destination, candidate=None, *, target=None):
     from reec_review import inspect
     destination = Path(destination)
     if isinstance(model, ReecModel):
         report = json.loads(Path(str(Path(candidate or model.outputs[0]['name']).resolve())+'.json').read_text())
+    elif model is None:
+        source_report = Path(str(candidate)+'.json')
+        report = (json.loads(source_report.read_text()) if source_report.is_file()
+                  else {'engine': 'validated', 'contacts': []})
     else:
         report = {'engine': 'MODELLER', 'contacts': []}
+    if target is not None:
+        report['target_sequence_length'] = len(reec.pu.prots[target]['sequence'])
     atoms = {(int(line[22:26]), line[12:16].strip()): tuple(float(line[i:i+8]) for i in (30,38,46))
              for line in destination.read_text().splitlines() if line.startswith(('ATOM  ', 'HETATM'))}
     for contact in report['contacts']:

@@ -47,6 +47,7 @@ def dihedral(a, b, c, d):
 
 def inspect(path):
     path = Path(path)
+    report = json.loads(Path(str(path) + '.json').read_text())
     residues, serials, links, all_atoms = {}, {}, set(), {}
     for line in path.read_text().splitlines():
         if line.startswith(('ATOM  ', 'HETATM')):
@@ -75,7 +76,8 @@ def inspect(path):
     for no, residue in sorted(residues.items()):
         atoms = residue['atoms']
         required = set(('N CA C O ' + HEAVY[residue['type']]).split())
-        if no == max(residues):
+        # A truncated template ends before the receptor's true carboxyl terminus.
+        if no == max(residues) and (no == report.get('target_sequence_length', no) or 'OXT' in atoms):
             required.add('OXT')
         if set(atoms) != required:
             failures.append(f'{no}: atom inventory differs: {sorted(set(atoms) ^ required)}')
@@ -133,7 +135,6 @@ def inspect(path):
                              'angles': css, 'torsion': torsion})
         if not 1.90 <= distance <= 2.20 or abs(abs(torsion) - 90) > 30 or any(abs(v - 104) > 15 for v in css):
             failures.append(f'{a}-{b}: disulfide geometry outside review bounds')
-    report = json.loads(Path(str(path) + '.json').read_text())
     for contact in report['contacts']:
         a = all_atoms[contact['res1'], contact['atom1']]
         b = all_atoms[contact['res2'], contact['atom2']]

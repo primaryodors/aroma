@@ -254,6 +254,52 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn('Incomplete PIR', result.stderr)
 
+    def test_truncated_receptor_does_not_require_terminal_oxygen(self):
+        result = self.run_model()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        lines = self.output.read_text().splitlines()
+        terminal = len(self.sequence) - 1
+        fragment = [s for s in lines if s.startswith('ATOM  ') and int(s[22:26]) <= terminal]
+        self.output.write_text('\n'.join(fragment) + '\nEND\n')
+        report_path = Path(str(self.output) + '.json')
+        report = json.loads(report_path.read_text())
+        report['target_sequence_length'] = len(self.sequence)
+        report_path.write_text(json.dumps(report))
+        review = reec_review.inspect(self.output)
+        self.assertTrue(review['valid'], review['failures'])
+        report['target_sequence_length'] = terminal
+        report_path.write_text(json.dumps(report))
+        self.assertTrue(any('OXT' in error for error in reec_review.inspect(self.output)['failures']))
+        report['target_sequence_length'] = len(self.sequence)
+        report_path.write_text(json.dumps(report))
+        fragment = [s for s in fragment if not (int(s[22:26]) == terminal and s[12:16].strip() == 'O')]
+        self.output.write_text('\n'.join(fragment) + '\nEND\n')
+        self.assertFalse(reec_review.inspect(self.output)['valid'])
+
+    def test_repository_pir_padding_and_unrelated_ligand_row(self):
+        self.ali.write_text(
+            '>P1;tpl\nstructure:tpl:FIRST:A:LAST:A::::\n'
+            + self.sequence + '*\n-----*\n'
+            + '>P1;ligand\nstructure:ligand::::::::\n....*\n'
+            + '>P1;model\nsequence:model::::::::\n' + self.sequence + '-----*\n')
+        result = self.run_model('--target', 'model', template=f'tpl={self.template}')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_selected_ligand_columns_are_rejected(self):
+        self.ali.write_text('>P1;model\nsequence:model::::::::\n' + self.sequence + '.*\n')
+        result = self.run_model()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('omit ligand columns', result.stderr)
+
+    def test_bare_template_id_resolves_repository_template(self):
+        result = subprocess.run([
+            str(ROOT / 'bin/reec'), '--alignment', str(ROOT / 'hm/allgpcr.ali'),
+            '--template', '8f76', '--target', 'OR51E2', '--iterations', '0',
+            '--output', str(self.output)], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertNotIn('Cannot read template', result.stderr)
+        self.assertIn('REEC built', result.stdout)
+
     def test_aligned_template_mismatch_is_rejected(self):
         self.ali.write_text('>P1;tpl\nstructure:tpl:FIRST:A:LAST:A::::\n'
                             + 'A' * len(self.sequence) + '*\n>P1;model\nsequence:model::::::::\n'
