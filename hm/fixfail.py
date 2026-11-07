@@ -6,7 +6,7 @@ import json
 import shutil
 import subprocess
 from reec_backend import requested, entrypoint, run_fixfail
-if requested(sys.argv[1:]):
+if requested(sys.argv[1:], default='reec'):
     sys.exit(entrypoint(run_fixfail, sys.argv[1:]))
 
 from modeller import *
