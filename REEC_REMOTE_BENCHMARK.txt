@@ -79,6 +79,18 @@ change because weighting can change off/on model equality.
 The new root's runner.pid records the refresh process. TERM provides
 graceful shutdown during preparation and docking, including child cleanup.
 
-Weighted refresh PID: 1343605. Initial source commit: 13d1c93.
+Weighted refresh PID: 1344314. Source commit: 5c8f0ac.
 Both machines remain on branch reec. The original runner was stopped
 gracefully before the refresh started; its checkpoints remain intact.
+
+Final donor counts: OR1B1 9, OR1G1 9, OR2AG1 8, OR2AT4 8, OR2T11 8,
+OR51E1 13, OR52E8 4, OR5V1 2, OR6P1 11, TAAR5 10. The refresh keeps
+workflow contacts unchanged while replacing the former synthetic single
+donors with separate compatible experimental structures. All 60 Python
+regression checks and the remote native checks pass. Preparation will
+retry rejected paired models with the established increasing budgets;
+final review limits are unchanged.
+
+The first refreshed receptor advanced from rejected 3000-iteration batches
+to accepted candidates at the established 6000-iteration retry. CPU was
+56 C at that check. New native reports identify weighting version 1.

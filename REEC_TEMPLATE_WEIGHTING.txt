@@ -72,3 +72,9 @@ suppression, actual coordinate blending, and primary coordinate retention.
 The existing analytical-gradient, geometry, sampling, and CLI checks also
 apply. These checks establish behavior, not improved structural accuracy.
 The refreshed remote docking comparison will assess downstream effects.
+
+Final local validation: native checks pass; 60 Python regression tests
+pass, including docking-job alias preservation and replication accounting.
+The remote native build and native checks also pass. Docking and model
+quality results remain pending; passing regression checks is not evidence
+of an accuracy improvement.

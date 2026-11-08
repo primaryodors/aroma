@@ -163,3 +163,14 @@ with five concurrent single-thread docks and CPU temperature control.
 inputs are consolidated. REEC_REMOTE_BENCHMARK.txt records the remote
 location, protocol, checkpoints, and review procedure. Item 1 remains
 in progress while these outputs await collection and analysis.
+
+Template-weighting continuation (2026-11-08)
+
+The original remote batch was stopped under user authorization and its
+outputs retained. A separate nohup pipeline now rebuilds all ten model
+pairs with weighting version 1 and then prepares and executes the same
+docking protocol. REEC_TEMPLATE_WEIGHTING.txt records the algorithm and
+the deliberate OR5V1 primary-template exception. The refreshed workflow
+passes compatible experimental donors separately rather than hiding
+most of them inside a single synthetic template. Old and new optimizer
+energies are different objectives and must not be compared directly.
