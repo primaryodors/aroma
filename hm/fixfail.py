@@ -5,13 +5,14 @@ import os.path
 import json
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 sys.path.insert(0, root_dir)
 from modeling_backend import options as backend_options, api as backend_api, construct, forwarded_options, publication_guard, finalize
-from reec_backend import receptor, directory
+from reec_backend import receptor, directory, CandidateRejected
 
 def main(argv=None):
     options = backend_options(sys.argv[1:] if argv is None else argv, repair=True)
@@ -54,6 +55,9 @@ def main(argv=None):
         elif not odor or not actions.intersection(options.legacy) & {'fit', 'predock', 'reset'}:
             raise ValueError(f'Input file not found: {input_arg}')
 
+    if {'loop', 'dock'}.intersection(options.legacy) and not odor:
+        raise ValueError('Loop and dock modes require an odorant')
+
     aaletts = "ARNDCEQGHILKMFPSTWYV"
     aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLU", "GLN", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
 
@@ -64,8 +68,14 @@ def main(argv=None):
         cmd = [sys.executable, "hm/dohm.py", protid] + forwarded_options(options)
         data.globals.wait_cool_cpu()
         print(" ".join(cmd))
-        subprocess.run(cmd, check=True)
-        doreset = True
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as exc:
+            if exc.returncode != 2 or 'loop' not in options.legacy or not Path(origpdb).is_file():
+                raise
+            print('Reset candidate rejected; continuing repair from the existing active model.', file=sys.stderr)
+        else:
+            doreset = True
 
     if odor:
         delcav = inppdb[0:-3]+"cvty"
@@ -112,7 +122,7 @@ def main(argv=None):
         subprocess.run(cmd, check=True)
         # TODO: If no result from cavity_fit, error out and exit.
 
-    if "predock" in sys.argv or ("reset" in sys.argv and not "fit" in sys.argv):
+    if "predock" in sys.argv or (doreset and not "fit" in sys.argv):
         # Perform an active-state dock on the new model...
         if odor:
             cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
@@ -129,7 +139,29 @@ def main(argv=None):
     disulfide_code = "\n".join(f"CONECT {first} SG {second} SG" for first, second in source_disulfides)
 
     tries = 0
-    while True:
+    limit = options.max_attempts if 'loop' in options.legacy else 1
+    base_seed = options.seed
+    success = False
+    attempts = []
+    log_root = Path(root_dir) / 'tmp'
+    log_root.mkdir(parents=True, exist_ok=True)
+    run_dir = Path(tempfile.mkdtemp(prefix=f'{protid}-fixfail-', dir=log_root))
+    attempt_log = run_dir / 'attempts.json'
+
+    def record(status, reason='', report=None):
+        entry = {'attempt': tries, 'seed': options.seed, 'status': status, 'reason': reason}
+        if report is not None and Path(report).is_file():
+            saved = run_dir / f'attempt-{tries}.json'
+            shutil.copyfile(report, saved)
+            entry['report'] = str(saved)
+        attempts.append(entry)
+        attempt_log.write_text(json.dumps(attempts, indent=2) + '\n')
+
+    while tries < limit:
+        tries += 1
+        options.seed = (base_seed + tries - 1) % 2147483648
+        os.chdir(root_dir)
+        print(f'Repair attempt {tries}/{limit}; seed {options.seed}', flush=True)
         legal = ""
         tpls = ""
         with open(origpdb, "r") as f:
@@ -479,124 +511,131 @@ def main(argv=None):
         a.max_var_iterations = options.iterations if options.iterations is not None else (3000 if options.backend == 'reec' else 300)
 
         data.globals.wait_cool_cpu()
-        a.make()
+        try:
+            a.make()
 
-        # Find the best output file from MODELLER. If no output to use, exit the script.
-        results = [x for x in a.loop.outputs if x['failure'] is None]
-        if not len(results):
-            print("FAIL.")
-            exit()
-        key = 'molpdf'
-        i = 0
-        j = 0
-        best = 0.0
-        for i in range(len(results)):
-            ophis = results[i]
-            if key in ophis:
-                if not i or float(ophis[key]) < best:
-                    j = i
-                    best = float(ophis[key])
-            i += 1
-        # exit()
-        model = results[j]
-        print("Chose " + model['name'])
+            # Find the best output file from MODELLER. If no output to use, exit the script.
+            results = [x for x in a.loop.outputs if x['failure'] is None]
+            if not len(results):
+                raise CandidateRejected('Modeling produced no valid candidates')
+            key = 'molpdf'
+            i = 0
+            j = 0
+            best = 0.0
+            for i in range(len(results)):
+                ophis = results[i]
+                if key in ophis:
+                    if not i or float(ophis[key]) < best:
+                        j = i
+                        best = float(ophis[key])
+                i += 1
+            # exit()
+            model = results[j]
+            print("Chose " + model['name'])
 
-        with publication_guard(output_pdb):
-            phewcode = f"""
-        LET $rcpid = "{protid}"
-        LET $inpf = "pdbs/{fam}/{protid}.inactive.pdb"
-        LET $mdld = "hm/{model['name']}"
+            with publication_guard(output_pdb):
+                phewcode = f"""
+            LET $rcpid = "{protid}"
+            LET $inpf = "pdbs/{fam}/{protid}.inactive.pdb"
+            LET $mdld = "hm/{model['name']}"
 
-        LOAD $inpf A I
-        LET %rcpseqln = %SEQLENI
-        LOAD $mdld A A
+            LOAD $inpf A I
+            LET %rcpseqln = %SEQLENI
+            LOAD $mdld A A
 
-        BWCOPY I A
-        STRAND I
-        UPRIGHT I
-        BWCENTER
-        STRAND A
+            BWCOPY I A
+            STRAND I
+            UPRIGHT I
+            BWCENTER
+            STRAND A
 
-        {fix8uy0}
+            {fix8uy0}
 
-        {legal}
-        REMARK 265 HM_TEMPLATES: {tpls}
+            {legal}
+            REMARK 265 HM_TEMPLATES: {tpls}
 
-        UNCHAIN I
-        UNCHAIN O
-        STRAND A
-        UPRIGHT
-        BWCENTER
-        # IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48
+            UNCHAIN I
+            UNCHAIN O
+            STRAND A
+            UPRIGHT
+            BWCENTER
+            # IF $3.37 != "G" THEN ATOMTO %3.37 EXTENT @6.48
 
-        {disulfide_code}
-        HYDRO
+            {disulfide_code}
+            HYDRO
 
-        LET %y6 = 0
-        LET $atom6 = "OH"
-        IF $6.55 = "Y" THEN LET %y6 = %6.55
-        IF $6.55 = "H" THEN LET %y6 = %6.55
-        IF $6.55 = "H" THEN LET $atom6 = "NE2"
-        LET %de45 = 0
-        IF $45.51 = "D" OR $45.51 = "E" THEN LET %de45 = %45.51
-        IF NOT %y6 THEN GOTO _no_456_contact
-        IF NOT %de45 THEN GOTO _no_456_contact
-        BRIDGE %y6 %de45
-        _no_456_contact:
+            LET %y6 = 0
+            LET $atom6 = "OH"
+            IF $6.55 = "Y" THEN LET %y6 = %6.55
+            IF $6.55 = "H" THEN LET %y6 = %6.55
+            IF $6.55 = "H" THEN LET $atom6 = "NE2"
+            LET %de45 = 0
+            IF $45.51 = "D" OR $45.51 = "E" THEN LET %de45 = %45.51
+            IF NOT %y6 THEN GOTO _no_456_contact
+            IF NOT %de45 THEN GOTO _no_456_contact
+            BRIDGE %y6 %de45
+            _no_456_contact:
 
-        IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
-        IF $5.39 != "M" GOTO _not_Cu_539
-        MEASURE %5.39 "SD" %5.42 "SG" &sdist
-        ECHO "5.39:SD - 5.42:SG distance: " &sdist
-        MEASURE %5.39 "SD" %5.43 "SG" &sdist
-        ECHO "5.39:SD - 5.43:SG distance: " &sdist
-        _not_Cu_539:
-        IF $5.46 != "M" GOTO _not_Cu_546
-        MEASURE %5.46 "SD" %5.42 "SG" &sdist
-        ECHO "5.46:SD - 5.42:SG distance: " &sdist
-        MEASURE %5.46 "SD" %5.43 "SG" &sdist
-        ECHO "5.46:SD - 5.43:SG distance: " &sdist
-        _not_Cu_546:
-        MEASURE %5.42 "SG" %5.43 "SG" &sdist
-        ECHO "5.42:SD - 5.43:SG distance: " &sdist
-        _not_Cu_binding_site:
+            IF $5.42 != "C" OR $5.43 != "C" GOTO _not_Cu_binding_site
+            IF $5.39 != "M" GOTO _not_Cu_539
+            MEASURE %5.39 "SD" %5.42 "SG" &sdist
+            ECHO "5.39:SD - 5.42:SG distance: " &sdist
+            MEASURE %5.39 "SD" %5.43 "SG" &sdist
+            ECHO "5.39:SD - 5.43:SG distance: " &sdist
+            _not_Cu_539:
+            IF $5.46 != "M" GOTO _not_Cu_546
+            MEASURE %5.46 "SD" %5.42 "SG" &sdist
+            ECHO "5.46:SD - 5.42:SG distance: " &sdist
+            MEASURE %5.46 "SD" %5.43 "SG" &sdist
+            ECHO "5.46:SD - 5.43:SG distance: " &sdist
+            _not_Cu_546:
+            MEASURE %5.42 "SG" %5.43 "SG" &sdist
+            ECHO "5.42:SD - 5.43:SG distance: " &sdist
+            _not_Cu_binding_site:
 
-        LET $outf = "{output_pdb}"
-        SAVE $outf
-        """
+            LET $outf = "{output_pdb}"
+            SAVE $outf
+            """
 
-            os.chdir(os.path.dirname(os.path.abspath(__file__)))
-            os.chdir("..")
-            phewfn = f"hm/{protid}.{mode}.hm.phew"
-            with open(phewfn, "w") as f:
-                # PHEW resolves labels against whole lines, including whitespace.
-                f.write('\n'.join(line.strip() for line in phewcode.splitlines()) + '\n')
-            cmd = ["bin/phew", phewfn]
-            data.globals.wait_cool_cpu()
-            subprocess.run(cmd, check=True)
+                os.chdir(os.path.dirname(os.path.abspath(__file__)))
+                os.chdir("..")
+                phewfn = f"hm/{protid}.{mode}.hm.phew"
+                with open(phewfn, "w") as f:
+                    # PHEW resolves labels against whole lines, including whitespace.
+                    f.write('\n'.join(line.strip() for line in phewcode.splitlines()) + '\n')
+                cmd = ["bin/phew", phewfn]
+                data.globals.wait_cool_cpu()
+                subprocess.run(cmd, check=True)
 
-            cmd = ["bin/ic", str(output_pdb), "minc", "save"]
-            for resno in sorted({resno for pair in source_disulfides for resno in pair}):
-                cmd.extend(["pin", str(resno)])
-            print(" ".join(cmd))
-            data.globals.wait_cool_cpu()
-            subprocess.run(cmd, check=True)
+                cmd = ["bin/ic", str(output_pdb), "minc", "save"]
+                for resno in sorted({resno for pair in source_disulfides for resno in pair}):
+                    cmd.extend(["pin", str(resno)])
+                print(" ".join(cmd))
+                data.globals.wait_cool_cpu()
+                subprocess.run(cmd, check=True)
 
-            with directory(script_dir):
-                finalize(a, output_pdb, model['name'], target=protid)
+                with directory(script_dir):
+                    finalize(a, output_pdb, model['name'], target=protid)
+
+        except CandidateRejected as exc:
+            record('rejected', str(exc), exc.report)
+            print(f'Attempt {tries}/{limit} rejected: {exc}', file=sys.stderr, flush=True)
+            continue
 
         if not "loop" in sys.argv and not "dock" in sys.argv:
+            record('accepted')
+            success = True
             break
-        else: tries += 1
 
+        dockfile = Path(root_dir) / f"out/{fam}/{protid}/{protid}~{odor['full_name']}.{mode}.dock"
+        previous_dock = dockfile.stat().st_mtime_ns if dockfile.exists() else None
         if odor:
             cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)
 
         dock_success = False
-        dockfile = f"out/{fam}/{protid}/{protid}~{odor['full_name']}.{mode}.dock"
-        if os.path.exists(dockfile):
+        if dockfile.exists() and dockfile.stat().st_mtime_ns != previous_dock:
             with open(dockfile, "r") as f:
                 c = f.read()
                 lines = c.split("\n")
@@ -616,16 +655,21 @@ def main(argv=None):
                         dock_success = True
                         break
 
-        if dock_success or not "loop" in sys.argv:
+        record('success' if dock_success else 'dock_failed')
+        if dock_success:
+            success = True
+            break
+        if not "loop" in sys.argv:
             break
 
-        if tries >= 100:
-            print("FAILED after 100 tries.")
-            break
-
+    os.chdir(root_dir)
     if delete_inppdb and os.path.exists(inppdb):
         os.remove(inppdb)
+    rejected = sum(entry['status'] == 'rejected' for entry in attempts)
+    print(f'{"SUCCESS" if success else "FAILED"} after {tries} attempt(s); '
+          f'{rejected} rejected. Attempt log: {attempt_log}', flush=True)
+    return 0 if success else 2
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

@@ -18,6 +18,47 @@ class ReecBackend(unittest.TestCase):
     def setUpClass(cls):
         backend.pu.load_prots()
 
+    def test_exit_two_is_recoverable_and_other_exit_codes_are_fatal(self):
+        from types import SimpleNamespace
+        args = SimpleNamespace(iterations=1, models=1, contacts=[], chain='A', seed=9)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            work = root / 'work'
+            work.mkdir()
+            (root / 'tmp').mkdir()
+            report = Path(str(work / 'result.pdb') + '.json')
+            report.write_text('{"valid": false, "contacts": []}')
+            for code in (2, 1):
+                error = subprocess.CalledProcessError(code, ['reec'])
+                with patch.object(backend, 'ROOT', root), patch.object(backend, 'command', side_effect=error) as command:
+                    expected = backend.CandidateRejected if code == 2 else subprocess.CalledProcessError
+                    with self.assertRaises(expected) as raised:
+                        backend.model('OR1A1', args, work, [], work / 'input.ali', [])
+                    if code == 2:
+                        self.assertEqual(raised.exception.report, report)
+                    self.assertEqual(command.call_args.args[0][-2:], ['--seed', 9])
+                    self.assertEqual((root / 'tmp/OR1A1.reec-failure.json').read_text(), report.read_text())
+
+    def test_geometry_rejection_report_survives_publication_rollback(self):
+        import modeling_backend as engines
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / 'active.pdb'
+            output.write_text('previous PDB')
+            sidecar = Path(str(output)+'.json')
+            sidecar.write_text('previous report')
+            review = {'valid': False, 'failures': ['Test geometry failure'], 'residues': 1}
+            with patch.object(backend, 'ROOT', root), patch('reec_review.inspect', return_value=review):
+                with self.assertRaises(backend.CandidateRejected) as raised:
+                    with engines.publication_guard(output):
+                        output.write_text('END\n')
+                        engines.finalize(None, output)
+            self.assertEqual(output.read_text(), 'previous PDB')
+            self.assertEqual(sidecar.read_text(), 'previous report')
+            report = raised.exception.report.read_text()
+            self.assertIn('Test geometry failure', report)
+            self.assertIn('"valid": false', report)
+
     def test_backend_selection(self):
         with patch.dict(os.environ, {}, clear=True):
             self.assertTrue(backend.requested([], default='reec'))

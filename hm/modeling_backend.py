@@ -20,6 +20,10 @@ def options(argv, repair=False):
         raise ValueError('Iterations must be positive')
     if args.models is not None and args.models < 1:
         raise ValueError('Models must be positive')
+    if not 0 <= args.seed <= 2147483647:
+        raise ValueError('Seed must be between 0 and 2147483647')
+    if repair and args.max_attempts < 1:
+        raise ValueError('Maximum attempts must be positive')
     for name in ('alignment', 'output'):
         value = getattr(args, name)
         if value is not None:
@@ -33,7 +37,7 @@ def options(argv, repair=False):
 
 def forwarded_options(args):
     result = ['--backend', args.backend, '--chain', args.chain]
-    for name in ('iterations', 'models', 'alignment'):
+    for name in ('iterations', 'models', 'alignment', 'seed'):
         value = getattr(args, name)
         if value is not None:
             result.extend(['--'+name, str(value)])
@@ -282,7 +286,7 @@ class ReecModel:
                                                   if line.startswith(('ATOM  ', 'HETATM', 'CONECT', 'ENDMDL'))) + '\n')
             engine_args = SimpleNamespace(iterations=self.max_var_iterations,
                 models=self.ending_model-self.starting_model+1, contacts=args.contacts, chain=args.chain,
-                candidate_prefix=work / 'candidate')
+                candidate_prefix=work / 'candidate', seed=args.seed)
             alignment = protein_alignment(self.alnfile, self.knowns, self.sequence, work / 'protein.ali')
             output = reec.model(self.sequence, engine_args, work, templates, alignment,
                                 contacts, environment, bool(environment), bool(environment))
@@ -358,7 +362,13 @@ def finalize(model, destination, candidate=None, *, target=None):
     path.write_text(json.dumps(report, indent=2)+'\n')
     review = inspect(destination)
     if not review['valid']:
-        raise ValueError(f'Postprocessed model failed geometry review: {review["failures"]}')
+        report['valid'] = False
+        report['serialized_geometry'] = {key: value for key, value in review.items()
+                                         if key not in ('model', 'optimizer_report')}
+        failure = reec.ROOT / 'tmp' / f'{target or destination.stem}.postprocessing-failure.json'
+        failure.parent.mkdir(parents=True, exist_ok=True)
+        failure.write_text(json.dumps(report, indent=2)+'\n')
+        raise reec.CandidateRejected(f'Postprocessed model failed geometry review: {review["failures"]}', failure)
     report['valid'] = True
     report['serialized_geometry'] = {key: value for key, value in review.items()
                                      if key not in ('model', 'optimizer_report')}

@@ -18,6 +18,13 @@ from data import protutils as pu
 from data.disulfides import pdb_disulfides
 
 
+class CandidateRejected(ValueError):
+    """A modeled candidate failed validation and can be retried."""
+    def __init__(self, message, report=None):
+        super().__init__(message)
+        self.report = Path(report) if report is not None else None
+
+
 def requested(args, default='modeller'):
     backend = os.environ.get('AROMA_HM_BACKEND', default)
     for i, arg in enumerate(args):
@@ -87,6 +94,9 @@ def parser(repair=False):
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
     p.add_argument('--iterations', type=int, help='Override the workflow modeling iteration limit')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')
+    p.add_argument('--seed', type=int, default=0, help='Reproducible REEC starting-conformation seed')
+    if repair:
+        p.add_argument('--max-attempts', type=int, default=100, help='Maximum repair attempts in loop mode')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
     return p
@@ -288,7 +298,7 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
     result = work / 'result.pdb'
     cmd = [ROOT / 'bin/reec', '--alignment', alignment, '--target', rcp,
            '--output', result, '--iterations', args.iterations, '--models', args.models,
-           '--contacts', contact_file, '--chain', args.chain]
+           '--contacts', contact_file, '--chain', args.chain, '--seed', getattr(args, 'seed', 0)]
     for template in templates:
         cmd.extend(['--template', template])
     if getattr(args, 'candidate_prefix', None):
@@ -303,13 +313,15 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
             cmd.append('--environment-hydrogens')
     try:
         command(cmd)
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as exc:
         # Retain the numerical evidence even when the candidate cannot be published.
         failure = ROOT / 'tmp' / f'{rcp}.reec-failure.json'
         report = Path(str(result) + '.json')
         if report.exists():
             shutil.copyfile(report, failure)
             print(f'Validation report: {failure}', file=sys.stderr)
+        if exc.returncode == 2:
+            raise CandidateRejected('REEC rejected the candidate ensemble', report if report.exists() else None) from exc
         raise
     return result
 

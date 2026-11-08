@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <cctype>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -549,6 +550,7 @@ struct Model
     std::map<int,std::string> fixed_records;
     std::vector<std::pair<int,int>> fixed_links;
     double hard_scale=1,anchor_scale=1;
+    unsigned seed=0;
     int id(int r,const std::string& a)const
     {
         auto it=ids.find(
@@ -1198,6 +1200,23 @@ struct Model
     }
     void alternate_start(int candidate)
     {
+        auto mixed=[](uint32_t key)
+        {
+            key^=key>>16;
+            key*=0x7feb352du;
+            key^=key>>15;
+            key*=0x846ca68bu;
+            return key^(key>>16);
+        };
+        if(seed)for(size_t i=0;i<xyz.size();++i)if(!fixed_records.count(i))
+        {
+            uint32_t key=mixed(uint32_t(seed)^uint32_t(candidate)*0x9e3779b9u^uint32_t(i)*0x85ebca6bu);
+            xyz[i].x+=.02*(double(key&65535)/65535.-.5);
+            key=mixed(key);
+            xyz[i].y+=.02*(double(key&65535)/65535.-.5);
+            key=mixed(key);
+            xyz[i].z+=.02*(double(key&65535)/65535.-.5);
+        }
         refresh(xyz);
         std::set<int> flexible;
         for(auto p:neighbors)
@@ -1219,7 +1238,8 @@ struct Model
             if(!protein.get_residue(r) || !ids.count({r,"CB"}) || !ids.count({r,"CA"})) continue;
             if(protein.get_residue(r)->get_letter()=='P') continue;
             V origin=xyz[id(r,"CA")], axis=(xyz[id(r,"CB")]-origin).unit();
-            double angle=2*std::acos(-1.)/3*((r+candidate)%3);
+            uint32_t key=mixed(uint32_t(seed)^uint32_t(candidate)*0x9e3779b9u^uint32_t(r)*0x85ebca6bu);
+            double angle=2*std::acos(-1.)/3*(key%3)+.2*(double(key>>8)/16777215.-.5);
             double c=std::cos(angle),s=std::sin(angle);
             for(size_t i=0; i<nodes.size(); ++i) if(nodes[i].res==r&&!nodes[i].backbone&&!fixed_records.count(i))
                 {
@@ -1429,6 +1449,7 @@ struct Model
         if(!f) throw std::runtime_error("Cannot write report");
         f << std::setprecision(8)
           << "{\n  \"engine\": \"REEC\",\n  \"valid\": " << (valid?"true":"false")
+          << ",\n  \"seed\": " << seed
           << ",\n  \"heavy_atoms\": " << std::count_if(nodes.begin(),nodes.end(),[](const Node& n)
         {
             return n.atom->Z>1;
@@ -1546,7 +1567,7 @@ struct Model
 };
 void help()
 {
-    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
 }
 }
 #ifndef REEC_NO_MAIN
@@ -1560,7 +1581,7 @@ int main(int argc,char** argv)
         bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
-        int iterations=3000,models=1;
+        int iterations=3000,models=1,seed=0;
         for(int i=1; i<argc; ++i)
         {
             std::string a=argv[i];
@@ -1596,6 +1617,7 @@ int main(int argc,char** argv)
             }
             else if(a=="--iterations")iterations=integer(v);
             else if(a=="--models")models=integer(v);
+            else if(a=="--seed")seed=integer(v);
             else throw std::runtime_error("Unknown option: "+a);
         }
         if(ali.empty()||out.empty()||templates.empty())
@@ -1604,6 +1626,7 @@ int main(int argc,char** argv)
             return 1;
         }
         if(iterations<0||iterations>100000||models<1||models>32)throw std::runtime_error("Invalid iteration or model count");
+        if(seed<0)throw std::runtime_error("Seed must be nonnegative");
         if(report.empty())report=out+".json";
         if(report==out)throw std::runtime_error("Report and PDB paths must differ");
         auto entries=alignment(ali);
@@ -1626,6 +1649,7 @@ int main(int argc,char** argv)
         }
         for(size_t i=1; i<t.size(); ++i)superpose(t[i],t[0]);
         Model m;
+        m.seed=unsigned(seed);
         m.build(seq,t);
         if(!environment.empty())
         {
@@ -1647,7 +1671,7 @@ int main(int argc,char** argv)
         for(int candidate=0; candidate<models; ++candidate)
         {
             m.xyz=start;
-            if(candidate) m.alternate_start(candidate);
+            if(candidate||seed) m.alternate_start(candidate);
             std::cout<<"REEC candidate "<<candidate+1<<"/"<<models<<"\n";
             for(int stage=0; stage<3; ++stage)
             {

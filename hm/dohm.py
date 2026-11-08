@@ -19,7 +19,7 @@ root_dir = os.path.dirname(script_dir)
 sys.path.append(root_dir)
 
 from pathlib import Path
-from reec_backend import receptor, directory
+from reec_backend import receptor, directory, CandidateRejected
 from modeling_backend import options as backend_options, api as backend_api, construct, custom_alignment, publication_guard, finalize, pir_rows
 
 import data.protutils as pu
@@ -781,4 +781,10 @@ def main(argv=None):
     print("Execution Complete.", file=sys.stderr)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except CandidateRejected as exc:
+        print(f'Model rejected: {exc}', file=sys.stderr)
+        if exc.report is not None:
+            print(f'Validation report: {exc.report}', file=sys.stderr)
+        sys.exit(2)

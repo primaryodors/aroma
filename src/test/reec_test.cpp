@@ -89,5 +89,18 @@ int main(int argc, char** argv)
             peptide_bond=true;
     }
     assert(peptide_bond);
+    XYZ base=backbone.xyz;
+    backbone.seed=17;
+    backbone.alternate_start(0);
+    XYZ seeded=backbone.xyz;
+    backbone.xyz=base;
+    backbone.alternate_start(0);
+    for(size_t i=0;i<seeded.size();++i)assert((seeded[i]-backbone.xyz[i]).norm()<1e-12);
+    backbone.xyz=base;
+    backbone.seed=18;
+    backbone.alternate_start(0);
+    double change=0;
+    for(size_t i=0;i<seeded.size();++i)change+=(seeded[i]-backbone.xyz[i]).norm();
+    assert(change>1e-6);
     std::cout << "REEC analytical gradients and rigid template fit pass.\n";
 }

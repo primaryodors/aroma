@@ -63,6 +63,17 @@ class ReecCLI(unittest.TestCase):
         self.assertTrue(scores)
         self.assertAlmostEqual(min(scores), best['final_energy'])
 
+    def test_cli_seed_is_reproducible(self):
+        energies = []
+        for seed in (17, 17, 18):
+            result = self.run_model('--seed', str(seed), '--iterations', '0')
+            self.assertIn(result.returncode, (0, 2), result.stdout + result.stderr)
+            report = json.loads(Path(str(self.output)+'.json').read_text())
+            self.assertEqual(report['seed'], seed)
+            energies.append(report['final_energy'])
+        self.assertEqual(energies[0], energies[1])
+        self.assertNotEqual(energies[0], energies[2])
+
     def test_impossible_contact_retains_previous_output(self):
         self.output.write_text('previous model\n')
         contacts = self.work / 'contacts.txt'
@@ -85,7 +96,7 @@ class ReecCLI(unittest.TestCase):
         environment.write_text(line + '\n' + second + '\nCONECT    1    2\nEND\n')
         contacts = self.work / 'contacts.txt'
         contacts.write_text('contact hard 1 CA 999 C1 3.8 4.2 100\n')
-        result = self.run_model('--environment', str(environment), '--contacts', str(contacts))
+        result = self.run_model('--environment', str(environment), '--contacts', str(contacts), '--seed', '19')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         ligand = next(s for s in self.output.read_text().splitlines() if s.startswith('HETATM'))
         self.assertEqual(ligand[30:54], line[30:54])
