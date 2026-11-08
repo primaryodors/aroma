@@ -1,5 +1,6 @@
 """End-to-end REEC regression checks using a short receptor fragment."""
 import json
+import re
 import subprocess
 import tempfile
 import sys
@@ -12,6 +13,14 @@ import reec_review
 CODES = dict(zip(
     'ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
     'ACDEFGHIKLMNPQRSTVWY'))
+ALIASES = {
+    '--alignment': '-a', '--template': '-t', '--output': '-o', '--target': '-T',
+    '--contacts': '-c', '--chain': '-C', '--iterations': '-i', '--models': '-m',
+    '--report': '-r', '--environment': '-e', '--fit-environment': '-f',
+    '--environment-hydrogens': '-H', '--candidate-prefix': '-p', '--seed': '-s',
+    '--anneal-steps': '-A', '--anneal-temperature': '-u', '--anneal-residues': '-R',
+    '--clash-scale': '-x', '--help': '-h',
+}
 
 
 class ReecCLI(unittest.TestCase):
@@ -34,6 +43,60 @@ class ReecCLI(unittest.TestCase):
             review = reec_review.inspect(self.output)
             self.assertTrue(review['valid'], review['failures'])
         return result
+
+    def test_help_documents_unique_single_letter_aliases_for_every_option(self):
+        outputs = []
+        for flag in ('--help', '-h'):
+            result = subprocess.run([str(ROOT / 'bin/reec'), flag], cwd=ROOT,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            outputs.append(result.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        entries = re.findall(r'^  (-[A-Za-z]), (--[a-z-]+)', outputs[0], re.M)
+        self.assertEqual({long: short for short, long in entries}, ALIASES)
+        self.assertEqual(len({short for short, _ in entries}), len(entries))
+
+    def test_all_short_options_match_long_option_models_and_reports(self):
+        contacts = self.work / 'contacts.txt'
+        contacts.write_text('contact soft 1 CA 2 CA 1 8 10\n')
+        original = self.template.read_text()
+        first = next(s for s in original.splitlines() if s.startswith('ATOM  ') and s[12:16].strip() == 'CA')
+        x, y, z = (float(first[i:i+8]) for i in (30, 38, 46))
+        environment = self.work / 'environment.pdb'
+        environment.write_text(original.replace('END', '') +
+            f'HETATM    1  C1  LIG A 999    {x+100:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           C\n' +
+            f'HETATM    2  H2  LIG A 999    {x+100.36:8.3f}{y+1.03:8.3f}{z:8.3f}  1.00  0.00           H\nEND\n')
+        report = self.work / 'custom-report.json'
+        prefix = self.work / 'export'
+        options = [('--alignment', self.ali), ('--template', self.template),
+                   ('--template', self.template), ('--output', self.output), ('--target', 'model'),
+                   ('--contacts', contacts), ('--contacts', contacts), ('--chain', 'A'),
+                   ('--iterations', 1500), ('--models', 2), ('--report', report),
+                   ('--environment', environment), ('--fit-environment', None),
+                   ('--environment-hydrogens', None), ('--candidate-prefix', prefix),
+                   ('--seed', 17), ('--anneal-steps', 4), ('--anneal-temperature', 7),
+                   ('--anneal-residues', '1,2,3'), ('--clash-scale', 1.5)]
+        artifacts = [self.output, report] + [Path(f'{prefix}.{i}.pdb.json') for i in range(2)]
+        snapshots = []
+        for short in (False, True):
+            for path in artifacts:
+                path.unlink(missing_ok=True)
+            command = [str(ROOT / 'bin/reec')]
+            for flag, value in options:
+                command.append(ALIASES[flag] if short else flag)
+                if value is not None:
+                    command.append(str(value))
+            result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            data = json.loads(report.read_text())
+            self.assertTrue(data['valid'])
+            self.assertEqual(data['fixed_atoms'], 2)
+            self.assertEqual(len(data['contacts']), 2)
+            self.assertEqual(data['annealing']['trials'], 4)
+            Path(str(self.output)+'.json').write_text(report.read_text())
+            self.assertTrue(reec_review.inspect(self.output)['valid'])
+            snapshots.append([path.read_bytes() for path in artifacts])
+        self.assertEqual(snapshots[0], snapshots[1])
 
     def test_relaxation_and_complete_sequence(self):
         result = self.run_model()

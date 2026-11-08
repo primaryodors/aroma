@@ -1766,9 +1766,60 @@ struct Model
         }
     }
 };
+struct CliOption
+{
+    const char* name;
+    char alias;
+    const char* value;
+    const char* description;
+};
+const CliOption cli_options[] = {
+    {"--alignment", 'a', "FILE.ali", "PIR protein alignment"},
+    {"--template", 't', "[ID=]FILE.pdb", "Template path or PDB ID; repeatable"},
+    {"--output", 'o', "FILE.pdb", "Output model"},
+    {"--target", 'T', "ID", "Target entry in the alignment"},
+    {"--contacts", 'c', "FILE", "Contact restraints; repeatable"},
+    {"--chain", 'C', "LETTER", "Template protein chain (default A)"},
+    {"--iterations", 'i', "COUNT", "Minimization iterations (default 3000)"},
+    {"--models", 'm', "COUNT", "Candidate count (default 1)"},
+    {"--report", 'r', "FILE.json", "Validation report (default OUTPUT.json)"},
+    {"--environment", 'e', "FILE.pdb", "Fixed environment"},
+    {"--fit-environment", 'f', "", "Fit the environment to the template frame"},
+    {"--environment-hydrogens", 'H', "", "Include fixed environment hydrogen atoms"},
+    {"--candidate-prefix", 'p', "PATH", "Export candidate models and reports"},
+    {"--seed", 's', "INTEGER", "Reproducible sampling seed (default 0)"},
+    {"--anneal-steps", 'A', "COUNT", "Annealing rounds (default 0, disabled)"},
+    {"--anneal-temperature", 'u', "SCORE", "Initial annealing temperature (default 12)"},
+    {"--anneal-residues", 'R', "LIST", "Comma-separated annealing residue numbers"},
+    {"--clash-scale", 'x', "SCALE", "Clash penalty multiplier (default 1)"},
+    {"--help", 'h', "", "Show this help"}
+};
+const CliOption* cli_option(const std::string& argument)
+{
+    for(const auto& option:cli_options)
+        if(argument==option.name||(argument.size()==2&&argument[0]=='-'&&argument[1]==option.alias))
+            return &option;
+    return nullptr;
+}
 void help()
 {
-    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\n       [--anneal-steps 0] [--anneal-temperature 12] [--anneal-residues 103,107]\nAnnealing is off by default; --anneal-steps 64 enables it.\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+    std::cout<<"REEC - Restrained Ensemble Energy Conformer\n"
+             <<"Usage: bin/reec -a FILE.ali -t [ID=]FILE.pdb -o FILE.pdb [options]\n"
+             <<"Options (aliases are case-sensitive):\n";
+    for(const auto& option:cli_options)
+    {
+        std::string label=std::string(option.name)+(option.value[0]?std::string(" ")+option.value:"");
+        std::cout<<"  -"<<option.alias<<", "<<std::left<<std::setw(37)<<label<<option.description<<"\n";
+    }
+    std::cout<<std::right
+             <<"Annealing is off by default; --anneal-steps 64 (or -A 64) enables it.\n"
+             <<"Temperature is in optimization score units.\n"
+             <<"Run from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\n"
+             <<"Contacts: disulfide RES RES\n"
+             <<"          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n"
+             <<"          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n"
+             <<"          mobile FIRST LAST\n"
+             <<"Atom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
 }
 }
 #ifndef REEC_NO_MAIN
@@ -1787,7 +1838,9 @@ int main(int argc,char** argv)
         std::set<int> anneal_residues;
         for(int i=1; i<argc; ++i)
         {
-            std::string a=argv[i];
+            const CliOption* option=cli_option(argv[i]);
+            if(!option)throw std::runtime_error("Unknown option: "+std::string(argv[i]));
+            std::string a=option->name;
             if(a=="--environment-hydrogens")
             {
                 environment_hydrogens=true;
@@ -1798,7 +1851,7 @@ int main(int argc,char** argv)
                 fit_environment=true;
                 continue;
             }
-            if(a=="--help"||a=="-h")
+            if(a=="--help")
             {
                 help();
                 return 0;
