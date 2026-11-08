@@ -1,0 +1,80 @@
+Remote docking benchmark — launched 2026-11-08
+
+Host: julie@tempusvernum (192.168.0.66)
+Directory: /home/julie/aroma/tmp/reec-baseline-2026-11-08-diamondsonthewater
+Runner PID: 1338519
+
+Launched with nohup, stdin detached, stdout/stderr in runner.log.
+Verified after SSH disconnected: parent PID 1, five running jobs,
+70 queued jobs, valid temperature records, CPU 57.375 C.
+The laptop can disconnect without stopping the remote batch.
+
+Protocol: 34 receptor/agonist pairs once with annealing off;
+top agonist off/on comparisons at three matched clock seeds.
+Identical physical inputs share results: 94 requested conditions map to
+75 unique native docks. Each dock uses 10 poses, 50 iterations, one thread.
+Five docks run concurrently. Each has a 30-minute active-runtime limit;
+cooling time does not count against that limit.
+
+Temperature control uses sensors once per second. Workers pause at 71 C
+and resume at or below 66 C. Missing CPU sensor data also pauses work.
+Every job writes a temperature log and a result checkpoint. The runner
+continues through individual failures and records errors for later review.
+No active laptop polling is required. No automatic assistant follow-up
+is scheduled; reconnect in the next conversation to review results.
+
+Remote artifacts:
+  build.json: successful source build, compiler, binary hash
+  jobs.json: frozen input manifest and condition aliases
+  status.json: queued/running/complete/error states
+  results.json: accumulated execution results
+  runner.log: start/finish and thermal events
+  jobs/*/result.json: per-job execution metadata
+  jobs/*/result.dock: docking output
+  jobs/*/pose*.pdb: output poses
+  jobs/*/temperature.jsonl: CPU temperature history
+
+Status:
+  ssh tempusvernum 'cd /home/julie/aroma/tmp/reec-baseline-2026-11-08-diamondsonthewater && tail -n 20 runner.log'
+
+Graceful stop:
+  ssh tempusvernum 'kill -TERM 1338519'
+
+Resume after a stopped runner has exited:
+  ssh tempusvernum
+  cd /home/julie/aroma/tmp/reec-baseline-2026-11-08-diamondsonthewater
+  nohup python3 -u hm/reec_remote_runner.py --root "$PWD" --workers 5 --pause-at 71 --resume-below 66 >> runner.log 2>&1 < /dev/null &
+  echo $! > runner.pid
+
+Completed checkpoints are reused only when engine/config hashes match.
+Interrupted jobs restart. Completed timeouts/errors remain recorded for
+explicit review rather than silently repeating a costly failure.
+
+Review after access returns:
+Collect remote logs, execution records, dock files and poses; verify all
+75 jobs, finite scores, pose counts and operational acceptance. Compare
+paired off/on scores by seed. Inspect OR2T11 copper coordination and
+OR52E8 Asn208 contact to the ligand's true 3-hydroxy oxygen. Report the
+full-panel results separately from the replicated paired comparison.
+Plan item 1 remains in progress until these results are reviewed.
+
+Weighted-template refresh (2026-11-08)
+
+A new isolated run supersedes the original frozen-model run:
+  /home/julie/aroma/tmp/reec-baseline-2026-11-08-weighted-v1
+The previous folder and any completed results remain available for audit.
+The refresh pipeline builds native tools, runs native checks, regenerates
+all ten constrained off/on model pairs with weighting version 1, prepares
+both docking panels, consolidates identical inputs, then starts the remote
+runner automatically. No laptop connection is part of that sequence.
+
+The pipeline starts under nohup and later replaces itself with the dock
+runner. refresh-status.json and phase-specific logs record preparation;
+status.json and results.json record docking after preparation completes.
+Model generation is sequential. Docking uses five workers. Both phases
+use the same 71 C pause / 66 C resume CPU temperature controls.
+The requested protocol remains 94 conditions. The unique-job count can
+change because weighting can change off/on model equality.
+
+The new root's runner.pid records the refresh process. TERM provides
+graceful shutdown during preparation and docking, including child cleanup.

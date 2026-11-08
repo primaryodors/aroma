@@ -199,6 +199,75 @@ struct Template
     std::set<std::pair<int,int>> links;
     std::vector<int> mapping;
 };
+// Conservative classes give partial credit without treating a mutation as identity.
+double sequence_credit(char a,char b)
+{
+    if(a==b)return 1.;
+    for(const std::string group:{"AVLIM","FYW","ST","NQ","DE","KR"})
+        if(group.find(a)!=std::string::npos&&group.find(b)!=std::string::npos)return .5;
+    return 0.;
+}
+struct TemplateBlend
+{
+    std::vector<double> global;
+    std::vector<std::vector<double>> weights;
+    TemplateBlend(const std::string& seq,const std::vector<Template>& templates,int primary=-1)
+    {
+        int n=seq.size();
+        weights.assign(templates.size(),std::vector<double>(n));
+        for(size_t t=0;t<templates.size();++t)
+        {
+            const auto& tpl=templates[t];
+            double total=0,covered=0;
+            for(int r=0;r<n;++r)if(tpl.mapping[r]>=0)
+            {
+                total+=sequence_credit(seq[r],tpl.residues[tpl.mapping[r]].aa);
+                ++covered;
+            }
+            double similarity=covered?total/covered:0;
+            global.push_back(similarity);
+            for(int r=0;r<n;++r)if(tpl.mapping[r]>=0)
+            {
+                double local=0,window=0;
+                // Triangular 13-residue window; absent coordinates count as zero.
+                for(int q=std::max(0,r-6);q<=std::min(n-1,r+6);++q)
+                {
+                    double taper=7-std::abs(q-r);
+                    window+=taper;
+                    if(tpl.mapping[q]>=0)local+=taper*sequence_credit(seq[q],tpl.residues[tpl.mapping[q]].aa);
+                }
+                local/=window;
+                weights[t][r]=std::pow(.05+.95*similarity,4)*std::pow(.05+.95*local,2);
+            }
+        }
+        for(int r=0;r<n;++r)
+        {
+            double sum=0;
+            for(auto& row:weights)sum+=row[r];
+            if(sum)for(auto& row:weights)row[r]/=sum;
+            if(primary>=0&&templates[primary].mapping[r]>=0)
+            {
+                int distance=4;
+                for(int q=std::max(0,r-3);q<=std::min(n-1,r+3);++q)
+                    if(templates[primary].mapping[q]<0)distance=std::min(distance,std::abs(q-r));
+                double fraction=distance/4.;
+                double other=1-weights[primary][r];
+                if(other>1e-12)
+                {
+                    for(size_t t=0;t<weights.size();++t)if(int(t)!=primary)weights[t][r]*=(1-fraction)/other;
+                    weights[primary][r]=fraction;
+                }
+                else weights[primary][r]=1.;
+            }
+        }
+    }
+    double pair_weight(size_t t,int r,int q) const
+    {
+        double sum=0;
+        for(auto& row:weights)sum+=std::sqrt(row[r]*row[q]);
+        return sum?std::sqrt(weights[t][r]*weights[t][q])/sum:0.;
+    }
+};
 Template pdb(const std::string& arg,char chain)
 {
     Template t;
@@ -559,7 +628,10 @@ struct Model
     unsigned seed=0;
     double clash_scale=1;
     int candidate_index=0;
-    std::string start_signature;
+    std::string start_signature,primary_template;
+    std::vector<std::string> blend_ids;
+    std::vector<double> blend_global;
+    std::vector<std::vector<double>> blend_weights;
     std::set<int> released_template_residues;
     std::vector<double> template_anchor_weights,template_geometry_weights;
     std::set<int> anneal_residues;
@@ -768,30 +840,49 @@ struct Model
                 }
             }
         }
+        int primary=-1;
+        for(size_t t=0;t<templates.size();++t)if(templates[t].id==primary_template&&!primary_template.empty())primary=t;
+        if(!primary_template.empty()&&primary<0)throw std::runtime_error("Primary template ID absent from input templates");
+        TemplateBlend blend(seq,templates,primary);
+        blend_global=blend.global;
+        blend_weights=blend.weights;
+        for(const auto& tpl:templates)blend_ids.push_back(tpl.id.empty()?tpl.path:tpl.id);
         std::vector<int> source(n,-1),mapped(n,-1);
-        for(int r=0; r<n; ++r)
+        for(int r=0;r<n;++r)
         {
             double best=-1;
-            for(size_t t=0; t<templates.size(); ++t)
+            for(size_t t=0;t<templates.size();++t)if(templates[t].mapping[r]>=0&&blend.weights[t][r]>best)
+            {
+                best=blend.weights[t][r];
+                source[r]=t;
+                mapped[r]=templates[t].mapping[r];
+            }
+        }
+        auto blended_atom=[&](int r,const std::string& name,V fallback,bool exact)
+        {
+            V result;
+            double sum=0;
+            for(size_t t=0;t<templates.size();++t)
             {
                 int k=templates[t].mapping[r];
                 if(k<0)continue;
-                double quality=templates[t].residues[k].aa==seq[r]?2:1;
-                if(quality>best)
-                {
-                    best=quality;
-                    source[r]=t;
-                    mapped[r]=k;
-                }
+                const auto& residue=templates[t].residues[k];
+                if(exact&&residue.aa!=seq[r])continue;
+                auto atom=residue.atoms.find(name);
+                if(atom==residue.atoms.end())continue;
+                double w=blend.weights[t][r];
+                result+=atom->second*w;
+                sum+=w;
             }
-        }
+            return sum?result*(1/sum):fallback;
+        };
         int count=std::count_if(source.begin(),source.end(),[](int s)
         {
             return s>=0;
         });
         if(!count)throw std::runtime_error("No aligned template residues");
         std::vector<V> cas(n);
-        for(int r=0; r<n; ++r)if(source[r]>=0)cas[r]=templates[source[r]].residues[mapped[r]].atoms.at("CA");
+        for(int r=0; r<n; ++r)if(source[r]>=0)cas[r]=blended_atom(r,"CA",V{},false);
         // Place untemplated loops along an arched bridge. Optimization closes all peptide bonds.
         for(int first=0; first<n;)
         {
@@ -844,9 +935,8 @@ struct Model
             V nn,cc;
             if(source[r]>=0)
             {
-                auto& rr=templates[source[r]].residues[mapped[r]];
-                nn=rr.atoms.at("N");
-                cc=rr.atoms.at("C");
+                nn=blended_atom(r,"N",V{},false);
+                cc=blended_atom(r,"C",V{},false);
             }
             else
             {
@@ -869,10 +959,11 @@ struct Model
                     xyz[i]=frame.world(original.local(ideal[i]));
                     if(source[r]>=0)
                     {
-                        auto& rr=templates[source[r]].residues[mapped[r]];
-                        auto p=rr.atoms.find(nodes[i].name);
-                        if(p!=rr.atoms.end()&&(nodes[i].backbone||rr.aa==seq[r]))xyz[i]=p->second;
-                        anchor_weight[i]=nodes[i].backbone?1.5:.03;
+                        xyz[i]=blended_atom(r,nodes[i].name,xyz[i],!nodes[i].backbone);
+                        double identity=0;
+                        for(size_t t=0;t<templates.size();++t)if(templates[t].mapping[r]>=0
+                            &&templates[t].residues[templates[t].mapping[r]].aa==seq[r])identity+=blend.weights[t][r];
+                        anchor_weight[i]=nodes[i].backbone?1.5:.03*identity;
                     }
                 }
         }
@@ -906,11 +997,12 @@ struct Model
         }
         anchors=xyz;
         // Each template contributes a soft, rotation-invariant local fold restraint.
-        for(auto& t:templates) for(int r=0; r<n; ++r) if(t.mapping[r]>=0)
-                    for(int q=r+3; q<n; ++q) if(t.mapping[q]>=0)
+        for(size_t ti=0;ti<templates.size();++ti) for(int r=0; r<n; ++r) if(templates[ti].mapping[r]>=0)
+                    for(int q=r+3; q<n; ++q) if(templates[ti].mapping[q]>=0)
                         {
+                            auto& t=templates[ti];
                             double d=(t.residues[t.mapping[r]].atoms.at("CA")-t.residues[t.mapping[q]].atoms.at("CA")).norm();
-                            if(d<9) geometry.push_back({id(r+1,"CA"),id(q+1,"CA"),std::max(.5,d-.75),d+.75,.15/templates.size(),false,false});
+                            if(d<9) geometry.push_back({id(r+1,"CA"),id(q+1,"CA"),std::max(.5,d-.75),d+.75,.15*blend.pair_weight(ti,r,q),false,false});
                         }
         for(auto& t:templates)for(auto link:t.links)
             {
@@ -1660,7 +1752,21 @@ struct Model
                 << ",\n  \"max_planarity_volume_error\": " << after.planarity_max
                 << ",\n  \"chirality_errors\": " << after.chirality
                 << ",\n  \"mandatory_violations\": " << after.hard_fail
-                << ",\n  \"geometry_outliers\": [";
+                << ",\n  \"primary_template\": " << std::quoted(primary_template)
+                << ",\n  \"template_weighting\": {\"version\": 1, \"window_radius\": 6, \"templates\": [";
+        for(size_t t=0;t<blend_ids.size();++t)
+        {
+            if(t)f<<",";
+            f<<"{\"id\": "<<std::quoted(blend_ids[t])<<", \"global_similarity\": "<<blend_global[t]
+             <<", \"residue_weights\": [";
+            for(size_t r=0;r<blend_weights[t].size();++r)
+            {
+                if(r)f<<",";
+                f<<blend_weights[t][r];
+            }
+            f<<"]}";
+        }
+        f<<"]},\n  \"geometry_outliers\": [";
         bool comma=false;
         for(auto p:geometry)if(p.validate)
         {
@@ -1776,6 +1882,7 @@ struct CliOption
 const CliOption cli_options[] = {
     {"--alignment", 'a', "FILE.ali", "PIR protein alignment"},
     {"--template", 't', "[ID=]FILE.pdb", "Template path or PDB ID; repeatable"},
+    {"--primary-template", 'P', "ID", "Preserve this template outside gap junctions"},
     {"--output", 'o', "FILE.pdb", "Output model"},
     {"--target", 'T', "ID", "Target entry in the alignment"},
     {"--contacts", 'c', "FILE", "Contact restraints; repeatable"},
@@ -1829,7 +1936,7 @@ int main(int argc,char** argv)
     try
     {
         std::cout.setf(std::ios::unitbuf);
-        std::string ali,out,target,report,environment,candidate_prefix;
+        std::string ali,out,target,report,environment,candidate_prefix,primary_template;
         bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
@@ -1861,6 +1968,7 @@ int main(int argc,char** argv)
             if(a=="--alignment")ali=v;
             else if(a=="--output")out=v;
             else if(a=="--template")templates.push_back(v);
+            else if(a=="--primary-template")primary_template=v;
             else if(a=="--target")target=v;
             else if(a=="--contacts")contact_files.push_back(v);
             else if(a=="--report")report=v;
@@ -1916,6 +2024,11 @@ int main(int argc,char** argv)
         }
         for(size_t i=1; i<t.size(); ++i)superpose(t[i],t[0]);
         Model m;
+        m.primary_template=primary_template;
+        // Deliberate receptor-specific exception: OR5V1 uses its experimental
+        // 9lkb structure as primary, with other templates supplying its gaps.
+        if(primary_template.empty()&&chosen->id=="OR5V1")
+            for(const auto& tpl:t)if(tpl.id=="9lkb")m.primary_template="9lkb";
         m.seed=unsigned(seed);
         m.clash_scale=clash_scale;
         for(int r:anneal_residues)if(r>int(seq.size()))throw std::runtime_error("Annealing residue exceeds target length");

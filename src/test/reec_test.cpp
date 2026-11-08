@@ -5,6 +5,41 @@
 int main(int argc, char** argv)
 {
     using namespace reec;
+    // Similarity, local context, and coverage all affect the same blend.
+    Template close, distant;
+    std::string blend_sequence(25,'L');
+    for(int r=0;r<25;++r)
+    {
+        close.mapping.push_back(r);
+        distant.mapping.push_back(r);
+        close.residues.push_back({r+1,'L', {}});
+        distant.residues.push_back({r+1,'D', {}});
+    }
+    TemplateBlend dominant(blend_sequence,{close,distant});
+    assert(dominant.weights[0][12]>.99);
+    // Conservative substitutions get intermediate support.
+    assert(sequence_credit('L','I')>sequence_credit('L','D'));
+    assert(sequence_credit('L','I')<sequence_credit('L','L'));
+    for(int r=0;r<25;++r)
+    {
+        close.residues[r].aa=r<12?'L':'D';
+        distant.residues[r].aa=r<12?'D':'L';
+    }
+    TemplateBlend regional(blend_sequence,{close,distant});
+    assert(regional.weights[0][3]>regional.weights[1][3]);
+    assert(regional.weights[0][21]<regional.weights[1][21]);
+    close.mapping[12]=-1;
+    TemplateBlend primary(blend_sequence,{close,distant},0);
+    assert(primary.weights[0][12]==0&&primary.weights[1][12]==1);
+    assert(primary.weights[0][3]==1&&primary.weights[1][3]==0);
+    assert(primary.weights[0][11]==.25&&std::fabs(primary.weights[1][11]-.75)<1e-12);
+    assert(primary.weights[0][10]==.5&&primary.weights[0][9]==.75);
+    assert(primary.pair_weight(1,3,21)==0);
+    for(int r=0;r<25;++r)
+        assert(std::fabs(primary.weights[0][r]+primary.weights[1][r]-1)<1e-12);
+    TemplateBlend reversed(blend_sequence,{distant,close});
+    TemplateBlend forward(blend_sequence,{close,distant});
+    for(int r=0;r<25;++r)assert(std::fabs(reversed.weights[1][r]-forward.weights[0][r])<1e-12);
     if(argc==2)
     {
         Protein protein;
@@ -77,6 +112,24 @@ int main(int argc, char** argv)
     std::vector<Template> templates{fragment};
     Model backbone;
     backbone.build(sequence,templates);
+    // Equal templates average coordinates, while primary mode preserves its input.
+    Template displaced_template=fragment;
+    displaced_template.id="donor";
+    fragment.id="primary";
+    for(auto& residue:displaced_template.residues)
+        for(auto& atom:residue.atoms)atom.second+=V{.2,.1,0};
+    std::vector<Template> blended_templates{fragment,displaced_template};
+    Model blended, preserved;
+    blended.build(sequence,blended_templates);
+    preserved.primary_template="primary";
+    preserved.build(sequence,blended_templates);
+    for(size_t r=0;r<fragment.residues.size();++r)
+    {
+        int ca=blended.id(r+1,"CA");
+        V original=fragment.residues[r].atoms.at("CA");
+        assert((blended.anchors[ca]-original-V{.1,.05,0}).norm()<1e-10);
+        assert((preserved.anchors[ca]-original).norm()<1e-10);
+    }
     bool peptide_bond=false;
     for(auto pair:backbone.geometry)
     {

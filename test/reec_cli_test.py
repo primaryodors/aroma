@@ -19,7 +19,7 @@ ALIASES = {
     '--report': '-r', '--environment': '-e', '--fit-environment': '-f',
     '--environment-hydrogens': '-H', '--candidate-prefix': '-p', '--seed': '-s',
     '--anneal-steps': '-A', '--anneal-temperature': '-u', '--anneal-residues': '-R',
-    '--clash-scale': '-x', '--help': '-h',
+    '--clash-scale': '-x', '--primary-template': '-P', '--help': '-h',
 }
 
 
@@ -55,6 +55,20 @@ class ReecCLI(unittest.TestCase):
         entries = re.findall(r'^  (-[A-Za-z]), (--[a-z-]+)', outputs[0], re.M)
         self.assertEqual({long: short for short, long in entries}, ALIASES)
         self.assertEqual(len({short for short, _ in entries}), len(entries))
+
+    def test_primary_template_alias_and_missing_id(self):
+        self.ali.write_text(f'>P1;donor\nstructure:donor:FIRST:A:LAST:A::::\n{self.sequence}*\n'
+                            f'>P1;model\nsequence:model::::::::\n{self.sequence}*\n')
+        for flag in ('--primary-template', '-P'):
+            result = self.run_model(flag, 'donor', template=f'donor={self.template}')
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(Path(str(self.output)+'.json').read_text())
+            self.assertEqual(report['primary_template'], 'donor')
+            self.assertEqual(report['template_weighting']['version'], 1)
+            self.assertEqual(set(report['template_weighting']['templates'][0]['residue_weights']), {1})
+        result = self.run_model('-P', 'absent', template=f'donor={self.template}')
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('Primary template ID absent', result.stderr)
 
     def test_all_short_options_match_long_option_models_and_reports(self):
         contacts = self.work / 'contacts.txt'

@@ -18,6 +18,26 @@ class ReecBackend(unittest.TestCase):
     def setUpClass(cls):
         backend.pu.load_prots()
 
+    def test_or5v1_primary_preparation_keeps_experimental_templates_separate(self):
+        from dohm import primary_experimental_alignment
+        from modeling_backend import pir_rows
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            (work / 'tpl').symlink_to(ROOT / 'hm/tpl')
+            shutil.copy2(ROOT / 'hm/experimental.ali', work / 'experimental.ali')
+            self.assertIsNone(primary_experimental_alignment('OR2AT4', work))
+            alignment, templates, provenance = primary_experimental_alignment('OR5V1', work)
+            self.assertEqual([value.split('=')[0] for value in templates], ['9lkb', '9wpm'])
+            rows = pir_rows(alignment)
+            self.assertEqual(rows['OR5V1'][1].replace('-', ''), backend.pu.prots['OR5V1']['sequence'])
+            codes = dict(zip('ALA CYS ASP GLU PHE GLY HIS ILE LYS LEU MET ASN PRO GLN ARG SER THR VAL TRP TYR'.split(),
+                             'ACDEFGHIKLMNPQRSTVWY'))
+            for name in ('9lkb', '9wpm'):
+                coordinates = ''.join(codes[line[17:20]] for line in (work / f'{name}.pdb').read_text().splitlines()
+                                      if line.startswith('ATOM  ') and line[12:16].strip() == 'CA')
+                self.assertEqual(rows[name][1].replace('-', ''), coordinates)
+            self.assertEqual(provenance, '9lkb 9wpm')
+
     def test_exit_two_is_recoverable_and_other_exit_codes_are_fatal(self):
         from types import SimpleNamespace
         args = SimpleNamespace(iterations=1, models=1, contacts=[], chain='A', seed=9)

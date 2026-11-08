@@ -1,0 +1,101 @@
+{
+  "engine": "REEC",
+  "valid": true,
+  "heavy_atoms": 2515,
+  "fixed_atoms": 0,
+  "initial_energy": 37416.751,
+  "final_energy": 10.421473,
+  "initial_severe_clashes": 21,
+  "severe_clashes": 0,
+  "max_bond_error": 0.00061551908,
+  "max_geometry_distance_error": 0.0059587561,
+  "template_ca_rmsd": 0.10812453,
+  "max_planarity_volume_error": 0.0072194008,
+  "chirality_errors": 0,
+  "mandatory_violations": 0,
+  "contacts": [
+    {
+      "kind": "disulfide",
+      "res1": 97,
+      "atom1": "SG",
+      "res2": 179,
+      "atom2": "SG",
+      "distance": 2.0503602122553986,
+      "min": 1.95,
+      "max": 2.15,
+      "hard": true,
+      "violation": 0
+    },
+    {
+      "kind": "disulfide",
+      "res1": 169,
+      "atom1": "SG",
+      "res2": 189,
+      "atom2": "SG",
+      "distance": 2.0494767624932946,
+      "min": 1.95,
+      "max": 2.15,
+      "hard": true,
+      "violation": 0
+    },
+    {
+      "kind": "contact",
+      "res1": 259,
+      "atom1": "OH",
+      "res2": 180,
+      "atom2": "OD1",
+      "distance": 3.2003120160384357,
+      "min": 2.5,
+      "max": 3.2,
+      "hard": true,
+      "violation": 0.0003120160384355586
+    },
+    {
+      "kind": "contact",
+      "res1": 218,
+      "atom1": "OH",
+      "res2": 290,
+      "atom2": "OH",
+      "distance": 4.403191001989352,
+      "min": 3,
+      "max": 5,
+      "hard": false,
+      "violation": 0
+    }
+  ],
+  "serialized_geometry": {
+    "residues": 316,
+    "valid": true,
+    "max_backbone_bond_error": 0.001960958382107858,
+    "max_peptide_angle_error": 0.18623884595000106,
+    "max_omega_error": 0.16894379071743515,
+    "disulfides": [
+      {
+        "residues": [
+          97,
+          179
+        ],
+        "distance": 2.0503602122553986,
+        "angles": [
+          103.56759384002062,
+          103.57663828601967
+        ],
+        "torsion": 90.34497432492476
+      },
+      {
+        "residues": [
+          169,
+          189
+        ],
+        "distance": 2.0494767624932946,
+        "angles": [
+          103.69802066463338,
+          103.67904967153927
+        ],
+        "torsion": 89.60109426070532
+      }
+    ],
+    "failures": []
+  },
+  "receptor_frame": true
+}

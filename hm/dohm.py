@@ -139,6 +139,32 @@ def validated_subfamily_alignment(rcpid, work):
         for name, (description, row) in rows.items()))
     return alignment, templates, ' '.join(provenance)
 
+def primary_experimental_alignment(rcpid, work):
+    """Deliberate OR5V1 exception: retain 9lkb and use consOR5 for gaps."""
+    if rcpid != 'OR5V1':
+        return None
+    rows = pir_rows(work / 'experimental.ali')
+    templates = []
+    selected = {}
+    for name in ('9lkb', '9wpm'):
+        description, row = rows[name]
+        source = work / 'tpl' / f'{name}.pdb'
+        if not source.is_file():
+            raise FileNotFoundError(f'Experimental template is missing: {source}')
+        template, description = experimental_template(name, source, description, work)
+        selected[name] = (description, row)
+        templates.append(f'{name}={template}')
+    row = ''.join(pu.prots[rcpid]['aligned'].split())
+    if row.replace('-', '') != pu.prots[rcpid]['sequence']:
+        raise ValueError(f'GPCR alignment does not match the sequence for {rcpid}')
+    selected[rcpid] = (f'sequence:{rcpid}:1:A::::::', row)
+    width = max(len(row) for _, row in selected.values())
+    alignment = work / f'{rcpid}.primary.ali'
+    alignment.write_text(''.join(f'>P1;{name}\n{description}\n{row.ljust(width, "-")}*\n'
+                                 for name, (description, row) in selected.items()))
+    return alignment, templates, '9lkb 9wpm'
+
+
 def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
                   dsres1, dsres2, dspotr1, dspotr2, model=None):
     """Publish modeled and validated structures through the same PHEW workflow."""
@@ -469,7 +495,8 @@ def main(argv=None):
     autosched, refine = engine.autosched, engine.refine
     model_knowns = f'{rcpid}_tpl'
     validated = (custom_alignment(options, rcpid, Path(script_dir)) if options.template
-                 else validated_subfamily_alignment(rcpid, Path(script_dir)))
+                 else (primary_experimental_alignment(rcpid, Path(script_dir))
+                       or validated_subfamily_alignment(rcpid, Path(script_dir))))
     if validated:
         alignment, templates, tplsused = validated
         model_knowns = tuple(value.split('=', 1)[0] for value in templates)
