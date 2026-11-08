@@ -49,10 +49,16 @@ policy generically; an explicit value overrides the OR5V1 default.
 Automatic dohm OR5V1 preparation reads the original experimental alignment
 and supplies 9lkb and 9wpm separately. It bypasses the old synthetic-template
 loop that assumed a second element despite selecting only one template.
-Explicit user templates continue to take precedence. Other receptors keep
-their existing workflow template-selection policy; weighting operates on
-the ensemble actually passed to REEC. Single-template paths cannot gain
-information from absent donors.
+Explicit user templates continue to take precedence. Other automatic REEC runs retain family-specific donors plus compatible
+class I or class II OR templates as separate structures. Other GPCRs use
+their existing template-family lists. Inactive and apo rows are excluded;
+unavailable optional donors are logged and skipped. Validated-subfamily
+inputs retain their established donor ensembles. This replaces automatic
+single synthetic-template preprocessing for REEC; MODELLER retains its
+existing general preprocessing. Explicit user ensembles remain authoritative.
+Canonical target columns are preserved when appending an omitted terminal
+tail, while internal sequence disagreement is rejected. Single-template
+explicit paths cannot gain information from absent donors.
 
 Every native report records the primary template, weighting version,
 global similarity, and normalized per-residue weights for each template.

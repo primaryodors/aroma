@@ -78,3 +78,7 @@ change because weighting can change off/on model equality.
 
 The new root's runner.pid records the refresh process. TERM provides
 graceful shutdown during preparation and docking, including child cleanup.
+
+Weighted refresh PID: 1343605. Initial source commit: 13d1c93.
+Both machines remain on branch reec. The original runner was stopped
+gracefully before the refresh started; its checkpoints remain intact.

@@ -27,6 +27,14 @@ expanded ten-receptor off/on comparison. This stage is not yet complete.
 Current policy: annealing is optional and defaults off in REEC, dohm, and
 fixfail. Existing explicit controls remain available.
 
+Template weighting version 1 is implemented: global similarity, local
+similarity, and coordinate coverage govern starting coordinates and fold
+restraints. REEC_TEMPLATE_WEIGHTING.txt records its policy and checks.
+OR5V1 primary templating from 9lkb, with consOR5 supplying gaps, is an
+explicitly authorized exception to the no individual-receptor treatment
+rule. The remote docking baseline is being refreshed with these models;
+the previous frozen-model run is retained separately.
+
 Record acceptance rate, runtime, severe clashes, geometry errors, final pocket
 diversity, and docking results across several receptors. Include OR1A1's retry
 case, OR1B1's repair case, OR51E1's mixed templates, and OR51E2's intentional

@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shutil
 import subprocess
 import sys
 import threading
@@ -16,6 +17,32 @@ from reec_thermal import run_guarded
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def refresh_recipes(root):
+    from dohm import experimental_ensemble_alignment
+    from reec_backend import pu
+    pu.load_prots()
+    for path in sorted((root / 'results/recipes').glob('*/recipe.json')):
+        recipe = json.loads(path.read_text())
+        # The validated-subfamily recipe already retains its original donors.
+        if recipe['receptor'] == 'OR51E1':
+            continue
+        work = path.parent / 'weighted-inputs'
+        work.mkdir(exist_ok=True)
+        if not (work / 'tpl').exists():
+            (work / 'tpl').symlink_to(root / 'hm/tpl')
+        shutil.copy2(root / 'hm/experimental.ali', work / 'experimental.ali')
+        alignment, templates, provenance = experimental_ensemble_alignment(recipe['receptor'], work)
+        recipe['previous_template_inputs'] = recipe['template_inputs']
+        recipe['alignment'] = str(alignment)
+        recipe['alignment_sha256'] = digest(alignment)
+        recipe['templates'] = templates
+        recipe['template_inputs'] = [{'source': value.split('=',1)[1],
+                                     'sha256': digest(Path(value.split('=',1)[1]))} for value in templates]
+        recipe['weighting_version'] = 1
+        recipe['template_provenance'] = provenance
+        path.write_text(json.dumps(recipe, indent=2)+'\n')
 
 
 def prepare_jobs(root):
@@ -91,6 +118,7 @@ def main():
     phase('audit-build', ['g++','src/test/reec_steric_audit.cpp',*objects,'-o','bin/reec_steric_audit',
                           '-O3','-flto','-fopenmp','-std=c++14','-march=native'], 900)
     phase('native-checks', ['./test/reec_test'], 600)
+    refresh_recipes(root)
     phase('paired-models', [sys.executable,'-u','hm/reec_docking_baseline.py','--workspace',str(root),
                             '--workers','1','--models','10','--max-attempts','5'], 43200)
     for name in ('top-panel', 'full-panel'):

@@ -38,6 +38,27 @@ class ReecBackend(unittest.TestCase):
                 self.assertEqual(rows[name][1].replace('-', ''), coordinates)
             self.assertEqual(provenance, '9lkb 9wpm')
 
+    def test_general_ensemble_preserves_class_and_terminal_sequence(self):
+        from dohm import experimental_ensemble_alignment
+        from modeling_backend import pir_rows
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            (work / 'tpl').symlink_to(ROOT / 'hm/tpl')
+            shutil.copy2(ROOT / 'hm/experimental.ali', work / 'experimental.ali')
+            for receptor in ('OR2AT4', 'OR52E8', 'TAAR5'):
+                alignment, templates, _ = experimental_ensemble_alignment(receptor, work)
+                names = {value.split('=')[0] for value in templates}
+                self.assertGreater(len(names), 1)
+                self.assertNotIn('9lkb', names)
+                if receptor == 'OR2AT4':
+                    self.assertIn('8uy0', names)
+                    self.assertNotIn('8hti', names)
+                if receptor == 'OR52E8':
+                    self.assertIn('8hti', names)
+                    self.assertNotIn('8uy0', names)
+                rows = pir_rows(alignment)
+                self.assertEqual(rows[receptor][1].replace('-', ''), backend.pu.prots[receptor]['sequence'])
+
     def test_exit_two_is_recoverable_and_other_exit_codes_are_fatal(self):
         from types import SimpleNamespace
         args = SimpleNamespace(iterations=1, models=1, contacts=[], chain='A', seed=9)

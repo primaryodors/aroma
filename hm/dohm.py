@@ -143,26 +143,54 @@ def primary_experimental_alignment(rcpid, work):
     """Deliberate OR5V1 exception: retain 9lkb and use consOR5 for gaps."""
     if rcpid != 'OR5V1':
         return None
+    return experimental_ensemble_alignment(rcpid, work)
+
+
+def experimental_ensemble_alignment(rcpid, work):
+    """Keep experimental donors separate for native similarity weighting."""
     rows = pir_rows(work / 'experimental.ali')
+    if rcpid == 'OR5V1':
+        identifiers = ['9lkb', '9wpm']
+    else:
+        candidates = set(pu.templates_for_hm(rcpid))
+        if rcpid.startswith('OR'):
+            family = int(re.sub(r'[^0-9]', '', pu.family_from_protid(rcpid)))
+            candidates.update(pu.templates_for_hm('OR56B2' if family >= 51 else 'OR14A1'))
+        identifiers = sorted(candidates)
     templates = []
     selected = {}
-    for name in ('9lkb', '9wpm'):
+    for name in identifiers:
+        if name not in rows:
+            if rcpid == 'OR5V1':
+                raise ValueError(f'Experimental alignment is missing: {name}')
+            continue
         description, row = rows[name]
+        if any(tag in description.lower() for tag in ('inactive', 'apo ')):
+            continue
         source = work / 'tpl' / f'{name}.pdb'
         if not source.is_file():
-            raise FileNotFoundError(f'Experimental template is missing: {source}')
+            if rcpid == 'OR5V1':
+                raise FileNotFoundError(f'Experimental template is missing: {source}')
+            print(f'Skipping unavailable experimental template: {name}', file=sys.stderr)
+            continue
         template, description = experimental_template(name, source, description, work)
         selected[name] = (description, row)
         templates.append(f'{name}={template}')
+    if not templates:
+        raise ValueError(f'No active experimental templates are available for {rcpid}')
     row = ''.join(pu.prots[rcpid]['aligned'].split())
-    if row.replace('-', '') != pu.prots[rcpid]['sequence']:
+    sequence = pu.prots[rcpid]['sequence']
+    aligned_sequence = row.replace('-', '')
+    if not sequence.startswith(aligned_sequence):
         raise ValueError(f'GPCR alignment does not match the sequence for {rcpid}')
+    # Preserve canonical columns when the database alignment omits a terminal tail.
+    row += sequence[len(aligned_sequence):]
     selected[rcpid] = (f'sequence:{rcpid}:1:A::::::', row)
     width = max(len(row) for _, row in selected.values())
-    alignment = work / f'{rcpid}.primary.ali'
+    alignment = work / f'{rcpid}.experimental.ali'
     alignment.write_text(''.join(f'>P1;{name}\n{description}\n{row.ljust(width, "-")}*\n'
                                  for name, (description, row) in selected.items()))
-    return alignment, templates, '9lkb 9wpm'
+    return alignment, templates, ' '.join(value.split('=', 1)[0] for value in templates)
 
 
 def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
@@ -496,7 +524,9 @@ def main(argv=None):
     model_knowns = f'{rcpid}_tpl'
     validated = (custom_alignment(options, rcpid, Path(script_dir)) if options.template
                  else (primary_experimental_alignment(rcpid, Path(script_dir))
-                       or validated_subfamily_alignment(rcpid, Path(script_dir))))
+                       or validated_subfamily_alignment(rcpid, Path(script_dir))
+                       or (experimental_ensemble_alignment(rcpid, Path(script_dir))
+                           if options.backend == 'reec' else None)))
     if validated:
         alignment, templates, tplsused = validated
         model_knowns = tuple(value.split('=', 1)[0] for value in templates)
