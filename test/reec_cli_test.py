@@ -40,6 +40,7 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         report = json.loads(Path(str(self.output) + '.json').read_text())
         self.assertTrue(report['valid'])
+        self.assertEqual(report['annealing']['trials'], 0)
         self.assertLess(report['final_energy'], report['initial_energy'])
         self.assertLess(report['max_bond_error'], .08)
         self.assertEqual(report['chirality_errors'], 0)

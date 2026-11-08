@@ -23,7 +23,6 @@ APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/mols
 all: $(DIRS) \
 	 $(OBJS) \
 	 $(DOBJ) \
-	 $(TSTS) \
 	 $(APPS)
 code: $(DIRS) $(OBJS) $(DOBJ) $(TSTS) $(APPS)
 apps: $(APPS)

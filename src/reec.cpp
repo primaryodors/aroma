@@ -1768,7 +1768,7 @@ struct Model
 };
 void help()
 {
-    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\n       [--anneal-steps 64] [--anneal-temperature 12] [--anneal-residues 103,107]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\n       [--anneal-steps 0] [--anneal-temperature 12] [--anneal-residues 103,107]\nAnnealing is off by default; --anneal-steps 64 enables it.\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
 }
 }
 #ifndef REEC_NO_MAIN
@@ -1782,7 +1782,7 @@ int main(int argc,char** argv)
         bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
-        int iterations=3000,models=1,seed=0,anneal_steps=64;
+        int iterations=3000,models=1,seed=0,anneal_steps=0;
         double anneal_temperature=12,clash_scale=1;
         std::set<int> anneal_residues;
         for(int i=1; i<argc; ++i)

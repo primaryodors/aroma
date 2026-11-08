@@ -45,6 +45,26 @@ def execute_alignment_builder():
         print("FATAL ERROR: Alignment builder failed.", file=sys.stderr)
         sys.exit(1)
 
+def experimental_template(name, source, description, work, chain='A'):
+    """Extract the PIR chain into a template with the engine's chain label."""
+    fields = description.split(':')
+    source_chain = fields[3].strip() or ' '
+    if len(source_chain) != 1 or fields[5].strip() not in ('', source_chain.strip()):
+        raise ValueError(f'Experimental template must describe one chain: {name}')
+    records = []
+    for line in source.read_text().splitlines():
+        if line.startswith('ENDMDL'):
+            break
+        if line.startswith(('ATOM  ', 'HETATM', 'TER   ')) and len(line) > 21 and line[21] == source_chain:
+            records.append(line[:21] + chain + line[22:])
+    if not any(line.startswith('ATOM  ') and line[12:16].strip() == 'CA' for line in records):
+        raise ValueError(f'Experimental template has no protein CA atoms in its PIR chain: {name}')
+    template = work / f'{name}.pdb'
+    template.write_text('\n'.join(records) + '\nEND\n')
+    fields[3] = fields[5] = chain
+    return template, ':'.join(fields)
+
+
 def validated_subfamily_alignment(rcpid, work):
     """Combine trusted subfamily models with active experimental OR templates."""
     family = pu.family_from_protid(rcpid)
@@ -104,6 +124,7 @@ def validated_subfamily_alignment(rcpid, work):
         template = work / 'tpl' / f'{name}.pdb'
         if not template.is_file():
             raise FileNotFoundError(f'Experimental template is missing: {template}')
+        template, description = experimental_template(name, template, description, work)
         rows[name] = (description, row)
         templates.append(f'{name}={template}')
         provenance.append(name)

@@ -95,7 +95,7 @@ def parser(repair=False):
     p.add_argument('--iterations', type=int, help='Initial modeling iteration budget')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')
     p.add_argument('--seed', type=int, default=0, help='Reproducible REEC starting-conformation seed')
-    p.add_argument('--anneal-steps', type=int, default=64, help='Targeted Monte Carlo rounds; 0 disables annealing')
+    p.add_argument('--anneal-steps', type=int, default=0, help='Targeted Monte Carlo rounds; disabled by default, use 64 to enable')
     p.add_argument('--anneal-temperature', type=float, default=12, help='Initial annealing temperature in REEC score units')
     p.add_argument('--anneal-residues', help='Comma-separated residue numbers; defaults to receptor binding-site residues')
     p.add_argument('--max-attempts', type=int, default=100 if repair else 0,
@@ -302,7 +302,7 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
     cmd = [ROOT / 'bin/reec', '--alignment', alignment, '--target', rcp,
            '--output', result, '--iterations', args.iterations, '--models', args.models,
            '--contacts', contact_file, '--chain', args.chain, '--seed', getattr(args, 'seed', 0)]
-    cmd.extend(['--anneal-steps', getattr(args, 'anneal_steps', 64),
+    cmd.extend(['--anneal-steps', getattr(args, 'anneal_steps', 0),
                 '--anneal-temperature', getattr(args, 'anneal_temperature', 12),
                 '--clash-scale', getattr(args, 'clash_scale', 1.)])
     if getattr(args, 'anneal_residues', None):

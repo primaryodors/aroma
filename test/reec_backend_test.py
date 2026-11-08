@@ -38,7 +38,14 @@ class ReecBackend(unittest.TestCase):
                         self.assertEqual(raised.exception.report, report)
                     actual = command.call_args.args[0]
                     self.assertEqual(actual[actual.index('--seed')+1], 9)
+                    self.assertEqual(actual[actual.index('--anneal-steps')+1], 0)
                     self.assertEqual((root / 'tmp/OR1A1.reec-failure.json').read_text(), report.read_text())
+
+    def test_annealing_defaults_off_for_generation_and_repair(self):
+        for repair in (False, True):
+            parser = backend.parser(repair)
+            self.assertEqual(parser.parse_args(['OR1B1']).anneal_steps, 0)
+            self.assertEqual(parser.parse_args(['OR1B1', '--anneal-steps', '64']).anneal_steps, 64)
 
     def test_geometry_rejection_report_survives_publication_rollback(self):
         import modeling_backend as engines
