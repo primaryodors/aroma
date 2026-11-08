@@ -102,5 +102,70 @@ int main(int argc, char** argv)
     double change=0;
     for(size_t i=0;i<seeded.size();++i)change+=(seeded[i]-backbone.xyz[i]).norm();
     assert(change>1e-6);
+    for(size_t r=1;r<=sequence.size();++r)backbone.anneal_residues.insert(r);
+    auto rotations=backbone.targeted_rotations();
+    assert(!rotations.empty());
+    XYZ before_rotation=backbone.xyz;
+    backbone.rotate(rotations.front(),.75);
+    for(auto pair:backbone.geometry)if(pair.bond)
+        assert(std::fabs((before_rotation[pair.a]-before_rotation[pair.b]).norm()
+            -(backbone.xyz[pair.a]-backbone.xyz[pair.b]).norm())<1e-9);
+    for(size_t i=0;i<backbone.nodes.size();++i)if(backbone.nodes[i].backbone)
+        assert((before_rotation[i]-backbone.xyz[i]).norm()<1e-12);
+    backbone.xyz=before_rotation;
+    // Construct a displaced rotamer with a known reference contact.
+    double largest_change=0,reference_distance=0;
+    int moving_atom=-1,reference_atom=-1;
+    XYZ displaced=before_rotation;
+    for(const auto& rotation:rotations)
+    {
+        backbone.xyz=before_rotation;
+        backbone.rotate(rotation,1.7);
+        for(int atom:rotation.moving)for(size_t anchor=0;anchor<backbone.nodes.size();++anchor)
+            if(backbone.nodes[anchor].backbone)
+            {
+                double original=(before_rotation[atom]-before_rotation[anchor]).norm();
+                double current=(backbone.xyz[atom]-backbone.xyz[anchor]).norm();
+                if(std::fabs(current-original)>largest_change)
+                {
+                    largest_change=std::fabs(current-original);
+                    reference_distance=original;
+                    moving_atom=atom;
+                    reference_atom=anchor;
+                    displaced=backbone.xyz;
+                }
+            }
+    }
+    assert(largest_change>.1);
+    backbone.pair(moving_atom,reference_atom,reference_distance,100000);
+    before_rotation=displaced;
+    backbone.xyz=before_rotation;
+    backbone.anneal(64,1000000,0);
+    assert(backbone.sampling.trials==64);
+    assert(backbone.sampling.accepted>0&&backbone.sampling.uphill>0);
+    assert(backbone.sampling.after<backbone.sampling.before);
+    XYZ annealed=backbone.xyz;
+    backbone.xyz=before_rotation;
+    backbone.anneal(64,1000000,0);
+    for(size_t i=0;i<annealed.size();++i)assert((annealed[i]-backbone.xyz[i]).norm()<1e-12);
+    for(size_t i=0;i<backbone.nodes.size();++i)if(backbone.nodes[i].backbone)
+        assert((before_rotation[i]-backbone.xyz[i]).norm()<1e-12);
+    backbone.reset_template_release();
+    auto original_weights=backbone.anchor_weight;
+    std::vector<double> original_geometry;
+    for(const auto& pair:backbone.geometry)original_geometry.push_back(pair.weight);
+    backbone.refresh(backbone.xyz);
+    assert(!backbone.neighbors.empty());
+    auto clash=backbone.neighbors.front();
+    backbone.xyz[clash.second]=backbone.xyz[clash.first]+V{.1,0,0};
+    backbone.release_clashing_templates();
+    assert(backbone.released_template_residues.count(backbone.nodes[clash.first].res));
+    assert(backbone.anchor_weight[clash.first]==original_weights[clash.first]*.1);
+    for(size_t i=0;i<backbone.geometry.size();++i)if(backbone.geometry[i].validate)
+        assert(backbone.geometry[i].weight==original_geometry[i]);
+    backbone.reset_template_release();
+    assert(backbone.released_template_residues.empty());
+    assert(backbone.anchor_weight==original_weights);
+    for(size_t i=0;i<backbone.geometry.size();++i)assert(backbone.geometry[i].weight==original_geometry[i]);
     std::cout << "REEC analytical gradients and rigid template fit pass.\n";
 }

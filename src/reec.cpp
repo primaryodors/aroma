@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -529,6 +530,11 @@ struct Stats
 };
 struct Model
 {
+    struct Rotation
+    {
+        int root,tip;
+        std::vector<int> moving;
+    };
     Protein protein;
     std::vector<Node> nodes;
     XYZ xyz,ideal,anchors;
@@ -551,6 +557,17 @@ struct Model
     std::vector<std::pair<int,int>> fixed_links;
     double hard_scale=1,anchor_scale=1;
     unsigned seed=0;
+    double clash_scale=1;
+    int candidate_index=0;
+    std::string start_signature;
+    std::set<int> released_template_residues;
+    std::vector<double> template_anchor_weights,template_geometry_weights;
+    std::set<int> anneal_residues;
+    struct Annealing
+    {
+        int trials=0,accepted=0,uphill=0,incremental=0,bonds=0;
+        double before=0,after=0;
+    } sampling;
     int id(int r,const std::string& a)const
     {
         auto it=ids.find(
@@ -1208,7 +1225,7 @@ struct Model
             key*=0x846ca68bu;
             return key^(key>>16);
         };
-        if(seed)for(size_t i=0;i<xyz.size();++i)if(!fixed_records.count(i))
+        if(seed||candidate)for(size_t i=0;i<xyz.size();++i)if(!fixed_records.count(i))
         {
             uint32_t key=mixed(uint32_t(seed)^uint32_t(candidate)*0x9e3779b9u^uint32_t(i)*0x85ebca6bu);
             xyz[i].x+=.02*(double(key&65535)/65535.-.5);
@@ -1247,6 +1264,124 @@ struct Model
                     xyz[i]=origin+p*c+axis.cross(p)*s+axis*(axis.dot(p)*(1-c));
                 }
         }
+    }
+    std::vector<Rotation> targeted_rotations()
+    {
+        std::set<int> selected=anneal_residues;
+        refresh(xyz);
+        for(auto p:neighbors)
+        {
+            double distance=(xyz[p.first]-xyz[p.second]).norm();
+            bool ligand=(fixed_records.count(p.first)||fixed_records.count(p.second));
+            if(ligand||nodes[p.first].radius+nodes[p.second].radius-distance>.5)
+            {
+                selected.insert(nodes[p.first].res);
+                selected.insert(nodes[p.second].res);
+            }
+        }
+        for(auto range:mobile_ranges)for(int r=range.first;r<=range.second;++r)selected.insert(r);
+        std::vector<Rotation> result;
+        for(size_t a=0;a<adj.size();++a)for(int b:adj[a])if(int(a)<b&&nodes[a].res==nodes[b].res
+            &&selected.count(nodes[a].res))
+        {
+            Bond* bond=nodes[a].atom->get_bond_between(nodes[b].atom);
+            if(!bond||!bond->can_rotate)continue;
+            for(int orientation=0;orientation<2;++orientation)
+            {
+                int root=orientation?b:int(a),tip=orientation?int(a):b;
+                if(nodes[tip].backbone)continue;
+                std::set<int> visited{tip};
+                std::vector<int> moving{tip};
+                bool blocked=false;
+                for(size_t i=0;i<moving.size()&&!blocked;++i)
+                {
+                    int atom=moving[i];
+                    if(nodes[atom].backbone||fixed_records.count(atom)){blocked=true;break;}
+                    for(int next:adj[atom])
+                    {
+                        if(atom==tip&&next==root)continue;
+                        if(next==root){blocked=true;break;}
+                        if(visited.insert(next).second)moving.push_back(next);
+                    }
+                }
+                if(!blocked&&moving.size()>1)
+                {
+                    result.push_back({root,tip,moving});
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+    void rotate(const Rotation& bond,double angle)
+    {
+        V origin=xyz[bond.root],axis=(xyz[bond.tip]-origin).unit();
+        double cosine=std::cos(angle),sine=std::sin(angle);
+        for(int atom:bond.moving)
+        {
+            V point=xyz[atom]-origin;
+            xyz[atom]=origin+point*cosine+axis.cross(point)*sine+axis*(axis.dot(point)*(1-cosine));
+        }
+    }
+    void anneal(int steps,double search_heat,int candidate)
+    {
+        sampling.trials=sampling.accepted=sampling.uphill=sampling.incremental=sampling.bonds=0;
+        XYZ gradient;
+        refresh(xyz);
+        double score=energy(xyz,gradient);
+        sampling.before=sampling.after=score;
+        if(!steps)return;
+        auto rotations=targeted_rotations();
+        sampling.bonds=rotations.size();
+        if(rotations.empty())return;
+        std::mt19937 random(seed^unsigned(candidate+1)*0x9e3779b9u);
+        auto uniform=[&](){return (double(random())+.5)/4294967296.;};
+        XYZ best=xyz;
+        double best_score=score;
+        const double pi=std::acos(-1.);
+        auto evaluate=[&](){refresh(xyz);return energy(xyz,gradient);};
+        for(int step=0;step<steps;++step)
+        {
+            double fraction=steps>1?double(step)/(steps-1):1.;
+            double heat=search_heat*std::pow(.01,fraction);
+            const Rotation& bond=rotations[random()%rotations.size()];
+            XYZ prior=xyz;
+            double angle=(2*uniform()-1)*pi;
+            rotate(bond,angle);
+            double trial=evaluate(),delta=trial-score;
+            ++sampling.trials;
+            if(delta<=0||uniform()<std::exp(-delta/heat))
+            {
+                ++sampling.accepted;
+                if(delta>0)++sampling.uphill;
+                score=trial;
+            }
+            else xyz=prior;
+            if(score<best_score){best=xyz;best_score=score;}
+
+            // Match docking's incremental search with both rotation directions.
+            prior=xyz;
+            XYZ local_best=prior;
+            double local_score=score;
+            double increment=(2+10*(1-fraction))*pi/180.;
+            for(int direction:{-1,1})
+            {
+                xyz=prior;
+                rotate(bond,direction*increment);
+                trial=evaluate();
+                if(trial<local_score){local_score=trial;local_best=xyz;}
+            }
+            if(local_score<score)++sampling.incremental;
+            xyz=local_best;
+            score=local_score;
+            if(score<best_score){best=xyz;best_score=score;}
+        }
+        xyz=best;
+        refresh(xyz);
+        sampling.after=best_score;
+        std::cout<<"REEC annealing: "<<sampling.bonds<<" torsions, "<<sampling.accepted<<"/"<<sampling.trials
+                 <<" Monte Carlo moves accepted, "<<sampling.incremental<<" incremental improvements; score "
+                 <<sampling.before<<" -> "<<sampling.after<<"\n";
     }
     double energy(const XYZ& x,XYZ& g)
     {
@@ -1296,7 +1431,7 @@ struct Model
             double limit=nodes[p.first].radius+nodes[p.second].radius-.45;
             if((nodes[p.first].atom->Z==7||nodes[p.first].atom->Z==8)&&(nodes[p.second].atom->Z==7||nodes[p.second].atom->Z==8))limit=std::min(limit,
                         2.65);
-            e+=distance(x,g,p.first,p.second,limit,1e10,30);
+            e+=distance(x,g,p.first,p.second,limit,1e10,30*clash_scale);
         }
         for(auto& fixed:fixed_records)g[fixed.first]=
         {
@@ -1443,6 +1578,57 @@ struct Model
         }
         return s;
     }
+    void apply_template_release()
+    {
+        for(size_t i=0;i<anchor_weight.size();++i)
+            anchor_weight[i]=template_anchor_weights[i]*(released_template_residues.count(nodes[i].res)?.1:1.);
+        for(size_t i=0;i<geometry.size();++i)
+        {
+            const Pair& pair=geometry[i];
+            bool release=!pair.validate&&(released_template_residues.count(nodes[pair.a].res)
+                ||released_template_residues.count(nodes[pair.b].res));
+            geometry[i].weight=template_geometry_weights[i]*(release?.1:1.);
+        }
+    }
+    void reset_template_release()
+    {
+        if(template_anchor_weights.empty())
+        {
+            template_anchor_weights=anchor_weight;
+            for(const Pair& pair:geometry)template_geometry_weights.push_back(pair.weight);
+        }
+        released_template_residues.clear();
+        apply_template_release();
+    }
+    void release_clashing_templates()
+    {
+        refresh(xyz);
+        size_t previous=released_template_residues.size();
+        for(auto pair:neighbors)
+        {
+            double overlap=nodes[pair.first].radius+nodes[pair.second].radius-(xyz[pair.first]-xyz[pair.second]).norm();
+            if(overlap<=1.)continue;
+            for(int atom:{pair.first,pair.second})if(!fixed_records.count(atom))
+                for(int residue=nodes[atom].res-1;residue<=nodes[atom].res+1;++residue)
+                    if(residue>=1&&residue<=protein.get_end_resno())released_template_residues.insert(residue);
+        }
+        apply_template_release();
+        if(released_template_residues.size()>previous)
+            std::cout<<"REEC softened template anchors around "<<released_template_residues.size()
+                     <<" residues affected by clashes\n";
+    }
+    std::string coordinate_signature() const
+    {
+        uint64_t hash=14695981039346656037ull;
+        for(const V& point:xyz)for(double coordinate:{point.x,point.y,point.z})
+        {
+            uint64_t value=uint64_t(std::llround(coordinate*1000000.));
+            for(int byte=0;byte<8;++byte){hash^=(value>>(byte*8))&255;hash*=1099511628211ull;}
+        }
+        std::ostringstream out;
+        out<<std::hex<<hash;
+        return out.str();
+    }
     void report(const std::string& path,const Stats& before,const Stats& after,bool valid)
     {
         std::ofstream f(path);
@@ -1450,6 +1636,13 @@ struct Model
         f << std::setprecision(8)
           << "{\n  \"engine\": \"REEC\",\n  \"valid\": " << (valid?"true":"false")
           << ",\n  \"seed\": " << seed
+          << ",\n  \"candidate_index\": " << candidate_index
+          << ",\n  \"start_signature\": " << std::quoted(start_signature)
+          << ",\n  \"clash_scale\": " << clash_scale
+          << ",\n  \"annealing\": {\"torsions\": " << sampling.bonds << ", \"trials\": " << sampling.trials
+          << ", \"accepted\": " << sampling.accepted << ", \"uphill\": " << sampling.uphill
+          << ", \"incremental_improvements\": " << sampling.incremental
+          << ", \"score_before\": " << sampling.before << ", \"score_after\": " << sampling.after << "}"
           << ",\n  \"heavy_atoms\": " << std::count_if(nodes.begin(),nodes.end(),[](const Node& n)
         {
             return n.atom->Z>1;
@@ -1492,7 +1685,15 @@ struct Model
              <<", \"error\": "<<error<<"}";
         }
         f << "\n  ]"
-                << ",\n  \"contacts\": [";
+                << ",\n  \"released_template_residues\": [";
+        comma=false;
+        for(int residue:released_template_residues)
+        {
+            if(comma)f<<",";
+            comma=true;
+            f<<residue;
+        }
+        f << "],\n  \"contacts\": [";
         for(size_t i=0; i<contacts.size(); ++i)
         {
             auto& c=contacts[i];
@@ -1567,7 +1768,7 @@ struct Model
 };
 void help()
 {
-    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
+    std::cout<<"REEC - Restrained Ensemble Energy Conformer\nUsage: bin/reec --alignment FILE.ali --template [ID=]FILE.pdb [--template ...]\n       --output FILE.pdb [--target ID] [--contacts FILE] [--chain A]\n       [--iterations 3000] [--models 1] [--report FILE.json] [--environment FILE.pdb] [--fit-environment]\n       [--environment-hydrogens] [--candidate-prefix PATH] [--seed 0]\n       [--anneal-steps 64] [--anneal-temperature 12] [--anneal-residues 103,107]\nRun from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\nContacts: disulfide RES RES\n          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n          mobile FIRST LAST\nAtom alternatives use |, for example OD1|OD2. Distances are Angstroms.\n";
 }
 }
 #ifndef REEC_NO_MAIN
@@ -1581,7 +1782,9 @@ int main(int argc,char** argv)
         bool fit_environment=false,environment_hydrogens=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
-        int iterations=3000,models=1,seed=0;
+        int iterations=3000,models=1,seed=0,anneal_steps=64;
+        double anneal_temperature=12,clash_scale=1;
+        std::set<int> anneal_residues;
         for(int i=1; i<argc; ++i)
         {
             std::string a=argv[i];
@@ -1618,6 +1821,15 @@ int main(int argc,char** argv)
             else if(a=="--iterations")iterations=integer(v);
             else if(a=="--models")models=integer(v);
             else if(a=="--seed")seed=integer(v);
+            else if(a=="--anneal-steps")anneal_steps=integer(v);
+            else if(a=="--anneal-temperature")anneal_temperature=number(v);
+            else if(a=="--clash-scale")clash_scale=number(v);
+            else if(a=="--anneal-residues")for(auto residue:split(v,','))
+            {
+                int r=integer(residue);
+                if(r<1)throw std::runtime_error("Annealing residues must be positive");
+                anneal_residues.insert(r);
+            }
             else throw std::runtime_error("Unknown option: "+a);
         }
         if(ali.empty()||out.empty()||templates.empty())
@@ -1627,6 +1839,8 @@ int main(int argc,char** argv)
         }
         if(iterations<0||iterations>100000||models<1||models>32)throw std::runtime_error("Invalid iteration or model count");
         if(seed<0)throw std::runtime_error("Seed must be nonnegative");
+        if(anneal_steps<0||anneal_steps>100000||anneal_temperature<=0)throw std::runtime_error("Invalid annealing settings");
+        if(clash_scale<=0)throw std::runtime_error("Clash scale must be positive");
         if(report.empty())report=out+".json";
         if(report==out)throw std::runtime_error("Report and PDB paths must differ");
         auto entries=alignment(ali);
@@ -1650,6 +1864,9 @@ int main(int argc,char** argv)
         for(size_t i=1; i<t.size(); ++i)superpose(t[i],t[0]);
         Model m;
         m.seed=unsigned(seed);
+        m.clash_scale=clash_scale;
+        for(int r:anneal_residues)if(r>int(seq.size()))throw std::runtime_error("Annealing residue exceeds target length");
+        m.anneal_residues=anneal_residues;
         m.build(seq,t);
         if(!environment.empty())
         {
@@ -1667,17 +1884,26 @@ int main(int argc,char** argv)
         XYZ start=m.xyz,best;
         double best_score=1e100;
         Stats final;
+        Model::Annealing best_sampling;
+        int best_candidate=0;
+        std::string best_signature;
+        std::set<int> best_released;
         bool valid=false;
         for(int candidate=0; candidate<models; ++candidate)
         {
             m.xyz=start;
+            m.reset_template_release();
             if(candidate||seed) m.alternate_start(candidate);
-            std::cout<<"REEC candidate "<<candidate+1<<"/"<<models<<"\n";
+            m.candidate_index=candidate;
+            m.start_signature=m.coordinate_signature();
+            std::cout<<"REEC candidate "<<candidate+1<<"/"<<models<<" seed "<<seed<<" start "<<m.start_signature<<"\n";
             for(int stage=0; stage<3; ++stage)
             {
+                if(stage)m.release_clashing_templates();
                 m.hard_scale=stage==0?10:(stage==1?100:1000);
                 m.anchor_scale=stage==0?1:(stage==1?.3:.1);
                 m.minimize(iterations/3+(stage==2?iterations%3:0));
+                if(stage==0)m.anneal(anneal_steps,anneal_temperature,candidate);
             }
             Stats s=m.stats();
             bool ok=s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18&&s.planarity_max<=.25&&s.severe==0;
@@ -1694,10 +1920,19 @@ int main(int argc,char** argv)
                 best=m.xyz;
                 best_score=s.score;
                 final=s;
+                best_sampling=m.sampling;
+                best_candidate=candidate;
+                best_signature=m.start_signature;
+                best_released=m.released_template_residues;
                 valid=ok;
             }
         }
         m.xyz=best;
+        m.sampling=best_sampling;
+        m.candidate_index=best_candidate;
+        m.start_signature=best_signature;
+        m.released_template_residues=best_released;
+        m.apply_template_release();
         m.report(report,initial,final,valid);
         if(!valid)
         {

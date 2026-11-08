@@ -22,8 +22,14 @@ def options(argv, repair=False):
         raise ValueError('Models must be positive')
     if not 0 <= args.seed <= 2147483647:
         raise ValueError('Seed must be between 0 and 2147483647')
-    if repair and args.max_attempts < 1:
-        raise ValueError('Maximum attempts must be positive')
+    if args.max_attempts < (1 if repair else 0):
+        raise ValueError('Invalid maximum attempt count')
+    if not 0 <= args.anneal_steps <= 100000:
+        raise ValueError('Annealing steps must be between 0 and 100000')
+    if not math.isfinite(args.anneal_temperature) or args.anneal_temperature <= 0:
+        raise ValueError('Annealing temperature must be positive and finite')
+    if args.anneal_residues is not None and not re.fullmatch(r'[1-9][0-9]*(,[1-9][0-9]*)*', args.anneal_residues):
+        raise ValueError('Annealing residues must be comma-separated positive integers')
     for name in ('alignment', 'output'):
         value = getattr(args, name)
         if value is not None:
@@ -37,10 +43,10 @@ def options(argv, repair=False):
 
 def forwarded_options(args):
     result = ['--backend', args.backend, '--chain', args.chain]
-    for name in ('iterations', 'models', 'alignment', 'seed'):
+    for name in ('iterations', 'models', 'alignment', 'seed', 'anneal_steps', 'anneal_temperature', 'anneal_residues'):
         value = getattr(args, name)
         if value is not None:
-            result.extend(['--'+name, str(value)])
+            result.extend(['--'+name.replace('_', '-'), str(value)])
     for name in ('template', 'contacts'):
         for value in getattr(args, name):
             result.extend(['--'+name, str(value)])
@@ -145,6 +151,13 @@ def api(args):
                                  Dihedral=lambda *atoms: ('dihedral', atoms)),
         physical=SimpleNamespace(xy_distance='distance', chi1_dihedral='dihedral', chi2_dihedral='dihedral'),
         autosched=SimpleNamespace(slow='slow'), refine=SimpleNamespace(very_slow='very_slow'))
+
+
+def prepare(args):
+    """Build the selected native engine before workflow preprocessing starts."""
+    if args.backend == 'reec' and not getattr(args, '_reec_built', False):
+        reec.command(['make', 'bin/reec'])
+        args._reec_built = True
 
 
 @dataclass(frozen=True)
@@ -272,7 +285,7 @@ class ReecModel:
             self.special_restraints(None)
         args = self.env.options
         contacts = self.contact_lines()
-        reec.command(['make', 'bin/reec'])
+        prepare(args)
         with reec.workspace(f'{self.sequence}-engine-', args.keep_work) as work:
             rows = pir_rows(self.alnfile)
             templates = [f'{name}={path}' if name in rows else str(path) for name, path in self.template_paths()]
@@ -284,9 +297,17 @@ class ReecModel:
                 # Retain the protein frame for ligand alignment; only HETATM records become fixed atoms.
                 environment.write_text('\n'.join(line for line in self.template_paths()[0][1].read_text().splitlines()
                                                   if line.startswith(('ATOM  ', 'HETATM', 'CONECT', 'ENDMDL'))) + '\n')
+            anneal_residues = args.anneal_residues
+            if anneal_residues is None and self.sequence in reec.pu.prots:
+                target_size = len(rows[self.sequence][1].replace('-', '').replace('.', ''))
+                pocket = {reec.pu.resno_from_bw(self.sequence, bw) for bw in reec.pu.bsrs}
+                anneal_residues = ','.join(str(number) for number in sorted(
+                    number for number in pocket if number and 1 <= number <= target_size))
             engine_args = SimpleNamespace(iterations=self.max_var_iterations,
                 models=self.ending_model-self.starting_model+1, contacts=args.contacts, chain=args.chain,
-                candidate_prefix=work / 'candidate', seed=args.seed)
+                candidate_prefix=work / 'candidate', seed=args.seed,
+                anneal_steps=args.anneal_steps, anneal_temperature=args.anneal_temperature,
+                anneal_residues=anneal_residues, clash_scale=getattr(args, 'clash_scale', 1.))
             alignment = protein_alignment(self.alnfile, self.knowns, self.sequence, work / 'protein.ali')
             output = reec.model(self.sequence, engine_args, work, templates, alignment,
                                 contacts, environment, bool(environment), bool(environment))

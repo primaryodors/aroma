@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Builds GPCR homology models with REEC by default; MODELLER is optional.
+Rejected generations retry with fresh seeds and increasing relaxation budgets.
+The default continues until publication; --max-attempts sets an explicit bound.
 """
 
 import os
@@ -10,6 +12,8 @@ import glob
 import re
 import math
 import shutil
+import json
+import tempfile
 
 # -----------------------------------------
 # ARCHITECTURAL ENFORCEMENT: PATH RESOLUTION
@@ -20,7 +24,7 @@ sys.path.append(root_dir)
 
 from pathlib import Path
 from reec_backend import receptor, directory, CandidateRejected
-from modeling_backend import options as backend_options, api as backend_api, construct, custom_alignment, publication_guard, finalize, pir_rows
+from modeling_backend import options as backend_options, api as backend_api, prepare, construct, custom_alignment, publication_guard, finalize, pir_rows
 
 import data.protutils as pu
 
@@ -393,6 +397,7 @@ def main(argv=None):
     unknown = set(options.legacy) - {'nodel', 'riglig'}
     if unknown:
         raise ValueError(f'Unknown options: {sorted(unknown)}')
+    prepare(options)
     sys.argv = [sys.argv[0], options.receptor] + options.legacy
     if len(sys.argv) < 2:
         print("Usage:\npython3 hm/dohm.py PROTID [riglig] [nodel]\n", file=sys.stderr)
@@ -732,38 +737,90 @@ def main(argv=None):
                 except Exception:
                     pass
 
-    # 6. Execute Homology Model
-    print(f"Initiating {options.backend.upper()} for {rcpid}...", file=sys.stderr)
-    a = construct(AromaModel, env, alnfile=hm_ali_file, knowns=model_knowns, sequence=rcpid)
-    a.starting_model = 0
-    a.ending_model = a.starting_model + options.models - 1 if options.models is not None else 9
-    a.library_schedule = autosched.slow
-    a.max_var_iterations = options.iterations if options.iterations is not None else 1000
+    # Retry complete generation and publication while preserving validation limits.
+    base_iterations = options.iterations if options.iterations is not None else (3000 if options.backend == 'reec' else 1000)
+    base_seed = options.seed
+    base_annealing = options.anneal_steps
+    attempt = 0
+    last_rejection = None
+    log_root = Path(root_dir) / 'tmp'
+    log_root.mkdir(parents=True, exist_ok=True)
+    run_dir = Path(tempfile.mkdtemp(prefix=f'{rcpid}-dohm-', dir=log_root))
+    attempts = []
 
-    if rcpid in ["OR2AE1", "OR2AG1", "OR2AG2"]:
-        a.md_level = refine.very_slow
+    def record(entry, rejection=None):
+        if rejection is not None:
+            entry['reason'] = str(rejection)
+            if rejection.report is not None and rejection.report.is_file():
+                report = run_dir / f'attempt-{attempt}-event-{len(attempts)+1}.json'
+                shutil.copyfile(rejection.report, report)
+                entry['report'] = str(report)
+        attempts.append(entry)
+        (run_dir / 'attempts.json').write_text(json.dumps(attempts, indent=2) + '\n')
 
-    # Throttle if global functions exist
-    if 'data.globals' in sys.modules and hasattr(sys.modules['data.globals'], 'wait_cool_cpu'):
+    while options.max_attempts == 0 or attempt < options.max_attempts:
+        attempt += 1
+        options.seed = (base_seed + attempt - 1) % 2147483648
+        iterations = min(100000, base_iterations * 2**min(attempt-1, 16))
+        options.clash_scale = min(8., 2.**min(attempt-1, 3))
+        options.anneal_steps = (0 if attempt % 4 == 0 else
+                               min(max(base_annealing, 512), base_annealing * (1+(attempt-1)//2)))
+        settings = {'attempt': attempt, 'seed': options.seed, 'iterations': iterations,
+                    'anneal_steps': options.anneal_steps, 'clash_scale': options.clash_scale}
+        print(f'Generation attempt {attempt}: seed {options.seed}, {iterations} iterations, '
+              f'clash scale {options.clash_scale}, {options.anneal_steps} annealing rounds',
+              file=sys.stderr, flush=True)
+        os.chdir(script_dir)
+        dsres1.clear()
+        dsres2.clear()
+        a = construct(AromaModel, env, alnfile=hm_ali_file, knowns=model_knowns, sequence=rcpid)
+        a.starting_model = 0
+        a.ending_model = options.models - 1 if options.models is not None else 9
+        a.library_schedule = autosched.slow
+        a.max_var_iterations = iterations
+        if rcpid in ['OR2AE1', 'OR2AG1', 'OR2AG2']:
+            a.md_level = refine.very_slow
+        if 'data.globals' in sys.modules and hasattr(sys.modules['data.globals'], 'wait_cool_cpu'):
+            try:
+                sys.modules['data.globals'].wait_cool_cpu()
+            except FileNotFoundError:
+                pass
         try:
-            sys.modules['data.globals'].wait_cool_cpu()
-        except FileNotFoundError:
-            pass # Hardware sensors unavailable in WSL. Pushing through.
-
-    a.make()
-
-    # 7. Extract Best Model Programmatically (No String Parsing)
-    ok_models = [m for m in a.outputs if m['failure'] is None]
-    if not ok_models:
-        print("FATAL ERROR: MODELLER failed to produce any valid structures.", file=sys.stderr)
-        sys.exit(1)
-
-    best_model = min(ok_models, key=lambda m: m['molpdf'])
-    best_pdb = best_model['name']
-    print(f"Best model generated: {best_pdb} with molpdf {best_model['molpdf']}")
-
-    phew_path = process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb,
-                              tplsused, dsres1, dsres2, dspotr1, dspotr2, a)
+            a.make()
+        except CandidateRejected as exc:
+            last_rejection = exc
+            record(dict(settings, status='generation_rejected'), exc)
+            print(f'Attempt {attempt} rejected: {exc}; increasing relaxation and changing seed.',
+                  file=sys.stderr, flush=True)
+            continue
+        ok_models = sorted((m for m in a.outputs if m['failure'] is None), key=lambda m: m['molpdf'])
+        if not ok_models:
+            last_rejection = CandidateRejected('Modeling produced no valid candidates')
+            record(dict(settings, status='generation_rejected'), last_rejection)
+            continue
+        published = False
+        for best_model in ok_models:
+            best_pdb = best_model['name']
+            print(f'Processing candidate {best_pdb} with molpdf {best_model["molpdf"]}')
+            os.chdir(script_dir)
+            try:
+                phew_path = process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb,
+                                         tplsused, dsres1, dsres2, dspotr1, dspotr2, a)
+            except CandidateRejected as exc:
+                last_rejection = exc
+                record(dict(settings, status='processing_rejected', candidate=best_pdb), exc)
+                print(f'Candidate {best_pdb} rejected after processing: {exc}', file=sys.stderr, flush=True)
+                continue
+            record(dict(settings, status='accepted', candidate=best_pdb))
+            published = True
+            break
+        if published:
+            print(f'Validated model published. Attempt log: {run_dir / "attempts.json"}', file=sys.stderr)
+            break
+    else:
+        raise CandidateRejected(f'No accepted model after {attempt} generation attempts; '
+                                f'attempt log: {run_dir / "attempts.json"}',
+                                last_rejection.report if last_rejection is not None else None)
 
     # 10. Clean up temporary files
     os.chdir(script_dir)

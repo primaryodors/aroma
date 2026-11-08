@@ -92,11 +92,14 @@ def parser(repair=False):
     p.add_argument('--alignment', type=Path, help='PIR alignment; target ID is the receptor ID')
     p.add_argument('--contacts', type=Path, action='append', default=[])
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
-    p.add_argument('--iterations', type=int, help='Override the workflow modeling iteration limit')
+    p.add_argument('--iterations', type=int, help='Initial modeling iteration budget')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')
     p.add_argument('--seed', type=int, default=0, help='Reproducible REEC starting-conformation seed')
-    if repair:
-        p.add_argument('--max-attempts', type=int, default=100, help='Maximum repair attempts in loop mode')
+    p.add_argument('--anneal-steps', type=int, default=64, help='Targeted Monte Carlo rounds; 0 disables annealing')
+    p.add_argument('--anneal-temperature', type=float, default=12, help='Initial annealing temperature in REEC score units')
+    p.add_argument('--anneal-residues', help='Comma-separated residue numbers; defaults to receptor binding-site residues')
+    p.add_argument('--max-attempts', type=int, default=100 if repair else 0,
+                   help='Maximum attempts; dohm defaults to retrying until success (0)')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
     return p
@@ -299,6 +302,11 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
     cmd = [ROOT / 'bin/reec', '--alignment', alignment, '--target', rcp,
            '--output', result, '--iterations', args.iterations, '--models', args.models,
            '--contacts', contact_file, '--chain', args.chain, '--seed', getattr(args, 'seed', 0)]
+    cmd.extend(['--anneal-steps', getattr(args, 'anneal_steps', 64),
+                '--anneal-temperature', getattr(args, 'anneal_temperature', 12),
+                '--clash-scale', getattr(args, 'clash_scale', 1.)])
+    if getattr(args, 'anneal_residues', None):
+        cmd.extend(['--anneal-residues', args.anneal_residues])
     for template in templates:
         cmd.extend(['--template', template])
     if getattr(args, 'candidate_prefix', None):

@@ -36,7 +36,8 @@ class ReecBackend(unittest.TestCase):
                         backend.model('OR1A1', args, work, [], work / 'input.ali', [])
                     if code == 2:
                         self.assertEqual(raised.exception.report, report)
-                    self.assertEqual(command.call_args.args[0][-2:], ['--seed', 9])
+                    actual = command.call_args.args[0]
+                    self.assertEqual(actual[actual.index('--seed')+1], 9)
                     self.assertEqual((root / 'tmp/OR1A1.reec-failure.json').read_text(), report.read_text())
 
     def test_geometry_rejection_report_survives_publication_rollback(self):

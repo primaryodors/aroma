@@ -11,11 +11,12 @@ from pathlib import Path
 script_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.dirname(script_dir)
 sys.path.insert(0, root_dir)
-from modeling_backend import options as backend_options, api as backend_api, construct, forwarded_options, publication_guard, finalize
+from modeling_backend import options as backend_options, api as backend_api, prepare, construct, forwarded_options, publication_guard, finalize
 from reec_backend import receptor, directory, CandidateRejected
 
 def main(argv=None):
     options = backend_options(sys.argv[1:] if argv is None else argv, repair=True)
+    prepare(options)
     engine = backend_api(options)
     Environ, DOPEHRLoopModel = engine.Environ, engine.DOPEHRLoopModel
     Selection, RigidBody = engine.Selection, engine.RigidBody

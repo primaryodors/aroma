@@ -63,6 +63,15 @@ class ReecCLI(unittest.TestCase):
         self.assertTrue(scores)
         self.assertAlmostEqual(min(scores), best['final_energy'])
 
+    def test_ten_candidates_have_distinct_starts(self):
+        prefix = self.work / 'distinct'
+        result = self.run_model('--models', '10', '--iterations', '0', '--anneal-steps', '0',
+                                '--candidate-prefix', str(prefix))
+        self.assertIn(result.returncode, (0, 2), result.stdout + result.stderr)
+        reports = [json.loads(Path(f'{prefix}.{i}.pdb.json').read_text()) for i in range(10)]
+        self.assertEqual(len({report['start_signature'] for report in reports}), 10)
+        self.assertEqual([report['candidate_index'] for report in reports], list(range(10)))
+
     def test_cli_seed_is_reproducible(self):
         energies = []
         for seed in (17, 17, 18):
@@ -73,6 +82,22 @@ class ReecCLI(unittest.TestCase):
             energies.append(report['final_energy'])
         self.assertEqual(energies[0], energies[1])
         self.assertNotEqual(energies[0], energies[2])
+
+    def test_targeted_annealing_and_disable_switch(self):
+        residues = ','.join(str(r) for r in range(1, len(self.sequence)+1))
+        for steps in (0, 64):
+            result = self.run_model('--anneal-steps', str(steps), '--anneal-residues', residues)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads(Path(str(self.output)+'.json').read_text())['annealing']
+            self.assertEqual(report['trials'], steps)
+            self.assertLessEqual(report['score_after'], report['score_before'])
+            if steps:
+                self.assertGreater(report['torsions'], 0)
+
+    def test_annealing_controls_reject_invalid_values(self):
+        for flag, value in (('--anneal-steps', '-1'), ('--anneal-temperature', '0'), ('--anneal-residues', '99999')):
+            result = self.run_model(flag, value)
+            self.assertEqual(result.returncode, 1)
 
     def test_impossible_contact_retains_previous_output(self):
         self.output.write_text('previous model\n')
