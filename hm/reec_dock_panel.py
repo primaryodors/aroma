@@ -49,7 +49,10 @@ def prepare_case(workspace, case, condition, model, panel_name):
         if not destination.exists():
             destination.symlink_to(ROOT / name)
     (workspace / 'test').mkdir(exist_ok=True)
-    shutil.copy2(ROOT / 'test/moiety_test', workspace / 'test/moiety_test')
+    source_tool = ROOT / 'test/moiety_test'
+    workspace_tool = workspace / 'test/moiety_test'
+    if source_tool.resolve() != workspace_tool.resolve():
+        shutil.copy2(source_tool, workspace_tool)
     (workspace / 'tmp/nodelete').touch()
     family = backend.pu.family_from_protid(case['receptor'])
     active = workspace / 'pdbs' / family / f'{case["receptor"]}.active.pdb'
