@@ -1,0 +1,22 @@
+{
+  "engine": "REEC",
+  "valid": true,
+  "heavy_atoms": 2495,
+  "fixed_atoms": 0,
+  "dihedral_restraints": 0,
+  "mobile_ranges": 0,
+  "initial_energy": 115099.38,
+  "final_energy": 88.045752,
+  "initial_severe_clashes": 64,
+  "severe_clashes": 0,
+  "max_bond_error": 0.0051124208,
+  "max_geometry_distance_error": 0.052890441,
+  "template_ca_rmsd": 0.49373805,
+  "max_planarity_volume_error": 0.037630548,
+  "chirality_errors": 0,
+  "mandatory_violations": 0,
+  "contacts": [
+    {"kind": "disulfide", "res1": 4, "atom1": "SG", "res2": 168, "atom2": "SG", "distance": 2.0495039, "min": 1.95, "max": 2.15, "hard": true, "violation": 0},
+    {"kind": "disulfide", "res1": 96, "atom1": "SG", "res2": 178, "atom2": "SG", "distance": 2.050073, "min": 1.95, "max": 2.15, "hard": true, "violation": 0}
+  ]
+}
