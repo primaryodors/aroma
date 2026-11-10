@@ -26,12 +26,75 @@ expanded ten-receptor off/on comparison. Offline docking review is complete;
 REEC_DOCKING_REVIEW.txt records the results and quality findings. The current
 panel has 21/34 operational passes. Follow-up decisions concern ligand
 geometry, metal-site preparation, contact ranking, and final OR5V1 template
-fidelity. New weighting has not had a matched held-out structural evaluation;
-the older holdouts predate that change. No further experiments were launched
+fidelity were reviewed in the follow-ups below. Ranking and OR5V1 behavior
+are settled by the user. A matched weighting structural comparison is now
+complete for OR51E2 and TAAR1; REEC_WEIGHTING_HOLDOUTS.txt records improved
+median accuracy and 24/24 accepted candidates. The original holdouts predate
+that change. No further experiments were launched
 during the offline review.
 
 Current policy: annealing is optional and defaults off in REEC, dohm, and
 fixfail. Existing explicit controls remain available.
+
+Completed TAAR5 follow-up (2026-11-09): the latest trimethylamine dock has
+nine accepted poses and passes the saved-output operational criterion.
+Ligand geometry and Asp114 contacts were checked across all nine poses;
+the current source passes independent geometry review. See
+REEC_TAAR5_REVIEW.txt. Repository activity curation now identifies
+trimethylamine as the top agonist and thyronamine as an inverse agonist.
+The older panel remains historical; a corrected matched panel is pending.
+
+Completed OR52E8 follow-up (2026-11-09): four accepted poses, with the true
+3-hydroxy oxygen contacting Asn208 in pose 3. Source geometry passes.
+REEC_OR52E8_REVIEW.txt records the measurements and limitations. The user
+settled ranking: preserve current score order; no ranking work is pending.
+Next review is OR5V1 final primary-template backbone fidelity.
+
+OR5V1 fidelity review completed (2026-11-09): the 0.891 A protected-backbone
+shift is already present in native output; final processing adds only
+0.0005 A after alignment. Primary weights match policy and no protected
+residue received clash-driven anchor release. Current policy preserves
+initial coordinates with soft restraints, not final rigidity. See
+REEC_OR5V1_REVIEW.txt. No optimizer changes were made. Next review concerns
+OR1A1 postprocessing sterics and OR1B1 final disulfide rejection.
+
+User disposition: OR5V1 docking is satisfactory; retain current behavior.
+Workflow follow-up (2026-11-09), REEC_WORKFLOW_GEOMETRY_REVIEW.txt:
+OR1A1 crosses the final severe-overlap limit after processing while its
+sidecar retains native zero-clash status. OR1B1's archived disulfide failure
+is present before final IC; an isolated current PHEW replay also fails
+disulfide geometry, while an instrumented replay passes. Final serialized
+steric acceptance and controlled PHEW diagnosis remain actionable work.
+
+Final-publication correction implemented (2026-11-09): shared finalization
+now checks serialized severe overlaps, records final sterics, and applies
+bounded native cleanup to damaged REEC candidates before retry/rollback.
+Existing models survive exhausted batch retries. Isolated current OR1B1
+and archived OR1A1 cleanup both pass with zero severe clashes and valid
+disulfides. See REEC_WORKFLOW_GEOMETRY_REVIEW.txt. No canonical models were
+replaced. Exact PHEW command attribution remains unresolved, but damaged
+geometry is repaired or rejected before accepted publication.
+
+Latest production models verified (2026-11-09): OR1A1 active at 18:36 and
+OR1B1 active at 18:31 both pass final chemical geometry, both disulfides,
+mandatory contacts, and zero-severe-clash acceptance. Independent final
+audits match sidecars. OR1B1 records automatic postprocessing repair;
+OR1A1 passes directly. These are the canonical models used for docking.
+Artifacts: tmp/latest-model-review-2026-11-09/summary.json.
+
+Matched weighting holdouts completed with
+hm/reec_weighting_comparison.py: OR51E2 and TAAR1, two matched seeds,
+three candidates per seed, annealing off, 3000 iterations. Both sides use
+the same current library objects and frozen inputs. The source revisions
+immediately before and at the weighting change isolate that change.
+Reference coordinates remain excluded from reconstruction. This is a
+structural measurement experiment, not replacement production models.
+
+Both weighting holdouts improve in all three median structural metrics.
+Pocket heavy-atom RMSD legacy/weighted: OR51E2 1.722/1.694 A, TAAR1
+4.047/3.152 A. Retain weighting v1; this is evidence from two retrospective
+controls, not a universal accuracy claim. The next baseline task is the
+corrected ligand panel, followed by local backbone sampling investigation.
 
 Template weighting version 1 is implemented: global similarity, local
 similarity, and coordinate coverage govern starting coordinates and fold

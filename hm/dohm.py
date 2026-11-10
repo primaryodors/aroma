@@ -983,6 +983,9 @@ def main(argv=None):
             raise
         family = pu.family_from_protid(rcpid)
         destination = (options.output or Path(root_dir) / f'pdbs/{family}/{rcpid}.active.pdb').resolve()
+        if destination.exists():
+            print(f'Model refresh rejected; preserving previous model: {destination}', file=sys.stderr)
+            raise
         print(f'Model refresh could not pass: {exc}; emitting a labeled fallback.', file=sys.stderr)
         fallback_model(rcpid, destination, options, exc, root_dir)
 

@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import re
 import shutil
+import subprocess
 from types import SimpleNamespace
 
 import reec_backend as reec
@@ -158,7 +159,7 @@ def api(args):
 def prepare(args):
     """Build the selected native engine before workflow preprocessing starts."""
     if args.backend == 'reec' and not getattr(args, '_reec_built', False):
-        reec.command(['make', 'bin/reec'])
+        reec.command(['make', 'bin/reec', 'bin/reec_steric_audit'])
         args._reec_built = True
 
 
@@ -369,7 +370,7 @@ def publication_guard(destination):
 
 
 def finalize(model, destination, candidate=None, *, target=None):
-    from reec_review import inspect
+    from reec_review import inspect, inspect_sterics
     destination = Path(destination)
     if isinstance(model, ReecModel):
         report = json.loads(Path(str(Path(candidate or model.outputs[0]['name']).resolve())+'.json').read_text())
@@ -388,8 +389,40 @@ def finalize(model, destination, candidate=None, *, target=None):
         contact['distance'] = distance
         contact['violation'] = max(0,contact['min']-distance,distance-contact['max'])
     path = Path(str(destination)+'.json')
+    report.setdefault('native_severe_clashes', report.get('severe_clashes'))
+    report['severe_clashes'] = None
+    report.pop('serialized_sterics', None)
     path.write_text(json.dumps(report, indent=2)+'\n')
     review = inspect(destination)
+    audit_failed = False
+    report['serialized_geometry'] = {key: value for key, value in review.items()
+                                     if key not in ('model', 'optimizer_report')}
+    if review['valid']:
+        try:
+            sterics = inspect_sterics(destination)
+        except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+            audit_failed = True
+            review['valid'] = False
+            review['failures'].append(f'Final steric audit could not complete: {type(exc).__name__}')
+        else:
+            report['serialized_sterics'] = sterics
+            report['severe_clashes'] = sterics['severe_clashes']
+            if sterics['severe_clashes']:
+                review['valid'] = False
+                review['failures'].append(f'Final serialized model has {sterics["severe_clashes"]} severe clashes')
+    if not review['valid'] and not audit_failed and isinstance(model, ReecModel) and target is not None:
+        from dohm_recovery import repair_existing, copy_pair
+        repair_options = SimpleNamespace(iterations=6000, seed=report.get('seed', 0))
+        repaired, work = repair_existing(target, destination, repair_options, reec.ROOT,
+                                         contact_report=report['contacts'], orient=False)
+        copy_pair(repaired, destination)
+        repaired_report = json.loads(path.read_text())
+        repaired_report['postprocessing_repair'] = {
+            'work': str(work), 'failures': review['failures'],
+            'original_serialized_sterics': report.get('serialized_sterics'),
+            'original_native_severe_clashes': report.get('native_severe_clashes', report.get('severe_clashes'))}
+        path.write_text(json.dumps(repaired_report, indent=2)+'\n')
+        return
     if not review['valid']:
         report['valid'] = False
         report['serialized_geometry'] = {key: value for key, value in review.items()

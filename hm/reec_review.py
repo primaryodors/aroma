@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Independent checks of serialized REEC PDB geometry and contact reports."""
 import argparse
+import fcntl
 import json
 import math
+import subprocess
 from pathlib import Path
 
 HEAVY = {
@@ -14,6 +16,24 @@ HEAVY = {
     'SER': 'CB OG', 'THR': 'CB OG1 CG2', 'TRP': 'CB CG CD1 CD2 NE1 CE2 CE3 CZ2 CZ3 CH2',
     'TYR': 'CB CG CD1 CD2 CE1 CE2 CZ OH', 'VAL': 'CB CG1 CG2',
 }
+
+
+def inspect_sterics(path):
+    """Audit final serialized positions with the native radii and exclusions."""
+    root = Path(__file__).resolve().parents[1]
+    (root / 'tmp').mkdir(exist_ok=True)
+    with (root / 'tmp/reec-steric-audit.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        subprocess.run(['make', '-s', 'bin/reec_steric_audit'], cwd=root, check=True,
+                       stdout=subprocess.DEVNULL)
+        result = subprocess.run([str(root / 'bin/reec_steric_audit'), str(Path(path).resolve())],
+                                cwd=root, check=True, capture_output=True, text=True)
+    report = json.loads(result.stdout)
+    if (not isinstance(report.get('severe_clashes'), int)
+            or report['severe_clashes'] < 0
+            or not math.isfinite(report['max_overlap_angstrom'])):
+        raise ValueError('Invalid serialized steric audit result')
+    return report
 
 
 def sub(a, b):

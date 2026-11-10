@@ -78,3 +78,10 @@ pass, including docking-job alias preservation and replication accounting.
 The remote native build and native checks also pass. Docking and model
 quality results remain pending; passing regression checks is not evidence
 of an accuracy improvement.
+
+Structural follow-up completed (2026-11-09): REEC_WEIGHTING_HOLDOUTS.txt
+records matched legacy/weighted source builds against excluded experimental
+references for OR51E2 and TAAR1. All 24 candidates pass. Median pocket-heavy
+RMSD improves from 1.722 to 1.694 A and 4.047 to 3.152 A respectively;
+whole-CA and pocket-backbone medians also improve. This is supportive
+evidence from two retrospective controls, not broad accuracy validation.

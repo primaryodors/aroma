@@ -38,16 +38,17 @@ class BatchRecoveryTest(unittest.TestCase):
             self.assertFalse(report['refresh_accepted'])
             self.assertEqual(report['status'], 'fallback')
 
-    def test_batch_entry_point_recovers_after_candidate_rejection(self):
+    def test_batch_entry_point_preserves_existing_model_after_rejection(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output = root / 'active.pdb'
             output.write_bytes((ROOT / 'testdata/reec-small.pdb').read_bytes())
             with patch.object(dohm, '_main', side_effect=CandidateRejected('Test rejection')), \
                     patch.object(dohm, 'root_dir', str(root)):
-                dohm.main(['OR52E8', '--output', str(output)])
-            self.assertIn('ATOM  ', output.read_text())
-            self.assertEqual(json.loads(Path(str(output)+'.json').read_text())['status'], 'fallback')
+                with self.assertRaises(CandidateRejected):
+                    dohm.main(['OR52E8', '--output', str(output)])
+            self.assertEqual(output.read_bytes(), (ROOT / 'testdata/reec-small.pdb').read_bytes())
+            self.assertFalse(Path(str(output)+'.json').exists())
 
     def test_invalid_validated_source_is_repaired_before_publication(self):
         old_argv, old_cwd = sys.argv[:], Path.cwd()

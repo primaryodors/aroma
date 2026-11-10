@@ -139,6 +139,20 @@ models and is rejected for inactive repair.
 
 ## Independent publication audit
 
+Final workflow publication also audits severe overlaps on the serialized
+coordinates using the native radii and bonded exclusions. Any overlap above
+1.0 A rejects publication. Sidecars store `serialized_sterics` and the final
+`severe_clashes` count; `native_severe_clashes` retains the earlier count.
+Geometry and steric validation are separate checks.
+
+If shared postprocessing damages a REEC candidate, a bounded native cleanup
+tries up to three passes with source-conformation priors, the recorded
+contacts, and fixed ligand coordinates. It adds hydrogens and repeats both
+final checks without another unconstrained workflow transformation. Failed
+cleanup returns to generation retries. Exhausted retries preserve any prior
+model and sidecar; a labeled batch fallback is only available when no prior
+destination exists. Cleanup provenance appears in `postprocessing_repair`.
+
 REEC normalizes backbone bond and angle references and enforces named L alpha centers and the
 standard isoleucine/threonine beta centers. Peptide planarity has an explicit signed-volume term;
 publication also limits its maximum volume deviation to 0.25 cubic Angstroms. Disulfides have an

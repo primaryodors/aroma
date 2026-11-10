@@ -206,3 +206,69 @@ Outstanding decisions are whether to address the docking chemistry and
 primary-template fidelity findings before the next sampling investigation,
 and when to schedule a matched old/new weighting structural comparison.
 The earlier holdouts must not be presented as validation of weighting v1.
+
+Completed TAAR5 follow-up (2026-11-09)
+
+REEC_TAAR5_REVIEW.txt records the completed trimethylamine dock: nine
+accepted poses, first score -14.4 kcal/mol, preserved ligand geometry, and
+Asp114 contacts in all nine poses. The current receptor source passes
+independent geometry review and matches the dock's original heavy-atom
+coordinates. Four activity-curation checks pass. Trimethylamine replaces
+thyronamine as the designated top agonist; the latter is classified as an
+inverse agonist. This is a separate follow-up, not a rerun of the frozen
+panel or a paired annealing experiment. The historical 21/34 count remains
+unchanged pending a corrected matched panel.
+
+Completed OR52E8 follow-up (2026-11-09)
+
+REEC_OR52E8_REVIEW.txt records four accepted poses in the latest saved dock.
+Pose 3 has a geometrically qualifying Asn208 ND2 contact to the chemically
+identified 3-hydroxy oxygen O10: 2.603 A, hydrogen-acceptor 1.885 A, angle
+126.2 degrees. The top two poses lack that contact. Ligand bond lengths
+are preserved and current source geometry passes. Ranking is explicitly
+settled by the user: retain native score order, with no ranking changes or
+experiments pending. Review OR5V1 final template fidelity next.
+
+OR5V1 fidelity follow-up (2026-11-09)
+
+REEC_OR5V1_REVIEW.txt attributes protected-backbone displacement to native
+REEC output: 0.891144 A before final processing and 0.891160 A afterward.
+The largest regional RMSD is TMR1 at 1.482 A; local per-residue RMS values
+reach 3.158 A. All 210 protected residues have primary/donor weights 1/0,
+and none received clash-driven release. Soft anchors permit minimization
+movement under the documented initial-coordinate policy. Final geometry
+passes; selected annealing off/on models are identical. No settings or
+canonical coordinates changed. Seven baseline regression checks pass.
+
+Workflow follow-up (2026-11-09)
+
+REEC_WORKFLOW_GEOMETRY_REVIEW.txt records final-coordinate steric and
+disulfide findings. OR1A1's 82:O-85:ND1 distance changes from 2.6198 A in
+the native candidate to 2.0631 A in the final workflow model. OR1B1's
+archived 98-184 disulfide is already invalid before final IC. A current
+isolated PHEW replay fails, while a second run with intermediate saves
+passes; command-specific causation is not established. Eight workflow and
+recovery regression checks pass. No publication or optimizer change.
+The user accepts OR5V1's current behavior based on its docking results.
+
+Final-coordinate steric gate and cleanup (2026-11-09)
+
+Shared workflow acceptance now includes the native serialized-overlap audit
+and records final counts separately from native-generation counts. Bounded
+native cleanup preserves recorded contacts and disulfides before repeating
+both final checks. Existing destinations survive exhausted batch retries.
+Isolated replays of the current OR1B1 and archived OR1A1 pass on cleanup
+attempt 1 with zero severe clashes; original source files remain unchanged.
+Artifacts: tmp/final-steric-validation-2026-11-09/. This does not replace
+the matched weighting structural evaluation or the corrected docking panel.
+
+Matched weighting holdouts completed (2026-11-09)
+
+REEC_WEIGHTING_HOLDOUTS.txt records a controlled pre/post weighting-source
+comparison with identical current libraries, frozen inputs, two seeds,
+three candidates per seed, annealing off, and excluded reference coordinates.
+All 24 candidates pass geometry and final steric acceptance. Median pocket
+heavy-atom RMSD improves from 1.7219 to 1.6943 A for OR51E2 and 4.0473 to
+3.1517 A for TAAR1; whole-CA and pocket-backbone medians also improve.
+Canonical models remain unchanged. Retain weighting v1 based on these
+limited controls. The corrected ligand panel remains the next baseline task.

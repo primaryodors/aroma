@@ -287,11 +287,17 @@ test/metal_fit_test: src/test/metal_fit_test.cpp $(OBJS)
 test/reec_test: src/test/reec_test.cpp src/reec.cpp $(OBJS)
 	$(CPL) src/test/reec_test.cpp $(OBJS) -o $@ $(CFLAGS)
 
-check-reec: $(BIN)/reec test/reec_test $(BIN)/phew $(BIN)/ic
+$(BIN)/reec_steric_audit: src/test/reec_steric_audit.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_steric_audit.cpp $(OBJS) -o $@ $(CFLAGS)
+
+check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test $(BIN)/phew $(BIN)/ic
 	./test/reec_test
 	python3 test/reec_cli_test.py
 	python3 test/reec_backend_test.py
-	python3 test/hm_workflow_test.py
+	python3 test/final_sterics_test.py
+	python3 test/reec_workflow_baseline_test.py
+	python3 test/dohm_recovery_test.py
+	python3 test/fixfail_reshape_test.py
 
 .PHONY: check-metal
 check-metal: $(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/cavity_search test/metal_fit_test test/result_state_test test/metal_scoring_test
