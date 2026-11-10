@@ -51,6 +51,8 @@ Every run writes a JSON report (default `OUTPUT.pdb.json`, or `--report PATH`). 
 mandatory contact violations, covalent length deviations, geometry-distance deviations, chiral
 inversions, and severe nonbonded overlaps. Exit 0 publishes the PDB by atomic rename; exit 2 writes
 a failed report and retains any previous PDB; exit 1 indicates input, library, or I/O errors.
+With `--nofail` (`-N`), exit 2 also exports the least-bad candidate while its report retains
+`valid: false`. The default native behavior still preserves the previous PDB on rejection.
 The publication limits are 0.08 A maximum bond deviation, 0.18 A maximum geometry-distance deviation,
 zero inverted reference chiral centers, zero overlaps above 1.0 A, and mandatory bounds within 0.05 A.
 The overlap measure uses project van der Waals radii and is not the MolProbity clashscore.
@@ -61,6 +63,17 @@ replace those assessments.
 
 ## Python workflows
 
+BW lookups account for receptor insertion/deletion annotations. Missing BW positions resolve to
+zero rather than an adjacent residue. Python lookup strings and native residue placeholders
+address inserted residues as `7.36+1`, `7.36+2`, and so on. PDB metadata stores event counts as
+`REMARK 800 SITE BW_INSERTION 7.36 2` or
+`REMARK 800 SITE BW_DELETION 5.49 1`; native lookup, reverse lookup, and residue placeholders
+use these records. Docking and modeling entry points refresh legacy PDB numbering annotations
+without changing coordinates. Source fingerprints are refreshed only for metadata-only edits.
+
+Run the numbering checks with `make test/bw_indel_test`, followed by
+`python3 -m unittest discover -s test -p 'bw_numbering_test.py'`.
+
 `dohm.py` defaults to REEC. Select MODELLER explicitly with `--backend modeller`,
 or set `AROMA_HM_BACKEND=modeller`. The explicit command-line option takes precedence
 over the environment. `fixfail.py` retains its existing backend default.
@@ -69,6 +82,16 @@ OR5K receptors use `pdbs/_validated/OR5K1.active.pdb` as their default template,
 with explicit GPCR-aligned template and target rows. This also applies when selecting
 MODELLER. In the REEC workflow, an explicit `--template` overrides the default.
 Other receptor subfamilies retain composite template selection.
+
+Batch refreshes through `dohm.py` try three generation attempts by default. Exhausted geometry
+retries emit a protein model labeled `DOHM FALLBACK`, with `status: fallback` and
+`refresh_accepted: false` in its JSON sidecar. A rejected model retains `valid: false`.
+`--max-attempts 0` explicitly selects unbounded retries. `fixfail.py` retains its rejection behavior.
+
+Validated sources receive a whole-protein geometry check. A failed source or postprocessing result
+triggers REEC repair with source-conformation priors. The validated source is replaced only after
+independent geometry review passes. Geometry-repaired sources carry a content hash and can be
+copied on later calls without repeating radial repointing or unconstrained IC minimization.
 
 ```sh
 python3 hm/dohm.py OR1A1 --backend reec --output tmp/OR1A1.reec.pdb

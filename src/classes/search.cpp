@@ -1531,6 +1531,73 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
     putitback.restore_state(ligand);
 }
 
+static bool align_primary_metal(Molecule* ligand,BestBindingResult* bbr,float amount)
+{
+    Atom* ion=bbr->pri_res->coordmtl;
+    Atom* donor=bbr->pri_tgt->single_atom;
+    if(!ion || !donor || !bbr->pri_tgt->can_coord_metals() || ion->vanished)return false;
+    float distance;
+    try{distance=InteratomicForce::coordination_distance(donor,ion);}
+    catch(const std::invalid_argument&){return false;}
+    if(distance<=0)return false;
+    if(amount<.9999)
+    {
+        Vector radial=donor->loc.subtract(ion->loc);
+        if(radial.r<.001)return false;
+        radial.r=distance;
+        Point shift=ion->loc.add(Point(radial)).subtract(donor->loc);
+        shift.multiply(amount);
+        ligand->move(Vector(shift));
+        return true;
+    }
+    Atom* atoms[]={ion,nullptr};
+    Molecule metal("primary metal",atoms);
+    Vector* frame=ion->get_geometry_aligned_to_bonds();
+    std::vector<Point> directions;
+    for(int i=0;i<ion->get_geometry();++i)
+    {
+        Bond* bond=ion->get_bond_by_idx(i);
+        if(bond && bond->atom2)continue;
+        directions.emplace_back(frame[i]);
+    }
+    Pose initial(ligand),best(ligand);
+    float best_energy=INFINITY;
+    Point box=ligand->get_bounding_box().size();
+    float radius=std::max(box.x,std::max(box.y,box.z))+4;
+    AminoAcid* residues[SPHREACH_MAX+4];
+    int count=bbr->protein->get_residues_can_clash_ligand(residues,ligand,ion->loc,Point(2*radius,2*radius,2*radius));
+    residues[count]=nullptr;
+    for(Point direction:directions)
+    {
+        direction.scale(distance);
+        Point target=ion->loc.add(direction);
+        for(int slot=0;slot<donor->get_geometry();++slot)
+        {
+            Bond* bond=donor->get_bond_by_idx(slot);
+            if(bond && bond->atom2)continue;
+            initial.restore_state(ligand);
+            ligand->move(Vector(target.subtract(donor->loc)));
+            Point vertex=target.add(Point(donor->get_geometry_aligned_to_bonds()[slot]));
+            ligand->rotate(align_points_3d(vertex,ion->loc,target),target);
+            LocatedVector axis=Vector(direction);axis.origin=target;
+            for(int spin=0;spin<8;++spin)
+            {
+                float energy=ligand->get_intermol_clashes((Molecule**)residues)
+                            +ligand->get_intermol_binding(&metal,false).summed();
+                if(std::isfinite(energy) && energy<best_energy)
+                {
+                    best_energy=energy;
+                    best.copy_state(ligand);
+                }
+                ligand->rotate(axis,M_PI/4);
+            }
+        }
+    }
+    if(std::isfinite(best_energy)){best.restore_state(ligand);return true;}
+    initial.restore_state(ligand);
+    return false;
+}
+
 void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt, bool nooil)
 {
     if (!bbr || !bbr->protein || !bbr->pri_res || !bbr->pri_tgt) return;
@@ -1546,6 +1613,9 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         if (frand(0,1) < bb_stochastic/3) bb[i]->rotate(frand(-hexagonal/2, hexagonal/2));
     }
     #endif
+
+    // Use the ion's open coordination slot and the ligand donor's free geometry.
+    if(amt>0 && align_primary_metal(ligand,bbr,amt))return;
 
     if (amt >= 0.9999) ligand->recenter(pocketcen);
     else

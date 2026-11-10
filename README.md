@@ -149,8 +149,10 @@ A tool for finding possible duplicate entries in the odorants database.
 `data/sequence_update.php`
 Updates the receptors database with information from the data/sequences_aligned.txt file. WARNING: This script WILL OVERWRITE data/receptor.json.
 
-`hm/dohm.php`
+`hm/dohm.py`
 The homology modeling utility. Uses REEC by default; select MODELLER with `--backend modeller`. OR5K receptors use the tracked `pdbs/_validated/OR5K1.active.pdb` template. WARNING: This script WILL OVERWRITE receptor PDB models.
+
+Metal placement remains controlled by ligand odorophore rules during docking. For a geometry check, `python3 hm/dohm.py OR2T11 --coordinate-metals --output tmp/OR2T11.copper-check.pdb` explicitly fits the configured metal site after final coordinate processing. This option defaults off. The diagnostic PDB and its sidecar record the fitted donor geometry.
 
 `hm/fixfail.py`
 A script for recreating new active-state homology models based off of failed agonist docks. WARNING: This script WILL OVERWRITE existing models.

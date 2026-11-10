@@ -176,6 +176,7 @@ for rcpid in data.protutils.prots.keys():
 
         for suff in runsuff:
             pdbfn = f"{pdbdir}/{rcpid}.{suff}.pdb"
+            data.protutils.ensure_bw_metadata(rcpid, pdbfn)
             conffn = f"{rcpid}~{lignu}.{suff}.config"
             if not os.path.exists("out"): os.mkdir("out")
             if not os.path.exists("out/" + fam): os.mkdir("out/" + fam)
@@ -314,7 +315,7 @@ for rcpid in data.protutils.prots.keys():
                         newcfg.append("VESTIBULE " + vb)
                         print("VESTIBULE " + vb)
                 if "mcoord" in pocket:
-                    if isinstance(pocket["mcoord"], Iterable):
+                    if isinstance(pocket["mcoord"], Iterable) and not isinstance(pocket["mcoord"], str):
                         for mcoord in pocket["mcoord"]:
                             if mcoord[0:1] == '#': continue
                             print(mcoord)

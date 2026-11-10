@@ -22,7 +22,13 @@ backbone sampling and broader helix investigations.
 Status: in progress. The isolated native-engine harness is hm/reec_baseline.py;
 REEC_BASELINE.txt records its protocol, results, limitations, and outstanding
 workflow and accuracy measurements. REEC_ANNEALING_COMPARISON.txt records the
-expanded ten-receptor off/on comparison. This stage is not yet complete.
+expanded ten-receptor off/on comparison. Offline docking review is complete;
+REEC_DOCKING_REVIEW.txt records the results and quality findings. The current
+panel has 21/34 operational passes. Follow-up decisions concern ligand
+geometry, metal-site preparation, contact ranking, and final OR5V1 template
+fidelity. New weighting has not had a matched held-out structural evaluation;
+the older holdouts predate that change. No further experiments were launched
+during the offline review.
 
 Current policy: annealing is optional and defaults off in REEC, dohm, and
 fixfail. Existing explicit controls remain available.

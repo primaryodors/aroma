@@ -48,6 +48,7 @@ void DockResult::capture_coordinates(Protein* prot, Molecule* lig, Molecule** wa
         }
         for (int i=0; i<_MAX_MCOORDS; i++)
             save_metal(prot->_mcoords[i].mtl);
+        for(int i=0;i<prot->get_metals_count();++i)save_metal(prot->get_metal(i));
     }
     save(lig);
     if (lig) ligpos.copy_state(lig);
@@ -100,7 +101,8 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     int end1 = SPHREACH_MAX+4;
     mprot = protein;
     mlig = ligand;
-    Molecule* met = protein->metals_as_molecule();
+    std::unique_ptr<Molecule> metal_view(protein->metals_as_molecule());
+    Molecule* met = metal_view.get();
 
     char metrics[end1][20];
     float lmkJmol[end1];
@@ -506,38 +508,6 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         btots += lb.summed() * reaches_spheroid[i]->estimated_stability((Molecule**)reaches_spheroid);
         // cout << *(reaches_spheroid[i]) << " adds " << lb << " to btot, making " << btot << endl;
 
-        if (reaches_spheroid[i]->coordmtl && reaches_spheroid[i]->coordmtl->residue == reaches_spheroid[i]->get_residue_no())
-        {
-            mtlmetric = nmetrics;
-            int mi;
-
-            for (mi=0; mi < nmetrics; mi++)
-            {
-                if (!strcmp(metrics[mi], "Metals"))
-                {
-                    mtlmetric = mi;
-                    break;
-                }
-            }
-
-            strcpy(metrics[mtlmetric], "Metals");
-            lmba1n[mtlmetric] = nullptr;
-            lmba2n[mtlmetric] = nullptr;
-            lmca1n[mtlmetric] = nullptr;
-            lmca2n[mtlmetric] = nullptr;
-            float lmb = (mtlmetric >= nmetrics) ? 0 : lmkJmol[mtlmetric];
-
-            Molecule lm("MTL");
-            lm.add_existing_atom(reaches_spheroid[i]->coordmtl);
-            float lmf = ligand->get_intermol_binding(&lm).summed();
-            btot += lmf;
-            btots += lmf;
-            lmb += lmf;
-
-            lmkJmol[mtlmetric] = lmb;
-            if (mtlmetric >= nmetrics) nmetrics++;
-        }
-
         float lf = ligand->get_intermol_polar_sat(reaches_spheroid[i]);
         pstot -= lf;
 
@@ -567,6 +537,23 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
                 }
             }
         }
+    }
+
+    // Score the owned ion collection once, independently of the donor sphere.
+    if(met && met->get_atom_count())
+    {
+        mtlmetric=nmetrics++;
+        strcpy(metrics[mtlmetric],"Metals");
+        compute_interall=true;
+        float energy=ligand->get_intermol_binding(met,false).summed();
+        compute_interall=false;
+        lmkJmol[mtlmetric]=energy;
+        lmstab[mtlmetric]=1;
+        lis_mcr[mtlmetric]=true;
+        lmba1n[mtlmetric]=lmba2n[mtlmetric]=nullptr;
+        lmca1n[mtlmetric]=lmca2n[mtlmetric]=nullptr;
+        btot+=energy;
+        btots+=energy;
     }
 
     #if _dbg_pocket_DeltaG_solv
@@ -722,6 +709,8 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     // Prepare a partial PDB of the ligand atoms and all involved residue sidechains.
     n = ligand->get_atom_count();
     int offset = n;
+    int last_serial=9000+n;
+    std::vector<Atom*> printed_metals;
     for (l=0; l<n; l++)
     {
         Atom* a = ligand->get_atom(l);
@@ -748,6 +737,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
                 if (!a) continue;
                 a->residue = pose;
                 a->stream_pdb_line(lpdbdat, 9000+offset+l+3*k, true);
+                last_serial=std::max(last_serial,9000+offset+l+3*k);
             }
         }
     }
@@ -775,22 +765,19 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         {
             Atom* a = laa->get_atom(l);
             if (a->mol == laa) a->residue = laa->get_residue_no();
-            a->stream_pdb_line(
-                lpdbdat,
-                laa->atno_offset+l
-            );
+            a->stream_pdb_line(lpdbdat,laa->atno_offset+l);
+            last_serial=std::max(last_serial,laa->atno_offset+l);
         }
 
-        if (laa->coordmtl && laa->coordmtl->residue == laa->get_residue_no())
-        {
-            if (0)
-                cout << laa->get_name() << " is coordinated to " << laa->coordmtl->name
-                    << (laa->coordmtl->vanished ? " (vanished)" : "")
-                    << " " << laa->coordmtl->loc
-                    << endl << endl << flush;
-            laa->coordmtl->stream_pdb_line(lpdbdat, laa->coordmtl->residue);
-        }
+        if(laa->coordmtl && std::find(printed_metals.begin(),printed_metals.end(),laa->coordmtl)==printed_metals.end())
+            printed_metals.push_back(laa->coordmtl);
     }
+    for(int i=0;i<protein->get_metals_count();++i)
+    {
+        Atom* metal=protein->get_metal(i);
+        if(std::find(printed_metals.begin(),printed_metals.end(),metal)==printed_metals.end())printed_metals.push_back(metal);
+    }
+    for(Atom* metal:printed_metals)metal->stream_pdb_line(lpdbdat,++last_serial,true);
 
     this->pdbdat = lpdbdat.str();
 

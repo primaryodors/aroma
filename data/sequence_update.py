@@ -213,6 +213,8 @@ for i in range(len(lines)):
             for region in rcpbw:
                 bw50 = rcpbw[region]
                 remarks.append(f"REMARK 800 SITE BW {region}.50 {bw50}")
+            if rcpid in data.protutils.prots:
+                remarks.extend(data.protutils.bw_indel_metadata(rcpid))
 
             for bsr in rcpbs:
                 remarks.append(f"REMARK 800 SITE LIGAND_BINDING {bsr}")

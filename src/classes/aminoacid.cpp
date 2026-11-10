@@ -1071,7 +1071,7 @@ std::string AminoAcid::printable()
     return s.str();
 }
 
-void AminoAcid::save_pdb(FILE* os, int atomno_offset)
+void AminoAcid::save_pdb(FILE* os, int atomno_offset, bool include_coordinated_metal)
 {
     int i, j, n;
     nconects = 0;
@@ -1101,9 +1101,9 @@ void AminoAcid::save_pdb(FILE* os, int atomno_offset)
         }
     }
 
-    if (coordmtl && coordmtl->residue == residue_no)
+    if (include_coordinated_metal && coordmtl && coordmtl->residue == residue_no)
     {
-        coordmtl->save_pdb_line(os, i+1+atomno_offset);
+        coordmtl->save_pdb_line(os, i+1+atomno_offset, true);
     }
 }
 
@@ -1132,7 +1132,15 @@ int AminoAcid::from_pdb(FILE* is, int rno)
             && buffer[4] == 'T'
             && buffer[5] == 'M'
             )
+        {
+            fseek(is,lasttell,SEEK_SET);
             goto _return_added;
+        }
+        if(!strncmp(buffer,"ENDMDL",6))
+        {
+            fseek(is,lasttell,SEEK_SET);
+            goto _return_added;
+        }
         if (buffer[0] == 'A' &&
             buffer[1] == 'T' &&
             buffer[2] == 'O' &&

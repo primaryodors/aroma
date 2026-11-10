@@ -174,3 +174,35 @@ the deliberate OR5V1 primary-template exception. The refreshed workflow
 passes compatible experimental donors separately rather than hiding
 most of them inside a single synthetic template. Old and new optimizer
 energies are different objectives and must not be compared directly.
+
+Offline review completed (2026-11-09)
+
+REEC_DOCKING_REVIEW.txt records the full local review. Numeric results and
+per-case tables are in tmp/reec-offline-review-2026-11-09/. No further docks
+or model generations were run. The 66 native jobs represent 94 logical
+conditions; 64 exit zero and two time out. There are 320 accepted poses and
+seven saved diagnostic pose files from zero-pose failures. The operational
+full-panel result is 21/34; successful execution alone is not that criterion.
+
+Six receptors have identical off/on selected molecular models. OR51E1 and
+OR52E8 have selected score/pose-count gains; OR2AG1 is mixed and TAAR5 loses
+accepted thyronamine poses. Preserve optional annealing with default off.
+New chemistry findings temper interpretation: no saved OR2T11 pose passes
+the recorded two-cysteine copper window; OR52E8 top-ranked on-model poses
+miss the requested Asn208 contact; all ten N-methylpiperidine poses have a
+compressed single ring bond. OR5V1 protected-backbone RMSD to 9lkb is 0.891 A;
+initial primary-template preservation does not ensure final rigidity.
+
+Full-workflow controls also completed before the weighting change:
+OR1A1 publishes after retry but has one borderline post-processing steric
+clash; OR51E1 mixed validated-template generation has zero final clashes;
+OR51E2 preserves the 303-residue fragment and absent OXT. OR1B1 repair seeds
+both fail final disulfide review, with rollback preserving previous files.
+These failures are measured outcomes, not silent acceptance or lost outputs.
+The protected canonical-model hashes remain unchanged. All 66 Python checks
+pass, including diagnostic-score censoring and molecular atom identification.
+
+Outstanding decisions are whether to address the docking chemistry and
+primary-template fidelity findings before the next sampling investigation,
+and when to schedule a matched old/new weighting structural comparison.
+The earlier holdouts must not be presented as validation of weighting v1.

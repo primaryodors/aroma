@@ -7,6 +7,10 @@ import os
 import os.path
 import math
 import sys
+from collections import Counter
+from pathlib import Path
+import hashlib
+import tempfile
 from natsort import natsorted
 import data.globals
 import data.geometry
@@ -43,12 +47,13 @@ def bw_insdel(protid, tmrno, offset):
     global prots
     result = 0
     prot = prots[protid]
+    tmrno, offset = int(tmrno), int(offset)
 
     if 'deletion' in prot:
         for dltn in prot['deletion']:
             pettia = dltn.split('.')
-            dtmr = pettia[0]
-            doff = pettia[1]
+            dtmr = int(pettia[0])
+            doff = int(pettia[1])
 
             if dtmr == tmrno:
                 if doff <  50 and doff >= offset: result += 1
@@ -57,8 +62,8 @@ def bw_insdel(protid, tmrno, offset):
     if 'insertion' in prot:
         for insn in prot['insertion']:
             pettia = insn.split('.')
-            dtmr = pettia[0]
-            doff = pettia[1]
+            dtmr = int(pettia[0])
+            doff = int(pettia[1])
 
             if dtmr == tmrno:
                 if doff <  50 and doff >= offset: result -= 1
@@ -69,24 +74,79 @@ def bw_insdel(protid, tmrno, offset):
 def resno_from_bw(protid, bw):
     global prots
     if not prots.get(protid): raise Exception("Protein not found: "+protid)
-    bwraw = re.sub('[A-Z]', '', bw)
-    aminos = bw[:len(bw)-len(bwraw)]
-    bw = bwraw
-
-    pieces = bwraw.split('.',2)
-    if len(pieces) < 2: return int(bwraw)
-    tmrno = int(pieces[0])
-    offset = int(pieces[1])
+    match = re.fullmatch(r'([A-Z]*)([0-9]+)(?:\.([0-9]+)(?:\+([0-9]+))?)?', str(bw))
+    if not match:
+        raise ValueError('Invalid BW residue reference')
+    aminos, helix, position, ordinal = match.groups()
+    if position is None:
+        return int(helix)
+    tmrno, offset, ordinal = int(helix), int(position), int(ordinal or 0)
+    prot = prots[protid]
+    deleted = {tuple(map(int, value.split('.'))) for value in prot.get('deletion', [])}
+    is_deleted = (tmrno, offset) in deleted
+    if is_deleted and not ordinal:
+        return 0
+    insertions = sum(tuple(map(int, value.split('.'))) == (tmrno, offset)
+                     for value in prot.get('insertion', []))
+    if ordinal > insertions:
+        return 0
     insdel = bw_insdel(protid, tmrno, offset)
 
     res50 = int(prots[protid]["bw"][str(tmrno)+".50"])
-    result = res50 + offset - 50 + insdel
+    result = res50 + offset - 50 + insdel + ordinal - (1 if is_deleted else 0)
+    if result < 1 or result > len(prots[protid]['sequence']):
+        return 0
 
     if aminos:
         c = prots[protid]['sequence'][result-1]
         if not c in aminos: return 0
 
     return result
+
+
+def bw_indel_metadata(protid):
+    lines = []
+    for field, label in (('deletion', 'BW_DELETION'), ('insertion', 'BW_INSERTION')):
+        counts = Counter(tuple(map(int, value.split('.'))) for value in prots[protid].get(field, []))
+        lines.extend(f'REMARK 800 SITE {label} {helix}.{position} {count}'
+                     for (helix, position), count in sorted(counts.items()))
+    return lines
+
+
+def ensure_bw_metadata(protid, path):
+    """Refresh numbering annotations only; preserve all coordinates and model status."""
+    path = Path(path)
+    if not path.is_file():
+        return False
+    before = path.read_bytes()
+    text = before.decode()
+    lines = [line for line in text.splitlines()
+             if not line.startswith(('REMARK 800 SITE BW_DELETION ', 'REMARK 800 SITE BW_INSERTION '))]
+    annotations = bw_indel_metadata(protid)
+    if not annotations and len(lines) == len(text.splitlines()):
+        return False
+    after = ('\n'.join(annotations+lines)+'\n').encode()
+    if after == before:
+        return False
+    status_path = Path(str(path)+'.json')
+    status = None
+    if status_path.is_file():
+        try:
+            status = json.loads(status_path.read_text())
+        except ValueError:
+            pass
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(after)
+    try:
+        os.chmod(temporary, path.stat().st_mode & 0o777)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    if status and status.get('validated_sha256') == hashlib.sha256(before).hexdigest():
+        status['validated_sha256'] = hashlib.sha256(after).hexdigest()
+        status_path.write_text(json.dumps(status, indent=2)+'\n')
+    return True
 
 def aalet_at_resno(protid, resno):
     global prots

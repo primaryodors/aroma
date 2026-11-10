@@ -38,7 +38,11 @@ int interpret_resno(const char* field)
             throw 0xbad12e5;
         }
         if (_50 < 1) return 0;
-        else retval = _50 + w - 50;
+        else
+        {
+            const char* plus = strchr(dot, '+');
+            retval = protein->resolve_bw_resno(b, w, plus ? atoi(plus+1) : 0);
+        }
     }
     else retval = atoi(offset);
 
@@ -177,6 +181,11 @@ int main(int argc, char** argv)
                 return -1;
             }
 
+            if(i+4>=argc)
+            {
+                cerr<<"Metal coordination requires an element, charge, and at least two residues."<<endl;
+                return -1;
+            }
             i++;
             char* esym = argv[i];
             i++;
@@ -193,25 +202,32 @@ int main(int argc, char** argv)
                     break;
                 }
                 int resno = interpret_resno(argv[i]);
-                if (!resno) continue;
-                AminoAcid* aa = p.get_residue(resno);
-                if (!aa) continue;
-                Atom* a = aa->get_one_most_bindable(mcoord);
-                if (!a) continue;
+                AminoAcid* aa = resno?p.get_residue(resno):nullptr;
+                Atom* a = aa?aa->get_one_most_bindable(mcoord):nullptr;
+                if(!a)
+                {
+                    cerr<<"Metal coordination residue is absent or has no donor: "<<argv[i]<<endl;
+                    return -1;
+                }
+                if(mcrq>=15)
+                {
+                    cerr<<"Maximum number of metal coordination residues exceeded."<<endl;
+                    return -1;
+                }
                 mcraloc[mcrq] = a->loc;
                 mcr[mcrq++] = resno;
                 i++;
-                if (mcrq > 16)
-                {
-                    cout << "Maximum number of metal coordination residues exceeded." << endl;
-                    return -1;
-                }
             }
 
+            if(mcrq<2)
+            {
+                cerr<<"Metal coordination requires at least two residues."<<endl;
+                return -1;
+            }
             if (mcrq)
             {
                 Point mcen = average_of_points(mcraloc, mcrq);
-                cout << "Performing metal coordination (3 residues)..." << endl << flush;
+                cout << "Performing metal coordination ("<<mcrq<<" residues)..." << endl << flush;
                 MCoord mtlcoords[16];
                 int nmtlcoords = 0;
                 MCoord mc;
@@ -226,10 +242,6 @@ int main(int argc, char** argv)
                     ResiduePlaceholder rp;
                     rp.resno = mcr[l];
                     mc.coordres[mc.ncoordres++] = rp;
-                    AminoAcid* aa = p.get_residue(rp.resno);
-                    Atom* a = aa->get_one_most_bindable(mcoord);
-                    if (!aa->mclashables) p.set_clashables(aa->get_residue_no());
-                    aa->conform_atom_to_location(a->name, mcen);
                 }
 
                 mtlcoords[nmtlcoords++] = mc;

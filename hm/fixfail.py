@@ -14,6 +14,28 @@ sys.path.insert(0, root_dir)
 from modeling_backend import options as backend_options, api as backend_api, prepare, construct, forwarded_options, publication_guard, finalize
 from reec_backend import receptor, directory, CandidateRejected
 
+
+def repair_reshape_script(protid, mode, skip=False):
+    if skip:
+        return None
+    state = 'i' if mode == 'inactive' else 'a'
+    if protid.startswith('OR'):
+        family = int(re.match(r'OR([0-9]+)', protid).group(1))
+        stem = 'OR_ClassI' if family >= 50 else 'OR_ClassII'
+    elif protid.startswith('TAAR'):
+        stem = 'TAAR'
+    elif protid.startswith('VN1R'):
+        stem = 'VN1R'
+    else:
+        stem = 'GPCR'
+    script = Path(root_dir) / 'data' / f'{stem}_{state}.ic'
+    if script.is_file():
+        return script
+    print(f'No reshape script for {protid} ({mode}); repairing the supplied conformation directly.',
+          flush=True)
+    return None
+
+
 def main(argv=None):
     options = backend_options(sys.argv[1:] if argv is None else argv, repair=True)
     prepare(options)
@@ -35,6 +57,8 @@ def main(argv=None):
     protid, mode = receptor(options.receptor)
     fam = data.protutils.family_from_protid(protid)
     origpdb = f"pdbs/{fam}/{protid}.{mode}.pdb"
+    data.protutils.ensure_bw_metadata(protid, Path(root_dir) / origpdb)
+    data.protutils.ensure_bw_metadata(protid, Path(root_dir) / f'pdbs/{fam}/{protid}.inactive.pdb')
     output_pdb = options.output or Path(root_dir) / origpdb
     output_pdb.parent.mkdir(parents=True, exist_ok=True)
     actions = {'reset', 'fit', 'predock', 'loop', 'dock'}
@@ -204,26 +228,7 @@ def main(argv=None):
         if (mode=="inactive"):  tplpdb = "hm/"+protid+"i_tpl.pdb"
         else:                   tplpdb = "hm/"+protid+"_tpl.pdb"
 
-        rshpmft = "GPCR.ic"          # fake filename that doesn't exist so we can error out later
-
-        if protid[0:2] == "OR":
-            if int(re.sub(r"[^0-9]", "", protid[2:4])) >= 50:
-                if (mode=="inactive"):      rshpmft = "OR_ClassI_i.ic"    # mota areberetus iagiion
-                else:                       rshpmft = "OR_ClassI_a.ic"
-            else:
-                if (mode=="inactive"):      rshpmft = "OR_ClassII_i.ic"
-                else:                       rshpmft = "OR_ClassII_a.ic"
-        elif protid[0:2] == "TAAR":
-            if (mode=="inactive"):          rshpmft = "TAAR_i.ic"
-            else:                           rshpmft = "TAAR_a.ic"
-        elif protid[0:2] == "VN1R":
-            if (mode=="inactive"):          rshpmft = "VN1R_i.ic"
-            else:                           rshpmft = "VN1R_a.ic"          # future expansion
-
-        rshpmfn = "data/" + rshpmft
-        if not options.skip_reshape and not os.path.exists(rshpmfn):
-            print("No reshape file exists for this receptor.")
-            exit()
+        rshpmfn = repair_reshape_script(protid, mode, options.skip_reshape)
 
         if len(ligcontacts):
             cmd = ["bin/poslig", inppdb, tplpdb]
@@ -235,8 +240,8 @@ def main(argv=None):
         else:
             shutil.copyfile(inppdb, tplpdb)
 
-        if not options.skip_reshape:
-            cmd = ["bin/ic", tplpdb, rshpmfn, "save"]
+        if rshpmfn is not None:
+            cmd = ["bin/ic", tplpdb, str(rshpmfn), "save"]
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)

@@ -239,7 +239,7 @@ foreach ($prots as $protid => $p)
         else $dates[$rowid] = max($dates[$rowid], $fmt);
 
         set_time_limit(600);
-        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 4 && $fmt < $cachemt)
+        if (isset($cached[$fname]) && ($cached[$fname]['metrics_version'] ?? 0) === 5 && $fmt < $cachemt)
         {
             extract($cached[$fname]);
             // echo "<p>$protid $odor $mode<br><pre>".print_r($cached[$fname], true)."</pre></p>";
@@ -251,7 +251,10 @@ foreach ($prots as $protid => $p)
             echo "<!-- Reading $fpn ... -->\n";
             chdir(__DIR__);
             $c = file_get_contents($fpn);
-            if (strlen($c) < 500)
+            $is_fallback = preg_match('/(?:^|\n)0 pose\(s\) found[.]/', $c)
+                || strpos($c, 'NOFAIL:') !== false
+                || strpos($c, 'You may be able to obtain a successful dock by trying again after running the following command:') !== false;
+            if (strlen($c) < 500 && !$is_fallback)
             {
                 $incplt[$rowid] = true;
                 continue;
@@ -263,9 +266,6 @@ foreach ($prots as $protid => $p)
             $occl = 0;
             $icd = 0;
             $tds = 0;
-            $is_fallback = preg_match('/(?:^|\n)0 pose\(s\) found[.]/', $c)
-                || strpos($c, 'NOFAIL:') !== false
-                || strpos($c, 'You may be able to obtain a successful dock by trying again after running the following command:') !== false;
             foreach ($lines as $ln) 
             {
                 if (substr($ln, 0, 6) == "Pose: ")
@@ -356,7 +356,7 @@ foreach ($prots as $protid => $p)
 
             $cached[$fname] =
             [
-                "metrics_version" => 4,
+                "metrics_version" => 5,
                 "benerg" => $benerg,
                 "lsfe" => $lsfe,
                 "lsbe" => $lsbe,

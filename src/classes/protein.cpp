@@ -9,16 +9,31 @@
 #include "spatialgrid.h"
 #include <limits>
 #include <unordered_set>
+#include <set>
+#include <algorithm>
+#include <stdexcept>
+#include <functional>
+#include <memory>
+#include <sstream>
 
 #define _DBG_REACHLIG true
 
 using namespace std;
+
+static int corresponding_bw_residue(Protein* source, Protein* target, int helix, int residue)
+{
+    BallesterosWeinstein site=source->get_bw_from_resno(residue);
+    return target->resolve_bw_resno(helix,site.member_no,site.insertion_no);
+}
 
 float *g_rgnxform_r = nullptr, *g_rgnxform_theta = nullptr, *g_rgnxform_y = nullptr;
 float *g_rgnrot_alpha = nullptr, *g_rgnrot_w = nullptr, *g_rgnrot_u = nullptr;
 
 void ResiduePlaceholder::set(const char* str)
 {
+    resno = hxno = bwpos = 0;
+    bw.clear();
+    allowed_aas.clear();
     char buffer[256];
     char* lstr = buffer;
     strcpy(buffer, str);
@@ -68,9 +83,13 @@ void ResiduePlaceholder::resolve_resno(Protein* prot)
         }
         dot++;
         bwpos = atoi(dot);
-        if (!strcmp(dot, "s")) bwpos = prot->get_region_start(hxno) + 50 - bw50;
-        if (!strcmp(dot, "e")) bwpos = prot->get_region_end(hxno) + 50 - bw50;
-        resno = bw50 + bwpos - 50;
+        if (!strcmp(dot, "s")) resno = prot->get_region_start(hxno);
+        else if (!strcmp(dot, "e")) resno = prot->get_region_end(hxno);
+        else
+        {
+            const char* plus = strchr(dot, '+');
+            resno = prot->resolve_bw_resno(hxno, bwpos, plus ? atoi(plus+1) : 0);
+        }
         // cout << dot << " " << bwpos << " " << resno << endl;
     }
 
@@ -344,14 +363,18 @@ bool Protein::add_residue(const int resno, const char aaletter)
 
 void BallesterosWeinstein::from_string(const char* inpstr)
 {
+    member_no = insertion_no = 0;
     helix_no = atoi(inpstr);
     const char* dot = strchr(inpstr, '.');
     if (dot) member_no = atoi(dot+1);
+    const char* plus = dot ? strchr(dot, '+') : nullptr;
+    if (plus) insertion_no = atoi(plus+1);
 }
 
 std::string BallesterosWeinstein::to_string()
 {
-    return std::to_string(helix_no) + std::string(".") + std::to_string(member_no);
+    return std::to_string(helix_no) + std::string(".") + std::to_string(member_no)
+        + (insertion_no ? "+"+std::to_string(insertion_no) : "");
 }
 
 AminoAcid* Protein::get_residue(int resno)
@@ -370,13 +393,13 @@ AminoAcid* Protein::get_residue(int resno)
 
 bool Protein::has_bwnos()
 {
-    if (Ballesteros_Weinstein[1]) return true;
+    for (int i=1;i<79;++i) if (Ballesteros_Weinstein[i]>0) return true;
     else return false;
 }
 
 AminoAcid* Protein::get_residue(BallesterosWeinstein bw)
 {
-    return get_residue_bw(bw.helix_no, bw.member_no);
+    return get_residue(resolve_bw_resno(bw.helix_no, bw.member_no, bw.insertion_no));
 }
 
 AminoAcid* Protein::get_residue_bw(const char* bwno)
@@ -391,7 +414,8 @@ AminoAcid* Protein::get_residue_bw(const char* bwno)
     if (!dot) return get_residue(atoi(bwno));
     *dot = 0;
 
-    AminoAcid* retval = get_residue_bw(atoi(offset), atoi(dot+1));
+    const char* plus = strchr(dot+1, '+');
+    AminoAcid* retval = get_residue(resolve_bw_resno(atoi(offset), atoi(dot+1), plus ? atoi(plus+1) : 0));
     if (!retval) return nullptr;
     if (offset == buffer) return retval;
 
@@ -419,7 +443,7 @@ AminoAcid* Protein::get_residue_bw(int hxno, int bwno)
         throw -1;
     }
 
-    int resno = bw50 - 50 + bwno;
+    int resno = resolve_bw_resno(hxno, bwno);
     return get_residue(resno);
 }
 
@@ -607,7 +631,7 @@ void Protein::save_pdb(FILE* os, Molecule* lig)
     for (i=0; residues[i]; i++)
     {
         residues[i]->set_pdb_chain(pdbchain);
-        residues[i]->save_pdb(os, offset);
+        residues[i]->save_pdb(os, offset, false);
         offset += residues[i]->get_atom_count();
         if (residues[i]->nconects)
         {
@@ -662,16 +686,8 @@ void Protein::save_pdb(FILE* os, Molecule* lig)
 
 int Protein::save_pdb_metals(FILE *os, int offset)
 {
-    int i;
-    if (nm_mcoords)
-    {
-        for (i=0; i<nm_mcoords; i++)
-        {
-            if (!m_mcoords[i].mtl) continue;
-            // cout << "Saving " << m_mcoords[i].mtl->name << endl;
-            m_mcoords[i].mtl->save_pdb_line(os, ++offset);
-        }
-    }
+    // Loaded ions also belong to the protein before coordination is requested.
+    for(int i=0;i<get_metals_count();++i)metals[i]->save_pdb_line(os,++offset,true);
     return offset;
 }
 
@@ -971,6 +987,21 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
 
     origpdb_residues.clear();
     connections.clear();
+    bw_insertions.clear();
+    bw_deletions.clear();
+    for (int k=0;k<79;++k) Ballesteros_Weinstein[k]=0;
+    if (remarks)
+    {
+        for (int k=0;k<remarksz;++k) delete[] remarks[k];
+        delete[] remarks;
+        remarks=nullptr;
+        remarksz=0;
+    }
+    // A new load replaces ion ownership as well as the amino-acid array.
+    metcount=nm_mcoords=0;
+    for(int k=0;k<_MAX_MCOORDS;++k){metals[k]=nullptr;m_mcoords[k]=MCoord();}
+    for(int k=0;k<32;++k){mcoord_resnos[k]=0;mcoord_aa[k]=nullptr;}
+
 
     Atom* pdba[65536];
 
@@ -981,6 +1012,15 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
 
     for (i=0; i<65536; i++) pdba[i] = nullptr;
 
+    auto retain_metal=[&](Atom* atom)
+    {
+        for(int k=0;k<metcount;++k)if(metals[k]->Z==atom->Z && metals[k]->residue==atom->residue
+            && !strcmp(metals[k]->name,atom->name) && metals[k]->loc.get_3d_distance(atom->loc)<.001)
+            return false;
+        if(metcount>=_MAX_MCOORDS-1)throw std::runtime_error("Too many PDB metal ions");
+        metals[metcount++]=atom;metals[metcount]=nullptr;
+        return true;
+    };
     bool got_atoms = false;
     char* got;
     while (!feof(is))
@@ -990,6 +1030,7 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
             int told = ftell(is);
             got = fgets(buffer, 1003, is);
             if (!got) break;
+            if(got_atoms && !strncmp(buffer,"ENDMDL",6))break;
 
             if (got_atoms &&
                 buffer[0] == 'T' &&
@@ -1054,8 +1095,7 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
                 }
 
                 a = new Atom(is);
-                metals[metcount++] = a;
-                metals[metcount] = NULL;
+                if(!retain_metal(a)){delete a;continue;}
 
                 for (i=0; i<26; i++)
                 {
@@ -1065,6 +1105,35 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
                         break;
                     }
                 }
+            }
+            else if(!strncmp(buffer,"HETATM",6))
+            {
+                if(strlen(buffer)<78 || (buffer[21]!=' ' && buffer[21]!=chain))continue;
+                std::string label=std::string(buffer+17,3);
+                label.erase(std::remove(label.begin(),label.end(),' '),label.end());
+                if(label=="LIG")continue;
+                std::string symbol=strlen(buffer)>=78?std::string(buffer+76,2):"";
+                symbol.erase(std::remove(symbol.begin(),symbol.end(),' '),symbol.end());
+                if(symbol.empty())continue;
+                int atomic_number=Atom::Z_from_esym(symbol.c_str());
+                if(!atomic_number)continue;
+                Point position(std::stod(std::string(buffer+30,8)),std::stod(std::string(buffer+38,8)),
+                               std::stod(std::string(buffer+46,8)));
+                int charge=0;
+                if(strlen(buffer)>78)
+                {
+                    std::string text=std::string(buffer+78).substr(0,2);
+                    if(text.find('+')!=std::string::npos || text.find('-')!=std::string::npos)
+                        charge=(text.find('-')!=std::string::npos?-1:1)*std::max(1,std::abs(atoi(text.c_str())));
+                }
+                std::unique_ptr<Atom> ion(new Atom(symbol.c_str(),&position,charge));
+                if(!ion->is_metal() || (label!="MTL" && strcasecmp(label.c_str(),symbol.c_str())))continue;
+                std::string name=std::string(buffer+12,4);
+                name.erase(std::remove(name.begin(),name.end(),' '),name.end());
+                ion->name=new char[name.size()+1];strcpy(ion->name,name.c_str());
+                ion->residue=atoi(buffer+22);strcpy(ion->aa3let,label.c_str());
+                ion->pdbidx=atoi(buffer+6);ion->pdbchain=buffer[21];
+                if(retain_metal(ion.get()))ion.release();
             }
             else if (buffer[0] == 'R' &&
                      buffer[1] == 'E' &&
@@ -1111,8 +1180,7 @@ int Protein::load_pdb(FILE* is, int rno, char chain)
             {
             case ATOM_NOT_OF_AMINO_ACID:
                 a = new Atom(is);
-                metals[metcount++] = a;
-                metals[metcount] = NULL;
+                if(!retain_metal(a)){delete a;break;}
 
                 for (i=0; i<26; i++)
                 {
@@ -1321,17 +1389,84 @@ int Protein::get_bw50(int helixno)
     return Ballesteros_Weinstein[helixno];
 }
 
+int Protein::resolve_bw_resno(int helix, int position, int ordinal) const
+{
+    if (helix<1 || helix>78 || !Ballesteros_Weinstein[helix] || position<0 || ordinal<0) return 0;
+    auto key=std::make_pair(helix,position);
+    bool deleted=bw_deletions.count(key)>0;
+    if (deleted && !ordinal) return 0;
+    auto inserted=bw_insertions.find(key);
+    int count=inserted==bw_insertions.end()?0:inserted->second;
+    if (ordinal>count) return 0;
+    int result=Ballesteros_Weinstein[helix]+position-50+ordinal-(deleted?1:0);
+    auto correction=[&](const std::map<std::pair<int,int>,int>& events, int sign)
+    {
+        for (const auto& event:events) if (event.first.first==helix)
+        {
+            int offset=event.first.second;
+            if (offset<50 && offset>=position) result+=sign*event.second;
+            if (offset>=50 && offset<position) result-=sign*event.second;
+        }
+    };
+    correction(bw_deletions,1);
+    correction(bw_insertions,-1);
+    return result>0?result:0;
+}
+
+void Protein::clear_bw_indels()
+{
+    bw_insertions.clear();
+    bw_deletions.clear();
+    if (!remarks) return;
+    int old_count=remarksz;
+    int kept=0;
+    for (int i=0;i<remarksz;++i)
+    {
+        std::string line=remarks[i];
+        if (line.find("REMARK 800 SITE BW_INSERTION ")==0 || line.find("REMARK 800 SITE BW_DELETION ")==0)
+            delete[] remarks[i];
+        else remarks[kept++]=remarks[i];
+    }
+    remarksz=kept;
+    std::fill(remarks+kept,remarks+old_count+1,nullptr);
+}
+
+void Protein::set_bw_indel(int helix, int position, int count, bool insertion)
+{
+    if (helix<1 || helix>78 || position<0 || count<1) throw std::invalid_argument("Invalid BW indel");
+    auto& events=insertion?bw_insertions:bw_deletions;
+    events[{helix,position}]=count;
+    std::string prefix=std::string("REMARK 800 SITE ")+(insertion?"BW_INSERTION ":"BW_DELETION ")
+        +std::to_string(helix)+"."+std::to_string(position);
+    std::string line=prefix+" "+std::to_string(count);
+    for (int i=0;i<remarksz;++i)
+        if (std::string(remarks[i])==prefix || std::string(remarks[i]).find(prefix+" ")==0)
+        {
+            delete[] remarks[i];
+            remarks[i]=new char[line.size()+1];
+            strcpy(remarks[i],line.c_str());
+            return;
+        }
+    add_remark(line.c_str());
+}
+
+void Protein::copy_bw_indels_from(const Protein* other)
+{
+    if (other==this) return;
+    clear_bw_indels();
+    for (const auto& event:other->bw_insertions) set_bw_indel(event.first.first,event.first.second,event.second,true);
+    for (const auto& event:other->bw_deletions) set_bw_indel(event.first.first,event.first.second,event.second,false);
+}
+
 void Protein::set_bw50(int hxno, int resno)
 {
     if (hxno < 1 || hxno > 78) return;
     // if (Ballesteros_Weinstein[hxno]) return;
     Ballesteros_Weinstein[hxno] = resno;
 
-    if (!remarks) return;
-
     int i;
     bool remark_set = false;
-    for (i=0; remarks[i]; i++)
+    for (i=0; remarks && remarks[i]; i++)
     {
         if (remarks[i][7] == '8' && remarks[i][8] == '0' && remarks[i][9] == '0')
         {
@@ -1421,6 +1556,18 @@ void Protein::add_remark(const char* remark)
     remarks[remarksz] = new char[strlen(buffer)+2];
     strcpy(remarks[remarksz++], buffer);
     char** words = chop_spaced_words(buffer);
+
+    if (words[1] && words[2] && words[3] && words[4]
+        && !strcmp(words[1],"800") && !strcmp(words[2],"SITE")
+        && (!strcmp(words[3],"BW_INSERTION") || !strcmp(words[3],"BW_DELETION")))
+    {
+        BallesterosWeinstein site(words[4]);
+        int count=words[5]?atoi(words[5]):1;
+        if (site.helix_no<1 || site.helix_no>78 || count<1)
+            throw std::invalid_argument("Invalid BW indel remark");
+        auto& events=!strcmp(words[3],"BW_INSERTION")?bw_insertions:bw_deletions;
+        events[{site.helix_no,site.member_no}]=count;
+    }
 
     if (words[1]
         && !strcmp(words[1], "800")
@@ -1975,13 +2122,18 @@ Molecule* Protein::metals_as_molecule()
         for (i=0; metals[i]; i++)
         {
             Point mloc = metals[i]->loc;
+            for(int slot=0;slot<metals[i]->get_geometry();++slot)
+            {
+                Bond* bond=metals[i]->get_bond_by_idx(slot);
+                if(bond){bond->atom1=metals[i];bond->atom2=nullptr;bond->cardinality=0;}
+            }
             k = 0;
             for (j=0; mcoord_resnos[j]; j++)
             {
                 AminoAcid* caa = get_residue(mcoord_resnos[j]);		// caa = coordinating amino acid.
-                if (!caa) continue;
+                if (!caa || caa->coordmtl!=metals[i]) continue;
                 caa->movability = MOV_NONE;
-                Atom* mca = caa->get_nearest_atom(mloc, mcoord);
+                Atom* mca = caa->mcoord_atom ?: caa->get_nearest_atom(mloc, mcoord);
                 if (!mca) continue;
 
                 float r = mloc.get_3d_distance(mca->loc);
@@ -1992,6 +2144,47 @@ Molecule* Protein::metals_as_molecule()
                     if (!b) break;
                     b->atom2 = mca;
                     b->cardinality = 0.5;
+                }
+            }
+            // Rebuild the directional frame after changing the donor slots.
+            metals[i]->move(mloc);
+            if(k==3 && metals[i]->get_geometry()==4)
+            {
+                Vector* geometry=metals[i]->get_geometry_aligned_to_bonds();
+                Point donor[3];
+                for(int slot=0;slot<3;++slot)
+                {
+                    donor[slot]=metals[i]->get_bond_by_idx(slot)->atom2->loc;
+                    geometry[slot]=Vector(donor[slot].subtract(mloc));
+                    geometry[slot].r=1;
+                }
+                // Distorted sites have no reliable ideal-tetrahedron slot ordering.
+                // Use all three actual donors and expose the clearer face of their plane.
+                Vector normal=compute_normal(donor[0],donor[1],donor[2]);
+                if(normal.r>.001)
+                {
+                    normal.r=1;
+                    float radius=InteratomicForce::coordination_distance(metals[i]->get_bond_by_idx(2)->atom2,metals[i]);
+                    float donor_radius=metals[i]->get_bond_by_idx(2)->atom2->vdW_radius;
+                    auto obstruction=[&](Vector direction)
+                    {
+                        direction.r=radius;
+                        Point target=mloc.add(Point(direction));
+                        double penalty=0;
+                        for(int r=get_start_resno();r<=get_end_resno();++r)
+                        {
+                            AminoAcid* aa=get_residue(r);if(!aa)continue;
+                            for(int a=0;a<aa->get_atom_count();++a)
+                            {
+                                Atom* atom=aa->get_atom(a);if(atom->Z<2)continue;
+                                double overlap=.75*(donor_radius+atom->vdW_radius)-target.get_3d_distance(atom->loc);
+                                if(overlap>0)penalty+=overlap*overlap;
+                            }
+                        }
+                        return penalty;
+                    };
+                    if(obstruction(normal.negate())<obstruction(normal))normal=normal.negate();
+                    geometry[3]=normal;
                 }
             }
         }
@@ -2961,204 +3154,303 @@ float Protein::CA_to_CA_distance(AminoAcid *aa1, AminoAcid *aa2)
     return aa1->get_CA_location().get_3d_distance(aa2->get_CA_location());
 }
 
-MCoord* Protein::coordinate_metal(MCoord* mtlcoords, int count)
+MCoord* Protein::coordinate_metal(MCoord* sites, int count)
 {
-    int i, j, k, l, m, n, q, miter, i2, j1;
-
-    n = count;
-
-    m = 0;
-    for (i=0; i<n; i++)
+    if(count<0 || count>=_MAX_MCOORDS || (count && !sites))
+        throw std::invalid_argument("Invalid metal-site count");
+    for(int site=0;site<count;++site)
     {
-        k = 0;
-        int ncr = mtlcoords[i].ncoordres;
-
-        // Obtain the alpha center.
-        Point pt4avg[ncr+2];
-        l=0;
-        bool skip_mcoord = false;
-        for (j=0; j<ncr; j++)
+        MCoord& spec=sites[site];
+        if(spec.ncoordres<2 || spec.ncoordres>15)
+            throw std::invalid_argument("Metal coordination requires 2 to 15 distinct residues");
+        std::vector<AminoAcid*> donors;
+        std::vector<Atom*> ligands;
+        std::set<int> numbers;
+        Point center;
+        for(int j=0;j<spec.ncoordres;++j)
         {
-            if (!mtlcoords[i].coordres[j].resno) mtlcoords[i].coordres[j].resolve_resno(this);
-            if (!mtlcoords[i].coordres[j].resno)
+            spec.coordres[j].resolve_resno(this);
+            int number=spec.coordres[j].resno;
+            AminoAcid* aa=get_residue(number);
+            if(!aa || !numbers.insert(number).second)
+                throw std::invalid_argument("Metal coordination residue is absent or repeated");
+            Atom* atom=aa->get_one_most_bindable(mcoord);
+            if(!atom)throw std::invalid_argument("Residue has no metal coordination donor");
+            donors.push_back(aa);
+            ligands.push_back(atom);
+            center=center.add(atom->loc);
+        }
+        center.multiply(1./ligands.size());
+        int record=-1;
+        for(int j=0;j<nm_mcoords;++j)
+        {
+            bool same=m_mcoords[j].Z==spec.Z && m_mcoords[j].charge==spec.charge
+                      && m_mcoords[j].ncoordres==spec.ncoordres;
+            for(int k=0;same && k<spec.ncoordres;++k)
+                same=numbers.count(m_mcoords[j].coordres[k].resno);
+            if(same)
             {
-                skip_mcoord = true;
+                record=j;
+                spec.mtl=m_mcoords[j].mtl;
                 break;
             }
-            Point respt = get_atom_location(mtlcoords[i].coordres[j].resno, "CA");
-            respt.weight = 1;
-            pt4avg[l++] = respt;
         }
-        if (skip_mcoord) continue;
-        Point alpcen = find_equidistant_point(pt4avg, l);
-
-        // Obtain the beta center.
-        l=0;
-        for (j=0; j<ncr; j++)
+        int metal_count=get_metals_count();
+        Atom* metal=spec.mtl;
+        bool owned=false;
+        for(int j=0;j<metal_count;++j)if(metals[j]==metal)owned=true;
+        if(!metal || !owned)
         {
-            if (!mtlcoords[i].coordres[j].resno) mtlcoords[i].coordres[j].resolve_resno(this);
-            Point respt = get_atom_location(mtlcoords[i].coordres[j].resno, "CB");
-            AminoAcid* aa = get_residue(mtlcoords[i].coordres[j].resno);
-            Atom *CB = aa->get_atom("CB");
-            // cout << respt << " vs. " << CB->loc << endl;
-            respt.weight = 1;
-            pt4avg[l++] = respt;
-        }
-        Point betcen = find_equidistant_point(pt4avg, l);
-
-        // Obtain the beta normal
-        Vector normal;
-        if (l >= 3)
-        {
-            normal = compute_normal(pt4avg[0], pt4avg[1], pt4avg[2]);
-            if (alpcen.get_3d_distance(betcen.add(normal)) < alpcen.get_3d_distance(betcen.subtract(normal)))
+            // Reuse a serialized ion when a saved active model is docked again.
+            float closest=8;
+            for(int j=0;j<metal_count;++j)if(metals[j]->Z==spec.Z)
             {
-                normal = Point(0,0,0).subtract(normal);
+                bool assigned=false;
+                for(int k=0;k<nm_mcoords;++k)if(m_mcoords[k].mtl==metals[j])assigned=true;
+                if(assigned)continue;
+                float distance=metals[j]->loc.get_3d_distance(center);
+                if(distance<closest){closest=distance;metal=metals[j];}
             }
         }
-        else
+        bool listed=false;
+        for(int j=0;j<metal_count;++j)if(metals[j]==metal)listed=true;
+        if((!listed && metal_count>=_MAX_MCOORDS-1) || (record<0 && nm_mcoords>=_MAX_MCOORDS))
+            throw std::invalid_argument("Metal-site capacity exceeded");
+        int existing_residues=0;
+        while(existing_residues<32 && mcoord_resnos[existing_residues])++existing_residues;
+        int additions=0;
+        for(auto aa:donors)
         {
-            normal = betcen.subtract(alpcen);
+            bool found=false;
+            for(int j=0;j<existing_residues;++j)if(mcoord_resnos[j]==aa->get_residue_no())found=true;
+            additions+=!found;
         }
-
-        m_mcoords[nm_mcoords++] = mtlcoords[i];
-        Point lpt;
-        Molecule** lmc = new Molecule*[ncr+4];
-        lmc[0] = new Molecule("lcm");
-        Atom* lmtl;
-        if (!mtlcoords[i].mtl)
+        if(existing_residues+additions>=32)
+            throw std::invalid_argument("Metal donor capacity exceeded");
+        std::unique_ptr<Atom> created;
+        if(!metal)
         {
-            lmtl = lmc[0]->add_atom(Atom::esym_from_Z(mtlcoords[i].Z), Atom::esym_from_Z(mtlcoords[i].Z), nullptr, 0);
-            lmtl->increment_charge(mtlcoords[i].charge);
-            mtlcoords[i].mtl = lmtl;
+            created.reset(new Atom(Atom::esym_from_Z(spec.Z), &center, spec.charge));
+            metal=created.get();
+            std::string label=std::string(Atom::esym_from_Z(spec.Z))+std::to_string(metal_count+1);
+            metal->name=new char[label.size()+1];
+            strcpy(metal->name,label.c_str());
         }
-        else lmc[0]->add_existing_atom(lmtl = mtlcoords[i].mtl);
-        lmc[0]->movability = MOV_ALL;
-        metals[m++] = lmtl;
-
-        lmtl->aaletter = '\0';
-        strcpy(lmtl->aa3let, "MTL");
-        lmtl->residue = 0;
-
-        l = 1;
-        Atom* coord_atoms[ncr+2];
-        Atom* coordres_HA[ncr+2];
-        float optimal[ncr+2];
-        for (j=0; j<ncr; j++)
+        if(metal->Z!=spec.Z)throw std::invalid_argument("Metal element differs from its configuration");
+        std::vector<Pose> original,best;
+        std::vector<MovabilityType> movement;
+        std::vector<float> original_charges;
+        for(size_t j=0;j<donors.size();++j)
         {
-            mtlcoords[i].coordres[j].resolve_resno(this);
-            AminoAcid* aa = get_residue(mtlcoords[i].coordres[j].resno);
-            if (aa)
+            original.emplace_back(donors[j]);best.emplace_back(donors[j]);
+            movement.push_back(donors[j]->movability);
+            original_charges.push_back(ligands[j]->get_charge());
+        }
+        Point old_location=metal->loc;
+        float old_charge=metal->get_charge();
+        int old_residue=metal->residue;
+        std::string old_label=metal->aa3let;
+        char old_letter=metal->aaletter;
+        struct Rollback
+        {
+            std::function<void()> restore;
+            bool committed=false;
+            ~Rollback(){if(!committed)restore();}
+        } rollback{[&]()
+        {
+            for(size_t j=0;j<donors.size();++j)
             {
-                mcoord_aa[k] = aa;
-                mcoord_resnos[k] = aa->get_residue_no();
-                aa->movability = MOV_FLEXONLY;
-                lmc[l++] = (Molecule*)aa;
-                coord_atoms[k] = aa->get_one_most_bindable(mcoord);
-                coordres_HA[k] = aa->get_atom("HA");
-                optimal[k] = InteratomicForce::optimal_distance(coord_atoms[k], lmtl);
-                if (!lmtl->residue) lmtl->residue = aa->get_residue_no();
-                Atom** Ss = aa->get_most_bindable(1, lmtl);
-                lpt = lpt.add(aa->get_CA_location());
-                // if (Ss) (*Ss)->bond_to(lmtl, 0.5);               // DO NOT DO THIS.
-
-                // If cysteine, make thiolate form.
-                if (aa->is_thiol())
+                original[j].restore_state(donors[j],true);
+                donors[j]->movability=movement[j];
+                ligands[j]->increment_charge(original_charges[j]-ligands[j]->get_charge());
+            }
+            metal->move(old_location);
+            metal->increment_charge(old_charge-metal->get_charge());
+            metal->residue=old_residue;strcpy(metal->aa3let,old_label.c_str());metal->aaletter=old_letter;
+        }};
+        metal->increment_charge(spec.charge-metal->get_charge());
+        metal->aaletter='\0';
+        strcpy(metal->aa3let,"MTL");
+        metal->residue=donors.front()->get_residue_no();
+        std::vector<double> distances;
+        std::vector<std::vector<Bond*>> rotations;
+        for(size_t j=0;j<donors.size();++j)
+        {
+            AminoAcid* aa=donors[j];
+            Atom* donor=ligands[j];
+            // Establish donor chemistry before selecting its coordination parameter.
+            if(donor->Z==16 && aa->get_letter()=='C' && !donor->is_bonded_to("S"))
+            {
+                if(donor->get_charge()>-.5)donor->increment_charge(-1);
+            }
+            distances.push_back(InteratomicForce::coordination_distance(donor,metal));
+            aa->movability=MOV_FORCEFLEX;
+            aa->clear_all_bond_caches();
+            rotations.emplace_back();
+            Bond** bonds=aa->get_rotatable_bonds();
+            for(int k=0;bonds && bonds[k];++k)
+            {
+                Bond* b=bonds[k];
+                if(b->can_rotate && !(b->atom1->is_backbone && b->atom2->is_backbone)
+                    && b->ensure_moves_with_no_backbone())rotations.back().push_back(b);
+            }
+        }
+        struct ClashPair{Atom* a;Atom* b;double limit;};
+        std::vector<Atom*> environment,moving;
+        for(int r=1;r<=get_end_resno();++r)
+        {
+            AminoAcid* aa=get_residue(r);
+            if(!aa)continue;
+            for(int j=0;j<aa->get_atom_count();++j)
+            {
+                Atom* a=aa->get_atom(j);
+                if(a->Z<2)continue;
+                if(numbers.count(r) && !a->is_backbone)moving.push_back(a);
+                if(a->loc.get_3d_distance(center)<14)environment.push_back(a);
+            }
+        }
+        std::vector<ClashPair> clashes;
+        for(Atom* a:moving)for(Atom* b:environment)
+        {
+            if(a==b || (numbers.count(b->residue) && !b->is_backbone && std::less<Atom*>()(b,a)))continue;
+            bool bonded=a->is_bonded_to(b);
+            for(int k=0;!bonded && k<a->get_bonded_atoms_count();++k)
+            {
+                Bond* bond=a->get_bond_by_idx(k);
+                if(bond && bond->atom2 && bond->atom2->is_bonded_to(b))bonded=true;
+            }
+            if(!bonded)clashes.push_back({a,b,.75*(a->vdW_radius+b->vdW_radius)});
+        }
+        auto metal_score=[&](Point position)
+        {
+            double score=0;
+            for(size_t j=0;j<ligands.size();++j)
+            {
+                double error=position.get_3d_distance(ligands[j]->loc)-distances[j];
+                score+=100*error*error;
+            }
+            for(Atom* a:environment)
+            {
+                if(std::find(ligands.begin(),ligands.end(),a)!=ligands.end())continue;
+                double overlap=.75*(a->vdW_radius+metal->vdW_radius)-position.get_3d_distance(a->loc);
+                if(overlap>0)score+=25*overlap*overlap;
+            }
+            return score;
+        };
+        auto score=[&]()
+        {
+            double value=metal_score(metal->loc);
+            for(auto pair:clashes)
+            {
+                double overlap=pair.limit-pair.a->distance_to(pair.b);
+                if(overlap>0)value+=25*overlap*overlap;
+            }
+            return value;
+        };
+        auto fit_ion=[&]()
+        {
+            for(double step:{.4,.2,.1,.05,.02,.005})for(int sweep=0;sweep<30;++sweep)
+            {
+                Point selected=metal->loc;
+                double value=metal_score(selected);
+                for(int axis=0;axis<3;++axis)for(int sign:{-1,1})
                 {
-                    if (Ss)
+                    Point trial=metal->loc;
+                    (axis==0?trial.x:axis==1?trial.y:trial.z)+=sign*step;
+                    double candidate=metal_score(trial);
+                    if(candidate<value-1e-9){value=candidate;selected=trial;}
+                }
+                if(selected.get_3d_distance(metal->loc)<1e-8)break;
+                metal->move(selected);
+            }
+        };
+        std::vector<Point> starts{center};
+        if(listed)starts.push_back(metal->loc);
+        for(int axis=0;axis<3;++axis)for(int sign:{-1,1})
+        {
+            Point start=center;
+            (axis==0?start.x:axis==1?start.y:start.z)+=sign*1.5;
+            starts.push_back(start);
+        }
+        double best_score=std::numeric_limits<double>::infinity();
+        Point best_ion=center;
+        for(Point start:starts)
+        {
+            for(size_t j=0;j<donors.size();++j)original[j].restore_state(donors[j],true);
+            metal->move(start);
+            fit_ion();
+            for(int sweep=0;sweep<8;++sweep)
+            {
+                double previous=score();
+                for(size_t j=0;j<donors.size();++j)for(Bond* bond:rotations[j])
+                {
+                    Pose base(donors[j]), selected(donors[j]);
+                    double value=score();
+                    int samples=sweep<2?24:6;
+                    double step=(sweep<2?15:(sweep<5?5:1))*M_PI/180;
+                    for(int k=0;k<samples;++k)
                     {
-                        Atom* S = Ss[0];
-                        Atom* H = S->is_bonded_to("H");
-                        if (H)
-                        {
-                            aa->delete_atom(H);
-                            S->increment_charge(-1);
-                        }
+                        base.restore_state(donors[j],true);
+                        double angle=sweep<2?k*step:(k-3)*step;
+                        if(!bond->rotate(angle,false,true))continue;
+                        double candidate=score();
+                        if(candidate<value-1e-9){value=candidate;selected.copy_state(donors[j]);}
                     }
+                    selected.restore_state(donors[j],true);
                 }
-
-                k++;
-            }
-        }
-        mcoord_aa[k] = nullptr;
-        mcoord_resnos[k] = 0;
-        coord_atoms[k] = nullptr;
-        lmc[l] = nullptr;
-
-        Vector v = normal;
-        v.r = _INTERA_R_CUTOFF;
-        Point ptmtl = betcen.add(v);
-        lmtl->move(ptmtl);
-
-        for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
-        {
-            mcoord_aa[l]->movability = MOV_FORCEFLEX;
-            mcoord_aa[l]->clear_all_bond_caches();
-            mcoord_aa[l]->conform_atom_to_location(coord_atoms[l], lmtl, 20, optimal[l], true);
-        }
-
-        for (q=0; q<100; q++)
-        {
-            Point ptmtl_old = ptmtl;
-            for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
-            {
-                v = coord_atoms[l]->loc.subtract(ptmtl);
-                v.r -= optimal[l];
-                v.r /= 100;
-                ptmtl = ptmtl.add(v);
-                if (coordres_HA[l])
+                fit_ion();
+                if(score()<best_score)
                 {
-                    float rHA = coordres_HA[l]->loc.get_3d_distance(ptmtl);
-                    if (rHA <= coordres_HA[l]->vdW_radius + lmtl->vdW_radius)
-                    {
-                        ptmtl = ptmtl_old;
-                        goto _exit_lmtl_cingon;
-                    }
+                    best_score=score();best_ion=metal->loc;
+                    for(size_t j=0;j<donors.size();++j)best[j].copy_state(donors[j]);
                 }
+                if(sweep>=2 && previous-score()<1e-7)break;
             }
         }
-        _exit_lmtl_cingon:
-        lmtl->move(ptmtl);
-
-        for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
+        metal->move(best_ion);
+        double error=0;
+        for(size_t j=0;j<donors.size();++j)
         {
-            Atom *omega = mcoord_aa[l]->get_nearest_atom(ptmtl);
-            if (!omega) continue;
-            omega = omega->get_heavy_atom();
-            if (omega == coord_atoms[l]) continue;
-            if (omega->get_Greek() < coord_atoms[l]->get_Greek()) continue;
-            float rvdw = lmtl->vdW_radius + omega->vdW_radius;
-            Bond *b = coord_atoms[l]->get_bond_by_idx(0)->get_reversed();
-            if (b)
+            best[j].restore_state(donors[j],true);
+            error=std::max(error,std::fabs(ligands[j]->distance_to(metal)-distances[j]));
+        }
+        if(!std::isfinite(best_score) || error>.35)
+        {
+            for(size_t j=0;j<donors.size();++j)
             {
-                float step = fiftyseventh, rS = coord_atoms[l]->distance_to(lmtl), rC = omega->distance_to(lmtl), rcOrig;
-                rcOrig = rC;
-                b->rotate(step);
-                rC = omega->distance_to(lmtl);
-                if (rC < rcOrig) step = -step;
-                rcOrig = rC;
-
-                for (j=0; j<360; j++)
-                {
-                    b->rotate(step);
-                    rC = omega->distance_to(lmtl);
-                    if (rC > rvdw*1.1) break;
-                }
+                original[j].restore_state(donors[j],true);
+                donors[j]->movability=movement[j];
             }
+            throw std::runtime_error("Metal coordination cannot satisfy all donor distances");
         }
-
-        for (l=0; mcoord_aa[l] && coord_atoms[l]; l++)
+        for(size_t j=0;j<donors.size();++j)
         {
-            mcoord_aa[l]->movability = MOV_PINNED;
-            mcoord_aa[l]->coordmtl = lmtl;
-            mcoord_aa[l]->mcoord_atom = coord_atoms[l];
+            AminoAcid* aa=donors[j];
+            if(aa->get_letter()=='C' && ligands[j]->Z==16 && !ligands[j]->is_bonded_to("S"))
+            {
+                Atom* hydrogen=ligands[j]->is_bonded_to("H");
+                if(hydrogen)aa->delete_atom(hydrogen);
+                aa->clear_all_bond_caches();
+            }
+            aa->movability=MOV_PINNED;
+            aa->coordmtl=metal;
+            aa->mcoord_atom=ligands[j];
+            bool found=false;
+            for(int k=0;k<existing_residues;++k)if(mcoord_resnos[k]==aa->get_residue_no())found=true;
+            if(!found){mcoord_resnos[existing_residues]=aa->get_residue_no();mcoord_aa[existing_residues++]=aa;}
         }
-
-        mtlcoords[i].mtl_original_location = lmtl->loc;
+        mcoord_resnos[existing_residues]=0;
+        mcoord_aa[existing_residues]=nullptr;
+        if(!listed){metals[metal_count++]=metal;metals[metal_count]=nullptr;}
+        metcount=metal_count;
+        spec.mtl=metal;
+        spec.mtl_original_location=metal->loc;
+        m_mcoords[record<0?nm_mcoords++:record]=spec;
+        created.release();
+        rollback.committed=true;
+        // std::cout<<"Metal coordination "<<metal->name<<": maximum donor-distance error "<<error<<" A"<<std::endl;
     }
-    metals[m] = nullptr;
-
-    return mtlcoords;
+    return sites;
 }
 
 float Protein::get_helix_orientation(int startres, int endres)
@@ -4214,8 +4506,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
         int bw50a = get_bw50(hxno), bw50b = target->get_bw50(hxno);
         for (resno1 = get_region_start(buffer); resno1 <= rgend1; resno1++)
         {
-            int i = resno1 - bw50a;
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(this,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 Point caloc = get_atom_location(resno1, "CA");
@@ -4282,8 +4573,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
             int bw50a = get_bw50(hxno), bw50b = reference->get_bw50(hxno);
             for (resno1 = get_region_start(buffer); resno1 <= rgend1; resno1++)
             {
-                int i = resno1 - bw50a;
-                resno2 = bw50b + i;
+                resno2 = corresponding_bw_residue(this,reference,hxno,resno1);
                 if (resno2 >= rgstart2 && resno2 <= rgend2)
                 {
                     Point caloc = get_atom_location(resno1, "CA");
@@ -4353,13 +4643,11 @@ void Protein::homology_conform(Protein* target, Protein* reference)
         float theta_carry = 0;
         for (resno1 = rgstart1; resno1 <= rgend1; resno1++)
         {
-            i = resno1 - bw50a;
-            int resno0 = get_bw50(hxno) + i;
+            int resno0 = corresponding_bw_residue(reference,this,hxno,resno1);
             AminoAcid* aa = get_residue(resno0);
             if (!aa) continue;
 
-            i = resno1 - bw50a;
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(reference,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 AminoAcid* aa1 = reference->get_residue(resno1);
@@ -4414,8 +4702,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
         count = 0;
         for (resno1 = rgstart1; resno1 <= rgend1; resno1++)
         {
-            i = resno1 - bw50a;
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(reference,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 rcen1 = rcen1.add(reference->get_atom_location(resno1, "CA"));
@@ -4444,8 +4731,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
         count = 0;
         for (resno1 = rgstart1; resno1 <= rgend1; resno1++)
         {
-            i = resno1 - bw50a;
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(reference,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 Point caloc1 = reference->get_atom_location(resno1, "CA"),
@@ -4481,8 +4767,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
             AminoAcid* aa = get_residue(resno1);
             if (!aa) continue;
 
-            i = resno1 - bw50a;
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(reference,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 Point caloc2 = target->get_atom_location(resno2, "CA");
@@ -4516,8 +4801,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
         count = 0;
         for (resno1 = rgstart0; resno1 <= rgend0; resno1++)
         {
-            i = resno1 - get_bw50(hxno);
-            resno2 = bw50b + i;
+            resno2 = corresponding_bw_residue(this,target,hxno,resno1);
             if (resno2 >= rgstart2 && resno2 <= rgend2)
             {
                 Point caloc1 = get_atom_location(resno1, "CA"),
@@ -5017,7 +5301,7 @@ void Protein::region_optimal_positioning(int sr, int er, Vector* x, Rotation* r,
 
 BallesterosWeinstein Protein::get_bw_from_resno(int resno)
 {
-    int i, b=0, w=0;
+    int i, b=0, w=0, winsertion=0;
     std::string region;
     Region r;
 
@@ -5028,17 +5312,36 @@ BallesterosWeinstein Protein::get_bw_from_resno(int resno)
         if (j<0) continue;
 
         int x = 50 + resno-j;
+        int insertion=0;
+        if (j>0)
+        {
+            bool found=false;
+            for (int position=0;position<100 && !found;++position)
+            {
+                auto event=bw_insertions.find({i,position});
+                int count=event==bw_insertions.end()?0:event->second;
+                for (int ordinal=0;ordinal<=count;++ordinal)
+                    if (resolve_bw_resno(i,position,ordinal)==resno)
+                    {
+                        x=position;
+                        insertion=ordinal;
+                        found=true;
+                        break;
+                    }
+            }
+        }
 
         if (i<10)
         {
             region = (std::string)"TMR" + std::to_string(i);
             r = get_region(region);
-            if (resno >= r.start && resno <= r.end) return BallesterosWeinstein(i, x);
+            if (j>0 && resno >= r.start && resno <= r.end) return BallesterosWeinstein(i, x, insertion);
         }
 
-        if (!w || abs(x-50) < abs(w-50))
+        if (j>0 && (!b || abs(x-50) < abs(w-50)))
         {
             w = x;
+            winsertion = insertion;
             if (Ballesteros_Weinstein[i]) b = i;
         }
 
@@ -5046,7 +5349,7 @@ BallesterosWeinstein Protein::get_bw_from_resno(int resno)
         else i = i*10 + i+1;
     } while (i != 8);
 
-    return BallesterosWeinstein(b, w);
+    return BallesterosWeinstein(b, w, winsertion);
 }
 
 int Protein::replace_side_chains_from_other_protein(Protein* other)
@@ -5187,6 +5490,7 @@ int Protein::replace_side_chains_from_other_protein(Protein* other)
     {
         set_bw50(i, other->Ballesteros_Weinstein[i]);
     }
+    copy_bw_indels_from(other);
 
     return num_applied;
 }
@@ -5300,6 +5604,7 @@ Point Region::end_CA_location(Protein* p)
 std::ostream& operator<<(std::ostream& os, const BallesterosWeinstein& bw)
 {
     os << bw.helix_no << "." << bw.member_no;
+    if (bw.insertion_no) os << "+" << bw.insertion_no;
     return os;
 }
 

@@ -2,7 +2,7 @@
 """
 Builds GPCR homology models with REEC by default; MODELLER is optional.
 Rejected generations retry with fresh seeds and increasing relaxation budgets.
-The default continues until publication; --max-attempts sets an explicit bound.
+After three attempts, batch refreshes emit an explicitly labeled fallback model.
 """
 
 import os
@@ -13,6 +13,7 @@ import re
 import math
 import shutil
 import json
+import hashlib
 import tempfile
 
 # -----------------------------------------
@@ -194,12 +195,13 @@ def experimental_ensemble_alignment(rcpid, work):
 
 
 def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
-                  dsres1, dsres2, dspotr1, dspotr2, model=None):
+                  dsres1, dsres2, dspotr1, dspotr2, model=None, coordinate_metals=False):
     """Publish modeled and validated structures through the same PHEW workflow."""
     model_path = Path(best_pdb)
     if not model_path.is_absolute():
         model_path = Path(script_dir) / model_path
     output_pdb = Path(output_pdb).resolve()
+    pu.ensure_bw_metadata(rcpid, Path(root_dir) / f'pdbs/{fam}/{rcpid}.inactive.pdb')
     os.chdir(script_dir)
     with publication_guard(output_pdb):
         # 8. Post-Processing Script Generation (.phew)
@@ -462,13 +464,35 @@ def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
             ic_cmd.extend(["pin", str(resno)])
         subprocess.run(ic_cmd, check=True)
 
+        metal_review = []
+        if coordinate_metals:
+            from data.metal_sites import configured_metal_sites, inspect_metal_sites
+            sites = configured_metal_sites(rcpid, Path(root_dir) / 'data/binding_pocket.json')
+            if sites:
+                metal_script = Path(script_dir) / f'{rcpid}.metal.phew'
+                commands = [f'LOAD "{output_pdb}" A A', 'STRAND A']
+                commands.extend(f'MCOORD {site["element"]} {site["charge"]} '
+                                + ' '.join(map(str, site['residues'])) for site in sites)
+                commands.append(f'SAVE "{output_pdb}"')
+                metal_script.write_text('\n'.join(commands)+'\n')
+                try:
+                    subprocess.run([str(Path(root_dir) / 'bin/phew'), str(metal_script)], check=True)
+                    metal_review = inspect_metal_sites(output_pdb, sites)
+                except (subprocess.CalledProcessError, ValueError) as exc:
+                    raise CandidateRejected(f'Metal-site placement failed: {exc}') from exc
+
         with directory(script_dir):
             finalize(model, output_pdb, best_pdb, target=rcpid)
+        if metal_review:
+            report_path = Path(str(output_pdb)+'.json')
+            report = json.loads(report_path.read_text())
+            report['metal_sites'] = metal_review
+            report['metal_placement'] = 'explicit opt-in after final IC processing'
+            report_path.write_text(json.dumps(report, indent=2)+'\n')
 
     return phew_path
 
-def main(argv=None):
-    options = backend_options(sys.argv[1:] if argv is None else argv)
+def _main(options):
     unknown = set(options.legacy) - {'nodel', 'riglig'}
     if unknown:
         raise ValueError(f'Unknown options: {sorted(unknown)}')
@@ -500,20 +524,49 @@ def main(argv=None):
     output_pdb.parent.mkdir(parents=True, exist_ok=True)
     trusted_model = Path(root_dir) / 'pdbs' / '_validated' / f'{rcpid}.active.pdb'
     if trusted_model.is_file():
+        pu.ensure_bw_metadata(rcpid, trusted_model)
         from data.disulfides import pdb_disulfides
+        from dohm_recovery import review_source, repair_existing, copy_pair
         if trusted_model.resolve() == output_pdb.resolve():
             raise ValueError('Processed output must differ from the validated source')
         pairs = pdb_disulfides(trusted_model)
         dsres1 = [first for first, _ in pairs]
         dsres2 = [second for _, second in pairs]
-        print(f'Processing validated model for {rcpid} through PHEW...', file=sys.stderr)
-        with directory(script_dir):
-            phew_path = process_model(
-                rcpid, fam, famno, famsub, output_pdb, trusted_model,
-                str(trusted_model.relative_to(root_dir)), dsres1, dsres2, dsres1, dsres2)
-            if not nodel:
-                Path(phew_path).unlink(missing_ok=True)
-                (Path(script_dir) / f'{rcpid}.radial.phew').unlink(missing_ok=True)
+        (Path(root_dir) / 'tmp').mkdir(exist_ok=True)
+        review_work = Path(tempfile.mkdtemp(prefix=f'{rcpid}-validated-review-', dir=Path(root_dir) / 'tmp'))
+        review = review_source(trusted_model, rcpid, len(p['sequence']), review_work)
+        trusted_status_path = Path(str(trusted_model)+'.json')
+        try:
+            trusted_status = json.loads(trusted_status_path.read_text()) if trusted_status_path.is_file() else {}
+        except ValueError:
+            trusted_status = {}
+        if (review['valid'] and trusted_status.get('validated_ready')
+                and trusted_status.get('validated_sha256') == hashlib.sha256(trusted_model.read_bytes()).hexdigest()
+                and not options.coordinate_metals):
+            with publication_guard(output_pdb):
+                copy_pair(trusted_model, output_pdb)
+            print(f'Geometry-validated model copied to {output_pdb}; source conformation preserved.', file=sys.stderr)
+            print('Execution Complete.', file=sys.stderr)
+            return
+        try:
+            if not review['valid']:
+                raise CandidateRejected(f'Validated source failed whole-protein geometry review: {review["failures"]}')
+            print(f'Processing validated model for {rcpid} through PHEW...', file=sys.stderr)
+            with directory(script_dir):
+                phew_path = process_model(
+                    rcpid, fam, famno, famsub, output_pdb, trusted_model,
+                    str(trusted_model.relative_to(root_dir)), dsres1, dsres2, dsres1, dsres2,
+                    coordinate_metals=options.coordinate_metals)
+                if not nodel:
+                    Path(phew_path).unlink(missing_ok=True)
+                    (Path(script_dir) / f'{rcpid}.radial.phew').unlink(missing_ok=True)
+        except CandidateRejected as exc:
+            print(f'{exc}; repairing with REEC before publication.', file=sys.stderr, flush=True)
+            repaired, repair_work = repair_existing(rcpid, trusted_model, options, root_dir)
+            with publication_guard(output_pdb), publication_guard(trusted_model):
+                copy_pair(repaired, trusted_model)
+                copy_pair(repaired, output_pdb)
+            print(f'Geometry-repaired model published and validated source updated. Work: {repair_work}', file=sys.stderr)
         print('Execution Complete.', file=sys.stderr)
         return
 
@@ -883,9 +936,11 @@ def main(argv=None):
             os.chdir(script_dir)
             try:
                 phew_path = process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb,
-                                         tplsused, dsres1, dsres2, dspotr1, dspotr2, a)
+                                         tplsused, dsres1, dsres2, dspotr1, dspotr2, a,
+                                         coordinate_metals=options.coordinate_metals)
             except CandidateRejected as exc:
                 last_rejection = exc
+                options.last_rejected_model = Path(script_dir) / best_pdb
                 record(dict(settings, status='processing_rejected', candidate=best_pdb), exc)
                 print(f'Candidate {best_pdb} rejected after processing: {exc}', file=sys.stderr, flush=True)
                 continue
@@ -914,6 +969,23 @@ def main(argv=None):
                     os.remove(doomed)
 
     print("Execution Complete.", file=sys.stderr)
+
+def main(argv=None):
+    options = backend_options(sys.argv[1:] if argv is None else argv)
+    options.retain_rejected = True
+    try:
+        return _main(options)
+    except (CandidateRejected, subprocess.CalledProcessError, OSError) as exc:
+        from dohm_recovery import fallback_model
+        rcpid, state = receptor(options.receptor)
+        pu.load_prots()
+        if rcpid not in pu.prots or state != 'active':
+            raise
+        family = pu.family_from_protid(rcpid)
+        destination = (options.output or Path(root_dir) / f'pdbs/{family}/{rcpid}.active.pdb').resolve()
+        print(f'Model refresh could not pass: {exc}; emitting a labeled fallback.', file=sys.stderr)
+        fallback_model(rcpid, destination, options, exc, root_dir)
+
 
 if __name__ == "__main__":
     try:

@@ -98,9 +98,12 @@ def parser(repair=False):
     p.add_argument('--anneal-steps', type=int, default=0, help='Targeted Monte Carlo rounds; disabled by default, use 64 to enable')
     p.add_argument('--anneal-temperature', type=float, default=12, help='Initial annealing temperature in REEC score units')
     p.add_argument('--anneal-residues', help='Comma-separated residue numbers; defaults to receptor binding-site residues')
-    p.add_argument('--max-attempts', type=int, default=100 if repair else 0,
-                   help='Maximum attempts; dohm defaults to retrying until success (0)')
+    p.add_argument('--max-attempts', type=int, default=100 if repair else 3,
+                   help='Maximum attempts; dohm defaults to 3, then emits a labeled fallback; 0 retries without a bound')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
+    p.set_defaults(coordinate_metals=False)
+    if not repair:
+        p.add_argument('--coordinate-metals', action='store_true', help='Opt-in metal placement after dohm processing; default off')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
     return p
 
@@ -205,6 +208,7 @@ def metadata(rcp, source=None, provenance=''):
             lines.append(f'REMARK 650 HELIX {name} {region["start"]} {region["end"]}')
     for tag, residue in pu.prots[rcp].get('bw', {}).items():
         lines.append(f'REMARK 800 SITE BW {tag} {residue}')
+    lines.extend(pu.bw_indel_metadata(rcp))
     return lines
 
 
@@ -311,6 +315,8 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
         cmd.extend(['--template', template])
     if getattr(args, 'candidate_prefix', None):
         cmd.extend(['--candidate-prefix', args.candidate_prefix])
+    if getattr(args, 'retain_rejected', False):
+        cmd.append('--nofail')
     for contact in args.contacts:
         cmd.extend(['--contacts', contact.resolve()])
     if environment:
@@ -329,6 +335,8 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
             shutil.copyfile(report, failure)
             print(f'Validation report: {failure}', file=sys.stderr)
         if exc.returncode == 2:
+            if result.is_file():
+                args.last_rejected_model = result
             raise CandidateRejected('REEC rejected the candidate ensemble', report if report.exists() else None) from exc
         raise
     return result

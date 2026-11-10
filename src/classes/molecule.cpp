@@ -5107,17 +5107,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 }
             }
 
-            if (compute_interall && ligands[l]->coordmtl && ligands[l]->coordmtl->residue == ligands[l]->is_residue())
-            {
-                Interaction abind = InteratomicForce::total_binding(latoms[i], ligands[l]->coordmtl);
-                if (abind.summed() < 0)
-                {
-                    interall_a1[ninterall] = latoms[i];
-                    interall_a2[ninterall] = ligands[l]->coordmtl;
-                    interall_t[ninterall] = mcoord;
-                    interall[ninterall++] = abind.summed();
-                }
-            }
+
         }
     }
 

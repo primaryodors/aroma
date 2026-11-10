@@ -19,7 +19,7 @@ ALIASES = {
     '--report': '-r', '--environment': '-e', '--fit-environment': '-f',
     '--environment-hydrogens': '-H', '--candidate-prefix': '-p', '--seed': '-s',
     '--anneal-steps': '-A', '--anneal-temperature': '-u', '--anneal-residues': '-R',
-    '--clash-scale': '-x', '--primary-template': '-P', '--help': '-h',
+    '--clash-scale': '-x', '--primary-template': '-P', '--nofail': '-N', '--help': '-h',
 }
 
 
@@ -185,6 +185,14 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
         self.assertEqual(self.output.read_text(), 'previous model\n')
         self.assertFalse(json.loads(Path(str(self.output) + '.json').read_text())['valid'])
+
+    def test_nofail_exports_rejected_model_without_changing_status(self):
+        contacts = self.work / 'impossible.contacts'
+        contacts.write_text('contact hard 1 N 1 CA 8 9 100\n')
+        result = self.run_model('--contacts', str(contacts), '--nofail')
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn('ATOM  ', self.output.read_text())
+        self.assertFalse(json.loads(Path(str(self.output)+'.json').read_text())['valid'])
 
     def test_fixed_ligand_coordinates_and_contact(self):
         first = next(s for s in self.template.read_text().splitlines()

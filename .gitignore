@@ -12,6 +12,7 @@ metal
 *.dat
 *.pdb
 *.sdf
+!testdata/N-methylpiperidine.sdf
 *.cache.json
 *.old.json
 hm/OR[0-9][A-Z][0-9].*

@@ -1899,6 +1899,7 @@ const CliOption cli_options[] = {
     {"--anneal-temperature", 'u', "SCORE", "Initial annealing temperature (default 12)"},
     {"--anneal-residues", 'R', "LIST", "Comma-separated annealing residue numbers"},
     {"--clash-scale", 'x', "SCALE", "Clash penalty multiplier (default 1)"},
+    {"--nofail", 'N', "", "Export the least-bad rejected model; retain exit status 2"},
     {"--help", 'h', "", "Show this help"}
 };
 const CliOption* cli_option(const std::string& argument)
@@ -1921,7 +1922,7 @@ void help()
     std::cout<<std::right
              <<"Annealing is off by default; --anneal-steps 64 (or -A 64) enables it.\n"
              <<"Temperature is in optimization score units.\n"
-             <<"Run from the Aroma repository root. Exit 2 means validation failed; no PDB is published.\n"
+             <<"Run from the Aroma repository root. Exit 2 marks rejected geometry; --nofail can export it.\n"
              <<"Contacts: disulfide RES RES\n"
              <<"          contact hard|soft RES ATOM RES ATOM MIN MAX WEIGHT\n"
              <<"          dihedral RES ATOM RES ATOM RES ATOM RES ATOM MEAN STDEV (radians)\n"
@@ -1937,7 +1938,7 @@ int main(int argc,char** argv)
     {
         std::cout.setf(std::ios::unitbuf);
         std::string ali,out,target,report,environment,candidate_prefix,primary_template;
-        bool fit_environment=false,environment_hydrogens=false;
+        bool fit_environment=false,environment_hydrogens=false,nofail=false;
         std::vector<std::string> templates,contact_files;
         char chain='A';
         int iterations=3000,models=1,seed=0,anneal_steps=0;
@@ -1948,6 +1949,11 @@ int main(int argc,char** argv)
             const CliOption* option=cli_option(argv[i]);
             if(!option)throw std::runtime_error("Unknown option: "+std::string(argv[i]));
             std::string a=option->name;
+            if(a=="--nofail")
+            {
+                nofail=true;
+                continue;
+            }
             if(a=="--environment-hydrogens")
             {
                 environment_hydrogens=true;
@@ -2102,6 +2108,12 @@ int main(int argc,char** argv)
         m.report(report,initial,final,valid);
         if(!valid)
         {
+            if(nofail)
+            {
+                m.save(out,final);
+                std::cerr<<"REEC exported a rejected fallback model to "<<out<<"; report validity remains false.\n";
+                return 2;
+            }
             std::cerr<<"REEC validation failed; inspect "<<report<<". Existing output remains intact.\n";
             return 2;
         }

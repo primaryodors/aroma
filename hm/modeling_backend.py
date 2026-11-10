@@ -52,6 +52,8 @@ def forwarded_options(args):
             result.extend(['--'+name, str(value)])
     if args.keep_work:
         result.append('--keep-work')
+    if getattr(args, 'coordinate_metals', False):
+        result.append('--coordinate-metals')
     return result
 
 
@@ -307,10 +309,16 @@ class ReecModel:
                 models=self.ending_model-self.starting_model+1, contacts=args.contacts, chain=args.chain,
                 candidate_prefix=work / 'candidate', seed=args.seed,
                 anneal_steps=args.anneal_steps, anneal_temperature=args.anneal_temperature,
-                anneal_residues=anneal_residues, clash_scale=getattr(args, 'clash_scale', 1.))
+                anneal_residues=anneal_residues, clash_scale=getattr(args, 'clash_scale', 1.),
+                retain_rejected=getattr(args, 'retain_rejected', False))
             alignment = protein_alignment(self.alnfile, self.knowns, self.sequence, work / 'protein.ali')
-            output = reec.model(self.sequence, engine_args, work, templates, alignment,
-                                contacts, environment, bool(environment), bool(environment))
+            try:
+                output = reec.model(self.sequence, engine_args, work, templates, alignment,
+                                    contacts, environment, bool(environment), bool(environment))
+            except reec.CandidateRejected:
+                if getattr(engine_args, 'last_rejected_model', None):
+                    args.last_rejected_model = engine_args.last_rejected_model
+                raise
             report = json.loads(Path(str(output)+'.json').read_text())
             if not report.get('valid'):
                 raise ValueError('REEC returned an invalid model')

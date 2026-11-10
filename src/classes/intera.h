@@ -65,6 +65,7 @@ public:
     static float potential_binding(Atom* a, Atom* b, bool subtract_hydrophilicty_mismatches = true);
     static Interaction total_binding(Atom* a, Atom* b);
     static float optimal_distance(Atom* a, Atom* b);
+    static float coordination_distance(Atom* donor, Atom* metal);
     static float Lennard_Jones(Atom* atom1, Atom* atom2, float sigma = 0);
     static float distance_anomaly(Atom* a, Atom* b);
     static float covalent_bond_radius(Atom* a, Atom* b, float cardinality);
