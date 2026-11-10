@@ -272,3 +272,15 @@ heavy-atom RMSD improves from 1.7219 to 1.6943 A for OR51E2 and 4.0473 to
 3.1517 A for TAAR1; whole-CA and pocket-backbone medians also improve.
 Canonical models remain unchanged. Retain weighting v1 based on these
 limited controls. The corrected ligand panel remains the next baseline task.
+
+Corrected affected-case panel analyzed (2026-11-10)
+
+REEC_AFFECTED_ANALYSIS.txt records 22 completed docks and 116 accepted poses.
+Fourteen runs meet the historical four-pose operational threshold; all
+remaining runs yield one to three accepted poses. On ten shared primary
+cases the pass count changes from 8/10 to 6/10, with two added OR1A1 cases
+passing. Ring compression is absent; all six leading OR2T11 poses pass the
+recorded copper-plus-ligand contact check. OR52E8 has no qualifying Asn208
+hydrogen bond across eleven poses. The historical 21/34 panel remains
+unchanged. This closes the requested retrospective rerun and analysis,
+while prospective ligand validation remains a separate accuracy question.

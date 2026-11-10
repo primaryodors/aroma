@@ -20,6 +20,7 @@ ALIASES = {
     '--environment-hydrogens': '-H', '--candidate-prefix': '-p', '--seed': '-s',
     '--anneal-steps': '-A', '--anneal-temperature': '-u', '--anneal-residues': '-R',
     '--clash-scale': '-x', '--primary-template': '-P', '--nofail': '-N', '--help': '-h',
+    '--backbone-steps': '-b', '--backbone-range': '-B', '--backbone-angle': '-v',
 }
 
 
@@ -55,6 +56,34 @@ class ReecCLI(unittest.TestCase):
         entries = re.findall(r'^  (-[A-Za-z]), (--[a-z-]+)', outputs[0], re.M)
         self.assertEqual({long: short for short, long in entries}, ALIASES)
         self.assertEqual(len({short for short, _ in entries}), len(entries))
+
+    def test_backbone_sampling_is_reproducible_and_bounded(self):
+        environment = self.work / 'fixed.pdb'
+        environment.write_text('HETATM    1  C1  LIG A 999      40.000  40.000  40.000  1.00  0.00           C\nEND\n')
+        command = ('--iterations','3000','--backbone-steps','4',
+                   '--backbone-range','2:9','--backbone-angle','2','--seed','7',
+                   '--environment',str(environment))
+        result = self.run_model(*command)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        pdb, report = self.output.read_bytes(), Path(str(self.output)+'.json').read_bytes()
+        sampling = json.loads(report)['backbone_sampling']
+        fixed = next(line for line in self.output.read_text().splitlines() if line.startswith('HETATM'))
+        self.assertEqual([float(fixed[i:i+8]) for i in (30,38,46)], [40.,40.,40.])
+        self.assertEqual(sampling['trials'], 4)
+        self.assertLessEqual(sampling['closure_bond_error'], .08)
+        self.assertLessEqual(sampling['max_backbone_displacement'], .75)
+        result = self.run_model(*command)
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertEqual(self.output.read_bytes(), pdb)
+        self.assertEqual(Path(str(self.output)+'.json').read_bytes(), report)
+
+    def test_backbone_sampling_rejects_invalid_ranges_and_amplitudes(self):
+        for extra in (('--backbone-steps','4'),
+                      ('--backbone-steps','4','--backbone-range','2:30'),
+                      ('--backbone-steps','4','--backbone-range','2:9','--backbone-angle','6')):
+            result = self.run_model(*extra)
+            self.assertEqual(result.returncode, 1)
+            self.assertFalse(self.output.exists())
 
     def test_primary_template_alias_and_missing_id(self):
         self.ali.write_text(f'>P1;donor\nstructure:donor:FIRST:A:LAST:A::::\n{self.sequence}*\n'

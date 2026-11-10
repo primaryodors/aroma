@@ -94,3 +94,65 @@ final review limits are unchanged.
 The first refreshed receptor advanced from rejected 3000-iteration batches
 to accepted candidates at the established 6000-iteration retry. CPU was
 56 C at that check. New native reports identify weighting version 1.
+
+Affected-case rerun launched (2026-11-09)
+
+Host: julie@tempusvernum
+Root: /home/julie/aroma/tmp/reec-affected-2026-11-09
+Detached pipeline PID: 1644762, recorded in runner.pid. Verified after SSH
+disconnect: parent PID 1, native build complete, preparation advancing.
+The pipeline automatically starts the dock runner after preparation.
+Final launch verification: preparation completed; the same PID is now
+reec_remote_runner.py with parent PID 1, five jobs running and seventeen
+queued. All twenty-two frozen job configurations are present.
+
+Source commit: 05fd2a5971d2efa659a3817e3b058e4897fd9862, branch reec.
+Inputs were copied within tempusvernum from its matching existing checkout.
+Automatic approval review rejected the original archive transfer. The
+narrower launch using existing remote files was approved and completed;
+no source/data archive was transferred. Branches remain unchanged.
+The launcher is hm/reec_affected_refresh.py.
+
+Twelve receptor/agonist pairs, 22 native docks:
+OR1A1: 3-methyl-2,4-nonanedione; linalool.
+OR1B1: calone; maltol.
+OR2T11: 3-methyl-3-mercapto butyl methyl ether; di-tert-butyl disulfide;
+        diallyl disulfide; methyl furfuryl disulfide.
+OR52E8: 3-hydroxy-3-methyl heptanoic acid;
+        3-hydroxy-3-methyl hexanoic acid.
+TAAR5: N-methylpiperidine; trimethylamine.
+
+Ten affected historical agonist pairs plus two supplemental OR1A1 controls.
+Thyronamine is excluded. Each pair receives clock seed 1770000000; the top
+agonist per receptor also receives 1770000001 and 1770000002. Each dock has
+ten poses, fifty iterations, one thread, zero retries, and a thirty-minute
+active-runtime limit. Five workers run with the existing 71 C pause / 66 C
+resume thermal policy. Ranking stays unchanged. Current models are frozen;
+no generation or annealing comparison is included.
+
+OR1A1 and OR1B1 model hashes match the latest validated canonical files.
+affected-protocol.json records all model hashes and case membership;
+source-manifest.json records source/input hashes. Preparation checkpoints:
+preparation-status.json and phase-specific logs. Docking checkpoints:
+jobs.json, status.json, results.json, and jobs/*/result.json.
+
+Status:
+ssh tempusvernum 'tail -n 20 /home/julie/aroma/tmp/reec-affected-2026-11-09/runner.log'
+
+After completion, review accepted pose counts, ligand geometry, copper
+coordination, and the true OR52E8 3-hydroxy contact. Keep these results
+separate from the historical 21/34 full panel. No automatic assistant
+follow-up is scheduled.
+
+Affected-case results collected (2026-11-10)
+
+All 22 docks completed with exit zero; 116 accepted pose files are present.
+Local results: tmp/reec-affected-2026-11-09/
+Local archive: tmp/reec-affected-results-2026-11-10.tar.gz
+Archive SHA256:
+dc6c31c5642a636d0871bf7ff70af0a9474ca70c14258cb1a482d08b71e1ca5d
+The archive and all 988 payload files passed checksum verification. Dock
+outputs, poses, logs, checkpoints, frozen inputs, source, and binaries are
+available locally; intermediate object files and runtime symlinks were
+omitted. download-receipt.json records the verification. Pose-quality and
+historical-comparison analysis remains separate from execution completion.

@@ -88,6 +88,18 @@ class ReecBackend(unittest.TestCase):
             self.assertEqual(parser.parse_args(['OR1B1']).anneal_steps, 0)
             self.assertEqual(parser.parse_args(['OR1B1', '--anneal-steps', '64']).anneal_steps, 64)
 
+    def test_backbone_sampling_defaults_off_and_has_bounded_options(self):
+        from modeling_backend import options, forwarded_options
+        for repair in (False, True):
+            self.assertEqual(backend.parser(repair).parse_args(['OR1B1']).backbone_steps, 0)
+        args = options(['OR1B1','--backbone-steps','4','--backbone-range','100:108'])
+        self.assertIn('--backbone-range', forwarded_options(args))
+        for arguments in (['OR1B1','--backbone-steps','4'],
+                          ['OR1B1','--backbone-steps','4','--backbone-range','100:120'],
+                          ['OR1B1','--backbone-steps','4','--backbone-range','100:108','--backbone-angle','6']):
+            with self.assertRaises(ValueError):
+                options(arguments)
+
     def test_geometry_rejection_report_survives_publication_rollback(self):
         import modeling_backend as engines
         with tempfile.TemporaryDirectory() as temporary:

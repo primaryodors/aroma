@@ -640,6 +640,13 @@ struct Model
         int trials=0,accepted=0,uphill=0,incremental=0,bonds=0;
         double before=0,after=0;
     } sampling;
+    struct BackboneSampling
+    {
+        int trials=0,valid_proposals=0,accepted=0,first=0,last=0,budget=0;
+        double before=0,after=0,closure_error=0,max_displacement=0,angle=0,outside_displacement=0;
+    } backbone_sampling;
+    std::vector<bool> local_mobile;
+    uint64_t energy_evaluations=0;
     int id(int r,const std::string& a)const
     {
         auto it=ids.find(
@@ -1477,6 +1484,7 @@ struct Model
     }
     double energy(const XYZ& x,XYZ& g)
     {
+        ++energy_evaluations;
         g.assign(x.size(),
         {
         });
@@ -1528,6 +1536,8 @@ struct Model
         for(auto& fixed:fixed_records)g[fixed.first]=
         {
         };
+        if(!local_mobile.empty())for(size_t i=0;i<g.size();++i)
+            if(!local_mobile[i])g[i]=V{};
         if(!std::isfinite(e))throw std::runtime_error("Nonfinite optimization energy");
         return e;
     }
@@ -1721,6 +1731,86 @@ struct Model
         out<<std::hex<<hash;
         return out.str();
     }
+    static bool acceptable(const Stats& s)
+    {
+        return s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18
+            &&s.planarity_max<=.25&&s.severe==0;
+    }
+    void sample_backbone(int first,int last,int steps,double degrees,int budget)
+    {
+        backbone_sampling=BackboneSampling{};
+        if(!steps)return;
+        backbone_sampling.first=first;backbone_sampling.last=last;
+        backbone_sampling.budget=budget;backbone_sampling.angle=degrees;
+        XYZ origin=xyz,best=xyz;
+        Stats initial=stats();
+        double best_score=initial.score;
+        bool valid=acceptable(initial);
+        backbone_sampling.before=best_score;
+        local_mobile.assign(nodes.size(),false);
+        auto prior_selected=anneal_residues;
+        for(size_t i=0;i<nodes.size();++i)if(!fixed_records.count(i))
+        {
+            int r=nodes[i].res;
+            if(r>first&&r<last)local_mobile[i]=true;
+            else if(!nodes[i].backbone&&r!=first&&r!=last)
+                for(int nearby=first+1;nearby<last;++nearby)
+                    if((xyz[i]-xyz[id(nearby,"CA")]).norm()<=6.)local_mobile[i]=true;
+            if(local_mobile[i])anneal_residues.insert(r);
+        }
+        // Entire side chains move together; endpoint residues remain fixed.
+        std::set<int> sidechains;
+        for(size_t i=0;i<nodes.size();++i)if(local_mobile[i]&&!nodes[i].backbone)sidechains.insert(nodes[i].res);
+        for(size_t i=0;i<nodes.size();++i)if(!fixed_records.count(i)&&!nodes[i].backbone
+            &&sidechains.count(nodes[i].res))local_mobile[i]=true;
+        std::mt19937 rng(seed^uint32_t(candidate_index+1)*0x9e3779b9u^0x51bb5a1u);
+        for(int trial=0;trial<steps;++trial)
+        {
+            xyz=best;
+            V pivot=xyz[id(first,"CA")],axis=(xyz[id(last,"CA")]-pivot).unit();
+            double theta=(trial%2?-1:1)*degrees*(.5+.5*double(rng())/rng.max())*std::acos(-1.)/180;
+            for(size_t i=0;i<nodes.size();++i)if(nodes[i].res>first&&nodes[i].res<last&&!fixed_records.count(i))
+            {
+                V point=xyz[i]-pivot;
+                xyz[i]=pivot+point*std::cos(theta)+axis.cross(point)*std::sin(theta)
+                    +axis*(axis.dot(point)*(1-std::cos(theta)));
+            }
+            auto rotations=targeted_rotations();
+            rotations.erase(std::remove_if(rotations.begin(),rotations.end(),[&](const Rotation& r)
+            {
+                return std::any_of(r.moving.begin(),r.moving.end(),[&](int i){return !local_mobile[i];});
+            }),rotations.end());
+            if(!rotations.empty())rotate(rotations[rng()%rotations.size()],(rng()%2?1:-1)*2*std::acos(-1.)/3);
+            minimize(budget/steps+(trial<budget%steps?1:0));
+            ++backbone_sampling.trials;
+            Stats proposal=stats();
+            double movement=0;
+            for(size_t i=0;i<nodes.size();++i)if(nodes[i].backbone&&nodes[i].res>first&&nodes[i].res<last)
+                movement=std::max(movement,(xyz[i]-origin[i]).norm());
+            double closure=std::max(std::fabs((xyz[id(first,"C")]-xyz[id(first+1,"N")]).norm()-1.329),
+                                    std::fabs((xyz[id(last-1,"C")]-xyz[id(last,"N")]).norm()-1.329));
+            if(!acceptable(proposal)||movement>.75||closure>.08)continue;
+            ++backbone_sampling.valid_proposals;
+            if(!valid||proposal.score<best_score)
+            {
+                best=xyz;
+                best_score=proposal.score;
+                valid=true;
+                ++backbone_sampling.accepted;
+            }
+        }
+        xyz=best;
+        anneal_residues=prior_selected;
+        local_mobile.clear();
+        refresh(xyz);
+        backbone_sampling.after=best_score;
+        backbone_sampling.closure_error=std::max(std::fabs((xyz[id(first,"C")]-xyz[id(first+1,"N")]).norm()-1.329),
+                                                std::fabs((xyz[id(last-1,"C")]-xyz[id(last,"N")]).norm()-1.329));
+        for(size_t i=0;i<nodes.size();++i)if(nodes[i].backbone&&nodes[i].res>first&&nodes[i].res<last)
+            backbone_sampling.max_displacement=std::max(backbone_sampling.max_displacement,(xyz[i]-origin[i]).norm());
+        for(size_t i=0;i<nodes.size();++i)if(nodes[i].backbone&&(nodes[i].res<=first||nodes[i].res>=last))
+            backbone_sampling.outside_displacement=std::max(backbone_sampling.outside_displacement,(xyz[i]-origin[i]).norm());
+    }
     void report(const std::string& path,const Stats& before,const Stats& after,bool valid)
     {
         std::ofstream f(path);
@@ -1731,6 +1821,16 @@ struct Model
           << ",\n  \"candidate_index\": " << candidate_index
           << ",\n  \"start_signature\": " << std::quoted(start_signature)
           << ",\n  \"clash_scale\": " << clash_scale
+          << ",\n  \"energy_evaluations\": " << energy_evaluations
+          << ",\n  \"backbone_sampling\": {\"trials\": " << backbone_sampling.trials
+          << ", \"valid_proposals\": " << backbone_sampling.valid_proposals
+          << ", \"accepted\": " << backbone_sampling.accepted
+          << ", \"first\": " << backbone_sampling.first << ", \"last\": " << backbone_sampling.last
+          << ", \"angle_degrees\": " << backbone_sampling.angle << ", \"local_iteration_budget\": " << backbone_sampling.budget
+          << ", \"score_before\": " << backbone_sampling.before << ", \"score_after\": " << backbone_sampling.after
+          << ", \"closure_bond_error\": " << backbone_sampling.closure_error
+          << ", \"max_backbone_displacement\": " << backbone_sampling.max_displacement
+          << ", \"max_outside_backbone_displacement\": " << backbone_sampling.outside_displacement << "}"
           << ",\n  \"annealing\": {\"torsions\": " << sampling.bonds << ", \"trials\": " << sampling.trials
           << ", \"accepted\": " << sampling.accepted << ", \"uphill\": " << sampling.uphill
           << ", \"incremental_improvements\": " << sampling.incremental
@@ -1898,6 +1998,9 @@ const CliOption cli_options[] = {
     {"--anneal-steps", 'A', "COUNT", "Annealing rounds (default 0, disabled)"},
     {"--anneal-temperature", 'u', "SCORE", "Initial annealing temperature (default 12)"},
     {"--anneal-residues", 'R', "LIST", "Comma-separated annealing residue numbers"},
+    {"--backbone-steps", 'b', "COUNT", "Bounded local proposals (default 0, disabled)"},
+    {"--backbone-range", 'B', "FIRST:LAST", "Fixed endpoint residues; span 3-12 residues"},
+    {"--backbone-angle", 'v', "DEGREES", "Local proposal angle (default 3, maximum 5)"},
     {"--clash-scale", 'x', "SCALE", "Clash penalty multiplier (default 1)"},
     {"--nofail", 'N', "", "Export the least-bad rejected model; retain exit status 2"},
     {"--help", 'h', "", "Show this help"}
@@ -1942,6 +2045,8 @@ int main(int argc,char** argv)
         std::vector<std::string> templates,contact_files;
         char chain='A';
         int iterations=3000,models=1,seed=0,anneal_steps=0;
+        int backbone_steps=0,backbone_first=0,backbone_last=0;
+        double backbone_angle=3;
         double anneal_temperature=12,clash_scale=1;
         std::set<int> anneal_residues;
         for(int i=1; i<argc; ++i)
@@ -1989,6 +2094,14 @@ int main(int argc,char** argv)
             else if(a=="--models")models=integer(v);
             else if(a=="--seed")seed=integer(v);
             else if(a=="--anneal-steps")anneal_steps=integer(v);
+            else if(a=="--backbone-steps")backbone_steps=integer(v);
+            else if(a=="--backbone-angle")backbone_angle=number(v);
+            else if(a=="--backbone-range")
+            {
+                auto ends=split(v,':');
+                if(ends.size()!=2)throw std::runtime_error("Expected backbone range FIRST:LAST");
+                backbone_first=integer(ends[0]);backbone_last=integer(ends[1]);
+            }
             else if(a=="--anneal-temperature")anneal_temperature=number(v);
             else if(a=="--clash-scale")clash_scale=number(v);
             else if(a=="--anneal-residues")for(auto residue:split(v,','))
@@ -2008,6 +2121,10 @@ int main(int argc,char** argv)
         if(seed<0)throw std::runtime_error("Seed must be nonnegative");
         if(anneal_steps<0||anneal_steps>100000||anneal_temperature<=0)throw std::runtime_error("Invalid annealing settings");
         if(clash_scale<=0)throw std::runtime_error("Clash scale must be positive");
+        if(backbone_steps<0||backbone_steps>32||backbone_angle<=0||backbone_angle>5
+            ||(backbone_steps&&(backbone_first<1||backbone_last-backbone_first<2
+                ||backbone_last-backbone_first>11||iterations<2*backbone_steps)))
+            throw std::runtime_error("Invalid bounded backbone settings");
         if(report.empty())report=out+".json";
         if(report==out)throw std::runtime_error("Report and PDB paths must differ");
         auto entries=alignment(ali);
@@ -2038,6 +2155,7 @@ int main(int argc,char** argv)
         m.seed=unsigned(seed);
         m.clash_scale=clash_scale;
         for(int r:anneal_residues)if(r>int(seq.size()))throw std::runtime_error("Annealing residue exceeds target length");
+        if(backbone_steps&&backbone_last>int(seq.size()))throw std::runtime_error("Backbone range exceeds target length");
         m.anneal_residues=anneal_residues;
         m.build(seq,t);
         if(!environment.empty())
@@ -2057,6 +2175,8 @@ int main(int argc,char** argv)
         double best_score=1e100;
         Stats final;
         Model::Annealing best_sampling;
+        Model::BackboneSampling best_backbone_sampling;
+        uint64_t best_energy_evaluations=0;
         int best_candidate=0;
         std::string best_signature;
         std::set<int> best_released;
@@ -2064,21 +2184,26 @@ int main(int argc,char** argv)
         for(int candidate=0; candidate<models; ++candidate)
         {
             m.xyz=start;
+            m.energy_evaluations=0;
+            m.backbone_sampling=Model::BackboneSampling{};
             m.reset_template_release();
             if(candidate||seed) m.alternate_start(candidate);
             m.candidate_index=candidate;
             m.start_signature=m.coordinate_signature();
             std::cout<<"REEC candidate "<<candidate+1<<"/"<<models<<" seed "<<seed<<" start "<<m.start_signature<<"\n";
+            int local_budget=backbone_steps?iterations/2:0;
+            int global_budget=iterations-local_budget;
             for(int stage=0; stage<3; ++stage)
             {
                 if(stage)m.release_clashing_templates();
                 m.hard_scale=stage==0?10:(stage==1?100:1000);
                 m.anchor_scale=stage==0?1:(stage==1?.3:.1);
-                m.minimize(iterations/3+(stage==2?iterations%3:0));
+                m.minimize(global_budget/3+(stage==2?global_budget%3:0));
                 if(stage==0)m.anneal(anneal_steps,anneal_temperature,candidate);
             }
+            m.sample_backbone(backbone_first,backbone_last,backbone_steps,backbone_angle,local_budget);
             Stats s=m.stats();
-            bool ok=s.hard_fail==0&&s.chirality==0&&s.bond_max<=.08&&s.angle_max<=.18&&s.planarity_max<=.25&&s.severe==0;
+            bool ok=Model::acceptable(s);
             if(!candidate_prefix.empty())
             {
                 std::string path=candidate_prefix+"."+std::to_string(candidate)+".pdb";
@@ -2093,6 +2218,8 @@ int main(int argc,char** argv)
                 best_score=s.score;
                 final=s;
                 best_sampling=m.sampling;
+                best_backbone_sampling=m.backbone_sampling;
+                best_energy_evaluations=m.energy_evaluations;
                 best_candidate=candidate;
                 best_signature=m.start_signature;
                 best_released=m.released_template_residues;
@@ -2101,6 +2228,8 @@ int main(int argc,char** argv)
         }
         m.xyz=best;
         m.sampling=best_sampling;
+        m.backbone_sampling=best_backbone_sampling;
+        m.energy_evaluations=best_energy_evaluations;
         m.candidate_index=best_candidate;
         m.start_signature=best_signature;
         m.released_template_residues=best_released;

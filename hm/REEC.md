@@ -120,6 +120,29 @@ local experiments, use `--output` with no docking action. Failed numerical repor
 
 ## Sampling and geometry details
 
+Optional bounded backbone trials are available through `--backbone-steps`,
+`--backbone-range FIRST:LAST`, and `--backbone-angle`. They default off.
+For example, `--backbone-steps 4 --backbone-range 204:212` reserves half of
+the existing iteration cap for four local trials. The other half goes to
+the usual three global stages. This is an experimental budget allocation.
+
+Each trial rotates internal residues around the endpoint CA axis, repacks
+a nearby side chain, and minimizes with both endpoint residues and the
+surrounding backbone fixed. Nearby side chains within 6 A may repack.
+Local closure must meet the existing chemical geometry limits; backbone
+movement from the local starting conformation is capped at 0.75 A.
+Segment spans are 3-12 residues and proposal angles are at most 5 degrees.
+Only validated improvements are retained when the starting model is valid.
+Fixed environment coordinates remain exact. Reports record trial counts,
+closure error, movement bounds, scores, and total energy evaluations.
+
+Configured iteration caps are equal for on/off comparisons; runtime and
+actual evaluation counts can differ. Inspect those costs alongside held-out
+accuracy and pocket diversity. A lower native score alone does not establish
+better structural or docking accuracy. The pilot runner is
+`hm/reec_backbone_benchmark.py`. These trials do not create conformer storage
+or change native docking ranking.
+
 Every supplied template contributes soft CA distance bounds for nearby residues; these supplement
 local initialization and positional anchors. Alkyl bonds have a threefold torsion preference.
 Alternate starts rotate selected sidechains around CA–CB in 120-degree increments before relaxation.

@@ -96,6 +96,23 @@ Pocket heavy-atom RMSD legacy/weighted: OR51E2 1.722/1.694 A, TAAR1
 controls, not a universal accuracy claim. The next baseline task is the
 corrected ligand panel, followed by local backbone sampling investigation.
 
+Affected ligand rerun launched under nohup on tempusvernum (2026-11-09):
+twelve pairs, 22 docks, using current canonical models, corrected chemistry,
+and unchanged ranking. The isolated pipeline builds, prepares, and docks
+without a laptop connection. REEC_REMOTE_BENCHMARK.txt records the scope,
+PID, root, protocol, and checkpoints. Results await completion and review.
+
+Affected-case analysis completed (2026-11-10): all 22 runs finish, yielding
+116 accepted poses; 14/22 runs and 8/12 primary cases meet the historical
+operational rule. The ten shared primary cases change from 8/10 to 6/10.
+Ring geometry is preserved; 23/24 copper poses meet the two-cysteine window
+and all six leading copper poses also contact ligand sulfur. No OR52E8 pose
+passes the directional Asn208 hydrogen-bond check. Ranking stays unchanged.
+REEC_AFFECTED_ANALYSIS.txt records the full review and comparison limits.
+The requested retrospective baseline rerun is complete. Next is the bounded
+local backbone investigation; independent prospective ligand validation
+remains separate from these known-agonist regression cases.
+
 Template weighting version 1 is implemented: global similarity, local
 similarity, and coordinate coverage govern starting coordinates and fold
 restraints. REEC_TEMPLATE_WEIGHTING.txt records its policy and checks.
@@ -120,6 +137,14 @@ exclude those coordinates from reconstruction inputs.
 Recommendation: complete this baseline before adding more sampling.
 
 2. Local backbone sampling investigation
+
+Initial bounded pilot completed (2026-11-10). REEC_BACKBONE_PILOT.txt records
+the optional implementation, endpoint/closure invariants, equal iteration
+caps, measured costs, and results. All 24 TAAR1/OR52E8 candidates pass. TAAR1
+diversity increases but pocket-heavy accuracy slightly worsens; OR52E8 retains
+no local proposals and shows no added contact benefit. Keep the sampler off
+by default and preserve current docking models. The initial investigation is
+complete at this scope; next is the conjugate-gradient fallback trial.
 
 Current Cartesian minimization permits backbone movement. Local template
 release softens anchors and template-derived fold restraints around severe

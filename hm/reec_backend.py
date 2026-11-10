@@ -98,6 +98,9 @@ def parser(repair=False):
     p.add_argument('--anneal-steps', type=int, default=0, help='Targeted Monte Carlo rounds; disabled by default, use 64 to enable')
     p.add_argument('--anneal-temperature', type=float, default=12, help='Initial annealing temperature in REEC score units')
     p.add_argument('--anneal-residues', help='Comma-separated residue numbers; defaults to receptor binding-site residues')
+    p.add_argument('--backbone-steps', type=int, default=0, help='Optional bounded local backbone proposals')
+    p.add_argument('--backbone-range', help='Fixed endpoint residues as FIRST:LAST, spanning 3-12 residues')
+    p.add_argument('--backbone-angle', type=float, default=3, help='Local proposal angle, at most 5 degrees')
     p.add_argument('--max-attempts', type=int, default=100 if repair else 3,
                    help='Maximum attempts; dohm defaults to 3, then emits a labeled fallback; 0 retries without a bound')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
@@ -311,6 +314,9 @@ def model(rcp, args, work, templates, alignment, contacts, environment=None, fit
                 '--clash-scale', getattr(args, 'clash_scale', 1.)])
     if getattr(args, 'anneal_residues', None):
         cmd.extend(['--anneal-residues', args.anneal_residues])
+    if getattr(args, 'backbone_steps', 0):
+        cmd.extend(['--backbone-steps', args.backbone_steps, '--backbone-range', args.backbone_range,
+                    '--backbone-angle', args.backbone_angle])
     for template in templates:
         cmd.extend(['--template', template])
     if getattr(args, 'candidate_prefix', None):

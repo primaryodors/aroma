@@ -29,6 +29,18 @@ def options(argv, repair=False):
         raise ValueError('Annealing steps must be between 0 and 100000')
     if not math.isfinite(args.anneal_temperature) or args.anneal_temperature <= 0:
         raise ValueError('Annealing temperature must be positive and finite')
+    if not 0 <= args.backbone_steps <= 32 or not math.isfinite(args.backbone_angle) or not 0 < args.backbone_angle <= 5:
+        raise ValueError('Invalid bounded backbone settings')
+    if args.backbone_steps:
+        if args.backend != 'reec':
+            raise ValueError('Bounded backbone sampling requires REEC')
+        if args.iterations is not None and args.iterations < 2*args.backbone_steps:
+            raise ValueError('Backbone proposals exceed the iteration budget')
+        if not args.backbone_range or not re.fullmatch(r'[1-9][0-9]*:[1-9][0-9]*', args.backbone_range):
+            raise ValueError('Backbone sampling requires FIRST:LAST endpoints')
+        first, last = map(int, args.backbone_range.split(':'))
+        if not 2 <= last-first <= 11:
+            raise ValueError('Backbone sampling spans 3-12 residues')
     if args.anneal_residues is not None and not re.fullmatch(r'[1-9][0-9]*(,[1-9][0-9]*)*', args.anneal_residues):
         raise ValueError('Annealing residues must be comma-separated positive integers')
     for name in ('alignment', 'output'):
@@ -48,6 +60,9 @@ def forwarded_options(args):
         value = getattr(args, name)
         if value is not None:
             result.extend(['--'+name.replace('_', '-'), str(value)])
+    if args.backbone_steps:
+        result.extend(['--backbone-steps', str(args.backbone_steps), '--backbone-range', args.backbone_range,
+                       '--backbone-angle', str(args.backbone_angle)])
     for name in ('template', 'contacts'):
         for value in getattr(args, name):
             result.extend(['--'+name, str(value)])
