@@ -647,6 +647,18 @@ struct Model
     } backbone_sampling;
     std::vector<bool> local_mobile;
     uint64_t energy_evaluations=0;
+    struct Minimization
+    {
+        std::string reason="iteration_limit";
+        std::string method="lbfgs";
+        int budget=0,completed=0;
+        double before=0,after=0,max_gradient=0;
+    };
+    std::vector<Minimization> minimizations;
+    int fallback_budget=0;
+    std::string fallback_method="cg";
+    bool fallback_eligible=false;
+    bool fallback_restored=false;
     int id(int r,const std::string& a)const
     {
         auto it=ids.find(
@@ -1546,6 +1558,9 @@ struct Model
         refresh(xyz);
         XYZ g;
         double e=energy(xyz,g);
+        Minimization stop;
+        stop.budget=iterations;
+        stop.before=e;
         std::vector<XYZ> sh,yh;
         std::vector<double> rho;
         for(int it=0; it<iterations; ++it)
@@ -1585,7 +1600,13 @@ struct Model
             }
             double maxstep=0;
             for(auto& v:direction)maxstep=std::max(maxstep,v.norm());
-            if(maxstep<1e-9)break;
+            if(maxstep<1e-9)
+            {
+                double maximum=0;
+                for(const auto& v:g)maximum=std::max(maximum,v.norm());
+                stop.reason=maximum<=1e-3?"converged":"small_step_stall";
+                break;
+            }
             double step=std::min(1.,.15/maxstep);
             XYZ trial,ng;
             double en=e;
@@ -1602,7 +1623,11 @@ struct Model
                 }
                 step*=.5;
             }
-            if(!accepted)break;
+            if(!accepted)
+            {
+                stop.reason="line_search_stall";
+                break;
+            }
             XYZ s(g.size()),y(g.size());
             for(size_t i=0; i<g.size(); ++i)
             {
@@ -1625,8 +1650,67 @@ struct Model
             xyz.swap(trial);
             g.swap(ng);
             e=en;
+            ++stop.completed;
             if(it%250==0)std::cout<<"  iteration "<<it<<" energy "<<e<<"\n";
         }
+        stop.after=e;
+        for(const auto& v:g)stop.max_gradient=std::max(stop.max_gradient,v.norm());
+        minimizations.push_back(stop);
+        std::cout<<"REEC minimization: "<<stop.reason<<" after "<<stop.completed<<"/"<<iterations
+                 <<" iterations; max gradient "<<stop.max_gradient<<"\n";
+    }
+    void conjugate_gradient(int iterations)
+    {
+        refresh(xyz);
+        XYZ g;
+        double score=energy(xyz,g);
+        Minimization stop;
+        stop.method="conjugate_gradient";
+        stop.before=score;stop.budget=iterations;
+        XYZ direction=g;
+        for(auto& v:direction)v=v*(-1./6000);
+        for(int iteration=0;iteration<iterations;++iteration)
+        {
+            if(stale(xyz))
+            {
+                refresh(xyz);score=energy(xyz,g);direction=g;
+                for(auto& v:direction)v=v*(-1./6000);
+            }
+            double slope=dot(g,direction);
+            if(slope>=0)
+            {
+                direction=g;
+                for(auto& v:direction)v=v*(-1./6000);
+                slope=dot(g,direction);
+            }
+            double maximum=0;
+            for(const auto& v:direction)maximum=std::max(maximum,v.norm());
+            if(maximum<1e-9)
+            {
+                double grad=0;for(const auto& v:g)grad=std::max(grad,v.norm());
+                stop.reason=grad<=1e-3?"converged":"small_step_stall";break;
+            }
+            double step=std::min(1.,.15/maximum),trial_score=score;
+            XYZ trial,next_gradient;
+            bool accepted=false;
+            for(int search=0;search<25;++search)
+            {
+                trial=xyz;
+                for(size_t i=0;i<trial.size();++i)trial[i]+=direction[i]*step;
+                trial_score=energy(trial,next_gradient);
+                if(trial_score<=score+1e-4*step*slope){accepted=true;break;}
+                step*=.5;
+            }
+            if(!accepted){stop.reason="line_search_stall";break;}
+            XYZ difference=next_gradient;
+            for(size_t i=0;i<difference.size();++i)difference[i]+=g[i]*(-1);
+            double beta=iteration%20==19?0:std::max(0.,dot(next_gradient,difference)/std::max(1e-30,dot(g,g)));
+            for(size_t i=0;i<direction.size();++i)direction[i]=next_gradient[i]*(-1./6000)+direction[i]*beta;
+            xyz.swap(trial);g.swap(next_gradient);score=trial_score;++stop.completed;
+        }
+        stop.after=score;
+        for(const auto& v:g)stop.max_gradient=std::max(stop.max_gradient,v.norm());
+        minimizations.push_back(stop);
     }
     Stats stats()
     {
@@ -1822,6 +1906,20 @@ struct Model
           << ",\n  \"start_signature\": " << std::quoted(start_signature)
           << ",\n  \"clash_scale\": " << clash_scale
           << ",\n  \"energy_evaluations\": " << energy_evaluations
+          << ",\n  \"minimizations\": [";
+        for(size_t i=0;i<minimizations.size();++i)
+        {
+            const auto& stop=minimizations[i];
+            if(i)f<<",";
+            f<<"{\"reason\":"<<std::quoted(stop.reason)<<",\"budget\":"<<stop.budget
+             <<",\"completed\":"<<stop.completed<<",\"score_before\":"<<stop.before
+             <<",\"score_after\":"<<stop.after<<",\"max_gradient\":"<<stop.max_gradient
+             <<",\"method\":"<<std::quoted(stop.method)<<"}";
+        }
+        f<<"]"
+          << ",\n  \"fallback\": {\"budget\":"<<fallback_budget<<",\"method\":"<<std::quoted(fallback_method)
+          <<",\"eligible\":"<<(fallback_eligible?"true":"false")
+          <<",\"restored_valid_start\":"<<(fallback_restored?"true":"false")<<"}"
           << ",\n  \"backbone_sampling\": {\"trials\": " << backbone_sampling.trials
           << ", \"valid_proposals\": " << backbone_sampling.valid_proposals
           << ", \"accepted\": " << backbone_sampling.accepted
@@ -2001,6 +2099,8 @@ const CliOption cli_options[] = {
     {"--backbone-steps", 'b', "COUNT", "Bounded local proposals (default 0, disabled)"},
     {"--backbone-range", 'B', "FIRST:LAST", "Fixed endpoint residues; span 3-12 residues"},
     {"--backbone-angle", 'v', "DEGREES", "Local proposal angle (default 3, maximum 5)"},
+    {"--fallback-iterations", 'j', "COUNT", "Reserve a final rescue phase (default 0)"},
+    {"--fallback-method", 'J', "cg|lbfgs", "Rescue method; lbfgs is the matched control"},
     {"--clash-scale", 'x', "SCALE", "Clash penalty multiplier (default 1)"},
     {"--nofail", 'N', "", "Export the least-bad rejected model; retain exit status 2"},
     {"--help", 'h', "", "Show this help"}
@@ -2046,6 +2146,8 @@ int main(int argc,char** argv)
         char chain='A';
         int iterations=3000,models=1,seed=0,anneal_steps=0;
         int backbone_steps=0,backbone_first=0,backbone_last=0;
+        int fallback_iterations=0;
+        std::string fallback_method="cg";
         double backbone_angle=3;
         double anneal_temperature=12,clash_scale=1;
         std::set<int> anneal_residues;
@@ -2095,6 +2197,8 @@ int main(int argc,char** argv)
             else if(a=="--seed")seed=integer(v);
             else if(a=="--anneal-steps")anneal_steps=integer(v);
             else if(a=="--backbone-steps")backbone_steps=integer(v);
+            else if(a=="--fallback-iterations")fallback_iterations=integer(v);
+            else if(a=="--fallback-method")fallback_method=v;
             else if(a=="--backbone-angle")backbone_angle=number(v);
             else if(a=="--backbone-range")
             {
@@ -2125,6 +2229,10 @@ int main(int argc,char** argv)
             ||(backbone_steps&&(backbone_first<1||backbone_last-backbone_first<2
                 ||backbone_last-backbone_first>11||iterations<2*backbone_steps)))
             throw std::runtime_error("Invalid bounded backbone settings");
+        int global_cap=iterations-(backbone_steps?iterations/2:0);
+        if(fallback_iterations<0||fallback_iterations>global_cap/3+global_cap%3
+            ||(fallback_method!="cg"&&fallback_method!="lbfgs"))
+            throw std::runtime_error("Invalid fallback settings");
         if(report.empty())report=out+".json";
         if(report==out)throw std::runtime_error("Report and PDB paths must differ");
         auto entries=alignment(ali);
@@ -2177,6 +2285,9 @@ int main(int argc,char** argv)
         Model::Annealing best_sampling;
         Model::BackboneSampling best_backbone_sampling;
         uint64_t best_energy_evaluations=0;
+        std::vector<Model::Minimization> best_minimizations;
+        bool best_fallback_eligible=false;
+        bool best_fallback_restored=false;
         int best_candidate=0;
         std::string best_signature;
         std::set<int> best_released;
@@ -2185,6 +2296,9 @@ int main(int argc,char** argv)
         {
             m.xyz=start;
             m.energy_evaluations=0;
+            m.minimizations.clear();
+            m.fallback_budget=fallback_iterations;m.fallback_method=fallback_method;m.fallback_eligible=false;
+            m.fallback_restored=false;
             m.backbone_sampling=Model::BackboneSampling{};
             m.reset_template_release();
             if(candidate||seed) m.alternate_start(candidate);
@@ -2198,8 +2312,23 @@ int main(int argc,char** argv)
                 if(stage)m.release_clashing_templates();
                 m.hard_scale=stage==0?10:(stage==1?100:1000);
                 m.anchor_scale=stage==0?1:(stage==1?.3:.1);
-                m.minimize(global_budget/3+(stage==2?global_budget%3:0));
+                int budget=global_budget/3+(stage==2?global_budget%3:0);
+                m.minimize(budget-(stage==2?fallback_iterations:0));
                 if(stage==0)m.anneal(anneal_steps,anneal_temperature,candidate);
+            }
+            if(fallback_iterations)
+            {
+                auto stop=m.minimizations.back();
+                XYZ prior=m.xyz;
+                Stats before_fallback=m.stats();
+                bool stalled=(stop.reason=="small_step_stall"||stop.reason=="line_search_stall")&&stop.max_gradient>1e-3;
+                m.fallback_eligible=stalled||!Model::acceptable(before_fallback);
+                if(m.fallback_eligible&&fallback_method=="cg")m.conjugate_gradient(fallback_iterations);
+                else m.minimize(fallback_iterations);
+                if(Model::acceptable(before_fallback)&&!Model::acceptable(m.stats()))
+                {
+                    m.xyz=prior;m.refresh(m.xyz);m.fallback_restored=true;
+                }
             }
             m.sample_backbone(backbone_first,backbone_last,backbone_steps,backbone_angle,local_budget);
             Stats s=m.stats();
@@ -2220,6 +2349,9 @@ int main(int argc,char** argv)
                 best_sampling=m.sampling;
                 best_backbone_sampling=m.backbone_sampling;
                 best_energy_evaluations=m.energy_evaluations;
+                best_minimizations=m.minimizations;
+                best_fallback_eligible=m.fallback_eligible;
+                best_fallback_restored=m.fallback_restored;
                 best_candidate=candidate;
                 best_signature=m.start_signature;
                 best_released=m.released_template_residues;
@@ -2230,6 +2362,9 @@ int main(int argc,char** argv)
         m.sampling=best_sampling;
         m.backbone_sampling=best_backbone_sampling;
         m.energy_evaluations=best_energy_evaluations;
+        m.minimizations=best_minimizations;
+        m.fallback_eligible=best_fallback_eligible;
+        m.fallback_restored=best_fallback_restored;
         m.candidate_index=best_candidate;
         m.start_signature=best_signature;
         m.released_template_residues=best_released;

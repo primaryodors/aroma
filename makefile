@@ -293,9 +293,13 @@ $(BIN)/reec_steric_audit: src/test/reec_steric_audit.cpp src/reec.cpp $(OBJS)
 test/reec_backbone_sampling_test: src/test/reec_backbone_sampling_test.cpp src/reec.cpp $(OBJS)
 	$(CPL) src/test/reec_backbone_sampling_test.cpp $(OBJS) -o $@ $(CFLAGS)
 
-check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbone_sampling_test $(BIN)/phew $(BIN)/ic
+test/reec_cg_test: src/test/reec_cg_test.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_cg_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbone_sampling_test test/reec_cg_test $(BIN)/phew $(BIN)/ic
 	./test/reec_test
 	./test/reec_backbone_sampling_test
+	./test/reec_cg_test
 	python3 test/reec_cli_test.py
 	python3 test/reec_backend_test.py
 	python3 test/final_sterics_test.py

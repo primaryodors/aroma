@@ -168,8 +168,18 @@ conformer-generation design; adopt it based on measured benefit.
 
 3. Conjugate-gradient fallback
 
+Initial native trial completed (2026-11-10), REEC_CG_PILOT.txt. Stop reasons
+are now recorded. The ten retained rejected OR1B1 starts reach iteration
+limits in all baseline stages; no actual stall is observed. A matched
+600-iteration CG/restarted-L-BFGS comparison rescues 0/10 in both arms.
+CG consumes 25.5 percent more energy evaluations and is slower. Keep the
+experimental fallback disabled and preserve current production models.
+Three native checks and 67 Python tests pass. Next: conformer storage and
+selection. A naturally occurring stall-only rescue remains unproven.
+
 REEC uses L-BFGS, falls back to a downhill gradient direction in one condition,
-and stops when its line search fails. It has no conjugate-gradient fallback.
+and stops when its line search fails. An experimental, disabled-by-default
+native conjugate-gradient fallback is now available as described above.
 
 Proposed implementation:
 - Report the minimization stop reason: convergence, iteration limit, or stall.

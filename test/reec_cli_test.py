@@ -21,6 +21,7 @@ ALIASES = {
     '--anneal-steps': '-A', '--anneal-temperature': '-u', '--anneal-residues': '-R',
     '--clash-scale': '-x', '--primary-template': '-P', '--nofail': '-N', '--help': '-h',
     '--backbone-steps': '-b', '--backbone-range': '-B', '--backbone-angle': '-v',
+    '--fallback-iterations': '-j', '--fallback-method': '-J',
 }
 
 
@@ -84,6 +85,25 @@ class ReecCLI(unittest.TestCase):
             result = self.run_model(*extra)
             self.assertEqual(result.returncode, 1)
             self.assertFalse(self.output.exists())
+
+    def test_minimization_stop_reasons_are_recorded(self):
+        result = self.run_model('--iterations','30')
+        self.assertIn(result.returncode, (0,2))
+        report = json.loads(Path(str(self.output)+'.json').read_text())
+        self.assertEqual(len(report['minimizations']), 3)
+        for stage in report['minimizations']:
+            self.assertIn(stage['reason'], ('iteration_limit','converged','small_step_stall','line_search_stall'))
+            self.assertLessEqual(stage['completed'], stage['budget'])
+            self.assertGreaterEqual(stage['max_gradient'], 0)
+            self.assertLessEqual(stage['score_after'], stage['score_before'])
+
+    def test_optional_fallback_respects_the_total_iteration_cap(self):
+        result = self.run_model('--iterations','1500','--fallback-iterations','300','--fallback-method','cg')
+        self.assertIn(result.returncode, (0,2))
+        report = json.loads(Path(str(self.output)+'.json').read_text())
+        self.assertEqual([s['budget'] for s in report['minimizations']], [500,500,200,300])
+        self.assertEqual(report['minimizations'][-1]['method'],
+                         'conjugate_gradient' if report['fallback']['eligible'] else 'lbfgs')
 
     def test_primary_template_alias_and_missing_id(self):
         self.ali.write_text(f'>P1;donor\nstructure:donor:FIRST:A:LAST:A::::\n{self.sequence}*\n'
