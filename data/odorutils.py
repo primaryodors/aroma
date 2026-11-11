@@ -91,33 +91,34 @@ def find_odorant(aroma):
         retval['oid'] = aroma
         return retval
 
-    aroma1 = re.sub("[^a-z0-9+-]", "", aroma.lower().replace(' ', '_'))
+    def normalize(name):
+        return re.sub(r"[^a-z0-9+_-]", "", re.sub(r"[\s_]+", "_", name.strip().lower()))
+
+    aroma1 = normalize(aroma)
+    matches = []
     for oid, o in odors.items():
-        namematch = False
+        names = [o['full_name']]
+        if o.get('iupac'):
+            names.append(o['iupac'])
         i = 1
-        while "name"+str(i) in o.keys():
-            if o["name"+str(i)] == aroma:
-                namematch = True
+        while "name"+str(i) in o:
+            names.append(o["name"+str(i)])
             i += 1
-
-        if o['smiles'] == aroma \
-            or ("iupac" in o.keys() and o['iupac'] == aroma) \
-            or namematch \
-            or re.sub( "[^a-z0-9+-]", "", o['full_name'].lower().replace(' ', '_') ) == aroma1:
-            retval = o
-            retval['oid'] = oid
-
-            pwd = os.getcwd()
-            os.chdir(os.path.dirname(os.path.abspath(__file__)))
-            os.chdir("..")
-            fname = "sdf/" + o['full_name'].replace(' ', '_') + ".sdf"
-            if os.path.exists(fname):
-                retval["sdfname"] = fname
-
-            os.chdir(pwd)
-            return retval
-
-    return False
+        if o['smiles'] == aroma or any(normalize(name) == aroma1 for name in names):
+            matches = [(oid, o)]
+            break
+    if not matches:
+        compact = re.sub("[^a-z0-9+-]", "", aroma.lower())
+        matches = [(oid, o) for oid, o in odors.items()
+                   if re.sub("[^a-z0-9+-]", "", o['full_name'].lower()) == compact]
+    if len(matches) != 1:
+        return False
+    oid, odor = matches[0]
+    retval = dict(odor, oid=oid)
+    fname = "sdf/" + odor['full_name'].replace(' ', '_') + ".sdf"
+    if os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), fname)):
+        retval["sdfname"] = fname
+    return retval
 
 def check_isomers(ligname, randomize=True):
     odor = find_odorant(ligname)

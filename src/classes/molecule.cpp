@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "molecule.h"
 #include "aminoacid.h"
+#include "protein.h"
 
 #define _DBGCLSLOOP 0
 
@@ -4350,6 +4351,31 @@ struct Molecule::ShieldingQuery
             high[axis] = middle + extent;
         }
     }
+    bool blocked_by(Atom* ai, Atom* a, Atom* b) const
+    {
+        if (ai == a || ai == b) return false;
+        if (ai->loc.x < low[0] || ai->loc.x > high[0] ||
+            ai->loc.y < low[1] || ai->loc.y > high[1] ||
+            ai->loc.z < low[2] || ai->loc.z > high[2]) return false;
+
+        float rai2 = ai->loc.get_3d_distance_squared(aloc);
+        if (rai2 > r6_2) return false;
+        float rbi2 = ai->loc.get_3d_distance_squared(bloc);
+        if (rbi2 > r6_2) return false;
+
+        float rai = sqrt(rai2);
+        float rbi = sqrt(rbi2);
+        if ((rai+rbi) > r125) return false;
+        float vs = ai->vdW_radius;
+        if (rai < va+vs) return true;
+        if (rbi < vb+vs) return true;
+        Point sloc = ai->loc;
+        Point first = aloc, second = bloc;
+        float f3da = find_3d_angle(&first, &second, &sloc);
+        if (f3da > a->shielding_angle) a->shielding_angle = b->shielding_angle = f3da;
+        return f3da > _shield_angle;
+    }
+
 };
 
 int Molecule::build_shielding_node(int begin, int end) const
@@ -4417,30 +4443,7 @@ bool Molecule::shielded(Atom* a, Atom* b, const ShieldingQuery& query) const
 
     a->shielding_angle = b->shielding_angle = 0;
 
-    auto blocks = [&](Atom* ai)
-    {
-        if (ai == a || ai == b) return false;
-        if (ai->loc.x < query.low[0] || ai->loc.x > query.high[0] ||
-            ai->loc.y < query.low[1] || ai->loc.y > query.high[1] ||
-            ai->loc.z < query.low[2] || ai->loc.z > query.high[2]) return false;
-
-        float rai2 = ai->loc.get_3d_distance_squared(query.aloc);
-        if (rai2 > query.r6_2) return false;
-        float rbi2 = ai->loc.get_3d_distance_squared(query.bloc);
-        if (rbi2 > query.r6_2) return false;
-
-        float rai = sqrt(rai2);
-        float rbi = sqrt(rbi2);
-        if ((rai+rbi) > query.r125) return false;
-        float vs = ai->vdW_radius;
-        if (rai < query.va+vs) return true;
-        if (rbi < query.vb+vs) return true;
-        Point sloc = ai->loc;
-        Point aloc = query.aloc, bloc = query.bloc;
-        float f3da = find_3d_angle(&aloc, &bloc, &sloc);
-        if (f3da > a->shielding_angle) a->shielding_angle = b->shielding_angle = f3da;
-        return f3da > _shield_angle;
-    };
+    auto blocks = [&](Atom* ai) { return query.blocked_by(ai,a,b); };
 
     // Small residues favor a direct scan; large collections skip whole spatial bounds.
     if (!AROMA_OPT_SHIELDING || atcount < 64)
@@ -4469,6 +4472,17 @@ bool Molecule::shielded(Atom* a, Atom* b, const ShieldingQuery& query) const
         }
     }
 
+    return false;
+}
+
+bool Molecule::shielded_by_atoms(Atom* a, Atom* b, const std::vector<Atom*>& blockers)
+{
+    if (!a || !b) return false;
+    ShieldingQuery query(a,b,a->distance_to(b));
+    if (!query.active) return false;
+    a->shielding_angle = b->shielding_angle = 0;
+    for (Atom* atom : blockers)
+        if (atom && query.blocked_by(atom,a,b)) return true;
     return false;
 }
 
@@ -5044,12 +5058,12 @@ Interaction HydrogenRotationCache::binding(Pair* pair, Atom* a, Atom* b)
     return pair->energy;
 }
 
-Interaction Molecule::get_intermol_binding(Molecule* ligand, bool subtract_clashes, bool priority_boost, Bond* selfish)
+Interaction Molecule::get_intermol_binding(Molecule* ligand, bool subtract_clashes, bool priority_boost, Bond* selfish, Protein* shielding_protein)
 {
     Molecule* ligands[4];
     ligands[0] = ligand;
     ligands[1] = nullptr;
-    return get_intermol_binding(ligands, subtract_clashes, priority_boost, selfish);
+    return get_intermol_binding(ligands, subtract_clashes, priority_boost, selfish, shielding_protein);
 }
 
 void Molecule::clear_atom_binding_energies()
@@ -5107,7 +5121,7 @@ float Molecule::get_intermol_potential(Molecule** ligands, bool pure)
     return kJmol;
 }
 
-Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_clashes, bool priority_boost, Bond* selfish)
+Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_clashes, bool priority_boost, Bond* selfish, Protein* shielding_protein)
 {
     if (!ligands) return 0;
     if (!ligands[0]) return 0;
@@ -5133,12 +5147,12 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                     #if _dbg_infinite_loops
                     cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
                     #endif
-                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost, selfish);      // RECURSION.
+                    result += monomers[i]->get_intermol_binding(monomers[j], subtract_clashes, priority_boost, selfish, shielding_protein);      // RECURSION.
                 }
                 #if _dbg_infinite_loops
                 cout << "Calling recursive Molecule::get_intermol_binding()..." << endl << flush;
                 #endif
-                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost, selfish);      // RECURSION.
+                result += monomers[i]->get_intermol_binding(ligands, subtract_clashes, priority_boost, selfish, shielding_protein);      // RECURSION.
             }
             return result;
         }
@@ -5280,6 +5294,18 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                     bool blocked = shielded(latoms[i],ligands[l]->atoms[j])
                         || ligands[l]->shielded(latoms[i],ligands[l]->atoms[j]);
                     #endif
+                    if (!blocked && shielding_protein && !latoms[i]->is_bonded_to(ligands[l]->atoms[j]))
+                    {
+                        Atom* a = latoms[i];
+                        Atom* b = ligands[l]->atoms[j];
+                        float first_angle = a->shielding_angle, second_angle = b->shielding_angle;
+                        blocked = shielding_protein->shielded(a,b);
+                        if (!blocked)
+                        {
+                            a->shielding_angle = first_angle;
+                            b->shielding_angle = second_angle;
+                        }
+                    }
                     if (!blocked)
                     {
                         missed_connection.r = -Avogadro;
@@ -5409,8 +5435,19 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             lmz += lmpull * mc.z * mc_bpotential / mcrr;
                         }
                     }
-                    else lastshielded -= (rotation_cache ? rotation_cache->binding(cached_pair, latoms[i], ligands[l]->atoms[j])
-                        : InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j])).summed();
+                    else
+                    {
+                        // Diagnostic energies must not reintroduce rejected interactions into scoring.
+                        float saved_types[_INTER_TYPES_LIMIT];
+                        std::copy(total_binding_by_type,total_binding_by_type+_INTER_TYPES_LIMIT,saved_types);
+                        Vector saved_connection = missed_connection;
+                        float saved_potential = mc_bpotential;
+                        lastshielded -= (rotation_cache ? rotation_cache->binding(cached_pair, latoms[i], ligands[l]->atoms[j])
+                            : InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j])).summed();
+                        std::copy(saved_types,saved_types+_INTER_TYPES_LIMIT,total_binding_by_type);
+                        missed_connection = saved_connection;
+                        mc_bpotential = saved_potential;
+                    }
                 }
             }
 

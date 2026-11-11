@@ -406,25 +406,45 @@ function find_odorant($aroma)
 		return $retval;
 	}
 
-	$aroma1 = preg_replace( "/[^a-z0-9+-]/", "", str_replace(' ', '_', strtolower($aroma)) );
+	// Spaces and filename underscores mark chemical word boundaries.
+	$normalize = function($name) {
+		return preg_replace('/[^a-z0-9+_-]/', '', preg_replace('/[\s_]+/', '_', strtolower(trim($name))));
+	};
+	$aroma1 = $normalize($aroma);
 	foreach ($odors as $oid => $o)
 	{
 		$namematch = false;
 		for ($i=1; isset($o["name$i"]); $i++)
 		{
-			if ($o["name$i"] == $aroma) $namematch = true;
+			if ($normalize($o["name$i"]) == $aroma1) $namematch = true;
 		}
 
 		if ( $o['smiles'] == $aroma
-			 || @$o['iupac'] == $aroma
+			 || (isset($o['iupac']) && $normalize($o['iupac']) == $aroma1)
 			 || $namematch
-			 || preg_replace( "/[^a-z0-9+-]/", "", str_replace(' ', '_', strtolower($o['full_name'])) ) == $aroma1
+			 || $normalize($o['full_name']) == $aroma1
 			)
 		{
 			$retval = $o;
 			$retval['oid'] = $oid;
 			return $retval;
 		}
+	}
+
+	// Retain legacy compact-name lookup only when it identifies one compound.
+	$compact = preg_replace('/[^a-z0-9+-]/', '', strtolower($aroma));
+	$matches = [];
+	foreach ($odors as $oid => $o)
+	{
+		if (preg_replace('/[^a-z0-9+-]/', '', strtolower($o['full_name'])) == $compact)
+			$matches[$oid] = $o;
+	}
+	if (count($matches) > 1) return false;
+	if (count($matches) == 1)
+	{
+		$oid = array_key_first($matches);
+		$matches[$oid]['oid'] = $oid;
+		return $matches[$oid];
 	}
 
 	foreach ($synonyms as $k => $v)

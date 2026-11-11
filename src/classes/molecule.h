@@ -19,6 +19,8 @@
 #define _solve_CH4 8.5
 #define _surfarea_CH4 17.3
 
+class Protein;
+
 struct SMILES_Parenthetical
 {
     Atom* startsfrom=0;
@@ -177,6 +179,7 @@ public:
     void rotate(Rotation rot);
     void rotate(Rotation rot, Point origin);
     bool shielded(Atom* a, Atom* b) const;
+    static bool shielded_by_atoms(Atom* a, Atom* b, const std::vector<Atom*>& blockers);
     float correct_structure(int iters = 500);
     float close_loop(Atom** path, float closing_bond_cardinality);
     float sum_interatomic_distances();
@@ -276,8 +279,8 @@ public:
     float get_intermol_clashes(Molecule** ligands);
     static float total_intermol_clashes(Molecule** ligands);
     float get_worst_clash();
-    Interaction get_intermol_binding(Molecule* ligand, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr);
-    Interaction get_intermol_binding(Molecule** ligands, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr);
+    Interaction get_intermol_binding(Molecule* ligand, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr, Protein* shielding_protein = nullptr);
+    Interaction get_intermol_binding(Molecule** ligands, bool subtract_clashes = true, bool priority_boost = false, Bond* selfish = nullptr, Protein* shielding_protein = nullptr);
     Interaction get_atom_binding(Atom* a);
     float get_intermol_potential(Molecule* ligand, bool disregard_distance = false);
     float get_intermol_potential(Molecule** ligands, bool disregard_distance = false);

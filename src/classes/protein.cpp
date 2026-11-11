@@ -503,6 +503,24 @@ ResidueGrid* Protein::get_residue_grid()
     return residue_grid;
 }
 
+bool Protein::shielded(Atom* a, Atom* b)
+{
+    if (!a || !b || !residues) return false;
+    float r = a->distance_to(b);
+    if (r < a->vdW_radius+b->vdW_radius || r < 2) return false;
+    float padding = r*1.26f+0.001f;
+    Point low(fmin(a->loc.x,b->loc.x)-padding,fmin(a->loc.y,b->loc.y)-padding,fmin(a->loc.z,b->loc.z)-padding);
+    Point high(fmax(a->loc.x,b->loc.x)+padding,fmax(a->loc.y,b->loc.y)+padding,fmax(a->loc.z,b->loc.z)+padding);
+    std::vector<Atom*> blockers;
+    #if AROMA_OPT_SPATIAL
+    blockers = get_spatial_grid()->get_atoms_in_box(low,high);
+    #else
+    for (int i=0; residues[i]; i++)
+        for (int j=0; j<residues[i]->get_atom_count(); j++) blockers.push_back(residues[i]->get_atom(j));
+    #endif
+    return Molecule::shielded_by_atoms(a,b,blockers);
+}
+
 Atom* Protein::get_nearest_atom(Point pt, int sr, int er)
 {
     if (!residues) return 0;

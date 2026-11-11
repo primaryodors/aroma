@@ -73,6 +73,24 @@ public:
         }
     }
 
+    std::vector<Atom*> get_atoms_in_box(const Point& low, const Point& high) const
+    {
+        std::vector<Atom*> result;
+        VoxelCoord first = coord_for(low), last = coord_for(high);
+        for (int x=first.x; x<=last.x; x++)
+        for (int y=first.y; y<=last.y; y++)
+        for (int z=first.z; z<=last.z; z++)
+        {
+            auto cell = atom_cells.find({x,y,z});
+            if (cell == atom_cells.end()) continue;
+            for (Atom* atom : cell->second)
+                if (atom->loc.x >= low.x && atom->loc.x <= high.x
+                    && atom->loc.y >= low.y && atom->loc.y <= high.y
+                    && atom->loc.z >= low.z && atom->loc.z <= high.z) result.push_back(atom);
+        }
+        return result;
+    }
+
     Atom* get_nearest_atom(const Point& pt, int sr = 0, int er = 0) const
     {
         if (atom_cells.empty()) return nullptr;

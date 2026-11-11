@@ -192,6 +192,7 @@ public:
         const int* excl_resno = nullptr
     );
 
+    bool shielded(Atom* a, Atom* b);
     int fetch_residues_near(Point pt, float max_distance, AminoAcid** results, bool facing=true);
     std::vector<AminoAcid*> get_contact_residues(Protein* other_prot, float contact_distance = 2.5);
     Molecule** all_residues_as_molecules();

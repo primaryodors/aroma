@@ -22,6 +22,7 @@ REGRESSION_TESTS+=test/shielding_test
 REGRESSION_TESTS+=test/hydrogen_optimization_test
 REGRESSION_TESTS+=test/callback_scoring_test
 REGRESSION_TESTS+=test/residue_grid_test
+REGRESSION_TESTS+=test/receptor_shielding_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec

@@ -378,7 +378,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mc_bpotential = 0;
         compute_interall = true;
         float was_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic];
-        Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false);
+        Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false, false, nullptr, protein);
         float new_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic] - was_hbond;
 
         if (lb.summed() <= 0 && new_hbond <= -1 && reaches_spheroid[i]->is_ic_res)
@@ -545,7 +545,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mtlmetric=nmetrics++;
         strcpy(metrics[mtlmetric],"Metals");
         compute_interall=true;
-        float energy=ligand->get_intermol_binding(met,false).summed();
+        float energy=ligand->get_intermol_binding(met,false,false,nullptr,protein).summed();
         compute_interall=false;
         lmkJmol[mtlmetric]=energy;
         lmstab[mtlmetric]=1;
