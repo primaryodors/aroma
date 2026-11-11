@@ -438,7 +438,8 @@ protected:
     bool in_same_ring(Atom* a, Atom* b);
     float get_atom_error(int atom_idx, LocatedVector* best_lv, bool hemispherical = true);
     Interaction intermol_bind_for_multimol_dock(Molecule* othermol, bool allow_clash);
-    Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash);
+    Interaction intermol_bind_for_multimol_dock(Molecule* othermol, Bond* selfish, bool allow_clash,
+                                               bool include_internal = true);
     static Interaction cfmol_multibind(Molecule* mol, Molecule** nearby_mols, Bond* selfish = nullptr,
                                        Space* cavity = nullptr);
     bool faces_any_ligand(Molecule** ligands);
@@ -459,6 +460,9 @@ public:
     void memoize_clashes()
     {
         memoized_internal_clashes = get_internal_clashes();
+        // Pose restoration can leave bond eclipse caches from the trial geometry.
+        if (rotatable_bonds) for (int i=0; rotatable_bonds[i]; i++)
+            rotatable_bonds[i]->eclipse_hash = 0;
         memoized_total_eclipses = total_eclipses();
         has_memoized_clashes = true;
     }

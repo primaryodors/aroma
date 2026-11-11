@@ -2333,12 +2333,17 @@ int main(int argc,char** argv)
             m.sample_backbone(backbone_first,backbone_last,backbone_steps,backbone_angle,local_budget);
             Stats s=m.stats();
             bool ok=Model::acceptable(s);
+
+            #if 0
+            Do not pollute the PDB folders with JSON files.
             if(!candidate_prefix.empty())
             {
                 std::string path=candidate_prefix+"."+std::to_string(candidate)+".pdb";
                 m.report(path+".json",initial,s,ok);
                 if(ok)m.save(path,s);
             }
+            #endif
+
             std::cout<<"Candidate energy "<<s.score<<" bond error "<<s.bond_max<<" geometry error "<<s.angle_max<<" severe clashes "
                      <<s.severe<<" mandatory violations "<<s.hard_fail<<"\n";
             if((ok&&!valid)||(ok==valid&&s.score<best_score))

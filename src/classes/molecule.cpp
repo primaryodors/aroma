@@ -5443,14 +5443,18 @@ Interaction Molecule::intermol_bind_for_multimol_dock(Molecule* om, bool is_ac)
     return intermol_bind_for_multimol_dock(om, nullptr, is_ac);
 }
 
-Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfish, bool is_ac)
+Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfish, bool is_ac, bool include_internal)
 {
     float lbias = 1.0 + (sgn(is_residue()) == sgn(om->is_residue()) ? 0 : dock_ligand_bias);
-    Interaction rawbind = get_intermol_binding(om, !is_ac, true, selfish);
+    Interaction rawbind = get_intermol_binding(om, include_internal && !is_ac, true, selfish);
     Interaction lbind = rawbind * lbias;
     lbind.attractive += get_intermol_contact_area(om, true) * cavity_stuffing;
     lbind.clash *= iteration_additional_clash_coefficient;
-    lbind.clash += (get_memoized_internal_clashes() + get_memoized_total_eclipses()) * iteration_internal_clash_coefficient;
+    if (include_internal)
+    {
+        memoize_clashes();
+        lbind.clash += (get_memoized_internal_clashes() + get_memoized_total_eclipses()) * iteration_internal_clash_coefficient;
+    }
 
     int i;
 
@@ -5505,23 +5509,25 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* self
     if (a->is_residue() && ((AminoAcid*)a)->conditionally_basic()) ((AminoAcid*)a)->set_conditional_basicity(nearby);
 
     a->memoize_clashes();
-    Interaction result = -a->get_memoized_total_eclipses();
-    if (a->is_residue()) result += reinterpret_cast<AminoAcid*>(a)->initial_eclipses;
-
-    result.clash += a->get_memoized_internal_clashes();              // Removing this may result in self clashes of side chains.
+    // Refresh after every trial move, then apply internal strain once, independently of neighbors.
+    Interaction result;
+    result.clash = (a->get_memoized_internal_clashes() + a->get_memoized_total_eclipses())
+        * iteration_internal_clash_coefficient;
+    if (a->is_residue())
+        result.clash -= reinterpret_cast<AminoAcid*>(a)->initial_eclipses * iteration_internal_clash_coefficient;
 
     int i, j;
     if (a->mclashables)
     {
         for (j=0; a->mclashables[j]; j++)
         {
-            Interaction f = a->intermol_bind_for_multimol_dock(a->mclashables[j], selfish, false);
+            Interaction f = a->intermol_bind_for_multimol_dock(a->mclashables[j], selfish, false, false);
             result += f;
         }
     }
     else if (nearby) for (j=0; nearby[j]; j++)
     {
-        Interaction f = a->intermol_bind_for_multimol_dock(nearby[j], selfish, false);
+        Interaction f = a->intermol_bind_for_multimol_dock(nearby[j], selfish, false, false);
         result += f;
     }
 
@@ -6216,7 +6222,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         bool do_selfish_flexion = frand(0,1) < selfish_flexion_probability;
                         if (!selfish_side_chains && ares) do_selfish_flexion = false;
 
-                        benerg.clash += a->total_eclipses();
                         if (do_full_rotation && bb[q]->can_rotate
                             #if fullrot_flex_first_subiter_only
                             && !qiter
@@ -6261,7 +6266,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 }
 
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                    && a->get_internal_clashes() <= self_clash
+                                    && a->get_memoized_internal_clashes() <= self_clash
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                     && (!cav || try_cavfit >= cavfit)
                                    )
@@ -6295,8 +6300,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
 
                             benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                            benerg.clash += a->total_eclipses();
-                            benerg.clash += a->get_internal_clashes();
                             benerg.clash += a->get_intermol_clashes(nearby);
 
                             Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
@@ -6355,8 +6358,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                            tryenerg.clash += a->total_eclipses();
-                            tryenerg.clash += a->get_internal_clashes();
                             tryenerg.clash += a->get_intermol_clashes(nearby);
                             fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                             try_cavfit = cav ? mm[0]->contained_by_space(cav) : 1;

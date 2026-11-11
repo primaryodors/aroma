@@ -17,6 +17,7 @@ REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test tes
     test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test test/smiles_input_test test/cavity_residue_test test/soft_scoring_test test/protonation_test test/disulfide_test test/atom_target_test test/soft_disulfide_test test/target_rotation_test test/primary_target_test test/soft_covalent_test test/repack_state_test test/cavity_intersection_test test/cavity_storage_test test/space_containment_test test/space_atom_test test/space_bounds_test test/cavity_coverage_test test/pose_contact_test
 TSTS+=$(REGRESSION_TESTS)
 REGRESSION_TESTS+=test/planar_refinement_test test/binding_site_test
+REGRESSION_TESTS+=test/internal_scoring_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
