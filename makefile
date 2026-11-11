@@ -21,6 +21,7 @@ REGRESSION_TESTS+=test/internal_scoring_test
 REGRESSION_TESTS+=test/shielding_test
 REGRESSION_TESTS+=test/hydrogen_optimization_test
 REGRESSION_TESTS+=test/callback_scoring_test
+REGRESSION_TESTS+=test/residue_grid_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
@@ -232,6 +233,8 @@ $(REGRESSION_TESTS): test/%: src/test/%.cpp $(OBJS) $(DOBJ) makefile
 	$(CPL) $< $(OBJS) $(DOBJ) -o $@ $(CFLAGS)
 
 test/callback_scoring_test: src/aromadock.cpp src/classes/callback_scoring.h
+
+$(OBJ)/protein.o: src/classes/residuegrid.h src/classes/spatialgrid.h
 
 # Apps
 

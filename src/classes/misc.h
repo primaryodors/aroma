@@ -136,6 +136,8 @@ extern bool kcal;
 
 extern float _INTERA_R_CUTOFF;
 extern const char* Greek;
+// AROMA_RANDOM_SEED selects a repeatable stream; otherwise retain clock reseeding.
+void seed_random_clock();
 extern std::ofstream *debug;
 extern bool last_iter;
 extern float pre_ligand_multimol_radius;

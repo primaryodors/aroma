@@ -571,7 +571,7 @@ void Molecule::delete_all_atoms()
 
 void Molecule::reset_conformer_momenta()
 {
-    srand(time(nullptr));
+    seed_random_clock();
 
     lmx = _def_lin_momentum * sgn(0.5-(rand()&1));
     lmy = _def_lin_momentum * sgn(0.5-(rand()&1));
@@ -4324,6 +4324,17 @@ struct Molecule::ShieldingQuery
         r125 = 1.25f * r;
         if (!with_bounds) return;
 
+        #if !AROMA_OPT_SHIELDING
+        for (int axis=0; axis<3; axis++)
+        {
+            const double first[] = {aloc.x,aloc.y,aloc.z};
+            const double second[] = {bloc.x,bloc.y,bloc.z};
+            low[axis] = fmin(first[axis],second[axis])-r6;
+            high[axis] = fmax(first[axis],second[axis])+r6;
+        }
+        return;
+        #endif
+
         // Every accepted blocker lies inside the ellipsoid with these two foci
         // and a distance sum of at most 1.25r. Bound it conservatively in each axis.
         const double first[] = {aloc.x, aloc.y, aloc.z};
@@ -4432,7 +4443,7 @@ bool Molecule::shielded(Atom* a, Atom* b, const ShieldingQuery& query) const
     };
 
     // Small residues favor a direct scan; large collections skip whole spatial bounds.
-    if (atcount < 64)
+    if (!AROMA_OPT_SHIELDING || atcount < 64)
     {
         for (int i=0; atoms[i]; i++) if (blocks(atoms[i])) return true;
     }
@@ -4884,7 +4895,7 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
 HydrogenRotationCache::HydrogenRotationCache(Molecule& molecule, Bond* axis, AminoAcid** nearby, bool enabled)
     : owner(molecule), previous(molecule.hydrogen_rotation_cache)
 {
-    if (!enabled || !axis || !axis->atom1 || !axis->atom2 || !nearby || !owner.is_residue()
+    if (!AROMA_OPT_HYDROGEN || !enabled || !axis || !axis->atom1 || !axis->atom2 || !nearby || !owner.is_residue()
         || compute_interall || owner.nmonomers || owner.glued_to || owner.coordmtl
         || !axis->can_rotate || axis->atom2->Z < 2
         || axis->atom1->get_Greek() > axis->atom2->get_Greek()) return;
@@ -5136,7 +5147,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
     Atom** latoms;
     Interaction kJmol;
     if (!atoms) return 0;
-    HydrogenRotationCache* rotation_cache = (!selfish && !compute_interall) ? hydrogen_rotation_cache : nullptr;
+    HydrogenRotationCache* rotation_cache = (AROMA_OPT_HYDROGEN && !selfish && !compute_interall) ? hydrogen_rotation_cache : nullptr;
     int rotation_offset = rotation_cache ? rotation_cache->offset_for(ligands) : -1;
     if (subtract_clashes) kJmol.clash += rotation_cache ? rotation_cache->current_internal_clashes() : get_internal_clashes();
     if (!check_stays()) kJmol.stays_met = false;
@@ -5241,6 +5252,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 }
                 if (r < _INTERA_R_CUTOFF)
                 {
+                    #if AROMA_OPT_SHIELDING
                     bool cached_bounds = cached_pair && cached_pair->bounds_valid;
                     ShieldingQuery shielding(latoms[i], ligands[l]->atoms[j], r, !cached_bounds);
                     if (cached_pair && shielding.active)
@@ -5260,12 +5272,15 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                         }
                         cached_pair->bounds_valid = true;
                     }
-                    if (	!(rotation_cache ? rotation_cache->shielded(cached_pair, *this, latoms[i], ligands[l]->atoms[j], shielding)
+                    bool blocked = (rotation_cache ? rotation_cache->shielded(cached_pair, *this, latoms[i], ligands[l]->atoms[j], shielding)
                             : shielded(latoms[i], ligands[l]->atoms[j], shielding))
-                            &&
-                            !(rotation_cache ? rotation_cache->shielded(cached_pair, *ligands[l], latoms[i], ligands[l]->atoms[j], shielding)
-                            : ligands[l]->shielded(latoms[i], ligands[l]->atoms[j], shielding))
-                       )
+                            || (rotation_cache ? rotation_cache->shielded(cached_pair, *ligands[l], latoms[i], ligands[l]->atoms[j], shielding)
+                            : ligands[l]->shielded(latoms[i], ligands[l]->atoms[j], shielding));
+                    #else
+                    bool blocked = shielded(latoms[i],ligands[l]->atoms[j])
+                        || ligands[l]->shielded(latoms[i],ligands[l]->atoms[j]);
+                    #endif
+                    if (!blocked)
                     {
                         missed_connection.r = -Avogadro;
                         mc_bpotential = 0;

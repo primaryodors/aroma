@@ -7,6 +7,7 @@
 #include <strings.h>
 #include "protein.h"
 #include "spatialgrid.h"
+#include "residuegrid.h"
 #include <limits>
 #include <unordered_set>
 #include <set>
@@ -470,7 +471,11 @@ Point Protein::get_atom_location(int resno, const char* aname)
 SpatialGrid* Protein::get_spatial_grid()
 {
     const auto revision = Atom::spatial_revision.load(std::memory_order_relaxed);
-    if (spatial_grid && spatial_grid->revision != revision) invalidate_spatial_grid();
+    if (spatial_grid && spatial_grid->revision != revision)
+    {
+        delete spatial_grid;
+        spatial_grid = nullptr;
+    }
     if (!spatial_grid)
     {
         spatial_grid = new SpatialGrid(7.0f);
@@ -482,6 +487,8 @@ SpatialGrid* Protein::get_spatial_grid()
 
 void Protein::invalidate_spatial_grid()
 {
+    delete residue_grid;
+    residue_grid = nullptr;
     if (spatial_grid)
     {
         delete spatial_grid;
@@ -489,11 +496,18 @@ void Protein::invalidate_spatial_grid()
     }
 }
 
+ResidueGrid* Protein::get_residue_grid()
+{
+    if (!residue_grid) residue_grid = new ResidueGrid();
+    residue_grid->update(residues);
+    return residue_grid;
+}
+
 Atom* Protein::get_nearest_atom(Point pt, int sr, int er)
 {
     if (!residues) return 0;
 
-    SpatialGrid* sg = get_spatial_grid();
+    SpatialGrid* sg = AROMA_OPT_SPATIAL ? get_spatial_grid() : nullptr;
     if (sg)
     {
         Atom* a = sg->get_nearest_atom(pt, sr, er);
@@ -1621,6 +1635,12 @@ void Protein::set_clashables(int resno, bool recursed)
 
     int sr = get_start_resno(), er = get_end_resno();
     int sr1 = sr, er1 = er;
+    #if AROMA_OPT_SPATIAL
+    ResidueGrid* index = get_residue_grid();
+    std::unordered_map<int,AminoAcid*> first_by_number;
+    for (const auto& entry : index->entries)
+        first_by_number.emplace(entry.residue->get_residue_no(),entry.residue);
+    #endif
     if (resno > 0) sr = er = resno;
     for (i=sr; i<=er; i++)
     {
@@ -1631,11 +1651,23 @@ void Protein::set_clashables(int resno, bool recursed)
         AminoAcid* temp[maxres+1];
         for (j=0; j<=maxres; j++) temp[j] = nullptr;
         k=0;
+        #if AROMA_OPT_SPATIAL
+        auto candidates = index->query(resi->get_CA_location(),resi->get_reach()+index->max_reach+4);
+        std::sort(candidates.begin(),candidates.end(),[](AminoAcid* a, AminoAcid* b) {
+            return a->get_residue_no() < b->get_residue_no();
+        });
+        for (AminoAcid* resj : candidates)
+        {
+            j = resj->get_residue_no();
+            if (j < sr1 || j > er1 || j == i) continue;
+            if (first_by_number[j] != resj) continue;
+        #else
         for (j=sr1; j<=er1; j++)
         {
             if (j == i) continue;
             AminoAcid* resj = get_residue(j);
             if (!resj) continue;
+        #endif
             if (resi->can_reach(resj))
             {
                 temp[k++] = resj;
@@ -1727,30 +1759,37 @@ int Protein::fetch_residues_near(Point pt, float maxr, AminoAcid** results, bool
 
     float maxr2 = maxr * maxr;
 
-    for (i=0; residues[i]; i++)
+    #if AROMA_OPT_SPATIAL
+    ResidueGrid* index = get_residue_grid();
+    auto candidates = index->query(pt,maxr+index->max_reach);
+    #else
+    std::vector<AminoAcid*> candidates;
+    for (i=0; residues[i]; i++) candidates.push_back(residues[i]);
+    #endif
+    for (AminoAcid* residue : candidates)
     {
-        float max_reach = maxr + residues[i]->get_reach();
-        if (residues[i]->get_CA_location().get_3d_distance_squared(pt) > max_reach * max_reach) continue;
+        float max_reach = maxr + residue->get_reach();
+        if (residue->get_CA_location().get_3d_distance_squared(pt) > max_reach * max_reach) continue;
 
-        Atom* nessamon = residues[i]->get_nearest_atom(pt);
+        Atom* nessamon = residue->get_nearest_atom(pt);
         if (!nessamon) continue;
         float r2 = pt.get_3d_distance_squared(nessamon->loc);
         if (r2 > maxr2) continue;
 
         float r = sqrt(r2);
 
-        if (facing && residues[i]->get_CB())
+        if (facing && residue->get_CB())
         {
-            Atom* cb = residues[i]->get_CB();
+            Atom* cb = residue->get_CB();
             float r1 = pt.get_3d_distance(cb->loc);
-            float r2_ca_cb = residues[i]->get_CA_location().get_3d_distance(cb->loc);
+            float r2_ca_cb = residue->get_CA_location().get_3d_distance(cb->loc);
             float tolerance = r2_ca_cb * tolerance_sine;
             if (r1 > r+tolerance) continue;
         }
 
-        results[l++] = residues[i];
+        results[l++] = residue;
         #if _DBG_TUMBLE_SPHERES
-        cout << residues[i]->get_3letter() << residues[i]->get_residue_no() << " ";
+        cout << residue->get_3letter() << residue->get_residue_no() << " ";
         #endif
     }
     #if _DBG_TUMBLE_SPHERES
@@ -1885,9 +1924,15 @@ int Protein::get_residues_can_clash_ligand(AminoAcid** reaches_spheroid,
 
     for (i=0; i<SPHREACH_MAX; i++) reaches_spheroid[i] = NULL;
 
-    for (i=0; residues && residues[i]; i++)
+    #if AROMA_OPT_SPATIAL
+    ResidueGrid* index = get_residue_grid();
+    auto candidates = index->query(lig_cen,pocket_radius+index->max_reach,&nodecen,!ip,addl_resno);
+    #else
+    std::vector<AminoAcid*> candidates;
+    for (i=0; residues && residues[i]; i++) candidates.push_back(residues[i]);
+    #endif
+    for (AminoAcid* aa : candidates)
     {
-        AminoAcid* aa = residues[i];
         if (!aa) continue;
 
         int resno = aa->get_residue_no();

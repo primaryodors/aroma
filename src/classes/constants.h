@@ -2,6 +2,12 @@
 #ifndef _CONSTANTS
 #define _CONSTANTS
 
+// Performance switches: set an individual value to 0 for reference comparisons.
+#define AROMA_OPT_SPATIAL 1
+#define AROMA_OPT_SHIELDING 1
+#define AROMA_OPT_HYDROGEN 1
+#define AROMA_OPT_CALLBACK 1
+
 // Geometric constants.
 #define fiftyseven (180.0/M_PI)
 #define fiftyseventh (M_PI/180)

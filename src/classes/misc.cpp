@@ -7,6 +7,8 @@
 #include <string>
 #include <stdexcept>
 #include <fstream>
+#include <ctime>
+#include <cstdlib>
 #include <sys/stat.h>
 // #include <stdio.h>
 #include <sys/select.h>
@@ -17,6 +19,27 @@
 #include "misc.h"
 
 using namespace std;
+
+void seed_random_clock()
+{
+    const char* configured = std::getenv("AROMA_RANDOM_SEED");
+    if (configured && *configured)
+    {
+        char* end = nullptr;
+        unsigned long value = std::strtoul(configured,&end,10);
+        if (end && !*end)
+        {
+            static bool initialized = false;
+            if (!initialized)
+            {
+                srand(static_cast<unsigned>(value));
+                initialized = true;
+            }
+            return;
+        }
+    }
+    srand(std::time(nullptr));
+}
 
 float _INTERA_R_CUTOFF = _DEFAULT_INTERA_R_CUTOFF;
 const char* Greek = "ABGDEZHQIKLMNJOPRSTYFXCW";
@@ -300,7 +323,9 @@ int randsgn()
 int dmoanriuoobso = 0;
 float frand(float lmin, float lmax)
 {
-    srand(time(NULL)+dmoanriuoobso);
+    const char* configured = std::getenv("AROMA_RANDOM_SEED");
+    if (configured && *configured) seed_random_clock();
+    else srand(time(NULL)+dmoanriuoobso);
     dmoanriuoobso++;
     int r = rand();
     float f = (float)r / RAND_MAX;

@@ -6,6 +6,7 @@
 #define _PROTEIN
 
 class SpatialGrid;
+class ResidueGrid;
 
 #include <string>
 #include <climits>
@@ -313,6 +314,8 @@ protected:
     void save_undo_state();
 
     SpatialGrid* spatial_grid = nullptr;
+    ResidueGrid* residue_grid = nullptr;
+    ResidueGrid* get_residue_grid();
 
     public:
     SpatialGrid* get_spatial_grid();

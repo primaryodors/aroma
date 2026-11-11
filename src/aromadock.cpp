@@ -697,7 +697,7 @@ void iteration_callback(int iter, Molecule** mols)
     {
         if (mols[l]->movability != MOV_FLXDESEL) continue;
         Interaction li = mols[l]->get_intermol_binding(mols);
-        bool deferred_potential = defer_callback_potential && !allow_auto_hydroxy;
+        bool deferred_potential = AROMA_OPT_CALLBACK && defer_callback_potential && !allow_auto_hydroxy;
         float ptnl = deferred_potential ? 0 : mols[l]->get_intermol_potential(mols);
 
         int lres = mols[l]->is_residue();
@@ -3140,7 +3140,7 @@ int main(int argc, char** argv) try
 
 
 _try_again:
-    srand(time(NULL));
+    seed_random_clock();
     Point nodecens[pathnodes+1];
 
     const float energy_mult = kcal ? _kcal_per_kJ : 1;
