@@ -41,6 +41,14 @@ def load_odors():
     except Exception as e:
         print(f"FATAL ERROR: Failed to extract data from {db_path} - {e}", file=sys.stderr)
 
+def ordered_ligand_ids(rcpid):
+    """Use receptor-page order first, then retain unlisted database entries."""
+    helper = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'receptor_ligand_order.php')
+    result = subprocess.run(['php', helper, rcpid], check=True, capture_output=True, text=True)
+    ordered = [oid for oid in json.loads(result.stdout) if oid in odors]
+    return list(dict.fromkeys([*ordered, *odors]))
+
+
 def empirical_pairs(rcpid, onedim=False, agonists_only=False):
     global odors
     result = {}

@@ -36,8 +36,30 @@ def repair_reshape_script(protid, mode, skip=False):
     return None
 
 
+def repair_input(input_arg, protid, family, mode):
+    """Resolve a PDB path or a ligand's canonical dock-output filename."""
+    from data.odorutils import find_odorant
+    candidate = Path(input_arg)
+    if not candidate.is_absolute():
+        candidate = Path(root_dir) / candidate
+    odor_name = input_arg.split('~', 1)[-1]
+    odor_name = re.sub(r'\.(?:active|inactive)\.model[0-9]+\.pdb$', '', odor_name)
+    odor = find_odorant(odor_name)
+    if candidate.is_file():
+        return candidate.resolve(), odor
+    names = [input_arg]
+    if odor:
+        names.insert(0, odor['full_name'].replace(' ', '_'))
+    for name in names:
+        path = Path(root_dir) / 'out' / family / protid / f'{protid}~{name}.{mode}.model1.pdb'
+        if path.is_file():
+            return path.resolve(), odor
+    return None, odor
+
+
 def main(argv=None):
     options = backend_options(sys.argv[1:] if argv is None else argv, repair=True)
+    options.repair_rejected = True
     prepare(options)
     engine = backend_api(options)
     Environ, DOPEHRLoopModel = engine.Environ, engine.DOPEHRLoopModel
@@ -70,14 +92,15 @@ def main(argv=None):
     inppdb = origpdb
     odor = False
     if input_arg:
-        candidate = Path(input_arg)
-        if not candidate.exists():
-            candidate = Path(f"out/{fam}/{protid}/{protid}~{input_arg}.{mode}.model1.pdb")
-        odor_name = input_arg.split('~', 1)[-1].split(f'.{mode}.')[0] if '~' in input_arg else input_arg
-        odor = data.odorutils.find_odorant(odor_name)
-        if candidate.exists():
-            inppdb = str(candidate.resolve())
+        candidate, odor = repair_input(input_arg, protid, fam, mode)
+        if candidate is not None:
+            inppdb = str(candidate)
         elif not odor or not actions.intersection(options.legacy) & {'fit', 'predock', 'reset'}:
+            if odor:
+                name = odor['full_name'].replace(' ', '_')
+                expected = f'out/{fam}/{protid}/{protid}~{name}.{mode}.model1.pdb'
+                raise ValueError(f'Docked repair source is absent: {expected}. The ligand was recognized, '
+                                 'but a completed model PDB is unavailable. Finish the dock or use fit to prepare a source.')
             raise ValueError(f'Input file not found: {input_arg}')
 
     if {'loop', 'dock'}.intersection(options.legacy) and not odor:
@@ -96,9 +119,9 @@ def main(argv=None):
         try:
             subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as exc:
-            if exc.returncode != 2 or 'loop' not in options.legacy or not Path(origpdb).is_file():
+            if exc.returncode != 2 or not Path(origpdb).is_file():
                 raise
-            print('Reset candidate rejected; continuing repair from the existing active model.', file=sys.stderr)
+            print('Reset candidate rejected; generating fresh repair candidates.', file=sys.stderr)
         else:
             doreset = True
 
@@ -113,9 +136,6 @@ def main(argv=None):
         print(" ".join(cmd))
         data.globals.wait_cool_cpu()
         subprocess.run(cmd, check=True)
-    else:
-        inppdb = origpdb
-        odor = False
 
     delete_inppdb = False
 
@@ -164,8 +184,10 @@ def main(argv=None):
     disulfide_code = "\n".join(f"CONECT {first} SG {second} SG" for first, second in source_disulfides)
 
     tries = 0
-    limit = options.max_attempts if 'loop' in options.legacy else 1
+    limit = options.max_attempts
     base_seed = options.seed
+    base_iterations = options.iterations if options.iterations is not None else (3000 if options.backend == 'reec' else 300)
+    base_clash_scale = getattr(options, 'clash_scale', 1.)
     success = False
     attempts = []
     log_root = Path(root_dir) / 'tmp'
@@ -174,7 +196,8 @@ def main(argv=None):
     attempt_log = run_dir / 'attempts.json'
 
     def record(status, reason='', report=None):
-        entry = {'attempt': tries, 'seed': options.seed, 'status': status, 'reason': reason}
+        entry = {'attempt': tries, 'seed': options.seed, 'iterations': options.iterations,
+                 'clash_scale': options.clash_scale, 'status': status, 'reason': reason}
         if report is not None and Path(report).is_file():
             saved = run_dir / f'attempt-{tries}.json'
             shutil.copyfile(report, saved)
@@ -182,11 +205,14 @@ def main(argv=None):
         attempts.append(entry)
         attempt_log.write_text(json.dumps(attempts, indent=2) + '\n')
 
-    while tries < limit:
+    while not limit or tries < limit:
         tries += 1
         options.seed = (base_seed + tries - 1) % 2147483648
+        options.iterations = min(100000, base_iterations * (2 ** min(tries-1, 3)))
+        options.clash_scale = base_clash_scale * (2 ** min(tries-1, 2))
         os.chdir(root_dir)
-        print(f'Repair attempt {tries}/{limit}; seed {options.seed}', flush=True)
+        print(f'Repair attempt {tries}/{limit or "unbounded"}; seed {options.seed}; '
+              f'iterations {options.iterations}; clash scale {options.clash_scale}', flush=True)
         legal = ""
         tpls = ""
         with open(origpdb, "r") as f:
@@ -520,7 +546,7 @@ def main(argv=None):
         try:
             a.make()
 
-            # Find the best output file from MODELLER. If no output to use, exit the script.
+            # Reject this attempt if the modeler supplied no valid candidates.
             results = [x for x in a.loop.outputs if x['failure'] is None]
             if not len(results):
                 raise CandidateRejected('Modeling produced no valid candidates')

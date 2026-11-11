@@ -22,4 +22,12 @@ inline const char* config_basename(const char* filename)
     return slash ? slash+1 : filename;
 }
 
+inline std::string config_stem(const char* filename)
+{
+    std::string result=config_basename(filename);
+    const auto dot=result.find('.');
+    if(dot!=std::string::npos)result.resize(dot);
+    return result;
+}
+
 #endif

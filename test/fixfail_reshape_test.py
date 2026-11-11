@@ -13,6 +13,29 @@ import fixfail
 
 
 class RepairReshapeTest(unittest.TestCase):
+    def test_ligand_alias_and_spaces_use_canonical_docking_filename(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / 'out/OR1/OR1A1/OR1A1~Example_ligand.active.model1.pdb'
+            source.parent.mkdir(parents=True)
+            source.write_text('END\n')
+            odor = {'full_name': 'Example ligand', 'oid': 'example'}
+            with patch.object(fixfail, 'root_dir', str(root)), \
+                    patch('data.odorutils.find_odorant', return_value=odor):
+                for name in ('Example ligand', 'example', 'alias'):
+                    candidate, resolved = fixfail.repair_input(name, 'OR1A1', 'OR1', 'active')
+                    self.assertEqual(candidate, source)
+                    self.assertEqual(resolved, odor)
+
+    def test_explicit_pdb_can_resolve_without_an_odorant_name(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / 'protein.pdb'
+            source.write_text('END\n')
+            with patch('data.odorutils.find_odorant', return_value=False):
+                candidate, odor = fixfail.repair_input(str(source), 'OR1A1', 'OR1', 'active')
+            self.assertEqual(candidate, source)
+            self.assertFalse(odor)
+
     def test_family_scripts_and_missing_script_fallback(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

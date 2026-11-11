@@ -6,6 +6,7 @@ import json
 import math
 import subprocess
 from pathlib import Path
+from reec_reports import report_path
 
 HEAVY = {
     'ALA': 'CB', 'ARG': 'CB CG CD NE CZ NH1 NH2', 'ASN': 'CB CG OD1 ND2',
@@ -67,7 +68,7 @@ def dihedral(a, b, c, d):
 
 def inspect(path):
     path = Path(path)
-    report = json.loads(Path(str(path) + '.json').read_text())
+    report = json.loads(report_path(path).read_text())
     residues, serials, links, all_atoms = {}, {}, set(), {}
     for line in path.read_text().splitlines():
         if line.startswith(('ATOM  ', 'HETATM')):

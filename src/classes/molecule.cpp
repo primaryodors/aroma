@@ -2544,7 +2544,7 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         }
     }
 
-    fprintf(os, " %d %d  0     0  0  0  0  0  0999 V2000\n", ac, bc );
+    fprintf(os, "%3d%3d  0     0  0  0  0  0  0999 V2000\n", ac, bc );
 
     for (i=0; i<ac && latoms[i]; i++)
     {
@@ -2601,7 +2601,10 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         str = buffer;
         str = str_pad(str, 3, " ", STR_PAD_LEFT);
         fprintf(os, "%s", str.c_str());
-        sprintf(buffer, " %3.2f", lbonds[i]->cardinality);
+        // V2000 bond types occupy three columns and contain integers.
+        int bond_type = fabs(lbonds[i]->cardinality - 1.5f) < 0.01f
+                        ? 4 : (int)round(lbonds[i]->cardinality);
+        sprintf(buffer, "%3d", bond_type);
         str = buffer;
         str = str_pad(str, 3, " ", STR_PAD_LEFT);
         fprintf(os, "%s", str.c_str());
