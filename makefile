@@ -18,6 +18,7 @@ REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test tes
 TSTS+=$(REGRESSION_TESTS)
 REGRESSION_TESTS+=test/planar_refinement_test test/binding_site_test
 REGRESSION_TESTS+=test/internal_scoring_test
+REGRESSION_TESTS+=test/shielding_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
