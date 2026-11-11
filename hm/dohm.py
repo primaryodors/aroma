@@ -24,6 +24,7 @@ root_dir = os.path.dirname(script_dir)
 sys.path.append(root_dir)
 
 from pathlib import Path
+from reec_reports import report_path
 from reec_backend import receptor, directory, CandidateRejected
 from modeling_backend import options as backend_options, api as backend_api, prepare, construct, custom_alignment, publication_guard, finalize, pir_rows
 
@@ -535,7 +536,7 @@ def _main(options):
         (Path(root_dir) / 'tmp').mkdir(exist_ok=True)
         review_work = Path(tempfile.mkdtemp(prefix=f'{rcpid}-validated-review-', dir=Path(root_dir) / 'tmp'))
         review = review_source(trusted_model, rcpid, len(p['sequence']), review_work)
-        trusted_status_path = Path(str(trusted_model)+'.json')
+        trusted_status_path = report_path(trusted_model)
         try:
             trusted_status = json.loads(trusted_status_path.read_text()) if trusted_status_path.is_file() else {}
         except ValueError:

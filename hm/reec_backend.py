@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from reec_reports import report_path
 
 ROOT = Path(__file__).resolve().parents[1]
 HM = ROOT / 'hm'
@@ -101,8 +102,8 @@ def parser(repair=False):
     p.add_argument('--backbone-steps', type=int, default=0, help='Optional bounded local backbone proposals')
     p.add_argument('--backbone-range', help='Fixed endpoint residues as FIRST:LAST, spanning 3-12 residues')
     p.add_argument('--backbone-angle', type=float, default=3, help='Local proposal angle, at most 5 degrees')
-    p.add_argument('--max-attempts', type=int, default=100 if repair else 3,
-                   help='Maximum attempts; dohm defaults to 3, then emits a labeled fallback; 0 retries without a bound')
+    p.add_argument('--max-attempts', type=int, default=0 if repair else 3,
+                   help='Maximum attempts; fixfail defaults to unbounded retries, dohm to 3; 0 means unbounded')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
     p.set_defaults(coordinate_metals=False)
     if not repair:
@@ -270,7 +271,7 @@ def publish(model, destination, remarks, orient=None):
     text = '\n'.join(remarks) + '\n' + body
     temp = destination.with_name(destination.name + f'.reec-{os.getpid()}')
     temp_report = Path(str(temp) + '.json')
-    report = json.loads(Path(str(model) + '.json').read_text())
+    report = json.loads(report_path(model).read_text())
     if not report.get('valid'):
         raise ValueError('A failed model cannot be published')
     # Re-evaluate selected contact distances after PDB coordinate rounding.

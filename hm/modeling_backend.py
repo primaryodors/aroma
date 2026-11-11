@@ -11,6 +11,7 @@ import subprocess
 from types import SimpleNamespace
 
 import reec_backend as reec
+from reec_reports import report_path, archive_report
 
 
 def options(argv, repair=False):
@@ -23,7 +24,7 @@ def options(argv, repair=False):
         raise ValueError('Models must be positive')
     if not 0 <= args.seed <= 2147483647:
         raise ValueError('Seed must be between 0 and 2147483647')
-    if args.max_attempts < (1 if repair else 0):
+    if args.max_attempts < 0:
         raise ValueError('Invalid maximum attempt count')
     if not 0 <= args.anneal_steps <= 100000:
         raise ValueError('Annealing steps must be between 0 and 100000')
@@ -326,7 +327,10 @@ class ReecModel:
                 candidate_prefix=work / 'candidate', seed=args.seed,
                 anneal_steps=args.anneal_steps, anneal_temperature=args.anneal_temperature,
                 anneal_residues=anneal_residues, clash_scale=getattr(args, 'clash_scale', 1.),
-                retain_rejected=getattr(args, 'retain_rejected', False))
+                backbone_steps=getattr(args, 'backbone_steps', 0),
+                backbone_range=getattr(args, 'backbone_range', None),
+                backbone_angle=getattr(args, 'backbone_angle', 3),
+                retain_rejected=getattr(args, 'retain_rejected', False) or getattr(args, 'repair_rejected', False))
             alignment = protein_alignment(self.alnfile, self.knowns, self.sequence, work / 'protein.ali')
             try:
                 output = reec.model(self.sequence, engine_args, work, templates, alignment,
@@ -334,6 +338,14 @@ class ReecModel:
             except reec.CandidateRejected:
                 if getattr(engine_args, 'last_rejected_model', None):
                     args.last_rejected_model = engine_args.last_rejected_model
+                    if getattr(args, 'repair_rejected', False):
+                        repaired = repair_rejected_candidate(self.sequence, engine_args.last_rejected_model, args)
+                        report = json.loads(Path(str(repaired)+'.json').read_text())
+                        destination = Path(f'{self.sequence}.reec.{self.starting_model}.pdb').resolve()
+                        shutil.copyfile(repaired, destination)
+                        shutil.copyfile(str(repaired)+'.json', str(destination)+'.json')
+                        self.outputs[:] = [{'name': destination.name, 'molpdf': report['final_energy'], 'failure': None}]
+                        return
                 raise
             report = json.loads(Path(str(output)+'.json').read_text())
             if not report.get('valid'):
@@ -349,6 +361,17 @@ class ReecModel:
                 shutil.copyfile(str(source)+'.json', str(destination)+'.json')
                 candidates.append({'name': destination.name, 'molpdf': candidate_report['final_energy'], 'failure': None})
         self.outputs[:] = candidates
+
+
+def repair_rejected_candidate(target, candidate, options):
+    """Try native geometry repair before discarding a rejected repair candidate."""
+    from dohm_recovery import repair_existing
+    candidate = Path(candidate)
+    report = json.loads(Path(str(candidate)+'.json').read_text())
+    print(f'Trying REEC geometry repair for rejected {target} candidate.', flush=True)
+    repaired, _ = repair_existing(target, candidate, options, reec.ROOT,
+                                   contact_report=report.get('contacts', []), orient=False)
+    return repaired
 
 
 def construct(model_class, env, *, references=(), **kwargs):
@@ -375,6 +398,7 @@ def publication_guard(destination):
     previous = {path: path.read_bytes() if path.exists() else None for path in paths}
     try:
         yield
+        archive_report(destination)
     except BaseException:
         for path, content in previous.items():
             if content is None:
@@ -390,8 +414,8 @@ def finalize(model, destination, candidate=None, *, target=None):
     if isinstance(model, ReecModel):
         report = json.loads(Path(str(Path(candidate or model.outputs[0]['name']).resolve())+'.json').read_text())
     elif model is None:
-        source_report = Path(str(candidate)+'.json')
-        report = (json.loads(source_report.read_text()) if source_report.is_file()
+        source_report = report_path(candidate) if candidate is not None else None
+        report = (json.loads(source_report.read_text()) if source_report is not None and source_report.is_file()
                   else {'engine': 'validated', 'contacts': []})
     else:
         report = {'engine': 'MODELLER', 'contacts': []}

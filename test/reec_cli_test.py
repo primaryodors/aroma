@@ -175,6 +175,14 @@ class ReecCLI(unittest.TestCase):
                     if s.startswith('ATOM  ')}
         self.assertEqual(''.join(CODES[residues[r]] for r in sorted(residues)), self.sequence)
 
+    def test_candidate_export_stays_out_of_receptor_storage(self):
+        folder = self.work / 'pdbs' / 'OR1'
+        folder.mkdir(parents=True)
+        result = self.run_model('--candidate-prefix', str(folder / 'candidate'))
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        self.assertEqual(list(folder.iterdir()), [])
+        self.assertIn('Candidate export skipped', result.stderr)
+
     def test_candidate_export(self):
         prefix = self.work / 'candidate'
         result = self.run_model('--models', '2', '--candidate-prefix', str(prefix))

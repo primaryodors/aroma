@@ -66,6 +66,7 @@ test/received/*
 *.phew
 data/seq*
 data/*.php
+!data/receptor_ligand_order.php
 www/assets/image.png
 www/custom.json
 www/*.bak.php
@@ -97,3 +98,4 @@ www/consOR*.png
 www/primary*
 www/prymary*
 *bna*
+REEC*.txt

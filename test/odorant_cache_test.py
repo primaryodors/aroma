@@ -70,6 +70,20 @@ class OdorantCacheTest(unittest.TestCase):
     def test_creates_a_missing_file(self):
         self.assertEqual(self.ensure("CCO", self.write_structure), 1)
 
+    def test_native_ringflip_preserves_readable_carvone_and_stereochemistry(self):
+        binary = pathlib.Path(__file__).resolve().parents[1] / 'bin/ringflip'
+        if not binary.is_file():
+            self.skipTest('Build bin/ringflip to exercise native SDF export')
+        smiles = 'CC(=C)[C@@H]1CC=C(C(=O)C1)C|rflp:C4'
+        self.utils._ensure_sdf_current(smiles, self.path)
+        self.assertTrue(self.utils._sdf_matches_smiles(self.path, smiles))
+        lines = pathlib.Path(self.path).read_text().splitlines()
+        count = int(lines[3][:3])
+        bonds = int(lines[3][3:6])
+        types = [int(line[6:9]) for line in lines[4+count:4+count+bonds]]
+        self.assertIn(2, types)
+        self.assertTrue(all(value in (1, 2, 3, 4) for value in types))
+
 
 if __name__ == "__main__":
     unittest.main()

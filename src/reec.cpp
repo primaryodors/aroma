@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 namespace reec
 {
@@ -2235,6 +2236,20 @@ int main(int argc,char** argv)
             throw std::runtime_error("Invalid fallback settings");
         if(report.empty())report=out+".json";
         if(report==out)throw std::runtime_error("Report and PDB paths must differ");
+        if(!candidate_prefix.empty())
+        {
+            auto slash=candidate_prefix.find_last_of('/');
+            std::string parent=slash==std::string::npos?".":candidate_prefix.substr(0,slash+1);
+            char* resolved=realpath(parent.c_str(),nullptr);
+            std::string folder=resolved?std::string(resolved)+"/":parent;
+            free(resolved);
+            // Keep ensemble diagnostics in work directories, outside receptor storage.
+            if(folder.find("/pdbs/")!=std::string::npos)
+            {
+                std::cerr<<"Candidate export skipped in receptor storage; use a work directory.\n";
+                candidate_prefix.clear();
+            }
+        }
         auto entries=alignment(ali);
         Entry* chosen=nullptr;
         for(auto& e:entries)if(!e.structure&&(target.empty()||e.id==target))
@@ -2333,17 +2348,12 @@ int main(int argc,char** argv)
             m.sample_backbone(backbone_first,backbone_last,backbone_steps,backbone_angle,local_budget);
             Stats s=m.stats();
             bool ok=Model::acceptable(s);
-
-            #if 0
-            Do not pollute the PDB folders with JSON files.
             if(!candidate_prefix.empty())
             {
                 std::string path=candidate_prefix+"."+std::to_string(candidate)+".pdb";
                 m.report(path+".json",initial,s,ok);
                 if(ok)m.save(path,s);
             }
-            #endif
-
             std::cout<<"Candidate energy "<<s.score<<" bond error "<<s.bond_max<<" geometry error "<<s.angle_max<<" severe clashes "
                      <<s.severe<<" mandatory violations "<<s.hard_fail<<"\n";
             if((ok&&!valid)||(ok==valid&&s.score<best_score))

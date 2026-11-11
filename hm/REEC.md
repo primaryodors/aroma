@@ -86,7 +86,20 @@ Other receptor subfamilies retain composite template selection.
 Batch refreshes through `dohm.py` try three generation attempts by default. Exhausted geometry
 retries emit a protein model labeled `DOHM FALLBACK`, with `status: fallback` and
 `refresh_accepted: false` in its JSON sidecar. A rejected model retains `valid: false`.
-`--max-attempts 0` explicitly selects unbounded retries. `fixfail.py` retains its rejection behavior.
+`--max-attempts 0` explicitly selects unbounded retries. `fixfail.py` uses
+unbounded retries by default, including ordinary repair without `loop`.
+Rejected native fixfail candidates are retained for a bounded REEC geometry
+repair pass with their contact restraints before generating another ensemble.
+Postprocessing rejection also receives geometry repair. Both paths retain the
+final validation gate; unsuccessful repair returns to the generation retry loop.
+Native rejection or failed final validation starts a fresh attempt with a
+new seed, an increasing iteration cap, and a stronger bounded clash penalty.
+Only a newly validated candidate completes repair. `--max-attempts N` sets
+an explicit cap; exhaustion reports failure rather than accepting the prior
+model. Rejected attempts retain diagnostics and never relax final limits.
+After publication, Python removes the PDB JSON sidecar from receptor storage.
+Completed validation reports remain in `tmp/reec-reports`, keyed to the model
+path and coordinate bytes, for subsequent geometry and contact review.
 
 Validated sources receive a whole-protein geometry check. A failed source or postprocessing result
 triggers REEC repair with source-conformation priors. The validated source is replaced only after

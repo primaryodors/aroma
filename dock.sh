@@ -11,4 +11,5 @@ LIG="$2"
 
 make bin/aromadock bin/ic bin/cavity_search test/moiety_test bin/phew
 
-python3 run.py "$@"
+# Batch ligands follow the receptor page list, with the top ligand first.
+exec python3 run.py "$@"
