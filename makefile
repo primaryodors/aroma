@@ -306,6 +306,7 @@ check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbo
 	python3 test/reec_workflow_baseline_test.py
 	python3 test/dohm_recovery_test.py
 	python3 test/fixfail_reshape_test.py
+	python3 test/fixfail_retry_test.py
 
 .PHONY: check-metal
 check-metal: $(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/cavity_search test/metal_fit_test test/result_state_test test/metal_scoring_test

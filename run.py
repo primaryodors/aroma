@@ -92,7 +92,8 @@ for rcpid in data.protutils.prots.keys():
                 if int(data.protutils.prots[rcpid]["expression"]) < minexpr: continue
             elif not re.match(popt, rcpid): continue
 
-    for ligid in data.odorutils.odors.keys():
+    ligand_ids = [oid] if oid else data.odorutils.ordered_ligand_ids(rcpid)
+    for ligid in ligand_ids:
         if oid:
             if ligid != oid: continue
         else:

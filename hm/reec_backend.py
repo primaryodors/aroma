@@ -101,8 +101,8 @@ def parser(repair=False):
     p.add_argument('--backbone-steps', type=int, default=0, help='Optional bounded local backbone proposals')
     p.add_argument('--backbone-range', help='Fixed endpoint residues as FIRST:LAST, spanning 3-12 residues')
     p.add_argument('--backbone-angle', type=float, default=3, help='Local proposal angle, at most 5 degrees')
-    p.add_argument('--max-attempts', type=int, default=100 if repair else 3,
-                   help='Maximum attempts; dohm defaults to 3, then emits a labeled fallback; 0 retries without a bound')
+    p.add_argument('--max-attempts', type=int, default=0 if repair else 3,
+                   help='Maximum attempts; fixfail defaults to unbounded retries, dohm to 3; 0 means unbounded')
     p.add_argument('--keep-work', action='store_true', help='Retain PIR, template, and contact files')
     p.set_defaults(coordinate_metals=False)
     if not repair:

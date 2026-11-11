@@ -16,9 +16,9 @@ from reec_backend import CandidateRejected, parser
 
 
 class BatchRecoveryTest(unittest.TestCase):
-    def test_default_batch_budget_is_bounded_and_repair_budget_is_preserved(self):
+    def test_batch_budget_is_bounded_and_repair_retries_are_unbounded(self):
         self.assertEqual(parser().parse_args(['OR52E8']).max_attempts, 3)
-        self.assertEqual(parser(True).parse_args(['OR52E8']).max_attempts, 100)
+        self.assertEqual(parser(True).parse_args(['OR52E8']).max_attempts, 0)
         self.assertEqual(parser().parse_args(['OR52E8', '--max-attempts', '0']).max_attempts, 0)
 
     def test_rejected_native_candidate_is_written_and_labeled(self):

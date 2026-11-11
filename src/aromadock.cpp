@@ -1011,15 +1011,8 @@ void vestibule_callback(int iter, Molecule** mols)
 
 std::string build_outpdb_fname()
 {
-    char protn[64];
-    copy_config_text(protn, config_basename(protfname));
-    char* dot = strchr(protn, '.');
-    if (dot) *dot = 0;
-
-    char lign[64];
-    copy_config_text(lign, config_basename(ligfname));
-    dot = strchr(lign, '.');
-    if (dot) *dot = 0;
+    const std::string protn=config_stem(protfname);
+    const std::string lign=config_stem(ligfname);
 
     // std::string temp_pdb_fn = (std::string)"tmp/pose" + std::to_string(j+1) + (std::string)".pdb";
     std::string out_pdb_fn = std::regex_replace(outpdb, std::regex("[%][p]"), protn);
@@ -2672,26 +2665,22 @@ int main(int argc, char** argv) try
     char* pcntp = strstr(outfname, "%p");
     if (pcntp)
     {
-        char tmp[512], protn[64];
+        char tmp[512];
         *(pcntp++) = 0;
         *(pcntp++) = 0;
-        copy_config_text(protn, config_basename(protfname));
-        char* dot = strchr(protn, '.');
-        if (dot) *dot = 0;
-        sprintf(tmp, "%s%s%s", outfname, protn, pcntp);
+        const std::string protn=config_stem(protfname);
+        snprintf(tmp, sizeof(tmp), "%s%s%s", outfname, protn.c_str(), pcntp);
         copy_config_text(outfname, tmp);
     }
 
     char* pcntl = strstr(outfname, "%l");
     if (pcntl)
     {
-        char tmp[512], lign[64];
+        char tmp[512];
         *(pcntl++) = 0;
         *(pcntl++) = 0;
-        copy_config_text(lign, config_basename(ligfname));
-        char* dot = strchr(lign, '.');
-        if (dot) *dot = 0;
-        sprintf(tmp, "%s%s%s", outfname, lign, pcntl);
+        const std::string lign=config_stem(ligfname);
+        snprintf(tmp, sizeof(tmp), "%s%s%s", outfname, lign.c_str(), pcntl);
         copy_config_text(outfname, tmp);
     }
 
