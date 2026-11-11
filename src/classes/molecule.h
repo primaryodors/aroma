@@ -381,6 +381,20 @@ public:
 
 protected:
 
+    struct ShieldingQuery;
+    struct ShieldingNode
+    {
+        float low[3], high[3];
+        int begin, end, next;
+    };
+    mutable std::vector<ShieldingNode> shielding_nodes;
+    mutable std::uint64_t shielding_revision = 0;
+    mutable Atom** shielding_atoms = nullptr;
+    mutable int shielding_count = -1;
+    int build_shielding_node(int begin, int end) const;
+    void refresh_shielding_index() const;
+    bool shielded(Atom* a, Atom* b, const ShieldingQuery& query) const;
+
     Atom** atoms = 0;
     int atcount = 0;
     int atcallocd = 0;

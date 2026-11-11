@@ -1055,6 +1055,7 @@ void Molecule::propagate_stays()
 void Molecule::dehydrogenate()
 {
     if (!atoms) return;
+    Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
 
     Atom* tmp[atcount];
     int i, j=0;
@@ -1071,6 +1072,7 @@ void Molecule::dehydrogenate()
 
     for (i=0; i<j; i++) atoms[i] = tmp[i];
     atoms[j] = nullptr;
+    atcount = j;
 }
 
 char** Molecule::get_atom_names() const
@@ -4303,53 +4305,155 @@ void Molecule::rotate(Rotation rot, Point origin)
     rotate(lv, rot.a);
 }
 
+struct Molecule::ShieldingQuery
+{
+    bool active;
+    float va, vb, r6_2, r125;
+    Point aloc, bloc;
+    float low[3], high[3];
+
+    ShieldingQuery(Atom* a, Atom* b, float r)
+        : va(a->vdW_radius), vb(b->vdW_radius)
+    {
+        active = !(r < va + vb || r < 2);
+        if (!active) return;
+        aloc = a->loc;
+        bloc = b->loc;
+        float r6 = r * 1.26f;
+        r6_2 = r6 * r6;
+        r125 = 1.25f * r;
+
+        // Every accepted blocker lies inside the ellipsoid with these two foci
+        // and a distance sum of at most 1.25r. Bound it conservatively in each axis.
+        const double first[] = {aloc.x, aloc.y, aloc.z};
+        const double second[] = {bloc.x, bloc.y, bloc.z};
+        for (int axis=0; axis<3; axis++)
+        {
+            float delta = first[axis] - second[axis];
+            float middle = (first[axis] + second[axis]) * 0.5f;
+            float extent = sqrt(0.140625f*r*r + 0.25f*delta*delta);
+            // Retain points on rounded boundaries, including translated structures.
+            extent += 0.0001f + 0.000001f*(fabs(first[axis]) + fabs(second[axis]) + r);
+            low[axis] = middle - extent;
+            high[axis] = middle + extent;
+        }
+    }
+};
+
+int Molecule::build_shielding_node(int begin, int end) const
+{
+    int index = shielding_nodes.size();
+    shielding_nodes.emplace_back();
+    ShieldingNode node;
+    node.begin = begin;
+    node.end = end;
+    if (end - begin > 8)
+    {
+        int middle = begin + (end - begin)/2;
+        int left = build_shielding_node(begin, middle);
+        int right = build_shielding_node(middle, end);
+        for (int axis=0; axis<3; axis++)
+        {
+            node.low[axis] = fmin(shielding_nodes[left].low[axis], shielding_nodes[right].low[axis]);
+            node.high[axis] = fmax(shielding_nodes[left].high[axis], shielding_nodes[right].high[axis]);
+        }
+    }
+    else
+    {
+        const Point& first = atoms[begin]->loc;
+        node.low[0] = node.high[0] = first.x;
+        node.low[1] = node.high[1] = first.y;
+        node.low[2] = node.high[2] = first.z;
+        for (int i=begin+1; i<end; i++)
+        {
+            const Point& point = atoms[i]->loc;
+            node.low[0] = fmin(node.low[0], point.x);
+            node.low[1] = fmin(node.low[1], point.y);
+            node.low[2] = fmin(node.low[2], point.z);
+            node.high[0] = fmax(node.high[0], point.x);
+            node.high[1] = fmax(node.high[1], point.y);
+            node.high[2] = fmax(node.high[2], point.z);
+        }
+    }
+    node.next = shielding_nodes.size();
+    shielding_nodes[index] = node;
+    return index;
+}
+
+void Molecule::refresh_shielding_index() const
+{
+    const auto revision = Atom::spatial_revision.load(std::memory_order_relaxed);
+    if (shielding_atoms == atoms && shielding_count == atcount && shielding_revision == revision) return;
+    shielding_nodes.clear();
+    int count = 0;
+    while (atoms[count]) count++;
+    if (count) build_shielding_node(0, count);
+    shielding_atoms = atoms;
+    shielding_count = atcount;
+    shielding_revision = revision;
+}
+
 bool Molecule::shielded(Atom* a, Atom* b) const
 {
     if (!a || !b || !atoms) return false;
-    float r = a->distance_to(b);
-    float va = a->vdW_radius, vb = b->vdW_radius;
-    if (r < va + vb || r < 2) return false;
+    return shielded(a, b, ShieldingQuery(a, b, a->distance_to(b)));
+}
 
-    float r6 = r*1.26f, r125 = 1.25f*r;
-    float r6_2 = r6 * r6;
+bool Molecule::shielded(Atom* a, Atom* b, const ShieldingQuery& query) const
+{
+    if (!atoms || !query.active) return false;
 
     a->shielding_angle = b->shielding_angle = 0;
 
-    Point aloc = a->loc, bloc = b->loc;
-    float min_x = fmin(aloc.x, bloc.x) - r6;
-    float max_x = fmax(aloc.x, bloc.x) + r6;
-    float min_y = fmin(aloc.y, bloc.y) - r6;
-    float max_y = fmax(aloc.y, bloc.y) + r6;
-    float min_z = fmin(aloc.z, bloc.z) - r6;
-    float max_z = fmax(aloc.z, bloc.z) + r6;
-
-    int i;
-    for (i=0; atoms[i]; i++)
+    auto blocks = [&](Atom* ai)
     {
-        Atom* ai = atoms[i];
-        if (!ai) break;
-        if (ai == a || ai == b) continue;
-        if (ai->loc.x < min_x || ai->loc.x > max_x ||
-            ai->loc.y < min_y || ai->loc.y > max_y ||
-            ai->loc.z < min_z || ai->loc.z > max_z) continue;
+        if (ai == a || ai == b) return false;
+        if (ai->loc.x < query.low[0] || ai->loc.x > query.high[0] ||
+            ai->loc.y < query.low[1] || ai->loc.y > query.high[1] ||
+            ai->loc.z < query.low[2] || ai->loc.z > query.high[2]) return false;
 
-        float rai2 = ai->loc.get_3d_distance_squared(aloc);
-        if (rai2 > r6_2) continue;
-        float rbi2 = ai->loc.get_3d_distance_squared(bloc);
-        if (rbi2 > r6_2) continue;
+        float rai2 = ai->loc.get_3d_distance_squared(query.aloc);
+        if (rai2 > query.r6_2) return false;
+        float rbi2 = ai->loc.get_3d_distance_squared(query.bloc);
+        if (rbi2 > query.r6_2) return false;
 
         float rai = sqrt(rai2);
         float rbi = sqrt(rbi2);
-        if ((rai+rbi) > r125) continue;
+        if ((rai+rbi) > query.r125) return false;
         float vs = ai->vdW_radius;
-        if (rai < va+vs) return true;
-        if (rbi < vb+vs) return true;
+        if (rai < query.va+vs) return true;
+        if (rbi < query.vb+vs) return true;
         Point sloc = ai->loc;
+        Point aloc = query.aloc, bloc = query.bloc;
         float f3da = find_3d_angle(&aloc, &bloc, &sloc);
         if (f3da > a->shielding_angle) a->shielding_angle = b->shielding_angle = f3da;
-        if (f3da > _shield_angle)
+        return f3da > _shield_angle;
+    };
+
+    // Small residues favor a direct scan; large collections skip whole spatial bounds.
+    if (atcount < 64)
+    {
+        for (int i=0; atoms[i]; i++) if (blocks(atoms[i])) return true;
+    }
+    else
+    {
+        refresh_shielding_index();
+        for (int index=0; index < static_cast<int>(shielding_nodes.size());)
         {
-            return true;
+            const ShieldingNode& node = shielding_nodes[index];
+            if (node.high[0] < query.low[0] || node.low[0] > query.high[0] ||
+                node.high[1] < query.low[1] || node.low[1] > query.high[1] ||
+                node.high[2] < query.low[2] || node.low[2] > query.high[2])
+            {
+                index = node.next;
+                continue;
+            }
+            if (node.end - node.begin <= 8)
+            {
+                for (int i=node.begin; i<node.end; i++) if (blocks(atoms[i])) return true;
+                index = node.next;
+            }
+            else index++;
         }
     }
 
@@ -4975,9 +5079,10 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 float r = ligands[l]->atoms[j]->loc.get_3d_distance(&aloc);
                 if (r < _INTERA_R_CUTOFF)
                 {
-                    if (	!shielded(latoms[i], ligands[l]->atoms[j])
+                    ShieldingQuery shielding(latoms[i], ligands[l]->atoms[j], r);
+                    if (	!shielded(latoms[i], ligands[l]->atoms[j], shielding)
                             &&
-                            !ligands[l]->shielded(latoms[i], ligands[l]->atoms[j])
+                            !ligands[l]->shielded(latoms[i], ligands[l]->atoms[j], shielding)
                        )
                     {
                         missed_connection.r = -Avogadro;
