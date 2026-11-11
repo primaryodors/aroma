@@ -27,7 +27,7 @@ class FixfailRetryTest(unittest.TestCase):
             Path(str(candidate)+'.json').write_text(json.dumps({'valid':False,'contacts':contacts}))
             options=SimpleNamespace(seed=4,iterations=12000)
             repaired=Path(temporary)/'repaired.pdb'
-            with patch('dohm_recovery.repair_existing',return_value=(repaired,Path(temporary))) as repair:
+            with patch('hm_recovery.repair_existing',return_value=(repaired,Path(temporary))) as repair:
                 result=modeling_backend.repair_rejected_candidate('TAAR5',candidate,options)
             self.assertEqual(result,repaired)
             repair.assert_called_once_with('TAAR5',candidate,options,modeling_backend.reec.ROOT,
@@ -37,7 +37,7 @@ class FixfailRetryTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             candidate=Path(temporary)/'candidate.pdb'
             Path(str(candidate)+'.json').write_text('{"contacts":[]}')
-            with patch('dohm_recovery.repair_existing',side_effect=CandidateRejected('Repair failed')):
+            with patch('hm_recovery.repair_existing',side_effect=CandidateRejected('Repair failed')):
                 with self.assertRaises(CandidateRejected):
                     modeling_backend.repair_rejected_candidate('TAAR5',candidate,SimpleNamespace())
 

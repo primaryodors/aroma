@@ -527,7 +527,7 @@ def _main(options):
     if trusted_model.is_file():
         pu.ensure_bw_metadata(rcpid, trusted_model)
         from data.disulfides import pdb_disulfides
-        from dohm_recovery import review_source, repair_existing, copy_pair
+        from hm_recovery import review_source, repair_existing, copy_pair
         if trusted_model.resolve() == output_pdb.resolve():
             raise ValueError('Processed output must differ from the validated source')
         pairs = pdb_disulfides(trusted_model)
@@ -977,7 +977,7 @@ def main(argv=None):
     try:
         return _main(options)
     except (CandidateRejected, subprocess.CalledProcessError, OSError) as exc:
-        from dohm_recovery import fallback_model
+        from hm_recovery import fallback_model
         rcpid, state = receptor(options.receptor)
         pu.load_prots()
         if rcpid not in pu.prots or state != 'active':

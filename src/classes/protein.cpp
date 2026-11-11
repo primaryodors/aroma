@@ -2969,7 +2969,7 @@ Point Protein::get_region_bounds(int startres, int endres)
     return retval;
 }
 
-float Protein::optimize_hydrogens(int sr, int er, int* fr)
+float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cache)
 {
     sr = max(sr, 1);
     er = min(er, get_end_resno());
@@ -3031,22 +3031,25 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr)
             if (!equal_or_zero(b[j]->atom1->residue, b[j]->atom2->residue)) continue;
             if (b[j]->can_rotate)
             {
-                for (l=0; l<opth_fullrot_steps; l++)
                 {
-                    #if _dbg_atom_mov_to_clash
-                    movclash_justtesting = true;
-                    #endif
-                    b[j]->rotate(opth_fullrot_stepa);
-                    Interaction during = aa->get_intermol_binding(sphres);
-                    if (during.improved(before))
+                    HydrogenRotationCache rotation_cache(*aa, b[j], sphres, use_rotation_cache);
+                    for (l=0; l<opth_fullrot_steps; l++)
                     {
-                        before = during;
-                        best.copy_state(aa);
-                        #if _dbg_optimize_hydrogens
-                        if (aa->get_residue_no() == _dbg_optimize_hydrogens_resno) 
-                            cout << "Bond " << b[j]->atom1->name << "-" << b[j]->atom2->name
-                            << " improved binding at rotation " << (fiftyseven*l*opth_fullrot_stepa) << " deg." << endl;
+                        #if _dbg_atom_mov_to_clash
+                        movclash_justtesting = true;
                         #endif
+                        b[j]->rotate(opth_fullrot_stepa);
+                        Interaction during = aa->get_intermol_binding(sphres);
+                        if (during.improved(before))
+                        {
+                            before = during;
+                            best.copy_state(aa);
+                            #if _dbg_optimize_hydrogens
+                            if (aa->get_residue_no() == _dbg_optimize_hydrogens_resno)
+                                cout << "Bond " << b[j]->atom1->name << "-" << b[j]->atom2->name
+                                << " improved binding at rotation " << (fiftyseven*l*opth_fullrot_stepa) << " deg." << endl;
+                            #endif
+                        }
                     }
                 }
                 best.restore_state_relative(aa, "CA");

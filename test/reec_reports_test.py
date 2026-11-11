@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'hm'))
 from modeling_backend import publication_guard
-from dohm_recovery import copy_pair
+from hm_recovery import copy_pair
 from reec_reports import archive_report, report_path
 
 

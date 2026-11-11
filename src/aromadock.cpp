@@ -19,6 +19,7 @@
 #include "classes/search.h"
 #include "classes/scoring.h"
 #include "classes/pose_contact.h"
+#include "classes/callback_scoring.h"
 #include "classes/cavity.h"
 #include "classes/soft.h"
 #include "classes/appear.h"
@@ -140,6 +141,7 @@ int maxh2o = 0;
 int omaxh2o = 0;
 bool wet_contact = false;       // If true, place a water molecule between the strongest affinity residue and ligand atom pair.
 bool flex = true;
+bool defer_callback_potential = true;
 float kJmol_cutoff = -0.01;
 int pose=1, nodeno=0, iter=0;
 float drift = initial_drift;
@@ -649,7 +651,7 @@ void check_moved_atom_for_clashes(Atom* caller, void* prot)
 
 void iteration_callback(int iter, Molecule** mols)
 {
-    int i, j, l, n, ac;
+    int i, j, l, n=0, ac;
     float progress, bbest;
     Point bary;
 
@@ -695,7 +697,8 @@ void iteration_callback(int iter, Molecule** mols)
     {
         if (mols[l]->movability != MOV_FLXDESEL) continue;
         Interaction li = mols[l]->get_intermol_binding(mols);
-        float lf = li.summed(), lc = li.clash, ptnl = mols[l]->get_intermol_potential(mols);
+        bool deferred_potential = defer_callback_potential && !allow_auto_hydroxy;
+        float ptnl = deferred_potential ? 0 : mols[l]->get_intermol_potential(mols);
 
         int lres = mols[l]->is_residue();
         float prob = 1;
@@ -715,10 +718,13 @@ void iteration_callback(int iter, Molecule** mols)
         }
 
         float mc = mols[l]->lastmc;
+        bool unfavorable = callback_flexion_unfavorable(li, mc, [&]() {
+            return deferred_potential ? mols[l]->get_intermol_potential(mols) : ptnl;
+        });
 
         if (flex
             // && iter < 5
-            && (lc > clash_limit_per_aa || lf > -0.3 * ptnl || (lc > 0 && lf > 5) || mc >= 1)
+            && unfavorable
             && mols[l]->movability == MOV_FLXDESEL
             && lres
             && frand(0,1) < flexion_probability_multiplier * prob

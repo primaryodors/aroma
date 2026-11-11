@@ -11,7 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'hm'))
 import dohm
-import dohm_recovery as recovery
+import hm_recovery as recovery
 from reec_backend import CandidateRejected, parser
 
 

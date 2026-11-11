@@ -91,9 +91,12 @@ protected:
 };
 
 
+class HydrogenRotationCache;
+
 class Molecule
 {
     friend class Pose;
+    friend class HydrogenRotationCache;
 
 public:
     Molecule();
@@ -381,6 +384,7 @@ public:
 
 protected:
 
+    HydrogenRotationCache* hydrogen_rotation_cache = nullptr;
     struct ShieldingQuery;
     struct ShieldingNode
     {
@@ -494,6 +498,55 @@ public:
         if (!has_memoized_clashes) memoize_clashes();
         return memoized_total_eclipses;
     }
+};
+
+// A cache confined to one terminal hydrogen rotation sweep; only invariant terms are reused.
+class HydrogenRotationCache
+{
+    friend class Molecule;
+    struct Pair
+    {
+        struct Shield
+        {
+            bool valid = false, blocked = false;
+            float first_angle = 0, second_angle = 0;
+        };
+        float distance = -1;
+        bool bounds_valid = false;
+        float low[3] = {}, high[3] = {};
+        bool fixed_force = false;
+        bool valid = false;
+        float first_angle = 0, second_angle = 0;
+        Interaction energy;
+        Vector missed;
+        Vector incoming;
+        float incoming_potential = 0;
+        float potential = 0;
+        float by_type[_INTER_TYPES_LIMIT] = {};
+        bool owner_checked = false, owner_static = false;
+        Shield own_shield, neighbor_shield;
+    };
+    Molecule& owner;
+    HydrogenRotationCache* previous = nullptr;
+    std::vector<Molecule*> neighbors;
+    std::vector<int> offsets;
+    std::vector<int> rows;
+    std::vector<Pair> pairs;
+    double moving_low[3] = {}, moving_high[3] = {};
+    int stride = 0;
+    std::uint64_t internal_revision = 0;
+    bool internal_valid = false;
+    float internal_clashes = 0;
+    int offset_for(Molecule** ligands) const;
+    Pair* pair_for(int atom, int offset, int neighbor_atom);
+    float current_internal_clashes();
+    Interaction binding(Pair* pair, Atom* a, Atom* b);
+    bool shielded(Pair* pair, Molecule& host, Atom* a, Atom* b, const Molecule::ShieldingQuery& query);
+public:
+    HydrogenRotationCache(Molecule& molecule, Bond* axis, AminoAcid** nearby, bool enabled = true);
+    ~HydrogenRotationCache();
+    HydrogenRotationCache(const HydrogenRotationCache&) = delete;
+    HydrogenRotationCache& operator=(const HydrogenRotationCache&) = delete;
 };
 
 float g_total_mclash(void* mol);

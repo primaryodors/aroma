@@ -365,7 +365,7 @@ class ReecModel:
 
 def repair_rejected_candidate(target, candidate, options):
     """Try native geometry repair before discarding a rejected repair candidate."""
-    from dohm_recovery import repair_existing
+    from hm_recovery import repair_existing
     candidate = Path(candidate)
     report = json.loads(Path(str(candidate)+'.json').read_text())
     print(f'Trying REEC geometry repair for rejected {target} candidate.', flush=True)
@@ -450,7 +450,7 @@ def finalize(model, destination, candidate=None, *, target=None):
                 review['valid'] = False
                 review['failures'].append(f'Final serialized model has {sterics["severe_clashes"]} severe clashes')
     if not review['valid'] and not audit_failed and isinstance(model, ReecModel) and target is not None:
-        from dohm_recovery import repair_existing, copy_pair
+        from hm_recovery import repair_existing, copy_pair
         repair_options = SimpleNamespace(iterations=6000, seed=report.get('seed', 0))
         repaired, work = repair_existing(target, destination, repair_options, reec.ROOT,
                                          contact_report=report['contacts'], orient=False)

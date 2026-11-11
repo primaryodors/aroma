@@ -4312,7 +4312,7 @@ struct Molecule::ShieldingQuery
     Point aloc, bloc;
     float low[3], high[3];
 
-    ShieldingQuery(Atom* a, Atom* b, float r)
+    ShieldingQuery(Atom* a, Atom* b, float r, bool with_bounds = true)
         : va(a->vdW_radius), vb(b->vdW_radius)
     {
         active = !(r < va + vb || r < 2);
@@ -4322,6 +4322,7 @@ struct Molecule::ShieldingQuery
         float r6 = r * 1.26f;
         r6_2 = r6 * r6;
         r125 = 1.25f * r;
+        if (!with_bounds) return;
 
         // Every accepted blocker lies inside the ellipsoid with these two foci
         // and a distance sum of at most 1.25r. Bound it conservatively in each axis.
@@ -4880,6 +4881,158 @@ void Molecule::enforce_stays(float amt, void (*stepscb)(std::string mesg))
     #endif
 }
 
+HydrogenRotationCache::HydrogenRotationCache(Molecule& molecule, Bond* axis, AminoAcid** nearby, bool enabled)
+    : owner(molecule), previous(molecule.hydrogen_rotation_cache)
+{
+    if (!enabled || !axis || !axis->atom1 || !axis->atom2 || !nearby || !owner.is_residue()
+        || compute_interall || owner.nmonomers || owner.glued_to || owner.coordmtl
+        || !axis->can_rotate || axis->atom2->Z < 2
+        || axis->atom1->get_Greek() > axis->atom2->get_Greek()) return;
+    #if _peratom_audit || _dbg_interatomic_forces || limit_flexions_by_mclash
+    return;
+    #endif
+    int count = axis->count_moves_with_atom2();
+    if (!count) return;
+    std::vector<Atom*> moving(count+1);
+    axis->fetch_moves_with_atom2(moving.data());
+    for (int i=0; moving[i]; i++)
+        if (moving[i]->Z != 1 || moving[i]->residue != axis->atom2->residue) return;
+
+    const Point& origin = axis->atom2->loc;
+    Point direction = origin.subtract(axis->atom1->loc);
+    double length = sqrt(direction.x*direction.x + direction.y*direction.y + direction.z*direction.z);
+    if (length < 0.000001) return;
+    double unit[] = {direction.x/length,direction.y/length,direction.z/length};
+    for (int i=0; moving[i]; i++)
+    {
+        Point relative = moving[i]->loc.subtract(origin);
+        double along = relative.x*unit[0] + relative.y*unit[1] + relative.z*unit[2];
+        Point center(origin.x + along*unit[0],origin.y + along*unit[1],origin.z + along*unit[2]);
+        double radius = sqrt(moving[i]->loc.get_3d_distance_squared(center)) + 0.001;
+        double coordinates[] = {center.x,center.y,center.z};
+        for (int k=0; k<3; k++)
+        {
+            double low = coordinates[k]-radius, high = coordinates[k]+radius;
+            if (!i || low < moving_low[k]) moving_low[k] = low;
+            if (!i || high > moving_high[k]) moving_high[k] = high;
+        }
+    }
+
+    for (int i=0; nearby[i]; i++)
+    {
+        if (nearby[i]->num_monomers || nearby[i]->glued_to_mol()) return;
+        neighbors.push_back(nearby[i]);
+        offsets.push_back(stride);
+        stride += nearby[i]->get_atom_count();
+    }
+    if (!stride) return;
+    rows.resize(owner.atcount, -1);
+    std::vector<bool> fixed_force;
+    int row = 0;
+    for (int i=0; i<owner.atcount; i++)
+    {
+        Atom* atom = owner.atoms[i];
+        if (std::find(moving.begin(), moving.end(), atom) != moving.end()) continue;
+        Atom* heavy = atom->get_heavy_atom();
+        // Axis atoms, attached hydrogens, and conjugated geometry stay on the full path.
+        fixed_force.push_back(heavy != axis->atom1 && heavy != axis->atom2 && !heavy->is_pi());
+        rows[i] = row++;
+    }
+    if (!row) return;
+    pairs.resize(static_cast<size_t>(row)*stride);
+    for (int i=0; i<row; i++) if (fixed_force[i])
+        for (int j=0; j<stride; j++) pairs[static_cast<size_t>(i)*stride+j].fixed_force = true;
+    owner.hydrogen_rotation_cache = this;
+}
+
+HydrogenRotationCache::~HydrogenRotationCache()
+{
+    if (owner.hydrogen_rotation_cache == this) owner.hydrogen_rotation_cache = previous;
+}
+
+int HydrogenRotationCache::offset_for(Molecule** ligands) const
+{
+    // Amino-acid binding visits one neighbor at a time, in its original summation order.
+    if (!ligands || !ligands[0] || ligands[1]) return -1;
+    for (size_t i=0; i<neighbors.size(); i++)
+        if (neighbors[i] == ligands[0]) return offsets[i];
+    return -1;
+}
+
+HydrogenRotationCache::Pair* HydrogenRotationCache::pair_for(int atom, int offset, int neighbor_atom)
+{
+    if (offset < 0 || atom >= static_cast<int>(rows.size()) || rows[atom] < 0) return nullptr;
+    return &pairs[static_cast<size_t>(rows[atom])*stride + offset + neighbor_atom];
+}
+
+float HydrogenRotationCache::current_internal_clashes()
+{
+    const auto revision = Atom::spatial_revision.load(std::memory_order_relaxed);
+    if (!internal_valid || internal_revision != revision)
+    {
+        internal_clashes = owner.get_internal_clashes();
+        internal_revision = revision;
+        internal_valid = true;
+    }
+    return internal_clashes;
+}
+
+bool HydrogenRotationCache::shielded(Pair* pair, Molecule& host, Atom* a, Atom* b,
+                                    const Molecule::ShieldingQuery& query)
+{
+    if (!pair || !query.active) return host.shielded(a,b,query);
+    bool own = &host == &owner;
+    if (own)
+    {
+        if (!pair->owner_checked)
+        {
+            pair->owner_static = false;
+            for (int k=0; k<3; k++)
+                if (moving_high[k] < query.low[k] || moving_low[k] > query.high[k]) pair->owner_static = true;
+            pair->owner_checked = true;
+        }
+        if (!pair->owner_static) return host.shielded(a,b,query);
+    }
+    Pair::Shield& cached = own ? pair->own_shield : pair->neighbor_shield;
+    if (cached.valid)
+    {
+        a->shielding_angle = cached.first_angle;
+        b->shielding_angle = cached.second_angle;
+        return cached.blocked;
+    }
+    cached.blocked = host.shielded(a,b,query);
+    cached.first_angle = a->shielding_angle;
+    cached.second_angle = b->shielding_angle;
+    cached.valid = true;
+    return cached.blocked;
+}
+
+Interaction HydrogenRotationCache::binding(Pair* pair, Atom* a, Atom* b)
+{
+    if (!pair || !pair->fixed_force) return InteratomicForce::total_binding(a,b);
+    if (pair->valid && pair->first_angle == a->shielding_angle && pair->second_angle == b->shielding_angle
+        && pair->incoming.r == missed_connection.r && pair->incoming.theta == missed_connection.theta
+        && pair->incoming.phi == missed_connection.phi && pair->incoming_potential == mc_bpotential)
+    {
+        missed_connection = pair->missed;
+        mc_bpotential = pair->potential;
+        for (int i=0; i<_INTER_TYPES_LIMIT; i++) total_binding_by_type[i] += pair->by_type[i];
+        return pair->energy;
+    }
+    float before[_INTER_TYPES_LIMIT];
+    for (int i=0; i<_INTER_TYPES_LIMIT; i++) before[i] = total_binding_by_type[i];
+    pair->first_angle = a->shielding_angle;
+    pair->second_angle = b->shielding_angle;
+    pair->incoming = missed_connection;
+    pair->incoming_potential = mc_bpotential;
+    pair->energy = InteratomicForce::total_binding(a,b);
+    pair->missed = missed_connection;
+    pair->potential = mc_bpotential;
+    for (int i=0; i<_INTER_TYPES_LIMIT; i++) pair->by_type[i] = total_binding_by_type[i] - before[i];
+    pair->valid = true;
+    return pair->energy;
+}
+
 Interaction Molecule::get_intermol_binding(Molecule* ligand, bool subtract_clashes, bool priority_boost, Bond* selfish)
 {
     Molecule* ligands[4];
@@ -4983,7 +5136,9 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
     Atom** latoms;
     Interaction kJmol;
     if (!atoms) return 0;
-    if (subtract_clashes) kJmol.clash += get_internal_clashes();
+    HydrogenRotationCache* rotation_cache = (!selfish && !compute_interall) ? hydrogen_rotation_cache : nullptr;
+    int rotation_offset = rotation_cache ? rotation_cache->offset_for(ligands) : -1;
+    if (subtract_clashes) kJmol.clash += rotation_cache ? rotation_cache->current_internal_clashes() : get_internal_clashes();
     if (!check_stays()) kJmol.stays_met = false;
 
     if (selfish)
@@ -5076,13 +5231,40 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             !strcmp(ligands[l]->atoms[j]->name, "C")
                         )
                     )) continue;			// kludge to prevent adjacent residue false clashes.
-                float r = ligands[l]->atoms[j]->loc.get_3d_distance(&aloc);
+                HydrogenRotationCache::Pair* cached_pair = rotation_cache ? rotation_cache->pair_for(i, rotation_offset, j) : nullptr;
+                float r;
+                if (cached_pair && cached_pair->distance >= 0) r = cached_pair->distance;
+                else
+                {
+                    r = ligands[l]->atoms[j]->loc.get_3d_distance(&aloc);
+                    if (cached_pair) cached_pair->distance = r;
+                }
                 if (r < _INTERA_R_CUTOFF)
                 {
-                    ShieldingQuery shielding(latoms[i], ligands[l]->atoms[j], r);
-                    if (	!shielded(latoms[i], ligands[l]->atoms[j], shielding)
+                    bool cached_bounds = cached_pair && cached_pair->bounds_valid;
+                    ShieldingQuery shielding(latoms[i], ligands[l]->atoms[j], r, !cached_bounds);
+                    if (cached_pair && shielding.active)
+                    {
+                        for (int k=0; k<3; k++)
+                        {
+                            if (cached_bounds)
+                            {
+                                shielding.low[k] = cached_pair->low[k];
+                                shielding.high[k] = cached_pair->high[k];
+                            }
+                            else
+                            {
+                                cached_pair->low[k] = shielding.low[k];
+                                cached_pair->high[k] = shielding.high[k];
+                            }
+                        }
+                        cached_pair->bounds_valid = true;
+                    }
+                    if (	!(rotation_cache ? rotation_cache->shielded(cached_pair, *this, latoms[i], ligands[l]->atoms[j], shielding)
+                            : shielded(latoms[i], ligands[l]->atoms[j], shielding))
                             &&
-                            !ligands[l]->shielded(latoms[i], ligands[l]->atoms[j], shielding)
+                            !(rotation_cache ? rotation_cache->shielded(cached_pair, *ligands[l], latoms[i], ligands[l]->atoms[j], shielding)
+                            : ligands[l]->shielded(latoms[i], ligands[l]->atoms[j], shielding))
                        )
                     {
                         missed_connection.r = -Avogadro;
@@ -5099,7 +5281,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             abind.dominant_type = covalent;
                             abind.clash = 0;
                         }
-                        else abind = InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j]);
+                        else abind = rotation_cache ? rotation_cache->binding(cached_pair, latoms[i], ligands[l]->atoms[j])
+                            : InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j]);
 
                         if (((latoms[i]->residue && !ligands[l]->atoms[j]->residue) || (!latoms[i]->residue && ligands[l]->atoms[j]->residue))
                             && (coordmtl || ligands[l]->coordmtl)
@@ -5211,7 +5394,8 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                             lmz += lmpull * mc.z * mc_bpotential / mcrr;
                         }
                     }
-                    else lastshielded -= InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j]).summed();
+                    else lastshielded -= (rotation_cache ? rotation_cache->binding(cached_pair, latoms[i], ligands[l]->atoms[j])
+                        : InteratomicForce::total_binding(latoms[i], ligands[l]->atoms[j])).summed();
                 }
             }
 

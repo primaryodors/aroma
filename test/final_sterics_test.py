@@ -79,7 +79,7 @@ class FinalStericsTest(unittest.TestCase):
             model = object.__new__(backend.ReecModel)
             with patch('reec_review.inspect', return_value={'valid': True, 'failures': []}), \
                     patch('reec_review.inspect_sterics', return_value={'severe_clashes': 1}), \
-                    patch('dohm_recovery.repair_existing', side_effect=reec_backend.CandidateRejected('Cleanup exhausted')) as repair:
+                    patch('hm_recovery.repair_existing', side_effect=reec_backend.CandidateRejected('Cleanup exhausted')) as repair:
                 with self.assertRaises(reec_backend.CandidateRejected):
                     with backend.publication_guard(output):
                         shutil.copyfile(candidate, output)
