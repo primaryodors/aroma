@@ -4340,7 +4340,7 @@
     "16e33ecaddbd8334b8174e0b5e285141":
     {
         "full_name": "trimethylamine",
-        "smiles": "N(C)(C)C",
+        "smiles": "[NH+](C)(C)C",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -42909,11 +42909,13 @@
                 {
                     "type": "vsa",
                     "adjusted_curve_top": "10"
-                },
+                }
+            },
+            "https://doi.org/10.1371/journal.pone.0117774":
+            {
                 "TAAR5":
                 {
-                    "type": "vsa",
-                    "adjusted_curve_top": "10"
+                    "type": "ia"
                 }
             }
         },

@@ -1,0 +1,89 @@
+{
+  "engine": "REEC",
+  "valid": true,
+  "heavy_atoms": 2570,
+  "fixed_atoms": 0,
+  "initial_energy": 163578.18,
+  "final_energy": 54.277383,
+  "initial_severe_clashes": 116,
+  "severe_clashes": 0,
+  "max_bond_error": 0.0068945079,
+  "max_geometry_distance_error": 0.036939263,
+  "template_ca_rmsd": 0.37313707,
+  "max_planarity_volume_error": 0.045255611,
+  "chirality_errors": 0,
+  "mandatory_violations": 0,
+  "contacts": [
+    {
+      "kind": "disulfide",
+      "res1": 97,
+      "atom1": "SG",
+      "res2": 179,
+      "atom2": "SG",
+      "distance": 2.0497124188529465,
+      "min": 1.95,
+      "max": 2.15,
+      "hard": true,
+      "violation": 0
+    },
+    {
+      "kind": "disulfide",
+      "res1": 169,
+      "atom1": "SG",
+      "res2": 189,
+      "atom2": "SG",
+      "distance": 2.0484633264962304,
+      "min": 1.95,
+      "max": 2.15,
+      "hard": true,
+      "violation": 0
+    },
+    {
+      "kind": "contact",
+      "res1": 218,
+      "atom1": "OH",
+      "res2": 287,
+      "atom2": "OH",
+      "distance": 4.4130812365058505,
+      "min": 3,
+      "max": 5,
+      "hard": false,
+      "violation": 0
+    }
+  ],
+  "serialized_geometry": {
+    "residues": 321,
+    "valid": true,
+    "max_backbone_bond_error": 0.007243324502793191,
+    "max_peptide_angle_error": 1.0026379058837165,
+    "max_omega_error": 1.2209758564380877,
+    "disulfides": [
+      {
+        "residues": [
+          97,
+          179
+        ],
+        "distance": 2.0497124188529465,
+        "angles": [
+          103.54934059865232,
+          103.53470477745392
+        ],
+        "torsion": 90.51103485482248
+      },
+      {
+        "residues": [
+          169,
+          189
+        ],
+        "distance": 2.0484633264962304,
+        "angles": [
+          103.76499416449148,
+          103.69429209871033
+        ],
+        "torsion": 89.59667562728337
+      }
+    ],
+    "failures": []
+  },
+  "receptor_frame": true
+}

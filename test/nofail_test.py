@@ -3,6 +3,8 @@ import pathlib
 import subprocess
 import tempfile
 import unittest
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
 
 class NoFailTest(unittest.TestCase):
@@ -24,11 +26,16 @@ class NoFailTest(unittest.TestCase):
             root = pathlib.Path(directory)
             receptor = root / "receptor.pdb"
             receptor.write_text("\n".join(selected) + "\nTER\nEND\n")
+            ligand = root / "ligand.sdf"
+            molecule = Chem.AddHs(Chem.MolFromSmiles("CCC(=O)O"))
+            self.assertEqual(AllChem.EmbedMolecule(molecule, randomSeed=1), 0)
+            with Chem.SDWriter(str(ligand)) as writer:
+                writer.write(molecule)
             dock = root / "result.dock"
             pdb = root / "result.pdb"
             config = root / "run.config"
             config.write_text(
-                f"PROT {receptor}\nLIG sdf/propionic_acid.sdf\n"
+                f"PROT {receptor}\nLIG {ligand}\n"
                 "CEN 100 100 100\nSIZE 2 2 2\nPOSE 2\nITERS 1\n"
                 f"SEARCH CF\nELIM -1e20\nOUT {dock}\nOUTPDB 1 {pdb}\nNOFAIL\nAPPENDPROT\n"
             )

@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <memory>
 #include <cstring>
 #include <iostream>
 #include <stdio.h>
@@ -344,7 +346,7 @@ int interpret_special_resno(const char* varname, char* strandid = nullptr)
 
     int bw50 = p->get_bw50(rgno);
     if (!bw50) return 0;
-    else return max(0, bw50 + member - 50);
+    else return p->resolve_bw_resno(rgno, member);
 }
 
 Point interpret_Cartesian_literal(const char* param)
@@ -1190,6 +1192,7 @@ int main(int argc, char** argv)
                 if (c < 'A' || c > 'Z') raise_error("Invalid destination strand given for BWCOPY.");
                 Protein* dest = strands[c-'A'];
                 if (!dest) raise_error("BWCOPY destination strand is null.");
+                dest->copy_bw_indels_from(source);
 
                 for (l=1; l<=8; l++)
                 {
@@ -2750,7 +2753,35 @@ int main(int argc, char** argv)
                 l = working->load_pdb(pf, n, chain);
                 if (!l) raise_error("No residues loaded.");
                 working->set_name_from_pdb_name(words[1]);
-                if (include_ligand) ligand.from_pdb(pf, true);
+                if(include_ligand)
+                {
+                    // Protein owns free ions; omit their records from ligand input.
+                    std::unique_ptr<FILE,int(*)(FILE*)> ligand_input(tmpfile(),&fclose);
+                    if(!ligand_input)raise_error("Cannot separate ions and ligand records.");
+                    rewind(pf);
+                    char record[1024];
+                    while(fgets(record,sizeof(record),pf))
+                    {
+                        if(!strncmp(record,"END",3))break;
+                        bool owned=false;
+                        if(!strncmp(record,"HETATM",6) && strlen(record)>=54)
+                        {
+                            std::string name=std::string(record+12,4);
+                            name.erase(std::remove(name.begin(),name.end(),' '),name.end());
+                            Point point(std::stod(std::string(record+30,8)),std::stod(std::string(record+38,8)),
+                                        std::stod(std::string(record+46,8)));
+                            for(int j=0;j<working->get_metals_count();++j)
+                            {
+                                Atom* ion=working->get_metal(j);
+                                if(ion->pdbidx==atoi(record+6) || (!strcmp(ion->name,name.c_str())
+                                    && ion->residue==atoi(record+22) && ion->loc.get_3d_distance(point)<.001))owned=true;
+                            }
+                        }
+                        if(!owned)fputs(record,ligand_input.get());
+                    }
+                    rewind(ligand_input.get());
+                    ligand.from_pdb(ligand_input.get(),true);
+                }
                 fclose(pf);
 
             _prot_deets:
@@ -2829,138 +2860,25 @@ int main(int argc, char** argv)
 
             else if (!strcmp(words[0], "MCOORD"))
             {
-                l = 1;
-                Atom* ma;
-                string elem_sym;
-                int elem_charge=0;
-                int ncr=0;						// number of coordinating residues.
-                int resnos[13];					// more than the task will ever conceivably require.
-                std::vector<string> cratoms;	// coordinating residue atoms.
-                bool force_tyrosine_O = false;
-                bool thiolate = false;
-                bool uses_fancy_options = false;
-                Atom* ba = nullptr;
-
-                _yes_I_used_goto_for_this:
-                if (!strcmp(words[l], "YO"))
+                if(!words[1] || !words[2] || !words[3])
+                    raise_error("MCOORD requires an element, charge, and coordinating residues.");
+                MCoord site;
+                site.Z=Atom::Z_from_esym(words[1]);
+                site.charge=interpret_single_int(words[2]);
+                if(!site.Z)raise_error("Unknown MCOORD element.");
+                for(int k=3;words[k];++k)
                 {
-                    force_tyrosine_O = true;
-                    uses_fancy_options = true;
-                    l++;
-                    goto _yes_I_used_goto_for_this;
+                    if(!strcmp(words[k],"YO") || !strcmp(words[k],"YAr") || !strcmp(words[k],"Th8"))
+                        raise_error("MCOORD no longer supports legacy atom-selection options.");
+                    if(site.ncoordres>=15)raise_error("MCOORD supports at most 15 residues.");
+                    ResiduePlaceholder residue;
+                    if(words[k][0]=='%' || words[k][0]=='&' || isdigit(words[k][0]))
+                        residue.resno=interpret_single_int(words[k]);
+                    else residue.set(words[k]);
+                    site.coordres[site.ncoordres++]=residue;
                 }
-                else if (!strcmp(words[l], "YAr"))
-                {
-                    force_tyrosine_O = false;
-                    uses_fancy_options = true;
-                    l++;
-                    goto _yes_I_used_goto_for_this;
-                }
-                else if (!strcmp(words[l], "Th8"))
-                {
-                    thiolate = true;
-                    uses_fancy_options = true;
-                    l++;
-                    goto _yes_I_used_goto_for_this;
-                }
-
-                if (!words[l]) raise_error("Insufficient parameters given for MCOORD.");
-                elem_sym = words[l++];
-                if (!words[l]) raise_error("Insufficient parameters given for MCOORD.");
-                elem_charge = interpret_single_int(words[l++]);
-                Point pt;
-                ma = new Atom(elem_sym.c_str(), &pt, elem_charge);
-                n = working->get_metals_count() + 1;
-                string mname = elem_sym + std::to_string(n);
-                ma->name = new char[8];
-                strcpy(ma->name, mname.c_str());
-                strcpy(ma->aa3let, "MTL");
-                ma->residue = 0;
-
-                if (!words[l]) raise_error("Insufficient parameters given for MCOORD.");
-                for (; words[l]; l++)
-                {
-                    bool local_O = force_tyrosine_O;
-
-                    _another_goto:
-                    if (!strcmp(words[l], "YO"))
-                    {
-                        local_O = true;
-                        uses_fancy_options = true;
-                        l++;
-                        goto _another_goto;
-                    }
-                    else if (!strcmp(words[l], "YAr"))
-                    {
-                        local_O = false;
-                        uses_fancy_options = true;
-                        l++;
-                        goto _another_goto;
-                    }
-
-                    if (!words[l]) raise_error("Insufficient parameters given for MCOORD.");
-                    k = interpret_single_int(words[l]);
-                    AminoAcid* aa = working->get_residue(k);
-                    resnos[ncr] = k;
-
-                    // cout << aa->get_3letter() << k << " is " << (aa->is_tyrosine_like() ? "" : "not ") << "tyrosine-like." << endl;
-                    if (aa->is_tyrosine_like() && !local_O)
-                    {
-                        Ring* rr = aa->get_most_distal_arom_ring();
-                        if (rr)
-                        {
-                            n = rr->get_atom_count();
-                            // Get members 1 and 1+floor(n/2).
-                            cratoms.push_back(rr->get_atom(1)->name);
-                            cout << "Found metal coord atom " << *aa << ":" << cratoms[ncr] << endl;
-                            ncr++;
-
-                            resnos[ncr] = k;
-                            j = 1 + (n/2);
-                            cratoms.push_back(rr->get_atom(j)->name);
-                            cout << "Found metal coord atom " << *aa << ":" << cratoms[ncr] << endl;
-                            ncr++;
-
-                            goto _found_coord_atom;
-                        }
-                    }
-
-                    ba = aa->get_one_most_bindable(mcoord);
-
-                    if (ba)
-                    {
-                        cratoms.push_back(ba->name);
-                        cout << "Found metal coord atom " << *aa << ":" << cratoms[ncr] << endl;
-                        ncr++;
-                    }
-                    else raise_error((std::string)"No metal coordination atom found for " + (std::string)aa->get_3letter() + to_string(k));
-
-                    _found_coord_atom:
-                    ;
-
-                }
-
-                if (ncr < 2) raise_error("MCOORD requires at least 2 coordinating atoms.");
-                if (uses_fancy_options) raise_error("MCOORD no longer supports YO, YAr, Th8, or per-atom coordinations.");
-
-                MCoord mtlcoords[16];
-                int nmtlcoords = 0;
-                MCoord mc;
-                mc.Z = ma->Z;
-                mc.charge = elem_charge;
-                mc.mtl = ma;
-
-                for (l=0; l<ncr; l++)
-                {
-                    ResiduePlaceholder rp;
-                    rp.resno = resnos[l];
-                    mc.coordres[mc.ncoordres++] = rp;
-                }
-
-                mtlcoords[nmtlcoords++] = mc;
-
-                working->coordinate_metal(mtlcoords, nmtlcoords);
-                
+                try {working->coordinate_metal(&site,1);}
+                catch(const std::exception& error){raise_error(error.what());}
             } // MCOORD
 
             else if (!strcmp(words[0], "MEASURE"))

@@ -146,7 +146,7 @@ public:
 
     // Serialization.
     int from_pdb(FILE* instream, int resno_offset = 0);							// returns number of atoms loaded.
-    void save_pdb(FILE* outstream, int atomno_offset=0);
+    void save_pdb(FILE* outstream, int atomno_offset=0, bool include_coordinated_metal=true);
 
     // Spatial functions.
     void aamove(Vector move_amt);

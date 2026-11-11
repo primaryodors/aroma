@@ -24,6 +24,7 @@ std::ofstream *debug = nullptr;
 bool last_iter = false;
 float pre_ligand_multimol_radius = default_pre_ligand_multimol_radius;
 float pre_ligand_flex_radius = default_pre_ligand_flex_radius;
+bool kcal = false;
 
 std::vector<std::pair<int, int>> active_disulfides;
 std::vector<TrackedInternalContact> tracked_internal_contacts;

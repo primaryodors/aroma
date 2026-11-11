@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string.h>
 #include <algorithm>
+#include <stdexcept>
 #include <ctime>
 #include <cmath>
 #include <stdint.h>
@@ -1691,6 +1692,21 @@ float InteratomicForce::optimal_distance(Atom* a, Atom* b)
 
     if (optimal < 0) optimal = a->vdW_radius + b->vdW_radius;
     return optimal;
+}
+
+float InteratomicForce::coordination_distance(Atom* donor, Atom* metal)
+{
+    InteratomicForce* forces[32];
+    fetch_applicable(donor,metal,forces);
+    float strength=-1,distance=0;
+    for(int i=0;forces[i];++i)if(forces[i]->type==mcoord && forces[i]->distance>0
+        && forces[i]->kJ_mol>strength)
+    {
+        strength=forces[i]->kJ_mol;
+        distance=forces[i]->distance;
+    }
+    if(!distance)throw std::invalid_argument("No metal coordination-distance parameter for donor");
+    return distance;
 }
 
 float InteratomicForce::coordinate_bond_radius(Atom* a, Atom* b, intera_type btype)

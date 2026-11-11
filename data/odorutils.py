@@ -53,7 +53,7 @@ def empirical_pairs(rcpid, onedim=False, agonists_only=False):
                 if arcp != rcpid: continue
                 data = acv[arcp]
                 if agonists_only:
-                    if data.get("type") == "na":
+                    if data.get("type") in ("na", "ia"):
                         continue
                     if data.get("adjusted_curve_top") is not None and float(data["adjusted_curve_top"]) <= 0:
                         continue

@@ -491,6 +491,117 @@ int Search::identify_ligand_pairing_targets(Molecule *ligand, LigandTarget *resu
     return found;
 }
 
+std::vector<int> Search::pocket_cavity_candidates(Protein* protein, Cavity* cavities, int count,
+    const std::vector<int>& anchors, const std::vector<bool>& eligible)
+{
+    std::vector<int> result;
+    if (!protein || !cavities || count <= 0) return result;
+    int greatest_coverage = -1;
+    std::vector<int> residues(protein->get_end_resno()+2);
+    for (int i=0; i<count; ++i)
+    {
+        if (!eligible.empty() && (i >= int(eligible.size()) || !eligible[i])) continue;
+        const int size = cavities[i].resnos_as_array(protein, residues.data());
+        int coverage = 0;
+        for (int anchor : anchors)
+            if (std::find(residues.begin(), residues.begin()+size, anchor) != residues.begin()+size)
+                ++coverage;
+        if (coverage > greatest_coverage)
+        {
+            greatest_coverage = coverage;
+            result.clear();
+        }
+        if (coverage == greatest_coverage) result.push_back(i);
+    }
+    return result;
+}
+
+float Search::polar_site_availability(Protein* protein, AminoAcid* residue, Point pocket_center, Cavity* container)
+{
+    if (!protein || !residue) return 1;
+    float best = 0;
+    for (int i=0; i<residue->get_atom_count(); ++i)
+    {
+        Atom* site = residue->get_atom(i);
+        if (site->vanished || site->is_backbone || site->Z == 1
+            || fabs(site->is_polar()) < hydrophilicity_cutoff) continue;
+        std::vector<Atom*> neighbors;
+        for (int r=protein->get_start_resno(); r<=protein->get_end_resno(); ++r)
+        {
+            AminoAcid* aa = protein->get_residue(r);
+            if (!aa) continue;
+            for (int a=0; a<aa->get_atom_count(); ++a)
+            {
+                Atom* atom = aa->get_atom(a);
+                if (atom != site && !atom->vanished && site->distance_to(atom) < 7)
+                    neighbors.push_back(atom);
+            }
+        }
+        Point inward = pocket_center.subtract(site->loc);
+        const float length = inward.magnitude();
+        if (length < 0.001f) continue;
+        inward.multiply(1.0f/length);
+        int sampled = 0, clear = 0;
+        // Test room for a ligand oxygen on the pocket-facing side of this atom.
+        for (int sample=0; sample<128; ++sample)
+        {
+            const float z = 1 - 2*(sample+0.5f)/128;
+            const float phi = sample*M_PI*(3-sqrt(5.0));
+            const float radius = sqrt(1-z*z);
+            Point direction(radius*cos(phi), radius*sin(phi), z);
+            if (direction.x*inward.x + direction.y*inward.y + direction.z*inward.z < 0.25f) continue;
+            ++sampled;
+            Point probe = site->loc.add(Point(direction.x*2.8f, direction.y*2.8f, direction.z*2.8f));
+            if (container && !container->point_inside_pocket(probe)) continue;
+            bool blocked = false;
+            for (Atom* atom : neighbors)
+                if (atom->Z > 1 && probe.get_3d_distance(atom->loc) < atom->vdW_radius+1.0f)
+                {
+                    blocked = true;
+                    break;
+                }
+            if (!blocked) ++clear;
+        }
+        const float exposure = sampled ? float(clear)/sampled : 0;
+        // Isolated clear rays do not provide an approach for a whole ligand.
+        if (exposure < 0.1f) continue;
+
+        float occupied = 0;
+        auto contact = [&](Atom* donor, Atom* hydrogen, Atom* acceptor)
+        {
+            const float distance = donor->distance_to(acceptor);
+            if (distance > 3.6f || hydrogen->distance_to(acceptor) > 2.7f) return;
+            Point dh = donor->loc.subtract(hydrogen->loc);
+            Point ah = acceptor->loc.subtract(hydrogen->loc);
+            const float scale = dh.magnitude()*ah.magnitude();
+            if (scale < 0.001f) return;
+            const float cosine = (dh.x*ah.x + dh.y*ah.y + dh.z*ah.z)/scale;
+            const float alignment = fmax(0, fmin(1, -2*cosine-1));
+            occupied = fmax(occupied, alignment*fmax(0, fmin(1, (3.6f-distance)/1.2f)));
+        };
+        // Evaluate competition at this functional group, including backbone partners.
+        for (Atom* other : neighbors)
+        {
+            if (residue->atom_idx_from_ptr(other) >= 0) continue;
+            if (other->Z == 1 && other->is_polar() >= hydrophilicity_cutoff && site->is_polar() < 0)
+            {
+                Bond* bond = other->get_bond_by_idx(0);
+                if (bond && bond->atom2) contact(bond->atom2, other, site);
+            }
+            if (other->Z > 1 && other->is_polar() <= -hydrophilicity_cutoff)
+                for (int b=0; b<site->get_geometry(); ++b)
+                {
+                    Bond* bond = site->get_bond_by_idx(b);
+                    if (bond && bond->atom2 && bond->atom2->Z == 1
+                        && bond->atom2->is_polar() >= hydrophilicity_cutoff)
+                        contact(site, bond->atom2, other);
+                }
+        }
+        best = fmax(best, exposure*exposure/(1+8*occupied));
+    }
+    return best;
+}
+
 int Search::pair_targets(Protein* prot, Molecule *ligand,
     LigandTarget *targets, AminoAcid **pocketres,
     Point loneliest,
@@ -562,6 +673,16 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
 
     for (ntarg=0; targets[ntarg].conjgrp || targets[ntarg].single_atom; ntarg++);       // count
     for (npr=0; pocketres[npr]; npr++);                                                 // count
+    std::vector<float> availability(npr);
+    for (j=0; j<npr; ++j)
+        availability[j] = polar_site_availability(prot, pocketres[j], loneliest, container);
+    if (getenv("AROMA_BB_TRACE"))
+    {
+        cerr << "BB pocket center " << loneliest << endl;
+        for (j=0; j<npr; ++j)
+            cerr << "BB access " << pocketres[j]->get_name() << " " << availability[j] << endl;
+    }
+    bbr.protein = prot;
     if (pbr)
     {
         pbr->minimum = 0;
@@ -602,7 +723,10 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
             if (jmet) require_metal = true;
             else if (is_ald && pocketres[j]->is_amine()) require_amine_aldehyde = true;
             else if (ichg && jchg && sgn(ichg) == -sgn(jchg)) require_ionic = true;
-            else if (ipol && jpol) require_neutral_polar = true;
+            else if (ipol && jpol && availability[j] >= 0.05f
+                && ((targets[i].has_hb_acceptors() && pocketres[j]->has_hbond_donors())
+                    || (targets[i].has_hb_donors() && pocketres[j]->has_hbond_acceptors())))
+                require_neutral_polar = true;
         }
     }
 
@@ -680,6 +804,7 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
                 bbr.ligand = ligand;
                 bbr.pri_tgt = &targets[i];
                 bbr.pri_res = pocketres[j];
+                bbr.pri_availability = availability[j];
                 bbr.sec_tgt = nullptr;
                 bbr.sec_res = nullptr;
                 bbr.tert_tgt = nullptr;
@@ -940,10 +1065,13 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
                             bbr.ligand = ligand;
                             bbr.pri_tgt = &targets[i];
                             bbr.pri_res = pocketres[j];
+                            bbr.pri_availability = availability[j];
                             bbr.sec_tgt = &targets[k];
                             bbr.sec_res = pocketres[l];
+                            bbr.sec_availability = availability[l];
                             bbr.tert_tgt = (m<0) ? nullptr : &targets[m];
                             bbr.tert_res = (m<0) ? nullptr : pocketres[n];
+                            bbr.tert_availability = (m<0) ? 1 : availability[n];
 
                             if (container) align_targets(ligand, bbr.barycenter(), &bbr);
                             score = bbr.score(ligcen, container) * (1.0 + frand(0,bb_stochastic));
@@ -963,8 +1091,9 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
                             bbr.add_to_candidates();
                             if (score > best
                                 && (has_ionic || !require_ionic)
+                                && (has_neutral_polar || !require_neutral_polar
+                                    || require_ionic || require_metal || require_amine_aldehyde)
                                 #if !bb_secondary_must_be_farthest_from_primary
-                                && (has_neutral_polar || !require_neutral_polar)
                                 && (has_pi || !require_pi)
                                 #endif
                                )
@@ -1009,6 +1138,7 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
         if (!override_target_compatibility)
         {
             override_target_compatibility = true;
+            require_neutral_polar = false;
             goto _new_attempt_no_tgt_comp;
         }
         cerr << "No candidate BB pairings found!" << endl;
@@ -1107,7 +1237,14 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
 
     Point protcen = prot->get_region_center(1, prot->get_end_resno());
 
+    std::vector<float> availability(n+1, 1);
+    for (int r=1; r<=n; ++r)
+        if (AminoAcid* aa = prot->get_residue(r))
+            availability[r] = polar_site_availability(prot, aa, protcen);
+
     BestBindingResult bbr;
+    bbr.protein = prot;
+    bbr.ligand = ligand;
     for (ii=0; ii<nn; ii++)
     {
         bbr.pri_tgt = &targets[ii];
@@ -1119,6 +1256,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
         for (i=1; i<=n; i++)
         {
             bbr.pri_res = prot->get_residue(i);
+            bbr.pri_availability = availability[i];
             if (!bbr.pri_res) continue;
 
             float rchg1 = bbr.pri_res->get_charge();
@@ -1152,6 +1290,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
                 {
                     if (j == i) continue;
                     bbr.sec_res = prot->get_residue(j);
+                    bbr.sec_availability = availability[j];
                     if (!bbr.sec_res) continue;
 
                     Point CA2 = bbr.sec_res->get_CA_location();
@@ -1195,6 +1334,7 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
                             if (l==i || l==j) continue;
 
                             bbr.tert_res = (l<0) ? nullptr : prot->get_residue(l);
+                            bbr.tert_availability = (l<0) ? 1 : availability[l];
                             if (l>=0 && !bbr.tert_res) continue;
 
                             Point CA3 = bbr.tert_res ? bbr.tert_res->get_CA_location() : Point(0,0,0);
@@ -1391,6 +1531,73 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
     putitback.restore_state(ligand);
 }
 
+static bool align_primary_metal(Molecule* ligand,BestBindingResult* bbr,float amount)
+{
+    Atom* ion=bbr->pri_res->coordmtl;
+    Atom* donor=bbr->pri_tgt->single_atom;
+    if(!ion || !donor || !bbr->pri_tgt->can_coord_metals() || ion->vanished)return false;
+    float distance;
+    try{distance=InteratomicForce::coordination_distance(donor,ion);}
+    catch(const std::invalid_argument&){return false;}
+    if(distance<=0)return false;
+    if(amount<.9999)
+    {
+        Vector radial=donor->loc.subtract(ion->loc);
+        if(radial.r<.001)return false;
+        radial.r=distance;
+        Point shift=ion->loc.add(Point(radial)).subtract(donor->loc);
+        shift.multiply(amount);
+        ligand->move(Vector(shift));
+        return true;
+    }
+    Atom* atoms[]={ion,nullptr};
+    Molecule metal("primary metal",atoms);
+    Vector* frame=ion->get_geometry_aligned_to_bonds();
+    std::vector<Point> directions;
+    for(int i=0;i<ion->get_geometry();++i)
+    {
+        Bond* bond=ion->get_bond_by_idx(i);
+        if(bond && bond->atom2)continue;
+        directions.emplace_back(frame[i]);
+    }
+    Pose initial(ligand),best(ligand);
+    float best_energy=INFINITY;
+    Point box=ligand->get_bounding_box().size();
+    float radius=std::max(box.x,std::max(box.y,box.z))+4;
+    AminoAcid* residues[SPHREACH_MAX+4];
+    int count=bbr->protein->get_residues_can_clash_ligand(residues,ligand,ion->loc,Point(2*radius,2*radius,2*radius));
+    residues[count]=nullptr;
+    for(Point direction:directions)
+    {
+        direction.scale(distance);
+        Point target=ion->loc.add(direction);
+        for(int slot=0;slot<donor->get_geometry();++slot)
+        {
+            Bond* bond=donor->get_bond_by_idx(slot);
+            if(bond && bond->atom2)continue;
+            initial.restore_state(ligand);
+            ligand->move(Vector(target.subtract(donor->loc)));
+            Point vertex=target.add(Point(donor->get_geometry_aligned_to_bonds()[slot]));
+            ligand->rotate(align_points_3d(vertex,ion->loc,target),target);
+            LocatedVector axis=Vector(direction);axis.origin=target;
+            for(int spin=0;spin<8;++spin)
+            {
+                float energy=ligand->get_intermol_clashes((Molecule**)residues)
+                            +ligand->get_intermol_binding(&metal,false).summed();
+                if(std::isfinite(energy) && energy<best_energy)
+                {
+                    best_energy=energy;
+                    best.copy_state(ligand);
+                }
+                ligand->rotate(axis,M_PI/4);
+            }
+        }
+    }
+    if(std::isfinite(best_energy)){best.restore_state(ligand);return true;}
+    initial.restore_state(ligand);
+    return false;
+}
+
 void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult* bbr, float amt, bool nooil)
 {
     if (!bbr || !bbr->protein || !bbr->pri_res || !bbr->pri_tgt) return;
@@ -1406,6 +1613,9 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
         if (frand(0,1) < bb_stochastic/3) bb[i]->rotate(frand(-hexagonal/2, hexagonal/2));
     }
     #endif
+
+    // Use the ion's open coordination slot and the ligand donor's free geometry.
+    if(amt>0 && align_primary_metal(ligand,bbr,amt))return;
 
     if (amt >= 0.9999) ligand->recenter(pocketcen);
     else
@@ -2537,6 +2747,12 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
     #if _dbg_bb_scoring
     cout << "e:" << score << " ";
     #endif
+
+    // Feasibility precedes priority: a preferred but inaccessible polar site
+    // cannot be rescued by the residue's multiplicative priority bonus.
+    if (!ijmc && ((ipol && jpol) || (ichg && jchg))) score *= pri_availability;
+    if (sec_res && sec_tgt && !klmc && ((kpol && lpol) || (kchg && lchg))) score *= sec_availability;
+    if (tert_res && tert_tgt && !mnmc && ((mpol && npol) || (mchg && nchg))) score *= tert_availability;
 
     entropic_score = score;
     add_to_candidates();

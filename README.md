@@ -63,6 +63,11 @@ All of the active models under the `pdbs/` folder have been created with the `hm
 with other utilities such as `bin/ic`. To create your own active-state homology models, simply run `php -f hm/dohm.php OR###` from the `aroma/`
 project root folder, replacing `OR###` with the ID of the receptor you wish to model. WARNING: This action WILL OVERWRITE existing active models.
 
+The Python entry points are `python3 hm/dohm.py OR###` and `python3 hm/fixfail.py ...`.
+REEC (Restrained Ensemble Energy Conformer) is their default modeling engine; pass `--backend modeller` to select MODELLER.
+Preparation, restraint definitions, postprocessing, and retries live in these scripts and run for both engines.
+`hm/modeling_backend.py` adapts the numerical modeling calls. Changes to the workflow stay in the entry point scripts.
+
 You can also adjust an active-state model if a known agonist fails to dock, by running `hm/fixfail.py` from the `aroma/` folder. The receptor ID 
 and the docked PDB model are the only required parameters. WARNING: This action WILL OVERWRITE existing active models. An example usage might be:
 
@@ -144,8 +149,10 @@ A tool for finding possible duplicate entries in the odorants database.
 `data/sequence_update.php`
 Updates the receptors database with information from the data/sequences_aligned.txt file. WARNING: This script WILL OVERWRITE data/receptor.json.
 
-`hm/dohm.php`
-The homology modeling utility. Requires MODELLER in order to run. WARNING: This script WILL OVERWRITE receptor PDB models.
+`hm/dohm.py`
+The homology modeling utility. Uses REEC by default; select MODELLER with `--backend modeller`. OR5K receptors use the tracked `pdbs/_validated/OR5K1.active.pdb` template. WARNING: This script WILL OVERWRITE receptor PDB models.
+
+Metal placement remains controlled by ligand odorophore rules during docking. For a geometry check, `python3 hm/dohm.py OR2T11 --coordinate-metals --output tmp/OR2T11.copper-check.pdb` explicitly fits the configured metal site after final coordinate processing. This option defaults off. The diagnostic PDB and its sidecar record the fitted donor geometry.
 
 `hm/fixfail.py`
 A script for recreating new active-state homology models based off of failed agonist docks. WARNING: This script WILL OVERWRITE existing models.

@@ -132,6 +132,7 @@ void append_debug_file(std::string message);
 #endif
 
 extern bool end_program, end_iterations;
+extern bool kcal;
 
 extern float _INTERA_R_CUTOFF;
 extern const char* Greek;

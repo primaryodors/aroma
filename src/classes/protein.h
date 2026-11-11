@@ -9,6 +9,7 @@ class SpatialGrid;
 
 #include <string>
 #include <climits>
+#include <map>
 
 #define resplc_rgnstart -1
 #define resplc_rgnend -99
@@ -36,9 +37,10 @@ class BallesterosWeinstein
     public:
     int helix_no = 0;
     int member_no = 0;
+    int insertion_no = 0;
 
     BallesterosWeinstein() { ; }
-    BallesterosWeinstein(int b, int w) { helix_no = b; member_no = w; }
+    BallesterosWeinstein(int b, int w, int ins = 0) { helix_no = b; member_no = w; insertion_no = ins; }
     BallesterosWeinstein(const char* fromstr) { this->from_string(fromstr); }
 
     void from_string(const char* inpstr);
@@ -113,6 +115,10 @@ public:
     MCoord* coordinate_metal(MCoord* mtlcoords, int count);
     void set_region(std::string name, int start, int end);
     void set_bw50(int helixno, int resno);
+    void set_bw_indel(int helixno, int position, int count, bool insertion);
+    void copy_bw_indels_from(const Protein* other);
+    void clear_bw_indels();
+    int resolve_bw_resno(int helixno, int position, int insertion = 0) const;
     void renumber_residues(int startres, int endres, int new_startres);
     bool disulfide_bond(int resno1, int resno2);
     bool add_connection_if_not_exists(Bond* b);
@@ -135,6 +141,7 @@ public:
     std::string get_sequence();
     Molecule* metals_as_molecule();
     int get_metals_count();
+    Atom* get_metal(int index) const {return index>=0 && index<_MAX_MCOORDS?metals[index]:nullptr;}
     bool has_bwnos();
     AminoAcid* get_residue(int resno);
     AminoAcid* get_residue(BallesterosWeinstein bw);
@@ -290,6 +297,7 @@ protected:
     MCoord m_mcoords[_MAX_MCOORDS];
     int nm_mcoords = 0;
     int Ballesteros_Weinstein[79];
+    std::map<std::pair<int,int>,int> bw_insertions, bw_deletions;
     std::vector<AABridge> aabridges;
     std::vector<Bond*> connections;
     std::vector<Pose> origpdb_residues;

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <unistd.h>
 #include <climits>
+#include <unordered_set>
 #include "atom.h"
 
 #define _DBGMOVES 0
@@ -2050,101 +2051,78 @@ float Ring::flip_atom(Atom* wa)
 {
     if (type == UNKNOWN) determine_type();
     if (type == AROMATIC || type == ANTIAROMATIC || type == COPLANAR) return 0;
-    if (atcount < 4) return 0;
-    if (!wa || wa->num_rings() != 1) return 0;
-    if (!wa->is_in_ring(this)) return 0;
-    if (wa->is_pi()) return 0;
+    if (atcount < 4 || !wa || wa->num_rings() != 1 || !wa->is_in_ring(this) || wa->is_pi()) return 0;
 
     Atom* xa = traverse_ring(wa);
     Atom* va = traverse_ring(wa, xa);
-    Atom* ya = traverse_ring(xa, wa);
-    Atom* ua = traverse_ring(va, wa);
-    Bond* buv = ua->get_bond_between(va);
-    Bond* bvw = va->get_bond_between(wa);
-    Bond* bxw = xa->get_bond_between(wa);
-    Bond* byx = ya->get_bond_between(xa);
-    float rvw = bvw->optimal_radius;
-    float rxw = bxw->optimal_radius;
-    Vector auv = va->loc.subtract(ua->loc);
-    Vector avx = xa->loc.subtract(va->loc);
-    Vector ayx = xa->loc.subtract(ya->loc);
+    Atom* ya = xa ? traverse_ring(xa, wa) : nullptr;
+    Atom* ua = va ? traverse_ring(va, wa) : nullptr;
+    if (!xa || !va || !ya || !ua) return 0;
+    Bond* uv=ua->get_bond_between(va);
+    Bond* yx=ya->get_bond_between(xa);
+    if(!uv || !yx || uv->cardinality>1.25 || yx->cardinality>1.25)return 0;
 
-    // cout << "Atoms:" << endl << "U: " << ua->name << endl << "V: " << va->name << endl << "W: " << wa->name << endl << "X: " << xa->name << endl << "Y: " << ya->name << endl;
+    // Reflect the pucker across a plane containing both fixed neighbors.
+    // Rotation about their connecting axis preserves both ring bond lengths.
+    Point reference = ua->loc.add(ya->loc);reference.multiply(.5);
+    Vector normal = compute_normal(va->loc, xa->loc, reference);
+    Vector axis = xa->loc.subtract(va->loc);
+    if (normal.r < 1e-8 || axis.r < 1e-8) return 0;
+    normal.r = 1;
+    Point unit(normal), relative = wa->loc.subtract(va->loc);
+    double height = relative.x*unit.x + relative.y*unit.y + relative.z*unit.z;
+    if (std::fabs(height) < .001) return 0;
+    Point offset = unit;offset.multiply(2*height);
+    Point destination = wa->loc.subtract(offset);
+    float theta = find_angle_along_vector(wa->loc, destination, va->loc, axis);
 
-    float theta = 0, step = 0.1*fiftyseventh, bestr = Avogadro, bthet = 0;
-    Point ol = wa->loc, pt1, pt2, nl;
-    bool far_enough = false;
-    float lr = 0;
-    while (theta<M_PI*2)
+    // Keep the neighboring ring angles close to their current conformation.
+    float vangle = find_3d_angle(ua->loc, wa->loc, va->loc);
+    float xangle = find_3d_angle(ya->loc, wa->loc, xa->loc);
+    if (std::fabs(find_3d_angle(ua->loc, destination, va->loc)-vangle) > 5*fiftyseventh
+        || std::fabs(find_3d_angle(ya->loc, destination, xa->loc)-xangle) > 5*fiftyseventh) return 0;
+
+    struct Motion {Atom* atom;Point destination;};
+    std::vector<Motion> motions;
+    std::unordered_set<Atom*> assigned;
+    auto branches = [&](Atom* center, Point origin, Vector direction, float angle)
     {
-        //buv->ring_rotate( step, wa);
-        //byx->ring_rotate(-step, wa);
-        pt1 = rotate3D(ol, va->loc, auv,  theta);
-        pt2 = rotate3D(ol, xa->loc, ayx, -theta);
-
-        theta += step;
-        nl = pt2.subtract(pt1);
-        nl.multiply(0.5);
-        nl = nl.add(pt1);
-        wa->move(nl);
-
-        float r; // = pt1.get_3d_distance(ol);
-        if (!far_enough && theta > hexagonal / 3)
+        std::vector<Atom*> pending;
+        for(int slot=0;slot<std::abs(center->get_geometry());++slot)
         {
-            if (wa->distance_to(va) >= 0.98*rvw && wa->distance_to(xa) >= 0.98*rxw) far_enough = true;
+            Bond* bond=center->get_bond_by_idx(slot);
+            if(bond && bond->atom2 && !bond->atom2->is_in_ring(this))pending.push_back(bond->atom2);
         }
-        if (theta >= 20*fiftyseventh && theta <= 340*fiftyseventh)
+        std::unordered_set<Atom*> visited;
+        for(size_t i=0;i<pending.size();++i)
         {
-            r = pt1.get_3d_distance(pt2);
-            // cout << (theta*fiftyseven) << "deg: r = " << r << " step = " << (step*fiftyseven) << endl << flush;
-            /*if (theta > hexagonal/2 && r < 0.33 && r > lr)
+            Atom* atom=pending[i];
+            if(atom==center || visited.count(atom))continue;
+            if(atom->is_in_ring(this) || atom->mol!=center->mol || assigned.count(atom))return false;
+            visited.insert(atom);
+            motions.push_back({atom,rotate3D(atom->loc,origin,direction,angle)});
+            for(int slot=0;slot<std::abs(atom->get_geometry());++slot)
             {
-            }*/
-            if (r < bestr)
-            {
-                bestr = r;
-                bthet = theta;
+                Bond* bond=atom->get_bond_by_idx(slot);
+                if(bond && bond->atom2 && bond->atom2!=center)pending.push_back(bond->atom2);
             }
-            step = fmax(0.01, r * 0.1 * fiftyseventh);
         }
+        assigned.insert(visited.begin(),visited.end());
+        return true;
+    };
 
-        lr = r;
-    }
-
-    theta = bthet;
-
-    buv->ring_rotate( theta, wa);
-    byx->ring_rotate(-theta, wa);
-    pt1 = rotate3D(ol, va->loc, auv,  theta);
-    pt2 = rotate3D(ol, xa->loc, ayx, -theta);
-    nl = pt1.add(pt2);
-    nl.multiply(0.5);
-    wa->move(nl);
-
-    Bond* wbonds[16];
-    wa->fetch_bonds(wbonds);
-    int i, j;
-    Point origin = xa->loc;
-    float vxtheta = -find_angle_along_vector(wa->loc, ol, origin, avx);
-    if (1) for (i=0; wbonds[i]; i++)
-    {
-        if (!wbonds[i]->atom2) continue;
-        if (wbonds[i]->atom2->in_same_ring_as(wa)) continue;
-
-        Point lpt = wbonds[i]->atom2->loc;
-        lpt = rotate3D(lpt, origin, avx, vxtheta);
-        wbonds[i]->atom2->move(lpt);
-
-        Atom* movesw[1024];
-        wbonds[i]->fetch_moves_with_atom2(movesw);
-        for (j=0; movesw[j]; j++)
-        {
-            lpt = movesw[j]->loc;
-            lpt = rotate3D(lpt, origin, avx, vxtheta);
-            movesw[j]->move(lpt);
-        }
-    }
-    return bthet;
+    // Rotate each substituent component once. Moving the immediate neighbor
+    // and then visiting it again through a bond cache can distort its bonds.
+    float vtheta=find_angle_along_vector(wa->loc,destination,va->loc,va->loc.subtract(ua->loc));
+    float xtheta=find_angle_along_vector(wa->loc,destination,xa->loc,xa->loc.subtract(ya->loc));
+    if(!branches(wa,va->loc,axis,theta)
+        || !branches(va,va->loc,va->loc.subtract(ua->loc),vtheta)
+        || !branches(xa,xa->loc,xa->loc.subtract(ya->loc),xtheta))return 0;
+    motions.push_back({wa,destination});
+    for(const auto& motion:motions)motion.atom->move(motion.destination);
+    // Their positions stay fixed, but the bond directions at these atoms changed.
+    va->move(va->loc);xa->move(xa->loc);
+    return theta;
 }
 
 void Atom::rotate_geometry(Rotation rot)

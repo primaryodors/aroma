@@ -953,7 +953,8 @@ std::string CPartial::resnos_as_string(Protein* p)
             intersect[i] = false;
             continue;
         }
-        j = aa->atoms_inside_sphere(s, nullptr, aa->priority ? 4.0 : 1.1);
+        // Preference cannot expand geometric membership into neighboring clefts.
+        j = aa->atoms_inside_sphere(s, nullptr, 1.1);
         intersect[i] = (j>0);
     }
 
@@ -974,7 +975,7 @@ int CPartial::resnos_as_array(Protein *p, int *output)
             intersect[i] = false;
             continue;
         }
-        j = aa->atoms_inside_sphere(s, nullptr, aa->priority ? 4.0 : 1.1);
+        j = aa->atoms_inside_sphere(s, nullptr, 1.1);
         intersect[i] = (j>0);
     }
 

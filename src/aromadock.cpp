@@ -110,7 +110,6 @@ bool out_pdbdat_res = true;
 Protein* protein;
 Protein* ptemplt;
 Protein* ptplref;
-Protein* metald_prot = nullptr;
 int seql = 0;
 int addl_resno[256];
 const Region* regions;
@@ -143,7 +142,6 @@ bool wet_contact = false;       // If true, place a water molecule between the s
 bool flex = true;
 float kJmol_cutoff = -0.01;
 int pose=1, nodeno=0, iter=0;
-bool kcal = false;
 float drift = initial_drift;
 Molecule** gcfmols = NULL;
 int activation_node = -1;		// Default is never.
@@ -325,7 +323,11 @@ int interpret_resno(const char* field)
             throw 0xbad12e5;
         }
         if (_50 < 1) return 0;
-        else retval = _50 + w - 50;
+        else
+        {
+            const char* plus = strchr(dot, '+');
+            retval = protein->resolve_bw_resno(b, w, plus ? atoi(plus+1) : 0);
+        }
     }
     else retval = atoi(offset);
 
@@ -522,10 +524,11 @@ void output_iter(int iter, Molecule** mols, std::string mesg, bool mols_include_
         #endif
 
         fprintf(fp, "\nPDBDAT:\n");
+        std::vector<Atom*> emitted_metals;
 
         for (i=0; reaches_spheroid[nodeno][i]; i++)
         {
-            reaches_spheroid[nodeno][i]->save_pdb(fp, foff);
+            reaches_spheroid[nodeno][i]->save_pdb(fp, foff, false);
             foff += reaches_spheroid[nodeno][i]->get_atom_count();
         }
 
@@ -533,7 +536,16 @@ void output_iter(int iter, Molecule** mols, std::string mesg, bool mols_include_
         {
             if (!mols_include_res && mols[i]->is_residue()) continue;
             mols[i]->save_pdb(fp, foff, false);
+            for(int j=0;j<mols[i]->get_atom_count();++j)
+                if(mols[i]->get_atom(j)->is_metal() && mols[i]->get_atom(j)->mol==mols[i])
+                    emitted_metals.push_back(mols[i]->get_atom(j));
             foff += mols[i]->get_atom_count();
+        }
+        for(int j=0;j<protein->get_metals_count();++j)
+        {
+            Atom* ion=protein->get_metal(j);
+            if(std::find(emitted_metals.begin(),emitted_metals.end(),ion)==emitted_metals.end())
+                ion->save_pdb_line(fp,++foff,true);
         }
 
         protein->end_pdb(fp);
@@ -1068,9 +1080,12 @@ bool do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
             atno_offset += water->get_atom_count();
         }
 
+        // Protein serialization owns its ions. Append only snapshot-only ions.
         for (Atom* metal : drjk->metal_atoms())
         {
-            metal->save_pdb_line(pfout, ++atno_offset);
+            bool owned=false;
+            for(int i=0;i<protein->get_metals_count();++i)if(protein->get_metal(i)==metal)owned=true;
+            if(!owned)metal->save_pdb_line(pfout,++atno_offset,true);
         }
 
         protein->end_pdb(pfout);
@@ -2030,8 +2045,6 @@ void apply_protein_specific_settings(Protein* p)
         AminoAcid* aa = protein->get_residue(priority_resnos[i]);
         if (aa) aa->priority = true;
     }
-
-    if (!p->get_metals_count() && metald_prot) p->copy_mcoords(metald_prot);
 
     j=0;
 
@@ -2996,7 +3009,7 @@ int main(int argc, char** argv) try
 
     // When docking with a metalloprotein, use this temporary Molecule for interactions the same as
     // we use AminoAcid objects, except don't attempt to flex the metals object.
-    Molecule* met = protein->metals_as_molecule();
+    Molecule* met = nullptr;
     #if _DBG_STEPBYSTEP
     if (debug) *debug << "Created metals molecule." << endl;
     #endif
@@ -3198,20 +3211,6 @@ _try_again:
             fclose(pf);
             apply_protein_specific_settings(protein);
 
-            if (nmtlcoords)
-            {
-                for (i=0; i<nmtlcoords; i++)
-                {
-                    for (j=0; j<mtlcoords[i].ncoordres; j++)
-                    {
-                        AminoAcid* aa = protein->get_residue(mtlcoords[i].coordres[j].resno);
-                        if (aa)
-                        {
-                            aa->coordmtl = mtlcoords[i].mtl;
-                        }
-                    }
-                }
-            }
         }
         else
         {
@@ -3225,8 +3224,11 @@ _try_again:
         {
             protein->pocketcen = pocketcen;
             protein->coordinate_metal(mtlcoords, nmtlcoords);
-            metald_prot = protein;
         }
+
+        // Each pose owns its ions; build this view after loading and fitting them.
+        delete met;
+        met = protein->metals_as_molecule();
 
         freeze_bridged_residues();
 
@@ -3500,6 +3502,10 @@ _try_again:
 
                     delete[] sidechain_bondrots[i];
                 }
+
+                if (nmtlcoords) protein->coordinate_metal(mtlcoords, nmtlcoords);
+                delete met;
+                met = protein->metals_as_molecule();
             }
 
             #if _DBG_STEPBYSTEP
@@ -3914,10 +3920,38 @@ _try_again:
                     Molecule* pmets = protein->metals_as_molecule();
                     int npmets = pmets->get_atom_count();
 
+                    std::vector<int> bb_cavities;
+                    if (pdpst == pst_best_binding)
+                    {
+                        std::vector<bool> eligible(ncvtys, true);
+                        for (i=0; i<ncvtys; ++i)
+                        {
+                            if (any_priority && !cvtys[i].has_priority()) eligible[i] = false;
+                            if (npmets)
+                            {
+                                bool contains_metal = false;
+                                for (j=0; j<npmets; ++j)
+                                    if (cvtys[i].point_inside_pocket(pmets->get_atom(j)->loc)) contains_metal = true;
+                                if (!contains_metal) eligible[i] = false;
+                            }
+                        }
+                        // Locate the declared pocket before rewarding individual anchors.
+                        // A small adjacent cleft must not win on one preferred polar residue.
+                        bb_cavities = Search::pocket_cavity_candidates(protein, cvtys, ncvtys, center_resnos, eligible);
+                        if (getenv("AROMA_BB_TRACE"))
+                        {
+                            cerr << "BB cavity candidates:";
+                            for (int index : bb_cavities) cerr << " " << index;
+                            cerr << endl;
+                        }
+                    }
+
                     while (!gcav)
                     {
                         for (i=0; i<ncvtys; i++)
                         {
+                            if (!bb_cavities.empty()
+                                && std::find(bb_cavities.begin(), bb_cavities.end(), i) == bb_cavities.end()) continue;
                             if (any_priority && !cvtys[i].has_priority())
                             {
                                 if (frand(0,1) >= 0.01) continue;
@@ -4117,15 +4151,24 @@ _try_again:
                                 j++;
                             }
 
+                            bool pri_metal=g_bbr[l].pri_res->coordmtl && g_bbr[l].pri_tgt->can_coord_metals();
+                            bool sec_metal=g_bbr[l].sec_res && g_bbr[l].sec_tgt
+                                && g_bbr[l].sec_res->coordmtl && g_bbr[l].sec_tgt->can_coord_metals();
+                            bool tert_metal=g_bbr[l].tert_res && g_bbr[l].tert_tgt
+                                && g_bbr[l].tert_res->coordmtl && g_bbr[l].tert_tgt->can_coord_metals();
+                            // Multiple protein donors of one ion represent one metal anchor.
+                            if(pri_metal && sec_metal && g_bbr[l].pri_res->coordmtl==g_bbr[l].sec_res->coordmtl)sec_metal=false;
+                            if(pri_metal && tert_metal && g_bbr[l].pri_res->coordmtl==g_bbr[l].tert_res->coordmtl)tert_metal=false;
+
                             if ((g_bbr[l].pri_res->has_hbond_acceptors() && g_bbr[l].pri_tgt->has_hb_donors())
                                     || (g_bbr[l].pri_res->has_hbond_donors() && g_bbr[l].pri_tgt->has_hb_acceptors())
-                                    || (g_bbr[l].pri_res->coordmtl)
+                                    || pri_metal
                                     )
                             {
                                 if (g_bbr[l].pri_tgt->single_atom) llig->stay_close_mine = g_bbr[l].pri_tgt->single_atom;
                                 else if (g_bbr[l].pri_tgt->conjgrp) llig->stay_close_mine = g_bbr[l].pri_tgt->conjgrp->get_nearest_atom(g_bbr[l].pri_res->get_CA_location());
                                 llig->stay_close_mol = g_bbr[l].pri_res;
-                                if (g_bbr[l].pri_res->coordmtl) llig->stay_close_other = g_bbr[l].pri_res->coordmtl;
+                                if (pri_metal) llig->stay_close_other = g_bbr[l].pri_res->coordmtl;
                                 else llig->stay_close_other = g_bbr[l].pri_res->get_reach_atom(g_bbr[l].pri_tgt->best_interaction());
                                 if (!llig->stay_close_other) llig->stay_close_other = g_bbr[l].pri_res->get_nearest_atom(g_bbr[l].pri_tgt->barycenter());
                                 if (llig->stay_close_other) llig->stay_close_optimal = InteratomicForce::optimal_distance(llig->stay_close_mine, llig->stay_close_other);
@@ -4139,14 +4182,14 @@ _try_again:
                             if (g_bbr[l].tert_res && g_bbr[l].tert_tgt
                                 && ((g_bbr[l].tert_res->has_hbond_acceptors() && g_bbr[l].tert_tgt->has_hb_donors())
                                     || (g_bbr[l].tert_res->has_hbond_donors() && g_bbr[l].tert_tgt->has_hb_acceptors())
-                                    || (g_bbr[l].tert_res->coordmtl)
+                                    || tert_metal
                                     )
                                 )
                             {
                                 if (g_bbr[l].tert_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].tert_tgt->single_atom;
                                 else if (g_bbr[l].tert_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].tert_tgt->conjgrp->get_nearest_atom(g_bbr[l].tert_res->get_CA_location());
                                 llig->stay_close2_mol = g_bbr[l].tert_res;
-                                if (g_bbr[l].tert_res->coordmtl) llig->stay_close2_other = g_bbr[l].tert_res->coordmtl;
+                                if (tert_metal) llig->stay_close2_other = g_bbr[l].tert_res->coordmtl;
                                 else llig->stay_close2_other = g_bbr[l].tert_res->get_reach_atom(g_bbr[l].tert_tgt->best_interaction());
                                 if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].tert_res->get_nearest_atom(g_bbr[l].tert_tgt->barycenter());
                                 if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
@@ -4166,14 +4209,14 @@ _try_again:
                             if (g_bbr[l].sec_res && g_bbr[l].sec_tgt
                                 && ((g_bbr[l].sec_res->has_hbond_acceptors() && g_bbr[l].sec_tgt->has_hb_donors())
                                     || (g_bbr[l].sec_res->has_hbond_donors() && g_bbr[l].sec_tgt->has_hb_acceptors())
-                                    || (g_bbr[l].sec_res->coordmtl)
+                                    || sec_metal
                                     )
                                 )
                             {
                                 if (g_bbr[l].sec_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].sec_tgt->single_atom;
                                 else if (g_bbr[l].sec_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].sec_tgt->conjgrp->get_nearest_atom(g_bbr[l].sec_res->get_CA_location());
                                 llig->stay_close2_mol = g_bbr[l].sec_res;
-                                if (g_bbr[l].sec_res->coordmtl) llig->stay_close2_other = g_bbr[l].sec_res->coordmtl;
+                                if (sec_metal) llig->stay_close2_other = g_bbr[l].sec_res->coordmtl;
                                 else llig->stay_close2_other = g_bbr[l].sec_res->get_reach_atom(g_bbr[l].sec_tgt->best_interaction());
                                 if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].sec_res->get_nearest_atom(g_bbr[l].sec_tgt->barycenter());
                                 if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);

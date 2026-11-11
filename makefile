@@ -13,16 +13,17 @@ TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/m
 	  test/flexion_test test/histidine_test test/ring_test test/eclipsing_test test/mcoord_test test/vdw_vertex_test \
 	  test/ageo_test test/chirality_test test/bb_test test/solvent_test test/multimer_test test/inte_test \
 	  test/conj_test test/probability_test test/schiff_test test/moves_with_test test/occlusion_test test/flexibility_test
-REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test \
+REGRESSION_TESTS=test/spatial_test test/pose_state_test test/allocation_test test/result_state_test test/metal_scoring_test test/ring_geometry_test \
     test/numeric_test test/clash_selection_test test/entropy_test test/pocket_search_test test/smiles_input_test test/cavity_residue_test test/soft_scoring_test test/protonation_test test/disulfide_test test/atom_target_test test/soft_disulfide_test test/target_rotation_test test/primary_target_test test/soft_covalent_test test/repack_state_test test/cavity_intersection_test test/cavity_storage_test test/space_containment_test test/space_atom_test test/space_bounds_test test/cavity_coverage_test test/pose_contact_test
 TSTS+=$(REGRESSION_TESTS)
+REGRESSION_TESTS+=test/planar_refinement_test test/binding_site_test
+REGRESSION_TESTS+=test/internal_scoring_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
-	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig
+	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
 all: $(DIRS) \
 	 $(OBJS) \
 	 $(DOBJ) \
-	 $(TSTS) \
 	 $(APPS)
 code: $(DIRS) $(OBJS) $(DOBJ) $(TSTS) $(APPS)
 apps: $(APPS)
@@ -71,6 +72,8 @@ $(TMP):
 
 
 # Classes
+
+$(OBJS): | $(OBJ)
 
 $(OBJ)/misc.o: src/classes/misc.h src/classes/misc.cpp src/classes/constants.h makefile
 	$(CPL) -c src/classes/misc.cpp -o $(OBJ)/misc.o $(CFLAGS)
@@ -270,3 +273,42 @@ $(BIN)/poslig: src/poslig.cpp $(OBJS)
 	$(CPL) src/poslig.cpp $(OBJS) -o $(BIN)/poslig $(CFLAGS)
 
 test/pose_contact_test: src/classes/pose_contact.h
+
+reec: $(BIN)/reec
+
+$(BIN)/reec: src/reec.cpp $(OBJS) | $(BIN)
+	$(CPL) src/reec.cpp $(OBJS) -o $(BIN)/reec $(CFLAGS)
+
+test/bw_indel_test: src/test/bw_indel_test.cpp $(OBJS)
+	$(CPL) src/test/bw_indel_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+test/metal_fit_test: src/test/metal_fit_test.cpp $(OBJS)
+	$(CPL) src/test/metal_fit_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+test/reec_test: src/test/reec_test.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+$(BIN)/reec_steric_audit: src/test/reec_steric_audit.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_steric_audit.cpp $(OBJS) -o $@ $(CFLAGS)
+
+test/reec_backbone_sampling_test: src/test/reec_backbone_sampling_test.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_backbone_sampling_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+test/reec_cg_test: src/test/reec_cg_test.cpp src/reec.cpp $(OBJS)
+	$(CPL) src/test/reec_cg_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbone_sampling_test test/reec_cg_test $(BIN)/phew $(BIN)/ic
+	./test/reec_test
+	./test/reec_backbone_sampling_test
+	./test/reec_cg_test
+	python3 test/reec_cli_test.py
+	python3 test/reec_backend_test.py
+	python3 test/final_sterics_test.py
+	python3 test/reec_workflow_baseline_test.py
+	python3 test/dohm_recovery_test.py
+	python3 test/fixfail_reshape_test.py
+
+.PHONY: check-metal
+check-metal: $(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/cavity_search test/metal_fit_test test/result_state_test test/metal_scoring_test
+	./test/result_state_test
+	python3 -m unittest discover -s test -p 'metal_coordination_test.py'

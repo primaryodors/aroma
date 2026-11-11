@@ -1,0 +1,308 @@
+REEC enhancement plan
+Date: 2026-11-08
+
+Source and current status
+
+This plan reconstructs pending work from the saved session in
+/mnt/data/ext2/aroma/session-transfer-2026-11-08-01a1b801/ and comparison
+with the current source. The referenced hm/ensemble_notes.txt was absent
+from both workspaces.
+
+Already implemented: generation retries, fresh reproducible seeds, targeted
+side-chain annealing, and local template-restraint relaxation. These are
+baseline capabilities to evaluate, rather than proposed additions.
+
+The five pending additions from the session are conjugate-gradient fallback,
+optional physical molecular dynamics, receptor conformer ensembles, ensemble
+docking, and individual conformer viewing. This revision also adds local
+backbone sampling and broader helix investigations.
+
+1. Establish baseline measurements
+
+Status: in progress. The isolated native-engine harness is hm/reec_baseline.py;
+REEC_BASELINE.txt records its protocol, results, limitations, and outstanding
+workflow and accuracy measurements. REEC_ANNEALING_COMPARISON.txt records the
+expanded ten-receptor off/on comparison. Offline docking review is complete;
+REEC_DOCKING_REVIEW.txt records the results and quality findings. The current
+panel has 21/34 operational passes. Follow-up decisions concern ligand
+geometry, metal-site preparation, contact ranking, and final OR5V1 template
+fidelity were reviewed in the follow-ups below. Ranking and OR5V1 behavior
+are settled by the user. A matched weighting structural comparison is now
+complete for OR51E2 and TAAR1; REEC_WEIGHTING_HOLDOUTS.txt records improved
+median accuracy and 24/24 accepted candidates. The original holdouts predate
+that change. No further experiments were launched
+during the offline review.
+
+Current policy: annealing is optional and defaults off in REEC, dohm, and
+fixfail. Existing explicit controls remain available.
+
+Completed TAAR5 follow-up (2026-11-09): the latest trimethylamine dock has
+nine accepted poses and passes the saved-output operational criterion.
+Ligand geometry and Asp114 contacts were checked across all nine poses;
+the current source passes independent geometry review. See
+REEC_TAAR5_REVIEW.txt. Repository activity curation now identifies
+trimethylamine as the top agonist and thyronamine as an inverse agonist.
+The older panel remains historical; a corrected matched panel is pending.
+
+Completed OR52E8 follow-up (2026-11-09): four accepted poses, with the true
+3-hydroxy oxygen contacting Asn208 in pose 3. Source geometry passes.
+REEC_OR52E8_REVIEW.txt records the measurements and limitations. The user
+settled ranking: preserve current score order; no ranking work is pending.
+Next review is OR5V1 final primary-template backbone fidelity.
+
+OR5V1 fidelity review completed (2026-11-09): the 0.891 A protected-backbone
+shift is already present in native output; final processing adds only
+0.0005 A after alignment. Primary weights match policy and no protected
+residue received clash-driven anchor release. Current policy preserves
+initial coordinates with soft restraints, not final rigidity. See
+REEC_OR5V1_REVIEW.txt. No optimizer changes were made. Next review concerns
+OR1A1 postprocessing sterics and OR1B1 final disulfide rejection.
+
+User disposition: OR5V1 docking is satisfactory; retain current behavior.
+Workflow follow-up (2026-11-09), REEC_WORKFLOW_GEOMETRY_REVIEW.txt:
+OR1A1 crosses the final severe-overlap limit after processing while its
+sidecar retains native zero-clash status. OR1B1's archived disulfide failure
+is present before final IC; an isolated current PHEW replay also fails
+disulfide geometry, while an instrumented replay passes. Final serialized
+steric acceptance and controlled PHEW diagnosis remain actionable work.
+
+Final-publication correction implemented (2026-11-09): shared finalization
+now checks serialized severe overlaps, records final sterics, and applies
+bounded native cleanup to damaged REEC candidates before retry/rollback.
+Existing models survive exhausted batch retries. Isolated current OR1B1
+and archived OR1A1 cleanup both pass with zero severe clashes and valid
+disulfides. See REEC_WORKFLOW_GEOMETRY_REVIEW.txt. No canonical models were
+replaced. Exact PHEW command attribution remains unresolved, but damaged
+geometry is repaired or rejected before accepted publication.
+
+Latest production models verified (2026-11-09): OR1A1 active at 18:36 and
+OR1B1 active at 18:31 both pass final chemical geometry, both disulfides,
+mandatory contacts, and zero-severe-clash acceptance. Independent final
+audits match sidecars. OR1B1 records automatic postprocessing repair;
+OR1A1 passes directly. These are the canonical models used for docking.
+Artifacts: tmp/latest-model-review-2026-11-09/summary.json.
+
+Matched weighting holdouts completed with
+hm/reec_weighting_comparison.py: OR51E2 and TAAR1, two matched seeds,
+three candidates per seed, annealing off, 3000 iterations. Both sides use
+the same current library objects and frozen inputs. The source revisions
+immediately before and at the weighting change isolate that change.
+Reference coordinates remain excluded from reconstruction. This is a
+structural measurement experiment, not replacement production models.
+
+Both weighting holdouts improve in all three median structural metrics.
+Pocket heavy-atom RMSD legacy/weighted: OR51E2 1.722/1.694 A, TAAR1
+4.047/3.152 A. Retain weighting v1; this is evidence from two retrospective
+controls, not a universal accuracy claim. The next baseline task is the
+corrected ligand panel, followed by local backbone sampling investigation.
+
+Affected ligand rerun launched under nohup on tempusvernum (2026-11-09):
+twelve pairs, 22 docks, using current canonical models, corrected chemistry,
+and unchanged ranking. The isolated pipeline builds, prepares, and docks
+without a laptop connection. REEC_REMOTE_BENCHMARK.txt records the scope,
+PID, root, protocol, and checkpoints. Results await completion and review.
+
+Affected-case analysis completed (2026-11-10): all 22 runs finish, yielding
+116 accepted poses; 14/22 runs and 8/12 primary cases meet the historical
+operational rule. The ten shared primary cases change from 8/10 to 6/10.
+Ring geometry is preserved; 23/24 copper poses meet the two-cysteine window
+and all six leading copper poses also contact ligand sulfur. No OR52E8 pose
+passes the directional Asn208 hydrogen-bond check. Ranking stays unchanged.
+REEC_AFFECTED_ANALYSIS.txt records the full review and comparison limits.
+The requested retrospective baseline rerun is complete. Next is the bounded
+local backbone investigation; independent prospective ligand validation
+remains separate from these known-agonist regression cases.
+
+Template weighting version 1 is implemented: global similarity, local
+similarity, and coordinate coverage govern starting coordinates and fold
+restraints. REEC_TEMPLATE_WEIGHTING.txt records its policy and checks.
+OR5V1 primary templating from 9lkb, with consOR5 supplying gaps, is an
+explicitly authorized exception to the no individual-receptor treatment
+rule. The remote docking baseline is being refreshed with these models;
+the previous frozen-model run is retained separately.
+
+Record acceptance rate, runtime, severe clashes, geometry errors, final pocket
+diversity, and docking results across several receptors. Include OR1A1's retry
+case, OR1B1's repair case, OR51E1's mixed templates, and OR51E2's intentional
+fragment ending at residue 303.
+
+Compare annealing enabled and disabled with matched seeds. The saved OR1B1
+comparison selected the same score while taking 13.72 versus 20.60 seconds.
+That demonstrates added cost without establishing improved accuracy.
+
+Keep structural validation and held-out ligand performance as separate
+measures. When experimental coordinates are used for accuracy evaluation,
+exclude those coordinates from reconstruction inputs.
+
+Recommendation: complete this baseline before adding more sampling.
+
+2. Local backbone sampling investigation
+
+Initial bounded pilot completed (2026-11-10). REEC_BACKBONE_PILOT.txt records
+the optional implementation, endpoint/closure invariants, equal iteration
+caps, measured costs, and results. All 24 TAAR1/OR52E8 candidates pass. TAAR1
+diversity increases but pocket-heavy accuracy slightly worsens; OR52E8 retains
+no local proposals and shows no added contact benefit. Keep the sampler off
+by default and preserve current docking models. The initial investigation is
+complete at this scope; next is the conjugate-gradient fallback trial.
+
+Current Cartesian minimization permits backbone movement. Local template
+release softens anchors and template-derived fold restraints around severe
+clashes and adjacent residues. This can accommodate bulky substitutions, but
+it does not explicitly explore alternative backbone arrangements across score
+barriers. Side-chain annealing preserves backbone positions.
+
+Proposed investigation:
+- Target bulky substitutions, persistent clashes, and uncertain local segments.
+- Explore small coordinated backbone movements with fixed segment endpoints
+  and explicit chain closure, avoiding displacement of the rest of the chain.
+- Repack nearby side chains and minimize each proposal.
+- Preserve chemical geometry, chirality, disulfides, and mandatory contacts;
+  apply the existing final review.
+- Compare pocket diversity, withheld structural accuracy, acceptance rate,
+  and runtime against current local relaxation at equal computation budgets.
+
+Decisions: proposal method, segment size, trigger criteria, and sampling budget.
+Recommendation: investigate a bounded optional sampler before finalizing the
+conformer-generation design; adopt it based on measured benefit.
+
+3. Conjugate-gradient fallback
+
+Initial native trial completed (2026-11-10), REEC_CG_PILOT.txt. Stop reasons
+are now recorded. The ten retained rejected OR1B1 starts reach iteration
+limits in all baseline stages; no actual stall is observed. A matched
+600-iteration CG/restarted-L-BFGS comparison rescues 0/10 in both arms.
+CG consumes 25.5 percent more energy evaluations and is slower. Keep the
+experimental fallback disabled and preserve current production models.
+Three native checks and 67 Python tests pass. Next: conformer storage and
+selection. A naturally occurring stall-only rescue remains unproven.
+
+REEC uses L-BFGS, falls back to a downhill gradient direction in one condition,
+and stops when its line search fails. An experimental, disabled-by-default
+native conjugate-gradient fallback is now available as described above.
+
+Proposed implementation:
+- Report the minimization stop reason: convergence, iteration limit, or stall.
+- Try a bounded conjugate-gradient phase after a stall while significant
+  gradients or validation failures remain.
+- Retain the best coordinates and preserve every acceptance limit.
+- Compare rescue rate and runtime against an equal budget of existing
+  minimization.
+
+Decision: automatic fallback or initially optional?
+Recommendation: start behind an option; enable automatically only if benchmark
+results demonstrate useful recovery.
+
+4. Distinct receptor conformers
+
+Distinct stochastic starts do not establish distinct final pocket structures.
+Several starts can converge to the same arrangement.
+
+Proposed implementation:
+- Collect candidates across batches.
+- Apply complete PHEW/internal-coordinate processing and final review.
+- Cluster final structures using pocket geometry, side-chain torsions, and
+  contact patterns after structural superposition.
+- Select validated representatives balancing quality and diversity.
+- Save separate PDB and cavity files for each conformer.
+- Save a manifest with conformer IDs, seeds, settings, provenance, validation,
+  and selection metrics.
+- Preserve the canonical active PDB.
+
+Decision: fixed count or receptor-specific count?
+Recommendation: initially test up to 3-5 distinct conformers, allowing fewer
+when diversity is absent. This is an experimental starting point, not an
+established count for every receptor.
+
+Use the local backbone investigation to inform candidate generation and
+clustering. Reassess ensemble diversity after any broader helix experiments.
+
+5. Individual conformer viewing
+
+The viewer supports structure switching and overlays. Add a manifest-driven
+selector in www/receptor.php and conformer lookup through www/pdb.php.
+
+Display conformer ID and basic provenance. Keep the selected structure,
+cavity, and docking poses synchronized. An explicit request for an unavailable
+conformer should report that condition rather than silently show another model.
+
+Recommendation: build alongside conformer storage, before ensemble docking,
+so candidate structures can be inspected during evaluation.
+
+6. Ensemble docking
+
+Give each conformer its own cavity, configuration, output paths, and stable ID.
+Retain receptor conformer identity on every ligand pose.
+
+Decisions:
+- Equal docking effort per conformer or adaptive allocation?
+- Best-conformer ligand score, consensus, or another aggregation method?
+- Does repair update one conformer or regenerate the ensemble?
+
+Recommendation: begin with equal budgets and retain per-conformer results.
+Compare aggregation methods using ligands excluded from tuning. Include a
+single-structure control with equal total docking effort, separating ensemble
+benefits from benefits of extra computation.
+
+7. Broader helix investigation
+
+Investigate whether local backbone sampling leaves important pocket movements
+unexplored, including coordinated helix shifts, tilts, rotations, and bending.
+
+Proposed investigation:
+- Identify cases with persistent pocket limitations after local sampling.
+- Explore bounded helix or helix-group proposals, allowing connecting loops
+  to accommodate movement with explicit continuity and closure checks.
+- Retain trusted structural restraints outside the sampled regions and preserve
+  disulfides, chemical geometry, and mandatory contacts.
+- Repack side chains, minimize, and apply the complete final review.
+- Measure structural accuracy, pocket diversity, held-out docking performance,
+  and runtime against local sampling at equal computation budgets.
+
+Decisions: which helices can move, permitted amplitudes, loop accommodation,
+and whether experimental state information should constrain proposals.
+Recommendation: investigate before physical MD, using evidence from the earlier
+sampling and ensemble stages to select cases. Adopt only validated movements
+that provide useful results without excessive structural drift.
+
+8. Optional physical molecular dynamics
+
+Use an established simulation engine as a separate refinement stage. Specify
+and record protonation, force field, membrane, solvent, ions, restraints, and
+ligand treatment. Apply the same final acceptance workflow to its output.
+
+Decision: is the first objective structural refinement, pocket diversity, or
+investigation of a specific difficult receptor?
+Recommendation: defer implementation until the objective and benchmark are
+selected. Keep this stage optional. Lower optimization scores or longer
+trajectories alone do not establish better structural accuracy.
+
+9. Validated-model publication recovery
+
+The exact validated-model path invokes publication once, outside generation
+retries. Investigate recovery while preserving intentional fragment boundaries,
+especially OR51E2 residue 303 and its intentionally absent terminal OXT.
+
+Repeating identical processing alone offers no recovery. Distinguish recoverable
+geometry rejection from invalid inputs and programming failures; preserve the
+prior active model and the validated source.
+
+Recommended sequence and completion criteria
+
+Baseline measurements -> local backbone sampling investigation ->
+conjugate-gradient trial -> conformer storage and selection -> viewer ->
+ensemble docking -> broader helix investigation -> optional physical MD.
+
+Review validated-model publication recovery independently as item 9; it has no
+dependency on completion of the sampling and ensemble sequence.
+
+Each implementation should include focused regression checks and a comparison
+against its baseline. Preserve chemical geometry, chirality, disulfides,
+mandatory contacts, intentional fragment boundaries, and final review limits.
+For sampling changes, check reproducibility with fixed inputs and seeds.
+For workflow changes, verify that rejected attempts preserve prior published
+models. For docking changes, verify conformer identity and file isolation.
+
+Keep Git operations under the user's control, as specified in the saved session.
+This document records a plan; it does not authorize implementation of every
+optional proposal.

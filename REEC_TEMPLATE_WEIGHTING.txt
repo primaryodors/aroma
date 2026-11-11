@@ -1,0 +1,87 @@
+REEC template weighting, version 1
+
+The general model combines all aligned templates using sequence similarity
+and coordinate coverage. This policy applies to every receptor by default.
+It replaces residue-wise winner selection and equal template fold weights.
+
+Similarity credit is 1 for identity, 0.5 within conservative classes
+AVLIM, FYW, ST, NQ, DE, or KR, and 0 otherwise. Glycine, proline, cysteine,
+and histidine receive no partial credit for other residues. These explicit
+classes are a heuristic, not a substitution probability matrix.
+
+For each template:
+  G = mean similarity credit over target positions with template coordinates.
+  L(r) = mean credit in a triangular 13-target-residue window around r.
+         Window weights are 7 minus distance; absent coordinates score zero.
+  raw(r) = (0.05 + 0.95 G)^4 * (0.05 + 0.95 L(r))^2.
+
+A missing residue has raw weight zero. Available template weights normalize
+to one at each target residue. Terminal windows truncate to the sequence.
+Template insertions have no direct target coordinate contribution. Coverage
+is handled per residue and locally; a short exact fragment can contribute
+strongly where present without penalizing the remainder of the model.
+
+Backbone atom positions use normalized weighted coordinates after rigid
+superposition. Side-chain atoms combine only donors whose residue matches
+the target exactly; other side chains start from ideal target geometry.
+Backbone anchor strength stays 1.5. Side-chain anchor strength is 0.03 times
+the total exact-match donor fraction. Missing atoms renormalize over actual
+atom donors. If none exists, ideal target geometry supplies the atom.
+
+Local CA distance restraints use normalized geometric means of the two
+endpoint residue weights. Their base strength remains 0.15. Each template
+supplies its own observed distance interval; observed conflicting intervals
+are retained with their relative weights rather than collapsed to one.
+Covalent geometry, chirality, disulfides, and explicit contacts retain their
+existing validation rules. Optimization can still move the backbone.
+
+Deliberate exception to the no individual-receptor treatment rule:
+OR5V1 uses the 9lkb experimental structure as primary when that template ID
+is present. Other templates, principally consOR5 (9wpm), supply absent
+regions. At covered residues at least four positions from a gap, primary
+weight is 1 and donor weight is 0. Within three positions, primary weight
+is distance-to-gap divided by four; other templates share the remainder.
+This transition applies consistently to coordinates and fold restraints.
+It preserves initial primary coordinates, not a rigid final conformation.
+The explicit native --primary-template ID / -P ID option supports the same
+policy generically; an explicit value overrides the OR5V1 default.
+
+Automatic dohm OR5V1 preparation reads the original experimental alignment
+and supplies 9lkb and 9wpm separately. It bypasses the old synthetic-template
+loop that assumed a second element despite selecting only one template.
+Explicit user templates continue to take precedence. Other automatic REEC runs retain family-specific donors plus compatible
+class I or class II OR templates as separate structures. Other GPCRs use
+their existing template-family lists. Inactive and apo rows are excluded;
+unavailable optional donors are logged and skipped. Validated-subfamily
+inputs retain their established donor ensembles. This replaces automatic
+single synthetic-template preprocessing for REEC; MODELLER retains its
+existing general preprocessing. Explicit user ensembles remain authoritative.
+Canonical target columns are preserved when appending an omitted terminal
+tail, while internal sequence disagreement is rejected. Single-template
+explicit paths cannot gain information from absent donors.
+
+Every native report records the primary template, weighting version,
+global similarity, and normalized per-residue weights for each template.
+This records the initial blend; later clash-driven anchor release remains
+a separate reported operation.
+
+Validation checks include global preference, conservative substitution
+credit, local context reversal, template-order independence, weight
+normalization, gap takeover, junction transitions, primary restraint
+suppression, actual coordinate blending, and primary coordinate retention.
+The existing analytical-gradient, geometry, sampling, and CLI checks also
+apply. These checks establish behavior, not improved structural accuracy.
+The refreshed remote docking comparison will assess downstream effects.
+
+Final local validation: native checks pass; 60 Python regression tests
+pass, including docking-job alias preservation and replication accounting.
+The remote native build and native checks also pass. Docking and model
+quality results remain pending; passing regression checks is not evidence
+of an accuracy improvement.
+
+Structural follow-up completed (2026-11-09): REEC_WEIGHTING_HOLDOUTS.txt
+records matched legacy/weighted source builds against excluded experimental
+references for OR51E2 and TAAR1. All 24 candidates pass. Median pocket-heavy
+RMSD improves from 1.722 to 1.694 A and 4.047 to 3.152 A respectively;
+whole-CA and pocket-backbone medians also improve. This is supportive
+evidence from two retrospective controls, not broad accuracy validation.

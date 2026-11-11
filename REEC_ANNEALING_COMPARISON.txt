@@ -1,0 +1,143 @@
+Expanded REEC annealing comparison
+Date: 2026-11-08
+Status: complete for this native-engine comparison
+
+Question
+
+Does the current targeted side-chain annealing improve candidate acceptance
+or final optimization scores across a more varied receptor sample?
+
+Sample
+
+Retained controls: OR1B1 and OR51E1.
+Added receptors: OR1G1, OR2AT4, OR2T11, OR2AG1, OR5V1, OR6P1, OR52E8,
+and TAAR5, bringing the sample to ten receptors.
+
+Protocol
+
+- Four seeds: 0, 1, 2, 3.
+- Three candidates per batch, 3000 minimization iterations per candidate.
+- Paired settings: annealing disabled versus 64 rounds at temperature 12.
+- Identical starting-coordinate signatures must match within each pair.
+- Execution order alternates across seeds and receptors.
+- Fixed clash scale 1 and BW binding-site residue targeting.
+- Native validation and independent review of accepted serialized models.
+- Experimental templates selected by the existing baseline harness.
+- No retry escalation or changes to optimization or validation limits.
+- Expected total: 240 candidates, 120 matched pairs, 80 batches.
+
+Command from project root:
+python3 hm/reec_baseline.py --output tmp/reec-annealing-expanded-2026-11-08 --receptors OR1B1 OR51E1 OR1G1 OR2AT4 OR2T11 OR2AG1 OR5V1 OR6P1 OR52E8 --seeds 0 1 2 3 --models 3 --iterations 3000 --counterbalance
+
+Detailed artifacts:
+tmp/reec-annealing-expanded-2026-11-08/summary.json
+
+TAAR5 uses a separate run under the same settings:
+python3 hm/reec_baseline.py --output tmp/reec-annealing-taar5-complete-2026-11-08 --receptors TAAR5 --template-ids 8jln 8jlo 8jlp 8jlq 8jlr 8jso 8iwe 8iwm 8itf 8pm2 --seeds 0 1 2 3 --models 3 --iterations 3000 --counterbalance --extend-terminal-tail
+
+TAAR5 template files 8iw4 and 8iw9 are absent locally and omitted from both
+settings. All ten included template sequences match their PIR rows.
+The stored TAAR5 alignment contains the exact first 321 residues of its
+337-residue sequence record. The isolated input restores the terminal 16
+residues immediately after that aligned core, preserving all core columns.
+The repository sequence and alignment records are unchanged. Both settings
+use this same complete target row. The initial preparation-only attempt in
+tmp/reec-annealing-taar5-2026-11-08 stopped at this input check and is excluded
+from all counts.
+
+Interpretation
+
+Acceptance means both native validation and independent serialized-geometry
+review passed. A rescue is a failed off candidate that passes with annealing;
+a loss is the reverse. Report both even when total acceptance is unchanged.
+
+Final scores are REEC optimization scores, not calibrated physical energies.
+Compare final scores only when the relevant candidates have identical local
+template-release regions. A lower final score does not establish a more
+accurate receptor or better docking performance. Count both small changes and
+changes exceeding 0.1 percent; the latter is a descriptive reporting threshold,
+not a validated scientific effect threshold.
+
+These generation controls omit workflow contact files, docking environments,
+PHEW/internal-coordinate publication, and full workflow retries. The earlier
+OR1B1 repair and OR51E2 experimental-coordinate holdout remain separate cases
+documented in REEC_BASELINE.txt. Canonical receptor models are preserved.
+
+Measured results
+
+Receptor | accepted off/on | pooled best scores off/on | pooled score improvement % | median batch seconds off/on
+OR1B1 | 12/12, 12/12 | 51.491372, 51.491372 | +0.0000 | 9.37, 14.01
+OR51E1 | 12/12, 12/12 | 152.701200, 152.701200 | +0.0000 | 10.73, 16.07
+OR1G1 | 12/12, 12/12 | 28.395210, 28.395210 | +0.0000 | 8.49, 13.57
+OR2AT4 | 12/12, 12/12 | 37.071640, 37.539021 | -1.2608 | 8.82, 13.62
+OR2T11 | 12/12, 12/12 | 22.331167, 22.331167 | +0.0000 | 8.40, 13.15
+OR2AG1 | 12/12, 12/12 | 26.502222, 25.804646 | +2.6321 | 8.52, 13.43
+OR5V1 | 12/12, 12/12 | 120.384850, 118.807540 | +1.3102 | 10.71, 15.87
+OR6P1 | 12/12, 12/12 | 37.129547, 37.129547 | +0.0000 | 9.56, 15.18
+OR52E8 | 12/12, 12/12 | 37.617637, 37.617637 | +0.0000 | 9.02, 14.22
+TAAR5 | 12/12, 12/12 | 184.393980, 184.782160 | -0.2105 | 12.21, 17.95
+
+Positive improvement percentages mean lower final scores with annealing;
+negative values mean higher scores. Pooled best selects the best accepted
+model across all 12 candidates in that setting. Each pooled comparison above
+has identical template-release regions and therefore matching objective weights.
+
+All 240 candidates passed native validation and independent geometry review.
+All 120 matched starting-coordinate signatures agree. There were zero rescues
+and zero losses of acceptance.
+
+Per-seed effects
+
+OR1B1: seed 0/1/2/3 best-score improvement %: +0.0000, +0.0000, +0.0000, +0.0116
+OR51E1: seed 0/1/2/3 best-score improvement %: +0.0000, +0.0000, +0.0995, +0.0000
+OR1G1: seed 0/1/2/3 best-score improvement %: +0.0000, +0.9976, +0.0000, -1.5748
+OR2AT4: seed 0/1/2/3 best-score improvement %: -1.2608, +0.0000, +0.9893, +3.7274
+OR2T11: seed 0/1/2/3 best-score improvement %: +0.0000, +0.0000, +0.0000, +0.0000
+OR2AG1: seed 0/1/2/3 best-score improvement %: +2.6321, +0.0000, +6.3578, +0.6462
+OR5V1: seed 0/1/2/3 best-score improvement %: not comparable (different template release), +0.0000, +2.6839, +1.3102
+OR6P1: seed 0/1/2/3 best-score improvement %: +0.0000, +0.8248, +0.0000, +0.0000
+OR52E8: seed 0/1/2/3 best-score improvement %: +0.0000, -0.1281, +0.1253, +0.0000
+TAAR5: seed 0/1/2/3 best-score improvement %: -0.2105, +0.1496, -0.4407, +1.4973
+
+OR5V1 seed 0 is excluded from final-score comparisons because the two
+selected models have different local template-release regions. Their scores
+therefore use different restraint weights. Both still pass geometry review.
+The pooled OR5V1 winners have matching release regions and are comparable.
+
+Findings
+
+Annealing improves the pooled best objective for OR2AG1 by 2.6321 percent
+and OR5V1 by 1.3102 percent. OR2AG1 improves the best score in three of four
+seeds, with a largest improvement of 6.3578 percent. OR5V1 improves two of
+three comparable seed batches by more than 0.1 percent.
+
+OR1G1, OR2AT4, OR6P1, and TAAR5 have some individual seed improvements
+exceeding 0.1 percent, without improving their pooled best results. OR2AT4
+and TAAR5 have worse pooled best scores by 1.2608 and 0.2105 percent. The
+other six pooled best scores are unchanged at the report precision.
+
+Total elapsed engine time: 382.81 seconds off versus 588.24 seconds on, a 53.7 percent increase.
+This excludes input preparation, summary calculations, and the initial build.
+
+These results support retaining annealing as a useful optional search method.
+They do not establish an accuracy advantage or a universal benefit from
+enabling it on every attempt. Selective use and final baseline retention are
+possible follow-up proposals; no production defaults were changed here.
+
+Verification and artifacts
+
+Seven metric, pairing, input-isolation, and terminal-extension tests pass.
+Host: diamondsonthewater
+CPU: AMD Ryzen 5 PRO 4650U with Radeon Graphics
+Engine, source, receptor database, and experimental alignment hashes agree
+between the OR and TAAR5 runs and remain unchanged after measurement.
+Combined native report: tmp/reec-annealing-expanded-2026-11-08/combined-summary.json
+Paired analysis: tmp/reec-annealing-expanded-2026-11-08/paired-comparison.json
+
+Subsequent configuration decision
+
+At the user's direction, annealing now defaults to zero rounds in native
+REEC and the shared Python adapter used by dohm and fixfail. The existing
+REEC --anneal-steps option remains available; --anneal-steps 64 enables it.
+No new workflow CLI options were added. The measurements above retain their
+explicit off/on settings and describe the configuration before this decision.

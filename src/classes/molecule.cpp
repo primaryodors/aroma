@@ -1607,7 +1607,9 @@ void Molecule::optimize()
         b[i]->rotate(thbest);
     }
 
-    refine_structure();
+    // Docking preparation preserves input bond lengths and angles. Cartesian
+    // structure repair can distort substituents even when ring atoms are fixed.
+    minimize_internal_clashes();
 }
 
 Space *Molecule::to_space()
@@ -5105,17 +5107,7 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                 }
             }
 
-            if (compute_interall && ligands[l]->coordmtl && ligands[l]->coordmtl->residue == ligands[l]->is_residue())
-            {
-                Interaction abind = InteratomicForce::total_binding(latoms[i], ligands[l]->coordmtl);
-                if (abind.summed() < 0)
-                {
-                    interall_a1[ninterall] = latoms[i];
-                    interall_a2[ninterall] = ligands[l]->coordmtl;
-                    interall_t[ninterall] = mcoord;
-                    interall[ninterall++] = abind.summed();
-                }
-            }
+
         }
     }
 
@@ -5319,7 +5311,18 @@ void Molecule::minimize_internal_clashes()
 
 void Molecule::do_histidine_flip(HistidineFlip* hf)
 {
+    if (!hf || !hf->C || !hf->N1 || !hf->N2) return;
     if (hf->N1->get_charge() >= 0.2 || hf->N2->get_charge() >= 0.2) return;
+
+    // Conditional protonation can remove or replace the cached hydrogen.
+    // Resolve the current tautomer from its bonds before moving any atoms.
+    Atom* first = hf->N1->is_bonded_to("H");
+    Atom* second = hf->N2->is_bonded_to("H");
+    if (first && second) return;
+    Atom* hydrogen = first ? first : second;
+    if (!hydrogen || atom_idx_from_ptr(hydrogen) < 0) return;
+    hf->H = hydrogen;
+    Atom* was_bonded = first ? hf->N1 : hf->N2;
 
     Point ptC  = hf->C->loc;
     Point ptN1 = hf->N1->loc;
@@ -5332,7 +5335,6 @@ void Molecule::do_histidine_flip(HistidineFlip* hf)
     Point newloc = rotate3D(ptH, Navg, ptC.subtract(Navg), M_PI);
     hf->H->move(newloc);
 
-    Atom* was_bonded = hf->H->get_bond_by_idx(0)->atom2;
     hf->H->unbond(was_bonded);
     float rN1 = newloc.get_3d_distance(ptN1), rN2 = newloc.get_3d_distance(ptN2);
     Atom* new_bonded = (rN1 > rN2) ? hf->N2 : hf->N1;
@@ -5441,14 +5443,18 @@ Interaction Molecule::intermol_bind_for_multimol_dock(Molecule* om, bool is_ac)
     return intermol_bind_for_multimol_dock(om, nullptr, is_ac);
 }
 
-Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfish, bool is_ac)
+Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfish, bool is_ac, bool include_internal)
 {
     float lbias = 1.0 + (sgn(is_residue()) == sgn(om->is_residue()) ? 0 : dock_ligand_bias);
-    Interaction rawbind = get_intermol_binding(om, !is_ac, true, selfish);
+    Interaction rawbind = get_intermol_binding(om, include_internal && !is_ac, true, selfish);
     Interaction lbind = rawbind * lbias;
     lbind.attractive += get_intermol_contact_area(om, true) * cavity_stuffing;
     lbind.clash *= iteration_additional_clash_coefficient;
-    lbind.clash += (get_memoized_internal_clashes() + get_memoized_total_eclipses()) * iteration_internal_clash_coefficient;
+    if (include_internal)
+    {
+        memoize_clashes();
+        lbind.clash += (get_memoized_internal_clashes() + get_memoized_total_eclipses()) * iteration_internal_clash_coefficient;
+    }
 
     int i;
 
@@ -5503,23 +5509,25 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* self
     if (a->is_residue() && ((AminoAcid*)a)->conditionally_basic()) ((AminoAcid*)a)->set_conditional_basicity(nearby);
 
     a->memoize_clashes();
-    Interaction result = -a->get_memoized_total_eclipses();
-    if (a->is_residue()) result += reinterpret_cast<AminoAcid*>(a)->initial_eclipses;
-
-    result.clash += a->get_memoized_internal_clashes();              // Removing this may result in self clashes of side chains.
+    // Refresh after every trial move, then apply internal strain once, independently of neighbors.
+    Interaction result;
+    result.clash = (a->get_memoized_internal_clashes() + a->get_memoized_total_eclipses())
+        * iteration_internal_clash_coefficient;
+    if (a->is_residue())
+        result.clash -= reinterpret_cast<AminoAcid*>(a)->initial_eclipses * iteration_internal_clash_coefficient;
 
     int i, j;
     if (a->mclashables)
     {
         for (j=0; a->mclashables[j]; j++)
         {
-            Interaction f = a->intermol_bind_for_multimol_dock(a->mclashables[j], selfish, false);
+            Interaction f = a->intermol_bind_for_multimol_dock(a->mclashables[j], selfish, false, false);
             result += f;
         }
     }
     else if (nearby) for (j=0; nearby[j]; j++)
     {
-        Interaction f = a->intermol_bind_for_multimol_dock(nearby[j], selfish, false);
+        Interaction f = a->intermol_bind_for_multimol_dock(nearby[j], selfish, false, false);
         result += f;
     }
 
@@ -6214,7 +6222,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         bool do_selfish_flexion = frand(0,1) < selfish_flexion_probability;
                         if (!selfish_side_chains && ares) do_selfish_flexion = false;
 
-                        benerg.clash += a->total_eclipses();
                         if (do_full_rotation && bb[q]->can_rotate
                             #if fullrot_flex_first_subiter_only
                             && !qiter
@@ -6259,7 +6266,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 }
 
                                 if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                    && a->get_internal_clashes() <= self_clash
+                                    && a->get_memoized_internal_clashes() <= self_clash
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                     && (!cav || try_cavfit >= cavfit)
                                    )
@@ -6293,8 +6300,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
 
                             benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                            benerg.clash += a->total_eclipses();
-                            benerg.clash += a->get_internal_clashes();
                             benerg.clash += a->get_intermol_clashes(nearby);
 
                             Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
@@ -6353,8 +6358,6 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
-                            tryenerg.clash += a->total_eclipses();
-                            tryenerg.clash += a->get_internal_clashes();
                             tryenerg.clash += a->get_intermol_clashes(nearby);
                             fal = ares ? mm[i]->faces_any_ligand(mm) : true;
                             try_cavfit = cav ? mm[0]->contained_by_space(cav) : 1;
@@ -6434,7 +6437,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
             if (!i) cout << "final " << -benerg << " " << endl << flush;
             #endif
 
-            if (!ares && flipped_rings) a->refine_structure(100);
+            if (!ares && flipped_rings) a->minimize_internal_clashes();
 
             if (!i && !ares)
             {
@@ -8288,6 +8291,19 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
     if (!atoms) return 0;
     int ac = get_atom_count();
 
+    // Cartesian mutations cannot preserve planar rings. Keep their input
+    // coordinates fixed; torsional optimization moves these rings as units.
+    std::vector<bool> fixed_ring_atom(ac, false);
+    if (rings) for (int ri=0; rings[ri]; ++ri)
+    {
+        if (!rings[ri]->is_coplanar() && !ring_is_aromatic(ri)) continue;
+        for (int ai=0; ai<rings[ri]->get_atom_count(); ++ai)
+        {
+            int idx = atom_idx_from_ptr(rings[ri]->get_atom(ai));
+            if (idx >= 0 && idx < ac) fixed_ring_atom[idx] = true;
+        }
+    }
+
     Point parents[2][ac];
     Point population[ps][ac];
     float anomalies[ps];
@@ -8327,6 +8343,11 @@ float Molecule::refine_structure(int gens, float mr, int ps, Molecule** ligands,
                     break;
 
                     default:
+                    if (fixed_ring_atom[j])
+                    {
+                        population[i][j] = parents[0][j];
+                        break;
+                    }
                     int which_parent = rand() & 0x1;
                     population[i][j].x = parents[which_parent][j].x;
                     if (frand(0, 1) < mr) population[i][j].x += frand(-atom_displacement, atom_displacement);

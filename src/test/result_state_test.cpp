@@ -56,5 +56,28 @@ int main()
     assert(receptor_atom->loc.get_3d_distance(receptor_pos.add(Point(1,0,0))) < 0.001);
     assert(ligand_atom->loc.get_3d_distance(ligand_pos.add(Point(2,0,0))) < 0.001);
     assert(water_atom->loc.get_3d_distance(water_pos.add(Point(3,0,0))) < 0.001);
+    Protein coordinated;
+    f=fopen("testdata/metal-site-OR2T11.pdb","r");assert(f);
+    coordinated.load_pdb(f);fclose(f);
+    MCoord site;site.Z=29;site.charge=1;site.ncoordres=3;
+    site.coordres[0].resno=199;site.coordres[1].resno=200;site.coordres[2].resno=203;
+    coordinated.coordinate_metal(&site,1);
+    f=tmpfile();assert(f);coordinated.save_pdb(f);coordinated.end_pdb(f);rewind(f);
+    Protein loaded;
+    loaded.load_pdb(f);fclose(f);
+    assert(loaded.get_metals_count()==1 && loaded._mcoords[0].mtl==nullptr);
+    Atom* ion=loaded.get_metal(0);
+    Point original_ion=ion->loc;
+    DockResult ion_state;
+    ion_state.capture_coordinates(&loaded,&ligand);
+    assert(ion_state.metal_atoms().size()==1);
+    ion->move(original_ion.add(Point(2,3,4)));
+    DockResult second_ion_state;
+    second_ion_state.capture_coordinates(&loaded,&ligand);
+    ion_state.restore_coordinates();
+    assert(ion->loc.get_3d_distance(original_ion)<.001);
+    second_ion_state.restore_coordinates();
+    assert(second_ion_state.metal_atoms().size()==1);
+    assert(ion->loc.get_3d_distance(original_ion.add(Point(2,3,4)))<.001);
     puts("Result coordinates passed.");
 }
