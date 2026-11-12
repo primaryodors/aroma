@@ -49,6 +49,10 @@ class NoFailTest(unittest.TestCase):
             self.assertIn("Pose: 1", report)
             self.assertIn("\nTotal: 0\n", report)
             self.assertIn("Disqualified because:", report)
+            for text in (report, result.stdout):
+                self.assertIn("Ligand binding energy 0 exceeds energy limit -1e+20 kJ/mol.", text)
+                self.assertIn("Reasons for candidate pose disqualification:", text)
+                self.assertNotIn("No candidate passed all output filters.", text)
             self.assertIn("0 pose(s) found.", report)
             self.assertIn("PDBDAT:", report)
             self.assertNotIn("Missing PDB data", report)

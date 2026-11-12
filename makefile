@@ -24,6 +24,7 @@ REGRESSION_TESTS+=test/callback_scoring_test
 REGRESSION_TESTS+=test/residue_grid_test
 REGRESSION_TESTS+=test/receptor_shielding_test
 REGRESSION_TESTS+=test/config_text_test
+REGRESSION_TESTS+=test/failure_reporting_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
@@ -234,13 +235,15 @@ test/occlusion_test: src/test/occlusion_test.cpp $(OBJS)
 $(REGRESSION_TESTS): test/%: src/test/%.cpp $(OBJS) $(DOBJ) makefile
 	$(CPL) $< $(OBJS) $(DOBJ) -o $@ $(CFLAGS)
 
-test/callback_scoring_test: src/aromadock.cpp src/classes/callback_scoring.h src/classes/configtext.h
+test/callback_scoring_test: src/aromadock.cpp src/classes/callback_scoring.h src/classes/configtext.h src/classes/failure_reporting.h
+
+test/failure_reporting_test: src/classes/failure_reporting.h
 
 $(OBJ)/protein.o: src/classes/residuegrid.h src/classes/spatialgrid.h
 
 # Apps
 
-$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/callback_scoring.h src/classes/configtext.h $(OBJS) $(DOBJ)
+$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/callback_scoring.h src/classes/configtext.h src/classes/failure_reporting.h $(OBJS) $(DOBJ)
 	$(CPL) src/aromadock.cpp $(OBJS) $(DOBJ) -o $(BIN)/aromadock $(CFLAGS)
 
 $(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)
@@ -321,6 +324,12 @@ check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbo
 	python3 test/reec_reports_test.py
 
 .PHONY: check-metal
+.PHONY: check-failure-reporting
+check-failure-reporting: $(BIN)/aromadock test/failure_reporting_test
+	./test/failure_reporting_test
+	python3 -m unittest discover -s test -p 'nofail_test.py'
+	python3 -m unittest discover -s test -p 'docklist_fallback_test.py'
+
 check-metal: $(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/cavity_search test/metal_fit_test test/result_state_test test/metal_scoring_test
 	./test/result_state_test
 	python3 -m unittest discover -s test -p 'metal_coordination_test.py'

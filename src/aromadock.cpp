@@ -20,6 +20,7 @@
 #include "classes/scoring.h"
 #include "classes/pose_contact.h"
 #include "classes/callback_scoring.h"
+#include "classes/failure_reporting.h"
 #include "classes/cavity.h"
 #include "classes/soft.h"
 #include "classes/appear.h"
@@ -5231,6 +5232,13 @@ _try_again:
             {
                 if ((dr[drcount][nodeno].ligand_self + ligand->total_eclipses()) < -clash_limit_per_aa*2)
                 {
+                    std::ostringstream reason;
+                    reason << "Ligand internal clashes too great: internal energy plus eclipse term "
+                        << (dr[drcount][nodeno].ligand_self+ligand->total_eclipses())*energy_mult
+                        << " below limit " << -clash_limit_per_aa*2*energy_mult
+                        << (kcal ? " kcal/mol. " : " kJ/mol. ");
+                    append_failure_reason(dr[drcount][nodeno].disqualify_reason,reason.str());
+                    append_failure_reason(outdisqrs,reason.str());
                     #if _dbg_worst_energy
                     cout << "Internal ligand energy " << -dr[drcount][nodeno].ligand_self << " out of range." << endl << endl;
                     #endif
@@ -5242,6 +5250,21 @@ _try_again:
                 #if !_dbg_allow_excessive_aa_clashes
                 if (dr[drcount][nodeno].worst_energy > l_atom_clash_limit || dr[drcount][nodeno].worst_nrg_aa > clash_limit_per_aa)
                 {
+                    if (dr[drcount][nodeno].worst_energy > l_atom_clash_limit)
+                    {
+                        std::ostringstream reason;
+                        reason << "Atom clashes too great: " << dr[drcount][nodeno].worst_energy*energy_mult
+                            << " exceeds limit " << l_atom_clash_limit*energy_mult
+                            << (kcal ? " kcal/mol" : " kJ/mol");
+                        Atom* first = dr[drcount][nodeno].worst_clash_1;
+                        Atom* second = dr[drcount][nodeno].worst_clash_2;
+                        if (first && second)
+                            reason << " (" << first->residue << ":" << first->name
+                                << "..." << second->residue << ":" << second->name << ")";
+                        reason << ". ";
+                        append_failure_reason(dr[drcount][nodeno].disqualify_reason,reason.str());
+                        append_failure_reason(outdisqrs,reason.str());
+                    }
                     #if _dbg_worst_energy
                     cout << "Total binding energy " << dr[drcount][nodeno].kJmol
                         << " and worst energy " << dr[drcount][nodeno].worst_energy;
@@ -5346,6 +5369,15 @@ _try_again:
             bool reject = false;
             for (nodeno = 0; nodeno <= nodeoff; nodeno++)
             {
+                if (dr[j][nodeno].has_coordinates())
+                {
+                    // Record the existing output predicates without changing acceptance decisions.
+                    const auto reasons = output_filter_reasons(dr[j][nodeno],kJmol_cutoff,
+                        search_size.magnitude(),clash_limit_per_aa,occlusion_as_disqualify_reason,
+                        occlusion_threshold_for_disquo,energy_mult,kcal ? "kcal/mol" : "kJ/mol");
+                    append_failure_reason(dr[j][nodeno].disqualify_reason,reasons);
+                    append_failure_reason(outdisqrs,dr[j][nodeno].disqualify_reason);
+                }
                 if (dr[j][nodeno].disqualified)
                 {
                     if (outdisq)
@@ -5505,7 +5537,8 @@ _exitposes:
             cout << endl;
             #endif
         }
-        if (lbi < 0)
+        const bool initial_placement = lbi < 0;
+        if (initial_placement)
         {
             if (fallback_ligand)
             {
@@ -5527,8 +5560,8 @@ _exitposes:
         }
         pose = 1;
         dr[lbi][0].disqualified = true;
-        if (dr[lbi][0].disqualify_reason.empty())
-            dr[lbi][0].disqualify_reason = "No candidate passed all output filters. ";
+        complete_failure_reason(dr[lbi][0],outdisqrs,drcount,initial_placement);
+        append_failure_reason(outdisqrs,dr[lbi][0].disqualify_reason);
         do_pose_output(&dr[lbi][0], 0, energy_mult);
         cout << "0 pose(s) found." << endl;
         if (output) *output << "0 pose(s) found." << endl;
