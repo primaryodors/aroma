@@ -81,6 +81,7 @@ char smiles[256];
 char outfname[256];
 char cvtyfname[256];
 Point pocketcen;
+Point declared_pocketcen;
 std::ofstream *output = NULL;
 
 std::vector<std::string> CEN_buf;
@@ -2018,7 +2019,9 @@ Point loneliest_from_cavities(Point inpt)
             if (nbsr > mostbsr)
             {
                 mostbsr = nbsr;
-                outpt = cvtys[i].get_center();
+                outpt = ((pdpst == pst_best_binding || pdpst == pst_external) && !pathnodes)
+                    ? Search::pocket_starting_center(&cvtys[i],declared_pocketcen)
+                    : cvtys[i].get_center();
             }
         }
     }
@@ -2035,6 +2038,7 @@ void apply_protein_specific_settings(Protein* p)
     copy_config_text(buffer, CEN_buf[cenbuf_idx].c_str());
     char** words = chop_spaced_words(buffer);
     pocketcen = pocketcen_from_config_words(words, nullptr);
+    declared_pocketcen = pocketcen;
     loneliest = protein->find_loneliest_point(pocketcen, search_size);
     loneliest = loneliest_from_cavities(loneliest);
     delete[] words;
@@ -3086,16 +3090,16 @@ int main(int argc, char** argv) try
         npreconf = 0;
         while (!feof(fp))
         {
-            char* prevent_useless_warning = fgets(buffer, 1024, fp);
-            if (buffer[0] == 'A' && buffer[1] == 'T' && buffer[2] == 'O' && buffer[3] == 'M' && buffer[4] == ' ')
+            if (!fgets(buffer, 1024, fp)) break;
+            if (!strncmp(buffer,"ATOM  ",6) || !strncmp(buffer,"HETATM",6))
             {
+                const auto xyz = parse_pdb_coordinates(buffer);
                 char aname[5];
                 for (i=0; i<5; i++) aname[i] = 0;
-                l = (buffer[12] == ' ') ? 13 : 12;
+                l = 0;
                 for (i=0; i<4; i++)
                 {
-                    aname[i] = (buffer[l+i] == ' ') ? 0 : buffer[l+i];
-                    if (!aname[i]) break;
+                    if (buffer[12+i] != ' ') aname[l++] = buffer[12+i];
                 }
 
                 if (!aname[0])
@@ -3111,15 +3115,7 @@ int main(int argc, char** argv) try
                     throw 0xbadda7a;
                 }
 
-                float x, y, z;
-                buffer[53] = 0;
-                z = atof(buffer+45);
-                buffer[45] = 0;
-                y = atof(buffer+37);
-                buffer[37] = 0;
-                x = atof(buffer+29);
-
-                lla->move(Point(x, y, z));
+                lla->move(Point(xyz[0],xyz[1],xyz[2]));
             }
             else if (buffer[0] == 'T' && buffer[1] == 'E' && buffer[2] == 'R')
             {
@@ -4010,7 +4006,12 @@ _try_again:
                             if (frand(0,1) < probs)
                             {
                                 gcav = &cvtys[i];
-                                loneliest = nodecen = pocketcen = gcav->get_center();
+                                loneliest = nodecen = pocketcen = ((pdpst == pst_best_binding || pdpst == pst_external) && !pathnodes)
+                                    ? Search::pocket_starting_center(gcav,declared_pocketcen)
+                                    : gcav->get_center();
+                                if (getenv("AROMA_BB_TRACE"))
+                                    cerr << "BB declared center: " << declared_pocketcen
+                                        << "; cavity start: " << pocketcen << endl;
                                 #if _dbg_cavsel_probs
                                 cout << "Pocket " << cvtys[i].resnos_as_string(protein) << " chosen." << endl << endl;
                                 #endif

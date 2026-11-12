@@ -23,6 +23,7 @@ REGRESSION_TESTS+=test/hydrogen_optimization_test
 REGRESSION_TESTS+=test/callback_scoring_test
 REGRESSION_TESTS+=test/residue_grid_test
 REGRESSION_TESTS+=test/receptor_shielding_test
+REGRESSION_TESTS+=test/config_text_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
@@ -233,13 +234,13 @@ test/occlusion_test: src/test/occlusion_test.cpp $(OBJS)
 $(REGRESSION_TESTS): test/%: src/test/%.cpp $(OBJS) $(DOBJ) makefile
 	$(CPL) $< $(OBJS) $(DOBJ) -o $@ $(CFLAGS)
 
-test/callback_scoring_test: src/aromadock.cpp src/classes/callback_scoring.h
+test/callback_scoring_test: src/aromadock.cpp src/classes/callback_scoring.h src/classes/configtext.h
 
 $(OBJ)/protein.o: src/classes/residuegrid.h src/classes/spatialgrid.h
 
 # Apps
 
-$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/callback_scoring.h $(OBJS) $(DOBJ)
+$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/callback_scoring.h src/classes/configtext.h $(OBJS) $(DOBJ)
 	$(CPL) src/aromadock.cpp $(OBJS) $(DOBJ) -o $(BIN)/aromadock $(CFLAGS)
 
 $(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)

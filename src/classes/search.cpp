@@ -516,6 +516,26 @@ std::vector<int> Search::pocket_cavity_candidates(Protein* protein, Cavity* cavi
     return result;
 }
 
+Point Search::pocket_starting_center(Cavity* cavity, Point declared_center)
+{
+    if (!cavity || !cavity->count_partials()) return declared_center;
+    if (cavity->point_inside_pocket(declared_center)) return declared_center;
+    Point result = declared_center;
+    float closest = Avogadro;
+    for (int i=0; i<cavity->count_partials(); ++i)
+    {
+        CPartial* partial = cavity->get_partial_by_idx(i);
+        if (!partial) continue;
+        float distance = partial->s.center.get_3d_distance_squared(declared_center);
+        if (distance < closest)
+        {
+            closest = distance;
+            result = partial->s.center;
+        }
+    }
+    return result;
+}
+
 float Search::polar_site_availability(Protein* protein, AminoAcid* residue, Point pocket_center, Cavity* container)
 {
     if (!protein || !residue) return 1;

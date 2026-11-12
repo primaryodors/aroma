@@ -187,8 +187,35 @@ static void check_nonpolar_fallback()
     assert(result.pri_res && result.pri_tgt);
 }
 
+static void check_declared_center()
+{
+    Cavity cavity;
+    CPartial partial;
+    partial.s.radius = 2.5;
+    partial.s.center = Point(6,11,6);
+    cavity.add_partial(partial);
+    // An adjacent connected cleft must not shift an explicitly declared site.
+    for (int i=0; i<12; ++i)
+    {
+        partial.s.center = Point(2,14+i*0.1f,3);
+        cavity.add_partial(partial);
+    }
+    Point declared(6,10.5,5.8);
+    Point chosen = Search::pocket_starting_center(&cavity,declared);
+    assert(chosen.get_3d_distance(declared) < 0.0001f);
+    assert(chosen.get_3d_distance(cavity.get_center()) > 3);
+    Point outside(9,9,7);
+    chosen = Search::pocket_starting_center(&cavity,outside);
+    assert(chosen.get_3d_distance(Point(6,11,6)) < 0.0001f);
+    assert(cavity.point_inside_pocket(chosen));
+    Cavity empty;
+    assert(Search::pocket_starting_center(&empty,declared).get_3d_distance(declared) < 0.0001f);
+    assert(Search::pocket_starting_center(nullptr,declared).get_3d_distance(declared) < 0.0001f);
+}
+
 int main()
 {
+    check_declared_center();
     check_generic_geometry();
     check_nonpolar_fallback();
     check_receptor("pdbs/OR10/OR10J1.active.pdb", "pdbs/OR10/OR10J1.active.cvty", "sdf/dimetol.sdf", 285, 213, 209);
