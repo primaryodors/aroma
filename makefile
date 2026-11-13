@@ -25,6 +25,7 @@ REGRESSION_TESTS+=test/residue_grid_test
 REGRESSION_TESTS+=test/receptor_shielding_test
 REGRESSION_TESTS+=test/config_text_test
 REGRESSION_TESTS+=test/failure_reporting_test
+REGRESSION_TESTS+=test/sdf_roundtrip_test test/amino_cache_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec
@@ -326,6 +327,16 @@ check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbo
 .PHONY: check-metal
 .PHONY: check-failure-reporting
 .PHONY: check-ligand-preparation
+.PHONY: check-workflows
+WORKFLOW_PY_TESTS=bw_numbering_test config_input_test cooling_test disulfides_test dock_launcher_test docklist_fallback_test dohm_recovery_test final_sterics_test fixfail_reshape_test fixfail_retry_test harness_test hm_workflow_test nofail_test odorant_cache_test odorant_identity_test odorant_process_test output_comparison_test preparation_test reec_backend_test reec_baseline_test reec_cli_test reec_refresh_test reec_reports_test reec_thermal_test reec_workflow_baseline_test run_config_test taar5_activity_test viewer_process_test workflow_audit_test
+check-workflows: $(BIN)/aromadock $(BIN)/reec $(BIN)/reec_steric_audit $(BIN)/phew $(BIN)/ic $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/poslig $(BIN)/ringflip test/moiety_test test/bw_indel_test test/sdf_roundtrip_test test/amino_cache_test test/smiles_input_test test/failure_reporting_test
+	./test/bw_indel_test
+	./test/sdf_roundtrip_test
+	./test/amino_cache_test
+	./test/smiles_input_test
+	./test/failure_reporting_test
+	PYTHONPATH=test:.:hm python3 -m unittest $(WORKFLOW_PY_TESTS)
+
 check-ligand-preparation: $(BIN)/ringflip
 	python3 -m unittest discover -s test -p 'odorant_cache_test.py'
 	python3 -m unittest discover -s test -p 'dock_launcher_test.py'

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <cassert>
 #include <strings.h>
+#include <unistd.h>
 #include "protein.h"
 #include "aminoacid.h"
 
@@ -154,33 +155,41 @@ AminoAcid::AminoAcid(const char letter, AminoAcid* prevaa, bool minintc, Protein
     if (aa_defs[idx].SMILES.length())
     {
         std::string fname = (std::string)"sdf/" + (std::string)name + (std::string)".sdf";
+        bool loaded = false;
         FILE* pf = fopen(fname.c_str(), "rb");
         if (pf)
         {
             fseek(pf, 0, SEEK_END);
-            int fsz = ftell(pf);
-            fseek(pf, 0, SEEK_SET);
-            char buffer[fsz + 4];
-            for (i=0; i<(fsz+4); i++) buffer[i] = 0;
-
-            int got = fread(buffer, 1, fsz, pf);
-            fclose(pf);
-
-            from_sdf(buffer);
-            ensure_pi_atoms_coplanar();
-        }
-        else
-        {
-            from_smiles(aa_defs[idx].SMILES.c_str());
-            ensure_pi_atoms_coplanar();
-
-            FILE* pf = fopen(fname.c_str(), "wb");
-            if (pf)
+            long fsz = ftell(pf);
+            rewind(pf);
+            if (fsz>0 && fsz<=65535)
             {
-                save_sdf(pf);
-                fclose(pf);
+                std::string buffer(fsz,'\0');
+                size_t got=fread(&buffer[0],1,buffer.size(),pf);
+                if (got==buffer.size()) loaded=from_sdf(buffer.c_str())>0;
             }
+            fclose(pf);
         }
+        if (!loaded)
+        {
+            if (!from_smiles(aa_defs[idx].SMILES.c_str()) || !get_atom_count())
+                throw std::runtime_error("Could not construct amino acid "+std::string(name));
+            ensure_pi_atoms_coplanar();
+
+            std::string pattern=fname+".XXXXXX";
+            std::vector<char> staged(pattern.begin(),pattern.end());staged.push_back(0);
+            int descriptor=mkstemp(staged.data());
+            FILE* output=descriptor>=0 ? fdopen(descriptor,"wb") : nullptr;
+            if (output)
+            {
+                bool written=save_sdf(output);
+                int closed=fclose(output);
+                if (written && !closed) rename(staged.data(),fname.c_str());
+            }
+            else if (descriptor>=0) close(descriptor);
+            if (descriptor>=0) unlink(staged.data());
+        }
+        ensure_pi_atoms_coplanar();
 
         #ifdef _ALGORITHMIC_GREEK
         int ac4 = get_atom_count()+4;

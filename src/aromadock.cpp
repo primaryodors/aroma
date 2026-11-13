@@ -2908,7 +2908,9 @@ int main(int argc, char** argv) try
             }
             wgaf = fread(buffer, 1, 65535, pf);
             fclose(pf);
-            ligand->from_sdf(buffer);
+            buffer[wgaf] = 0;
+            if (!ligand->from_sdf(buffer))
+                throw std::invalid_argument("Invalid or incomplete ligand SDF: "+lligfname);
             if (ligand->get_atom_count() > 1 && ligand->get_bounding_box().size().magnitude() < 0.1)
             {
                 cout << "Error in input file " << lligfname << endl;
@@ -3913,20 +3915,20 @@ _try_again:
                     int npmets = pmets->get_atom_count();
 
                     std::vector<int> bb_cavities;
+                    std::vector<bool> eligible(ncvtys, true);
+                    for (i=0; i<ncvtys; ++i)
+                    {
+                        if (any_priority && !cvtys[i].has_priority()) eligible[i] = false;
+                        if (npmets)
+                        {
+                            bool contains_metal = false;
+                            for (j=0; j<npmets; ++j)
+                                if (cvtys[i].point_inside_pocket(pmets->get_atom(j)->loc)) contains_metal = true;
+                            if (!contains_metal) eligible[i] = false;
+                        }
+                    }
                     if (pdpst == pst_best_binding)
                     {
-                        std::vector<bool> eligible(ncvtys, true);
-                        for (i=0; i<ncvtys; ++i)
-                        {
-                            if (any_priority && !cvtys[i].has_priority()) eligible[i] = false;
-                            if (npmets)
-                            {
-                                bool contains_metal = false;
-                                for (j=0; j<npmets; ++j)
-                                    if (cvtys[i].point_inside_pocket(pmets->get_atom(j)->loc)) contains_metal = true;
-                                if (!contains_metal) eligible[i] = false;
-                            }
-                        }
                         // Locate the declared pocket before rewarding individual anchors.
                         // A small adjacent cleft must not win on one preferred polar residue.
                         bb_cavities = Search::pocket_cavity_candidates(protein, cvtys, ncvtys, center_resnos, eligible);
@@ -3938,10 +3940,19 @@ _try_again:
                         }
                     }
 
-                    while (!gcav)
+                    const bool any_eligible = std::find(eligible.begin(),eligible.end(),true)!=eligible.end();
+                    if (!any_eligible)
                     {
+                        cout << "No cavity satisfies the site constraints; using the declared pocket." << endl;
+                        loneliest = pocketcen = nodecen;
+                    }
+                    int cavity_attempts=0;
+                    while (any_eligible && !gcav)
+                    {
+                        ++cavity_attempts;
                         for (i=0; i<ncvtys; i++)
                         {
+                            if (!eligible[i]) continue;
                             if (!bb_cavities.empty()
                                 && std::find(bb_cavities.begin(), bb_cavities.end(), i) == bb_cavities.end()) continue;
                             if (any_priority && !cvtys[i].has_priority())
@@ -4004,7 +4015,7 @@ _try_again:
                                 << " probability = " << probs << endl;
                             #endif
 
-                            if (frand(0,1) < probs)
+                            if (frand(0,1) < probs || cavity_attempts>=10000)
                             {
                                 gcav = &cvtys[i];
                                 loneliest = nodecen = pocketcen = ((pdpst == pst_best_binding || pdpst == pst_external) && !pathnodes)
@@ -4088,8 +4099,8 @@ _try_again:
                                 }
                                 else
                                 {
-                                    cout << "FATAL ERROR." << endl;
-                                    throw 0xbadc0de;
+                                    cout << "No compatible starting-pose contacts; using pocket placement." << endl;
+                                    goto _no_bb_pairs_revert_to_cavity_fit;
                                 }
                             }
                             g_bbr[l].protein = protein;

@@ -395,7 +395,7 @@ AminoAcid* Protein::get_residue(int resno)
 bool Protein::has_bwnos()
 {
     for (int i=1;i<79;++i) if (Ballesteros_Weinstein[i]>0) return true;
-    else return false;
+    return false;
 }
 
 AminoAcid* Protein::get_residue(BallesterosWeinstein bw)

@@ -414,6 +414,7 @@ protected:
     Atom** vdw_vertex_atom = nullptr;
     int vdw_vertex_count = 0;
     Atom*** paths = nullptr;
+    void clear_paths();
     Ring** rings = nullptr;
     Bond** rotatable_bonds = nullptr;
     bool immobile = false;

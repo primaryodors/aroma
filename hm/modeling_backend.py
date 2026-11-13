@@ -173,10 +173,13 @@ def api(args):
 
 
 def prepare(args):
-    """Build the selected native engine before workflow preprocessing starts."""
-    if args.backend == 'reec' and not getattr(args, '_reec_built', False):
-        reec.command(['make', 'bin/reec', 'bin/reec_steric_audit'])
-        args._reec_built = True
+    """Refresh the engine and shared postprocessing tools before starting work."""
+    if not getattr(args, '_native_prepared', False):
+        targets = ['bin/phew', 'bin/ic']
+        if args.backend == 'reec':
+            targets = ['bin/reec', 'bin/reec_steric_audit', *targets]
+        reec.command(['make', *targets])
+        args._native_prepared = True
 
 
 @dataclass(frozen=True)

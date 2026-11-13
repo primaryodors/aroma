@@ -96,6 +96,7 @@ Molecule::Molecule()
 
 Molecule::~Molecule()
 {
+    clear_paths();
     if (atoms)
     {
         delete[] atoms;
@@ -511,7 +512,7 @@ void Molecule::delete_atom(Atom* a)
 {
     Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!a) return;
-    paths = nullptr;
+    clear_paths();
 
     int i, j;
 
@@ -552,12 +553,19 @@ void Molecule::delete_atom(Atom* a)
     throw 0xbada70b;
 }
 
+void Molecule::clear_paths()
+{
+    if (!paths) return;
+    for (int i=0; paths[i]; ++i) delete[] paths[i];
+    delete[] paths;
+    paths=nullptr;
+}
+
 void Molecule::delete_all_atoms()
 {
     Atom::spatial_revision.fetch_add(1, std::memory_order_relaxed);
     if (!atoms) return;
-    if (paths) delete[] paths;
-    paths = nullptr;
+    clear_paths();
 
     int i;
     for (i=0; atoms[i]; i++)
@@ -704,7 +712,7 @@ void Molecule::append_existing_atom(Atom *a)
 
 Atom* Molecule::add_atom(char const* elemsym, char const* aname, const Point* location, Atom* bond_to, const float bcard, const int charge)
 {
-    paths = nullptr;
+    clear_paths();
 
     Atom* a = new Atom(elemsym, location, charge);
     a->name = new char[strlen(aname)+1];
@@ -730,7 +738,7 @@ Atom* Molecule::add_atom(char const* elemsym, char const* aname, Atom* bondto, c
         return add_atom(elemsym, aname, &pt, bondto, bcard);
     }
 
-    paths = nullptr;
+    clear_paths();
     for (atcount=0; atoms[atcount]; atcount++);
 
     if (bondto->is_pi()) bondto->aromatize();
@@ -1980,90 +1988,107 @@ Molecule *Molecule::get_monomer(int i)
 int Molecule::from_sdf(char const *sdf_dat)
 {
     if (!sdf_dat) return 0;
-    char const* lines[8192];
-    int i,j=0,lncount;
-
-    immobile = false;
-
-    // cout << sdf_dat << endl;
-
-    lines[j++] = sdf_dat;
-    for (i=0; sdf_dat[i]; i++)
+    std::istringstream input(sdf_dat);
+    std::string line;
+    for (int i=0; i<4; ++i) if (!std::getline(input,line)) return 0;
+    int na=0, nb=0;
+    auto integer_field = [](const std::string& row, size_t offset, int& value) {
+        if (row.size()<offset+3) return false;
+        std::istringstream field(row.substr(offset,3));
+        if (!(field>>value)) return false;
+        field>>std::ws;
+        return field.eof();
+    };
+    if (line.size()<6 || line.find("V3000")!=std::string::npos
+        || !integer_field(line,0,na) || !integer_field(line,3,nb)
+        || na<1 || na>999 || nb<0 || nb>999) return 0;
+    struct AtomRecord { Point location; std::string element, name; int charge=0; };
+    struct BondRecord { int first, second; float type; };
+    std::vector<AtomRecord> parsed_atoms;
+    std::vector<BondRecord> parsed_bonds;
+    for (int i=0; i<na; ++i)
     {
-        if (sdf_dat[i] == '\n')
-        {
-            lines[j++] = (sdf_dat+i+1);
-        }
-        if (j > 8190) break;
+        if (!std::getline(input,line)) return 0;
+        AtomRecord atom;
+        std::istringstream row(line);
+        if (!(row>>atom.location.x>>atom.location.y>>atom.location.z>>atom.element)
+            || !std::isfinite(atom.location.x) || !std::isfinite(atom.location.y)
+            || !std::isfinite(atom.location.z) || !Atom::Z_from_esym(atom.element.c_str())) return 0;
+        int mass=0, charge_code=0;
+        row>>mass>>charge_code;
+        if (charge_code>=1 && charge_code<=3) atom.charge=4-charge_code;
+        else if (charge_code>=5 && charge_code<=7) atom.charge=4-charge_code;
+        atom.name=atom.element+std::to_string(i+1);
+        parsed_atoms.push_back(atom);
     }
-    lines[lncount = j] = 0;
-
-    int na, nb;
-    int added=0;
-    char** words;
-    atoms = nullptr;
-
-    for (j=3; j<lncount; j++)
+    for (int i=0; i<nb; ++i)
     {
-        char line[1024];
-        strncpy(line, lines[j], 1023);
-        words = chop_spaced_words(line);
-
-        if (!words || !words[0] || !words[1]) break;
-        if (!strcmp(words[1], "END")) break;
-
-        if (!strcmp(words[1], "CHG") && atoms)
-        {
-            for (i=3; words[i] && words[i+1]; i+=2)
-            {
-                int aidx = atoi(words[i]);
-                atoms[aidx-1]->increment_charge(atof(words[i+1]));
-            }
-        }
-
-        if (j == 3)
-        {
-            na = atoi(words[0]);
-            nb = atoi(words[1]);
-
-            atoms = new Atom*[na+4];
-        }
-        else if (atoms)
-        {
-            if (added < na)
-            {
-                Point* loc = new Point(atof(words[0]), atof(words[1]), atof(words[2]));
-                if (words[3][0] >= 'a' && words[3][0] <= 'z') words[3][0] -= 0x20;
-                Atom* a = new Atom(words[3], loc);
-                a->mol = reinterpret_cast<void*>(this);
-                delete loc;
-                a->name = new char[16];
-                sprintf(a->name, "%s%d", words[3], added+1);
-                a->residue = 0;
-                atoms[atcount++] = a;
-                atoms[atcount] = nullptr;
-                added++;
-            }
-            else
-            {
-                int a1i = atoi(words[0]);
-                int a2i = atoi(words[1]);
-
-                if (!a1i || !a2i) break;
-                atoms[a1i-1]->bond_to(atoms[a2i-1], atof(words[2]));
-            }
-        }
-
-        if (words) delete[] words;
+        if (!std::getline(input,line)) return 0;
+        BondRecord bond;
+        std::istringstream fields(line.size()>=6 ? line.substr(6) : "");
+        // Earlier native caches used decimal bond orders; retain read compatibility.
+        if (!integer_field(line,0,bond.first) || !integer_field(line,3,bond.second) || !(fields>>bond.type)
+            || bond.first<1 || bond.first>na || bond.second<1 || bond.second>na
+            || bond.first==bond.second
+            || !(bond.type==1 || bond.type==1.5f || bond.type==2 || bond.type==3 || bond.type==4)) return 0;
+        parsed_bonds.push_back(bond);
     }
-    if (atoms) atoms[atcount] = 0;
-    if (words) delete[] words;
-
+    bool ended=false;
+    while (std::getline(input,line))
+    {
+        std::istringstream row(line);
+        std::string record, kind;
+        row>>record>>kind;
+        if (record=="M" && kind=="END") { ended=true; break; }
+        if (record=="M" && kind=="CHG")
+        {
+            int count=0;
+            if (!(row>>count) || count<0 || count>na) return 0;
+            for (int i=0; i<count; ++i)
+            {
+                int atom=0, charge=0;
+                if (!(row>>atom>>charge) || atom<1 || atom>na) return 0;
+                parsed_atoms[atom-1].charge=charge;
+            }
+        }
+        else if (record=="A")
+        {
+            int atom=atoi(kind.c_str());
+            if (atom<1 || atom>na || !std::getline(input,line)) return 0;
+            if (!line.empty() && line.back()=='\r') line.pop_back();
+            if (line.empty() || line.size()>63) return 0;
+            parsed_atoms[atom-1].name=line;
+        }
+    }
+    if (!ended) return 0;
+    if (rings) delete[] rings;
+    rings=nullptr;
+    if (rotatable_bonds) delete[] rotatable_bonds;
+    rotatable_bonds=nullptr;
+    if (vdw_surface) delete[] vdw_surface;
+    vdw_surface=nullptr;
+    if (vdw_vertex_atom) delete[] vdw_vertex_atom;
+    vdw_vertex_atom=nullptr;
+    vdw_vertex_count=0;
+    delete_all_atoms();
+    immobile=false;
+    atoms=new Atom*[na+4]();
+    for (const auto& record : parsed_atoms)
+    {
+        Atom* atom=new Atom(record.element.c_str(),&record.location,record.charge);
+        atom->mol=reinterpret_cast<void*>(this);
+        atom->name=new char[record.name.size()+1];
+        strcpy(atom->name,record.name.c_str());
+        atom->residue=0;
+        atoms[atcount++]=atom;
+    }
+    for (const auto& bond : parsed_bonds)
+        atoms[bond.first-1]->bond_to(atoms[bond.second-1],bond.type==4 ? 1.5f : float(bond.type));
     identify_conjugations();
     identify_rings();
     identify_cages();
     identify_acidbase();
-    return added;
+    return atcount;
 }
 
 void Molecule::identify_conjugations()
@@ -2636,6 +2661,13 @@ bool Molecule::save_sdf(FILE* os, Molecule** lig)
         fprintf(os, "\n");
     }
 
+    for (i=0; i<ac; ++i)
+    {
+        std::string generated=std::string(latoms[i]->get_elem_sym())+std::to_string(i+1);
+        if (latoms[i]->name && generated!=latoms[i]->name)
+            fprintf(os,"A  %3d\n%s\n",i+1,latoms[i]->name);
+    }
+
     fprintf(os, "M  END\n\n");
 
     return true;
@@ -2880,11 +2912,8 @@ void Molecule::find_paths()
         n += atoms[i]->get_bonded_heavy_atoms_count();
     }
 
-    // paths = new Atom**[n];
-    limit = n*n;
-    Atom** lpaths[limit];
-    paths = lpaths;
-    for (i=0; i<limit; i++) paths[i] = nullptr;
+    limit = std::max(4,n*n);
+    paths = new Atom**[limit+1]();
 
     atcount = get_atom_count();
 
@@ -2897,8 +2926,7 @@ void Molecule::find_paths()
         if (!b[i]->atom2) continue;
         if (b[i]->atom2->Z < 2) continue;
         if (!equal_or_zero(b[i]->atom2->residue, a->residue)) continue;
-        paths[n] = new Atom*[atcount];
-        for (q=0; q<atcount; q++) paths[n][q] = nullptr;
+        paths[n] = new Atom*[atcount+2]();
         paths[n][0] = a;
         paths[n][1] = b[i]->atom2;
         paths[n][2] = nullptr;
@@ -2960,8 +2988,7 @@ void Molecule::find_paths()
                 else
                 {
                     if (paths[n]) delete[] paths[n];
-                    paths[n] = new Atom*[atcount];
-                    for (q=0; q<atcount; q++) paths[n][q] = nullptr;
+                    paths[n] = new Atom*[atcount+2]();
                     copy_path(i, n);
                     paths[n][m] = b[j]->atom2;
                     paths[n][m+1] = nullptr;
@@ -7011,16 +7038,18 @@ bool Molecule::from_smiles(char const * smilesstr, bool use_parser)
         FILE* pf = popen(CMD_CHECK_INSTALLED_3P_SMILES_PARSER, "r");
         if (pf)
         {
-            char buffer[1024];
+            char buffer[1024] = {};
             char* got = fgets(buffer, 1022, pf);
-            if (strlen(buffer))			// TODO: Change this to employ a regex.
+            if (got && buffer[0])
             {
-                fclose(pf);
+                pclose(pf);
                 std::string sdfdat = "";
 
                 // Temporarily reuse buffer as the obabel command.
                 sprintf(buffer, CMD_CALL_3P_SMILES_PARSER, smilesstr);
-                pf = popen(buffer, "r");
+                std::string command = "timeout 10s "+std::string(buffer);
+                pf = popen(command.c_str(), "r");
+                if (!pf) return false;
 
                 // Resume using buffer with fgets().
                 int lno = 0;
@@ -7033,13 +7062,13 @@ bool Molecule::from_smiles(char const * smilesstr, bool use_parser)
 
                     if (lno == 2) sdfgen_aboutline = buffer;
                 }
-                fclose(pf);
+                int status = pclose(pf);
+                pf = nullptr;
 
-                int result = from_sdf(sdfdat.c_str());
-                return (result > 0);
+                if (!status && from_sdf(sdfdat.c_str())>0) return true;
             }
             buffer[0] = 0;
-            fclose(pf);
+            if (pf) pclose(pf);
         }
     }
 
@@ -7058,11 +7087,14 @@ bool Molecule::from_smiles(char const * smilesstr, bool use_parser)
     {
         retval &= from_smiles(paren[i].smilesstr, paren[i].startsfrom);
     }
+    for (i=0; i<spnum; i++) delete[] paren[i].smilesstr;
+    delete[] paren;
+    paren=nullptr;
 
     // hydrogenate(true);
     float anomaly = correct_structure();
     // cout << "# Structural anomaly = " << anomaly << endl;
-    hydrogenate(false);
+    Molecule::hydrogenate(false);
     identify_conjugations();
     identify_rings();
     identify_cages();
@@ -7099,9 +7131,6 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
     Atom* EZatom0[numdb+4];
     Atom* EZatom1[numdb+4];
 
-    smlen = strlen(smilesstr);
-    paren = new SMILES_Parenthetical[smlen];
-
     for (i=0; i<len; i++)
     {
         if (smilesstr[i] == '!') continue;
@@ -7112,7 +7141,7 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
             continue;
         }
 
-        if (smilesstr[i] == '-')
+        if (smilesstr[i] == '-' && !bracket)
         {
             card = 1;
             continue;
@@ -7173,8 +7202,8 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
 
         if (smilesstr[i] == ')')
         {
-            if (!sp) return false;
             if (ipreva) return true;
+            if (!sp) return false;
             // preva = stack[--sp];
             continue;
         }
@@ -7214,7 +7243,7 @@ bool Molecule::from_smiles(char const * smilesstr, Atom* ipreva)
             continue;
         }
 
-        if (smilesstr[i] >= '0' && smilesstr[i] <= '9')
+        if (!bracket && smilesstr[i] >= '0' && smilesstr[i] <= '9')
         {
             if (!ring_warned)
             {

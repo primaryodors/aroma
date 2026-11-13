@@ -28,7 +28,7 @@ class SharedWorkflow(unittest.TestCase):
 
     def exercise(self, module, backend_name, actions=(), fail_post=False, trusted=False,
                  reject_model=0, reject_post=0, max_attempts=None, fatal_model=False,
-                 stale_dock=False, reject_reset=False):
+                 stale_dock=False, reject_reset=False, no_inactive=False):
         with tempfile.TemporaryDirectory(prefix='aroma-workflow-') as temporary:
             root = Path(temporary)
             hm = root / 'hm'
@@ -50,6 +50,8 @@ class SharedWorkflow(unittest.TestCase):
             destination = root / 'result.pdb'
             destination.write_text('previous model\n')
             raw_template = original.read_text()
+            if no_inactive:
+                (root/'pdbs/OR1/OR1A1.inactive.pdb').unlink()
             if trusted:
                 validated_source = root / 'pdbs/_validated/OR1A1.active.pdb'
                 validated_source.parent.mkdir()
@@ -57,7 +59,7 @@ class SharedWorkflow(unittest.TestCase):
 
             class Model(engines.ReecModel):
                 def make(self):
-                    assert self.max_var_iterations == (7 * 2**events.count('model') if module is dohm else 7)
+                    assert self.max_var_iterations == 7 * 2**min(events.count('model'),3)
                     assert self.ending_model == 1
                     self.restraints = engines.Restraints()
                     self.disulfides = []
@@ -92,13 +94,18 @@ class SharedWorkflow(unittest.TestCase):
             def run(command, **kwargs):
                 command = [str(value) for value in command]
                 name = Path(command[0]).name
-                if name == 'make' and command[1:] == ['bin/reec']:
+                if name == 'make' and 'bin/phew' in command and 'bin/ic' in command and not builds:
                     self.assertFalse(events)
                     self.assertFalse(scripts)
                     builds.append(command)
                 if name == 'phew':
                     events.append('phew')
                     text = Path(command[1]).read_text()
+                    if no_inactive:
+                        import re
+                        reference = re.search(r'LET \$inpf = "([^"]+)"',text)
+                        if reference:
+                            self.assertIn('REMARK 800 SITE BW 3.50',Path(reference[1]).read_text())
                     scripts.append(text)
                     if fail_post:
                         destination.write_text('partial output\n')
@@ -179,6 +186,7 @@ class SharedWorkflow(unittest.TestCase):
                 stack.enter_context(patch.object(backend.pu, 'load_prots'))
                 stack.enter_context(patch.object(data.odorutils, 'load_odors'))
                 stack.enter_context(patch.object(data.globals, 'wait_cool_cpu'))
+                stack.enter_context(patch('hm_recovery.review_source', return_value={'valid': True, 'failures': []}))
                 stack.enter_context(patch.object(data.odorutils, 'ensure_sdf_exists', return_value=str(root / 'ligand.sdf')))
                 stack.enter_context(redirect_stdout(io.StringIO()))
                 stack.enter_context(redirect_stderr(io.StringIO()))
@@ -200,7 +208,7 @@ class SharedWorkflow(unittest.TestCase):
                     return events, restraint_sets
                 else:
                     status = module.main(argv)
-                    self.assertEqual(len(builds), int(backend_name == 'reec'))
+                    self.assertEqual(len(builds), 1)
                     if module is dohm and not trusted:
                         logs = list((root / 'tmp').glob('OR1A1-dohm-*/attempts.json'))
                         self.assertEqual(len(logs), 1)
@@ -253,6 +261,12 @@ class SharedWorkflow(unittest.TestCase):
     def test_dohm_shared_tail_and_restraints(self):
         results = [self.exercise(dohm, name) for name in ('reec', 'modeller')]
         self.assertEqual(results[0], results[1])
+
+    def test_dohm_can_postprocess_without_an_inactive_model(self):
+        for name in ('reec','modeller'):
+            events,_ = self.exercise(dohm,name,no_inactive=True)
+            self.assertIn('phew',events)
+            self.assertIn('finalize',events)
 
     def test_dohm_retries_generation_with_larger_budget_and_fresh_seed(self):
         events, _ = self.exercise(dohm, 'reec', reject_model=2)
@@ -348,9 +362,11 @@ class SharedWorkflow(unittest.TestCase):
             with patch.object(backend, 'command') as command:
                 engines.prepare(args)
                 engines.prepare(args)
-                self.assertEqual(command.call_count, int(name == 'reec'))
+                self.assertEqual(command.call_count, 1)
                 if name == 'reec':
-                    command.assert_called_once_with(['make', 'bin/reec'])
+                    command.assert_called_once_with(['make', 'bin/reec', 'bin/reec_steric_audit', 'bin/phew', 'bin/ic'])
+                else:
+                    command.assert_called_once_with(['make', 'bin/phew', 'bin/ic'])
 
 
 if __name__ == '__main__':

@@ -188,7 +188,7 @@ def main():
                 if "aligned" not in p or rcpid in already:
                     continue
                 
-                temp = p["aligned"][:-4] if p["aligned"].endswith('----') else p["aligned"]
+                temp = pu.complete_alignment(rcpid)
                 chunks = chunk_string(temp, 130)
                 paligned = "\n".join(chunks) + "\n" if chunks else ""
                 

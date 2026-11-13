@@ -19050,7 +19050,7 @@
     "6ed14eab60fd46372d853fbdd8d61228":
     {
         "full_name": "isobornyl acetate",
-        "smiles": "CC(=O)O[C@H]1C[C@H]2CC[C@]1(C2(C)C)C",
+        "smiles": "CC(=O)O[C@@H]1C[C@H]2CC[C@@]1(C2(C)C)C",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":
@@ -38354,7 +38354,7 @@
     "e0f9fe1a96f75df87126b067042d5b48":
     {
         "full_name": "(E,E)-2,4-nonadienal",
-        "smiles": "O=C/C=C//C=C/CCCC",
+        "smiles": "O=C/C=C/C=C/CCCC",
         "aroma":
         {
             "http://www.thegoodscentscompany.com":

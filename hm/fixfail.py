@@ -13,6 +13,16 @@ root_dir = os.path.dirname(script_dir)
 sys.path.insert(0, root_dir)
 from modeling_backend import options as backend_options, api as backend_api, prepare, construct, forwarded_options, publication_guard, finalize
 from reec_backend import receptor, directory, CandidateRejected
+from data.preparation import generate_prepared_output
+
+
+def repair_dock_path(root, family, protid, odor, mode):
+    token = odor['full_name'].replace(' ', '_')
+    return Path(root) / 'out' / family / protid / f'{protid}~{token}.{mode}.dock'
+
+
+def repair_dock_command(protid, odor, mode):
+    return ['/bin/bash', './dock.sh', protid, odor['full_name'], 'noa' if mode == 'inactive' else 'noi']
 
 
 def repair_reshape_script(protid, mode, skip=False):
@@ -103,8 +113,8 @@ def main(argv=None):
                                  'but a completed model PDB is unavailable. Finish the dock or use fit to prepare a source.')
             raise ValueError(f'Input file not found: {input_arg}')
 
-    if {'loop', 'dock'}.intersection(options.legacy) and not odor:
-        raise ValueError('Loop and dock modes require an odorant')
+    if {'loop', 'dock', 'fit', 'predock'}.intersection(options.legacy) and not odor:
+        raise ValueError('Docking and fitting actions require an odorant')
 
     aaletts = "ARNDCEQGHILKMFPSTWYV"
     aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLU", "GLN", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
@@ -125,18 +135,6 @@ def main(argv=None):
         else:
             doreset = True
 
-    if odor:
-        delcav = inppdb[0:-3]+"cvty"
-        if os.path.exists(delcav):
-            os.unlink(delcav)
-        with open('data/cavopts.json', 'r') as file:
-            cavopts = json.load(file)
-        cmd = ["bin/cavity_search", "-p", origpdb if doreset else inppdb, "-o", delcav]
-        cmd.extend(cavopts)
-        print(" ".join(cmd))
-        data.globals.wait_cool_cpu()
-        subprocess.run(cmd, check=True)
-
     delete_inppdb = False
 
     tokens = [value for value in options.legacy[(1 if input_arg else 0):] if value not in actions]
@@ -148,6 +146,24 @@ def main(argv=None):
         if not re.fullmatch(r'[0-9]+:[0-9]?[A-Z]+[0-9]?', receptor_atom):
             raise ValueError(f'Invalid receptor contact: {receptor_atom}')
         ligcontacts.append([ligand_atom, receptor_atom])
+
+    preparation_tools = []
+    if odor:
+        preparation_tools.append('bin/cavity_search')
+    if 'fit' in options.legacy:
+        preparation_tools.append('bin/cavity_fit')
+    if ligcontacts:
+        preparation_tools.append('bin/poslig')
+    if preparation_tools:
+        subprocess.run(['make', *preparation_tools], check=True)
+    if odor:
+        cavity_source = origpdb if doreset or 'fit' in options.legacy else inppdb
+        delcav = str(Path(cavity_source).with_suffix('.cvty'))
+        with open('data/cavopts.json', 'r') as file:
+            cavopts = json.load(file)
+        cmd = ['bin/cavity_search', '-p', cavity_source, '-o', delcav, *cavopts]
+        print(' '.join(cmd))
+        generate_prepared_output(cmd, delcav, before_run=data.globals.wait_cool_cpu)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
@@ -164,16 +180,20 @@ def main(argv=None):
         cmd = ["bin/cavity_fit", origpdb, origcvty, sdfname, "-a", "-c", "65536", "-n", "1", "-o", inppdb]
         data.globals.wait_cool_cpu()
         print(" ".join(cmd))
-        subprocess.run(cmd, check=True)
-        # TODO: If no result from cavity_fit, error out and exit.
+        generate_prepared_output(cmd, inppdb)
 
     if "predock" in sys.argv or (doreset and not "fit" in sys.argv):
         # Perform an active-state dock on the new model...
         if odor:
-            cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+            predock_model = repair_dock_path(root_dir, fam, protid, odor, mode).with_suffix('.model1.pdb')
+            previous_model = predock_model.stat().st_mtime_ns if predock_model.exists() else None
+            cmd = repair_dock_command(protid, odor, mode)
             data.globals.wait_cool_cpu()
             print(" ".join(cmd))
             subprocess.run(cmd, check=True)
+            if (not delete_inppdb and predock_model.is_file()
+                    and predock_model.stat().st_mtime_ns != previous_model):
+                inppdb = str(predock_model)
 
     source_disulfides = pdb_disulfides(origpdb)
     canonical = tuple(sorted((data.protutils.resno_from_bw(protid, "3.25") or 0,
@@ -659,10 +679,10 @@ def main(argv=None):
             success = True
             break
 
-        dockfile = Path(root_dir) / f"out/{fam}/{protid}/{protid}~{odor['full_name']}.{mode}.dock"
+        dockfile = repair_dock_path(root_dir, fam, protid, odor, mode)
         previous_dock = dockfile.stat().st_mtime_ns if dockfile.exists() else None
         if odor:
-            cmd = ["/bin/bash", "./dock.sh", protid, odor["full_name"], "noi"]
+            cmd = repair_dock_command(protid, odor, mode)
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)
 

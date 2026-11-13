@@ -19,15 +19,18 @@ int main(int argc, char** argv)
         if (stat(argv[1], &buffer) == 0)
         {
             FILE* fp = fopen(argv[1], "rb");
+            if (!fp) { cerr << "Could not read ligand file." << endl; return 1; }
 
             fseek(fp, 0L, SEEK_END);
             int fsize = ftell(fp);
             rewind(fp);
 
-            char contents[fsize+4];
-            int got = fread(contents, fsize, 1, fp);
+            if (fsize<=0 || fsize>65535) { fclose(fp); cerr << "Invalid ligand file size." << endl; return 1; }
+            std::string contents(fsize,'\0');
+            size_t got = fread(&contents[0], 1, contents.size(), fp);
             fclose(fp);
-            m.from_sdf(contents);
+            if (got!=contents.size() || !m.from_sdf(contents.c_str()))
+            { cerr << "Invalid or incomplete ligand SDF." << endl; return 1; }
         }
         else m.from_smiles(argv[1]);
     }

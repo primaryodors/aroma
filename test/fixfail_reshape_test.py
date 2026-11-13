@@ -65,6 +65,7 @@ class RepairReshapeTest(unittest.TestCase):
             with tempfile.TemporaryDirectory() as temporary, \
                     patch.object(fixfail, 'prepare'), \
                     patch.object(fixfail.subprocess, 'run'), \
+                    patch.object(fixfail, 'generate_prepared_output'), \
                     patch('data.globals.wait_cool_cpu'), \
                     patch('data.protutils.ensure_bw_metadata'), \
                     patch.object(fixfail.shutil, 'copyfile', side_effect=TemplateReached) as copy, \

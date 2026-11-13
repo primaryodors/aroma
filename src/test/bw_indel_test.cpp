@@ -23,6 +23,9 @@ int main(int argc,char** argv)
         return 0;
     }
     Protein p;
+    assert(!p.has_bwnos());
+    p.set_bw50(5,215);
+    assert(p.has_bwnos());
     std::string sequence(317,'A');sequence[207]='N';sequence[208]='I';sequence[214]='D';
     for(size_t i=0;i<sequence.size();++i)assert(p.add_residue(i+1,sequence[i]));
     p.set_bw50(1,48);p.set_bw50(5,215);p.set_bw50(7,294);

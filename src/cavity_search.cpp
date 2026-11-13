@@ -159,13 +159,13 @@ int main(int argc, char** argv)
 
             i++;
             Atom* pointing;
-            if (aa && !strcasecmp(argv[i], "ext") || !strcasecmp(argv[i], "extent")) pointing = aa->get_reach_atom();
+            if (aa && (!strcasecmp(argv[i], "ext") || !strcasecmp(argv[i], "extent"))) pointing = aa->get_reach_atom();
             else pointing = aa ? aa->get_atom(argv[i]) : nullptr;
 
             i++;
             int tres = interpret_resno(argv[i]);
             AminoAcid* target = tres ? p.get_residue(tres) : nullptr;
-            Atom* tatom = target ? target->get_nearest_atom(pointing->loc) : nullptr;
+            Atom* tatom = target && pointing ? target->get_nearest_atom(pointing->loc) : nullptr;
 
             if (aa && pointing && target)
             {

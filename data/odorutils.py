@@ -149,12 +149,37 @@ def check_forms(ligname, randomize=True):
             result.append(form+"-"+odor["full_name"])
     return result
 
+def structure_molecule(smiles):
+    """Read catalog atom labels and legacy branch-bond spelling without changing chemistry."""
+    core = smiles.split('|',1)[0]
+    labels = {}
+    atom_index = -1
+    tokens = r'(\[[^\]]+\]|Br|Cl|[A-Z][a-z]?|[bcnops*])|\{([^{}]+)\}'
+    for match in re.finditer(tokens,core):
+        if match.group(1):
+            atom_index += 1
+        else:
+            if atom_index < 0:
+                raise ValueError('An atom label precedes its atom')
+            labels[atom_index] = match.group(2)
+    core = re.sub(r'\{[^{}]+\}','',core)
+    core = re.sub(r'([/\\])\(',lambda match:'('+match.group(1),core)
+    options = Chem.SmilesParserParams()
+    options.removeHs = False
+    mol = Chem.MolFromSmiles(core,options)
+    if mol is not None:
+        for index,label in labels.items():
+            Chem.SetAtomAlias(mol.GetAtomWithIdx(index),label)
+    return mol
+
+
 def _sdf_matches_smiles(path, smiles):
     if not os.path.isfile(path):
         return False
-    expected = Chem.MolFromSmiles(smiles.split("|", 1)[0])
+    expected = structure_molecule(smiles)
     if expected is None:
-        return True
+        return False
+    expected = Chem.RemoveHs(expected)
     try:
         supplier = Chem.SDMolSupplier(path, removeHs=True)
         cached = supplier[0] if len(supplier) else None
@@ -179,6 +204,8 @@ def ensure_sdf_exists(odorant):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
     o = find_odorant(odorant)
+    if not o:
+        raise ValueError(f'Unknown odorant: {odorant}')
     result = o.get("sdfname", "sdf/" + o['full_name'].replace(' ', '_') + ".sdf")
     _ensure_sdf_current(o['smiles'], result)
     o["sdfname"] = result
@@ -211,8 +238,9 @@ def smiles_to_sdf(smiles, output_file):
     pieces = smiles.split("|")
     ring_atoms = []
     for directive in pieces[1:]:
-        if directive.startswith("rflp:"):
-            ring_atoms.extend(directive.split(":", 1)[1].split())
+        match = re.fullmatch(r"rflp(?:\s*:\s*|\s+)(.+)", directive.strip())
+        if match:
+            ring_atoms.extend(match.group(1).split())
     if ring_atoms:
         # Direct Python callers also refresh the native writer after source changes.
         current = subprocess.run(["make", "-q", "bin/ringflip"])
@@ -221,12 +249,17 @@ def smiles_to_sdf(smiles, output_file):
     destination = os.path.abspath(output_file)
     with tempfile.TemporaryDirectory(prefix=".aroma-sdf-", dir=os.path.dirname(destination)) as folder:
         staged = os.path.join(folder, "ligand.sdf")
-        mol = Chem.MolFromSmiles(pieces[0])
+        mol = structure_molecule(pieces[0])
         if mol is None:
-            subprocess.run(["obabel", "--gen3d", "-osdf", f"-O{staged}", f"-:{pieces[0]}"], check=True)
+            raise ValueError(f'Invalid ligand structure: {output_file}')
         else:
             mol = Chem.AddHs(mol)
-            if AllChem.EmbedMolecule(mol) < 0:
+            embedded = AllChem.EmbedMolecule(mol)
+            for seed in (11973,11974,11975):
+                if embedded >= 0:
+                    break
+                embedded = AllChem.EmbedMolecule(mol,randomSeed=seed,useRandomCoords=True)
+            if embedded < 0:
                 raise RuntimeError(f"Could not generate a 3D conformer: {output_file}")
             AllChem.UFFOptimizeMolecule(mol)
             with Chem.SDWriter(staged) as writer:

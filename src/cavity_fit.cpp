@@ -49,7 +49,12 @@ int main(int argc, char** argv)
             }
             got = fread(buffer, 1, 49150, fp);
             fclose(fp);
-            m.from_sdf(buffer);
+            buffer[got] = 0;
+            if (!m.from_sdf(buffer))
+            {
+                cerr << "ERROR: Invalid or incomplete ligand SDF: " << argv[i] << endl;
+                return -2;
+            }
             cout << "Ligand molecular weight: " << m.get_molecular_wt() << endl;
         }
         else if (dot && !strcasecmp(dot, ".cvty"))
@@ -159,7 +164,7 @@ int main(int argc, char** argv)
     if (!p.get_end_resno())
     {
         cout << "Cavity fit search requires a protein PDB." << endl;
-        return 0;
+        return -2;
     }
 
 

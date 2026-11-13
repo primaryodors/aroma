@@ -38,10 +38,24 @@ def load_prots():
     try:
         with open(db_path, 'r', encoding='utf-8') as file:
             prots_data = json.load(file)
+            for record in prots_data.values():
+                if 'sequence' in record:
+                    record['sequence'] = ''.join(record['sequence'].split())
             prots.update(prots_data)
     except Exception as e:
         print(f"FATAL ERROR: Failed to extract protein data from {db_path} - {e}", file=sys.stderr)
         sys.exit(1)
+
+def complete_alignment(protid):
+    """Preserve aligned columns and restore a terminal tail from the full sequence."""
+    record = prots[protid]
+    sequence = ''.join(record['sequence'].split())
+    row = ''.join(record['aligned'].split())
+    represented = row.replace('-', '')
+    if not sequence.startswith(represented):
+        raise ValueError(f'GPCR alignment does not match the sequence for {protid}')
+    return row + sequence[len(represented):]
+
 
 def bw_insdel(protid, tmrno, offset):
     global prots
@@ -310,7 +324,7 @@ def aln_similarity(aln1, aln2):
     if not total: return 0
     return ttlsim / total
 
-def prepare_coupled(inpfn, outfn, rcpid, remarks):
+def prepare_coupled(inpfn, outfn, rcpid, remarks=""):
     fam = family_from_protid(rcpid)
     phew  = f"LOAD \"{inpfn}\" A A\n"
     phew += f"LOAD \"pdbs/{fam}/{rcpid}.active.pdb\" A R\n"
@@ -327,11 +341,17 @@ def prepare_coupled(inpfn, outfn, rcpid, remarks):
         for ln in lines:
             if ln[0:16] == "REMARK 800 SITE ":
                 phew += f"{ln}\n"
-    phew += f"SAVE {outfn}\n"
-    with open("tmp/cpl.phew", "w") as f:
-        f.write(phew)
-    cmd = [ "bin/phew", "tmp/cpl.phew" ]
-    subprocess.run(cmd)
+    destination = Path(outfn)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.aroma-coupled-', dir=destination.parent) as work:
+        staged = Path(work) / 'model.pdb'
+        phew += f'SAVE "{staged}"\n'
+        script = Path(work) / 'prepare.phew'
+        script.write_text(phew)
+        subprocess.run(['bin/phew', str(script)], check=True)
+        if not staged.is_file() or not staged.stat().st_size:
+            raise RuntimeError(f'Coupled preparation produced no model: {destination}')
+        os.replace(staged,destination)
 
 def ali_rel_resno(ali: str, helix: int, member: int):
     lines = ali.split("\n")

@@ -43,6 +43,8 @@ static void check_receptor(const char* pdb, const char* cvty, const char* sdf,
     }
     const auto unconstrained = Search::pocket_cavity_candidates(&protein, cavities.data(), cavity_count, {}, {});
     assert(int(unconstrained.size()) == cavity_count);
+    assert(Search::pocket_cavity_candidates(&protein,cavities.data(),cavity_count,pocket_anchors,
+        std::vector<bool>(cavity_count,false)).empty());
     Point center = cavity.get_center();
     const float blocked = Search::polar_site_availability(&protein, protein.get_residue(buried), center);
     const float available = Search::polar_site_availability(&protein, protein.get_residue(exposed), center);

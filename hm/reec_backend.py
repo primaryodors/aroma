@@ -113,8 +113,8 @@ def parser(repair=False):
 
 
 def receptor(value):
-    state = 'inactive' if value.endswith('i') else 'active'
-    if value.endswith(('a', 'i')):
+    state = 'inactive' if value.lower().endswith('i') else 'active'
+    if value.lower().endswith(('a', 'i')):
         value = value[:-1]
     value = value.upper()
     pu.load_prots()

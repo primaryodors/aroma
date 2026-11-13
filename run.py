@@ -20,7 +20,7 @@ import data.protutils
 import data.odorutils
 import data.dyncenter
 from data.configutils import state_atom_constraints
-from data.preparation import PreparationCache, prepared_output_current
+from data.preparation import PreparationCache, prepared_output_current, generate_prepared_output
 
 data.protutils.load_prots()
 # Force memory allocation before loading to prevent namespace crashing
@@ -121,8 +121,7 @@ for rcpid in data.protutils.prots.keys():
                     elif "ec50" in acv[rcpid]:
                         isago = True
 
-                    if "antagonist" in acv[rcpid] \
-                        and (acv[rcpid]["antagonist"] == "Y" or int(acv[rcpid]["antagonist"])):
+                    if str(acv[rcpid].get("antagonist", "")).strip().upper() in {"Y", "YES", "1", "TRUE"}:
                         isant = True
 
         if lopt != "*" or popt != "*":
@@ -272,7 +271,7 @@ for rcpid in data.protutils.prots.keys():
                 cmd.extend(cavopts)
                 print(" ".join(cmd))
                 data.globals.wait_cool_cpu()
-                subprocess.run(cmd, check=True)
+                generate_prepared_output(cmd, cavfn)
             newcfg.append(f"VCVTY {cavfn}")
 
             if skipdock: break

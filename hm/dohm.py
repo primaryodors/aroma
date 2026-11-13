@@ -25,7 +25,7 @@ sys.path.append(root_dir)
 
 from pathlib import Path
 from reec_reports import report_path
-from reec_backend import receptor, directory, CandidateRejected
+from reec_backend import receptor, directory, CandidateRejected, metadata
 from modeling_backend import options as backend_options, api as backend_api, prepare, construct, custom_alignment, publication_guard, finalize, pir_rows
 
 import data.protutils as pu
@@ -89,7 +89,7 @@ def validated_subfamily_alignment(rcpid, work):
         'ACDEFGHIKLMNPQRSTVWY'))
     for name, source in sources:
         sequence = pu.prots[name]['sequence']
-        aligned = ''.join(pu.prots[name]['aligned'].split())
+        aligned = pu.complete_alignment(name)
         if aligned.replace('-', '') != sequence:
             raise ValueError(f'GPCR alignment does not match the sequence for {name}')
         present = set()
@@ -130,7 +130,7 @@ def validated_subfamily_alignment(rcpid, work):
         rows[name] = (description, row)
         templates.append(f'{name}={template}')
         provenance.append(name)
-    target_row = ''.join(pu.prots[rcpid]['aligned'].split())
+    target_row = pu.complete_alignment(rcpid)
     if target_row.replace('-', '') != pu.prots[rcpid]['sequence']:
         raise ValueError(f'GPCR alignment does not match the sequence for {rcpid}')
     rows[rcpid] = (f'sequence:{rcpid}:1:A::::::', target_row)
@@ -180,13 +180,7 @@ def experimental_ensemble_alignment(rcpid, work):
         templates.append(f'{name}={template}')
     if not templates:
         raise ValueError(f'No active experimental templates are available for {rcpid}')
-    row = ''.join(pu.prots[rcpid]['aligned'].split())
-    sequence = pu.prots[rcpid]['sequence']
-    aligned_sequence = row.replace('-', '')
-    if not sequence.startswith(aligned_sequence):
-        raise ValueError(f'GPCR alignment does not match the sequence for {rcpid}')
-    # Preserve canonical columns when the database alignment omits a terminal tail.
-    row += sequence[len(aligned_sequence):]
+    row = pu.complete_alignment(rcpid)
     selected[rcpid] = (f'sequence:{rcpid}:1:A::::::', row)
     width = max(len(row) for _, row in selected.values())
     alignment = work / f'{rcpid}.experimental.ali'
@@ -204,7 +198,13 @@ def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
     output_pdb = Path(output_pdb).resolve()
     pu.ensure_bw_metadata(rcpid, Path(root_dir) / f'pdbs/{fam}/{rcpid}.inactive.pdb')
     os.chdir(script_dir)
-    with publication_guard(output_pdb):
+    with publication_guard(output_pdb), tempfile.TemporaryDirectory(prefix=f'{rcpid}-frame-', dir=output_pdb.parent) as frame_work:
+        reference_path = Path(root_dir) / f'pdbs/{fam}/{rcpid}.inactive.pdb'
+        if not reference_path.is_file():
+            reference_path = Path(frame_work) / 'reference.pdb'
+            records = [line for line in model_path.read_text().splitlines()
+                       if not line.startswith(('REMARK 650 HELIX ', 'REMARK 800 SITE BW'))]
+            reference_path.write_text('\n'.join(metadata(rcpid)+records)+'\n')
         # 8. Post-Processing Script Generation (.phew)
         adjustments = ""
         if famno < 50:
@@ -232,7 +232,7 @@ def process_model(rcpid, fam, famno, famsub, output_pdb, best_pdb, tplsused,
     """
 
         phew_script = f"""LET $rcpid = "{rcpid}"
-    LET $inpf = "pdbs/{fam}/{rcpid}.inactive.pdb"
+    LET $inpf = "{reference_path}"
     LET $mdld = "{model_path}"
     LOAD $inpf A I
     LET %rcpseqln = %SEQLENI
@@ -963,10 +963,10 @@ def _main(options):
         if not nodel:
             print("Cleaning up temporary MODELLER artifacts...", file=sys.stderr)
             for doomed in glob.glob(f"{rcpid}.*"):
-                if doomed != f"{rcpid}.active.pdb":
+                if doomed != f"{rcpid}.active.pdb" and (Path(doomed).is_file() or Path(doomed).is_symlink()):
                     os.remove(doomed)
             for doomed in glob.glob(f"{rcpid}_tpl.*"):
-                if doomed != f"{rcpid}.active.pdb":
+                if doomed != f"{rcpid}.active.pdb" and (Path(doomed).is_file() or Path(doomed).is_symlink()):
                     os.remove(doomed)
 
     print("Execution Complete.", file=sys.stderr)

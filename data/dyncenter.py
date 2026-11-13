@@ -18,6 +18,8 @@ with open('data/binding_pocket.json', 'r') as file:
 
 def get_pocket(protid, lig):
     o = data.odorutils.find_odorant(lig)
+    if not o:
+        raise ValueError("Unknown ligand " + lig)
     if not "sdfname" in o:
         data.odorutils.ensure_sdf_exists(lig)
         o = data.odorutils.find_odorant(lig)
@@ -49,12 +51,12 @@ def get_pocket(protid, lig):
             for phore in matched["odorophores"].keys():
                 cmd = ["test/moiety_test", o["sdfname"], phore]
                 print(" ".join(cmd), "\n")
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE)
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
                 # print(proc)
                 for ln in proc.stdout.decode().split('\n'):
-                    m = re.search("[0-9]+ times in molecule", ln)
+                    m = re.search(r"occurs ([0-9]+) times in molecule", ln)
                     if m:
-                        inmol = int(re.sub("[^0-9]", "", m.string))
+                        inmol = int(m.group(1))
                         if inmol:
                             for key in matched["odorophores"][phore].keys():
                                 matched[key] = matched["odorophores"][phore][key]

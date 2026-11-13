@@ -59,7 +59,11 @@ int main(int argc, char** argv)
     buffer[got] = 0;
 
     Molecule m("TheMolecule");
-    m.from_sdf(buffer);
+    if (!m.from_sdf(buffer))
+    {
+        cerr << "Invalid or incomplete SDF input." << endl;
+        return 1;
+    }
 
     n = atom_names.size();
     for (i=0; i<n; i++)

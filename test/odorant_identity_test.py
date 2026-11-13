@@ -74,7 +74,8 @@ class OdorantIdentityTest(unittest.TestCase):
             for oid in ("", CASES["ethylphenyl acetate"]):
                 result = subprocess.run(["php", "-r", code, oid], cwd=web,
                                         capture_output=True, text=True, check=True)
-                self.assertIn('>ethylphenyl acetate</a>', result.stdout)
+                current_name = database[CASES['ethylphenyl acetate']]['full_name']
+                self.assertIn(f'>{current_name}</a>', result.stdout)
                 self.assertIn('odor=ethylphenyl_acetate&mode=active', result.stdout)
                 if not oid:
                     self.assertIn('>ethyl phenylacetate</a>', result.stdout)

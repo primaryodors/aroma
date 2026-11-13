@@ -12,7 +12,7 @@ sys.path.append(os.getcwd())
 import data.globals
 import data.protutils
 import data.odorutils
-from data.preparation import prepared_output_current
+from data.preparation import prepared_output_current, generate_prepared_output
 
 data.protutils.load_prots()
 data.odorutils.load_odors()
@@ -33,5 +33,5 @@ for protid in data.protutils.prots.keys():
         cmd = ["bin/cavity_search", "-p", pdbfn, "-o", cavfn]
         cmd.extend(cavopts)
         print(" ".join(cmd))
-        subprocess.run(cmd)
+        generate_prepared_output(cmd, cavfn)
 
