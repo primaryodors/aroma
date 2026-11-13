@@ -82,7 +82,6 @@ pdbs/*/*.cvy
 pdbs/*/*.cavity
 pdbs/*/*.params
 cavities.js
-fail*
 gmon.out
 nohup.out
 nonce*
