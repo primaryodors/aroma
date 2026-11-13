@@ -4,6 +4,7 @@ import re
 import os
 import subprocess
 import traceback
+import tempfile
 
 try:
     from rdkit import Chem
@@ -207,37 +208,35 @@ def ensure_sdf_exists(odorant):
 def smiles_to_sdf(smiles, output_file):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("..")
-    try:
-        pieces = smiles.split("|")
-        smiles = pieces[0]
-
-        mol = Chem.MolFromSmiles(smiles)
-        if not mol:
-            cmd = ["obabel", "--gen3d", "-osdf", f"-O{output_file}", f"-:{smiles}" ]
-            print(" ".join(cmd))
-            subprocess.run(cmd)
-            return
-        mol = Chem.AddHs(mol)
-        AllChem.EmbedMolecule(mol)
-        AllChem.UFFOptimizeMolecule(mol)
-        if mol:
-            with Chem.SDWriter(output_file) as writer:
-                writer.removeHs = False
-                writer.write(mol)
-            print(f"Saved {output_file}")
-
-            if len(pieces) > 1:
-                pieces[1] = pieces[1].split(":")
-                sub4 = pieces[1][0]
-                rest = pieces[1][1]
-                if sub4 == "rflp":
-                    cmd = ["bin/ringflip", output_file]
-                    for larg in rest.strip().split(" "):
-                        cmd.append(larg)
-                    print(" ".join(cmd), "\n")
-                    subprocess.run(cmd)
+    pieces = smiles.split("|")
+    ring_atoms = []
+    for directive in pieces[1:]:
+        if directive.startswith("rflp:"):
+            ring_atoms.extend(directive.split(":", 1)[1].split())
+    if ring_atoms:
+        # Direct Python callers also refresh the native writer after source changes.
+        current = subprocess.run(["make", "-q", "bin/ringflip"])
+        if current.returncode:
+            subprocess.run(["make", "bin/ringflip"], check=True)
+    destination = os.path.abspath(output_file)
+    with tempfile.TemporaryDirectory(prefix=".aroma-sdf-", dir=os.path.dirname(destination)) as folder:
+        staged = os.path.join(folder, "ligand.sdf")
+        mol = Chem.MolFromSmiles(pieces[0])
+        if mol is None:
+            subprocess.run(["obabel", "--gen3d", "-osdf", f"-O{staged}", f"-:{pieces[0]}"], check=True)
         else:
-            print(f"Invalid SMILES string: {smiles}")
-    except Exception as e:
-        print(f"Error occurred generating 3D structure: {e}")
+            mol = Chem.AddHs(mol)
+            if AllChem.EmbedMolecule(mol) < 0:
+                raise RuntimeError(f"Could not generate a 3D conformer: {output_file}")
+            AllChem.UFFOptimizeMolecule(mol)
+            with Chem.SDWriter(staged) as writer:
+                writer.write(mol)
+        if ring_atoms:
+            cmd = ["bin/ringflip", staged, *ring_atoms]
+            print(" ".join(cmd), flush=True)
+            subprocess.run(cmd, check=True)
+        if not _sdf_matches_smiles(staged, smiles):
+            raise RuntimeError(f"Generated SDF does not match the odorant structure: {output_file}")
+        os.replace(staged, destination)
+    print(f"Saved {output_file}")
 

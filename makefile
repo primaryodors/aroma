@@ -325,6 +325,11 @@ check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbo
 
 .PHONY: check-metal
 .PHONY: check-failure-reporting
+.PHONY: check-ligand-preparation
+check-ligand-preparation: $(BIN)/ringflip
+	python3 -m unittest discover -s test -p 'odorant_cache_test.py'
+	python3 -m unittest discover -s test -p 'dock_launcher_test.py'
+
 check-failure-reporting: $(BIN)/aromadock test/failure_reporting_test
 	./test/failure_reporting_test
 	python3 -m unittest discover -s test -p 'nofail_test.py'
