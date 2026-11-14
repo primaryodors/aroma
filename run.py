@@ -8,7 +8,32 @@ from collections.abc import Iterable
 from pathlib import Path
 
 if len(sys.argv) < 3:
-    print("Usage: python3 run.py RECEPTOR ODORANT [options]")
+    print("""Usage: python3 run.py RECEPTOR ODORANT [options]
+
+RECEPTOR:
+  Receptor ID, receptor ID regex, all (or '*'), emp, ago,
+  eN (minimum expression percentage), or comma-separated BW positions.
+
+ODORANT:
+  Odorant name/ID, all (or '*'), emp (empirical pairs), ago (known
+  agonists), top (strongest known agonist), perceptual note, or regex
+  matching the odorant name or SMILES.
+  jk          Prepare configurations and cavities without docking.
+
+Options (bare words, without leading dashes):
+  refresh     Skip successful docks newer than their input files.
+  resume      Skip all existing successful docks.
+  onlyfailed  Retry existing failed docks; skip missing and successful docks.
+              Uses accepted pose counts, including NOFAIL fallback reports;
+              older reports without counts use the 100 KB size rule.
+  noa         Skip active-state docks (uncoupled receptors).
+  noi         Skip inactive-state docks (uncoupled receptors).
+  ns          Suppress the docking program's splash screen.
+  emp         Filter a selected receptor/odorant pair to empirical pairs.
+  ago         Filter a selected receptor/odorant pair to known agonists.
+  top         Filter a selected receptor/odorant pair to its strongest agonist.
+              Pair filters apply when RECEPTOR is a specific ID or selector.
+""")
     sys.exit(2)
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +57,7 @@ data.globals.wait_cool_cpu()
 
 onlynew = False
 onlymissing = False
+onlyfailed = False
 skipdock = False
 
 if not sys.argv[1] in data.protutils.prots.keys():
@@ -68,6 +94,7 @@ if len(sys.argv) > 3:
     for i in range(3, len(sys.argv)):
         if sys.argv[i] == "refresh": onlynew = True
         if sys.argv[i] == "resume": onlymissing = True
+        if sys.argv[i] == "onlyfailed": onlyfailed = True
 
 processed = 0
 contact_cache = PreparationCache()
@@ -182,9 +209,20 @@ for rcpid in data.protutils.prots.keys():
             if not os.path.exists("out/" + fam): os.mkdir("out/" + fam)
             if not os.path.exists("out/" + fam + "/" + rcpid): os.mkdir("out/" + fam + "/" + rcpid)
 
-            if onlynew or onlymissing:
+            if onlynew or onlymissing or onlyfailed:
                 outfn = f"out/{fam}/{rcpid}/{rcpid}~{lignu}.{suff}.dock"
-                if os.path.exists(outfn) and os.path.getsize(outfn) > 1e5:
+                if onlyfailed:
+                    if not os.path.exists(outfn):
+                        continue
+                    with open(outfn, encoding="utf-8", errors="replace") as report:
+                        dock_report = report.read()
+                    pose_counts = re.findall(r"^([0-9]+) pose\(s\) found[.]", dock_report, re.MULTILINE)
+                    if pose_counts:
+                        if int(pose_counts[-1]) > 0:
+                            continue
+                    elif "NOFAIL:" not in dock_report and os.path.getsize(outfn) > 1e5:
+                        continue
+                elif os.path.exists(outfn) and os.path.getsize(outfn) > 1e5:
                     if onlymissing: continue
                     fmt = os.path.getmtime(outfn)
                     if fmt > os.path.getmtime("data/binding_pocket.json") \
