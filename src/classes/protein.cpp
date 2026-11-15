@@ -3032,7 +3032,7 @@ Point Protein::get_region_bounds(int startres, int endres)
     return retval;
 }
 
-float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cache)
+float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cache, Molecule* ligand)
 {
     sr = max(sr, 1);
     er = min(er, get_end_resno());
@@ -3082,7 +3082,13 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
             cout << endl;
         }
         #endif
-        Interaction before = aa->get_intermol_binding(sphres);
+        auto binding = [&]()
+        {
+            Interaction value = aa->get_intermol_binding(sphres);
+            if (ligand) value += static_cast<Molecule*>(aa)->get_intermol_binding(ligand, false);
+            return value;
+        };
+        Interaction before = binding();
         Pose best(aa);
 
         for (j=0; b[j]; j++)
@@ -3102,7 +3108,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
                         movclash_justtesting = true;
                         #endif
                         b[j]->rotate(opth_fullrot_stepa);
-                        Interaction during = aa->get_intermol_binding(sphres);
+                        Interaction during = binding();
                         if (during.improved(before))
                         {
                             before = during;
@@ -3116,7 +3122,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
                     }
                 }
                 best.restore_state_relative(aa, "CA");
-                before = aa->get_intermol_binding(sphres);
+                before = binding();
             }
             else if (b[j]->can_flip)
             {
@@ -3125,7 +3131,7 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
                 #endif
                 if (!b[j]->flip_angle) b[j]->flip_angle = M_PI;
                 b[j]->rotate(b[j]->flip_angle);
-                Interaction during = aa->get_intermol_binding(sphres);
+                Interaction during = binding();
                 if (during.clash < 1.3 * before.clash) during.clash = before.clash = 0;
                 if (during.worst_atom_clash < 1.1 * before.worst_atom_clash) during.worst_atom_clash = before.worst_atom_clash = 0;
                 if (!during.improved(before))
@@ -3160,6 +3166,124 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
     }
 
     return result;
+}
+
+bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue)
+{
+    if (!ligand || !residue || !(residue->movability & MOV_CAN_FLEX)
+        || (residue->movability & MOV_FORBIDDEN)) return false;
+    struct Contact { Atom *hydrogen, *acceptor, *donor; bool ligand_donor; float radius; };
+    std::vector<Contact> contacts;
+    for (int direction=0; direction<2; direction++)
+    {
+        Molecule* donor = direction ? static_cast<Molecule*>(residue) : ligand;
+        Molecule* acceptor = direction ? ligand : static_cast<Molecule*>(residue);
+        for (int i=0; i<donor->get_atom_count(); i++)
+        {
+            Atom* h = donor->get_atom(i);
+            if (h->Z != 1 || h->is_polar() <= 0) continue;
+            Atom* heavy = h->get_heavy_atom();
+            if (!heavy || heavy->Z <= 1 || (direction && heavy->is_backbone)) continue;
+            for (int j=0; j<acceptor->get_atom_count(); j++)
+            {
+                Atom* a = acceptor->get_atom(j);
+                if (a->Z <= 1 || (!direction && a->is_backbone)
+                    || heavy->distance_to(a) > _INTERA_R_CUTOFF) continue;
+                float radius = InteratomicForce::hydrogen_bond_distance(h, a);
+                if (radius > 0) contacts.push_back({h,a,heavy,!direction,radius});
+            }
+        }
+    }
+    if (contacts.empty()) return false;
+    std::vector<Molecule*> pocket, neighbors;
+    for (int r=get_start_resno(); r<=get_end_resno(); r++)
+    {
+        AminoAcid* aa = get_residue(r);
+        if (!aa) continue;
+        Atom *a=nullptr, *b=nullptr;
+        ligand->mutual_closest_atoms(aa,&a,&b);
+        bool near_ligand = a && b && a->distance_to(b) < _INTERA_R_CUTOFF+4;
+        residue->mutual_closest_atoms(aa,&a,&b);
+        bool near_residue = a && b && a->distance_to(b) < _INTERA_R_CUTOFF+4;
+        if (near_ligand || near_residue)
+        {
+            pocket.push_back(aa);
+            if (aa != residue) neighbors.push_back(aa);
+        }
+    }
+    pocket.push_back(nullptr); neighbors.push_back(nullptr);
+    auto binding = [&]()
+    {
+        return ligand->get_intermol_binding(pocket.data())
+            + static_cast<Molecule*>(residue)->get_intermol_binding(neighbors.data());
+    };
+    Interaction best_score = binding();
+    float ligand_clashes = ligand->get_internal_clashes();
+    float residue_limit = fmax(clash_limit_per_aa, fmax(residue->get_internal_clashes(),1.25f*residue->get_base_clashes()));
+    Pose best_residue(residue), best_ligand(ligand);
+    bool changed = false;
+    auto valid = [&]()
+    {
+        return ligand->flexion_clashes_allowed(ligand_clashes)
+            && residue->get_internal_clashes() <= residue_limit;
+    };
+    // Optimize terminal polar hydrogens on both partners against the same score.
+    // Heavy coordinates remain fixed throughout each angular sweep.
+    auto orient_hydrogens = [&](Molecule* molecule)
+    {
+        if (!(molecule->movability & MOV_CAN_FLEX) || (molecule->movability & MOV_FORBIDDEN)) return;
+        Bond** bonds = molecule->get_rotatable_bonds();
+        if (!bonds) return;
+        for (int j=0; bonds[j]; j++)
+        {
+            Bond* bond = bonds[j];
+            if (!bond->can_rotate || bond->is_ring_bond() || bond->count_heavy_moves_with_atom2()
+                || !bond->atom2->num_bonded_to("H") || !bond->atom2->is_polar()) continue;
+            Pose origin(molecule), local_best(molecule);
+            Interaction score = binding();
+            for (int step=1; step<24; step++)
+            {
+                origin.restore_state(molecule);
+                bond->rotate(step*M_PI/12,false,true);
+                Interaction trial = binding();
+                if (valid() && trial.summed() < score.summed())
+                {
+                    score = trial;
+                    local_best.copy_state(molecule);
+                }
+            }
+            local_best.restore_state(molecule);
+        }
+    };
+    for (const Contact& contact : contacts) for (int target=0; target<2; target++)
+    {
+        best_residue.restore_state(residue); best_ligand.restore_state(ligand);
+        if (!target)
+        {
+            float bond_length = InteratomicForce::covalent_bond_radius(contact.donor,contact.hydrogen,1);
+            Atom* movable = contact.ligand_donor ? contact.acceptor : contact.donor;
+            Atom* fixed = contact.ligand_donor ? contact.donor : contact.acceptor;
+            residue->conform_atom_to_location(movable,fixed,1,contact.radius+bond_length,true);
+        }
+        else if (contact.ligand_donor)
+            residue->conform_atom_to_location(contact.acceptor,contact.hydrogen,1,contact.radius,true);
+        else residue->conform_atom_to_location(contact.hydrogen,contact.acceptor,1,contact.radius,true);
+        for (int sweep=0; sweep<2; sweep++)
+        {
+            orient_hydrogens(residue);
+            orient_hydrogens(ligand);
+        }
+        Interaction trial = binding();
+        if (valid() && trial.clash <= fmax(clash_limit_per_aa,best_score.clash)
+            && trial.summed() < best_score.summed())
+        {
+            best_score = trial;
+            best_residue.copy_state(residue); best_ligand.copy_state(ligand);
+            changed = true;
+        }
+    }
+    best_residue.restore_state(residue); best_ligand.restore_state(ligand);
+    return changed;
 }
 
 float Protein::get_empty_space_between_residues(int resno1, int resno2)

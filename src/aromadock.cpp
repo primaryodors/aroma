@@ -4750,29 +4750,7 @@ _try_again:
             for (j=0; j<attempt_opthb_in_post_iters; j++)
                 for (i=0; i<sphres; i++)
                 {
-                    if (fabs(reaches_spheroid[nodeno][i]->get_charge()) >= 0.75) continue;
-
-                    Atom *chbla = ligand->get_nearest_atom(reaches_spheroid[nodeno][i]->get_CA_location(), hbond);
-                    if (!chbla) continue;
-                    if (fabs(chbla->is_polar()) < hydrophilicity_cutoff) continue;
-                    // if (chbla->Z < 2) chbla = chbla->get_heavy_atom();
-                    Atom *H = chbla->is_bonded_to("H");
-                    if (H) chbla = H;
-
-                    Atom *chbra = reaches_spheroid[nodeno][i]->get_most_polar(-sgn(chbla->is_polar()));
-                    if (!chbra) continue;
-                    if (fabs(chbra->is_polar()) < hydrophilicity_cutoff) continue;
-                    if (chbra->Z < 2) chbra = chbra->get_heavy_atom();
-
-                    Pose chbpib(reaches_spheroid[nodeno][i]);
-                    Interaction ebefore = ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(ligand)
-                        + ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(reaches_spheroid[nodeno][i]->mclashables);
-                    reaches_spheroid[nodeno][i]->conform_atom_to_location(chbra, chbla, 20, 3.5, true);
-                    Interaction eafter = ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(ligand)
-                        + ((Molecule*)reaches_spheroid[nodeno][i])->get_intermol_binding(reaches_spheroid[nodeno][i]->mclashables);
-
-                    if (!eafter.accept_change(ebefore))
-                        chbpib.restore_state(((Molecule*)reaches_spheroid[nodeno][i]));
+                    protein->refine_hbond_contact(ligand,reaches_spheroid[nodeno][i]);
                 }
             #endif
 
@@ -4888,7 +4866,7 @@ _try_again:
                 }
             }
 
-            protein->optimize_hydrogens();
+            protein->optimize_hydrogens(1,INT_MAX,nullptr,true,ligand);
 
             #if _dbg_atom_mov_to_clash
             movclash_prot = nullptr;

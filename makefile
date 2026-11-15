@@ -20,6 +20,7 @@ REGRESSION_TESTS+=test/planar_refinement_test test/binding_site_test
 REGRESSION_TESTS+=test/internal_scoring_test
 REGRESSION_TESTS+=test/shielding_test
 REGRESSION_TESTS+=test/hydrogen_optimization_test
+REGRESSION_TESTS+=test/hbond_refinement_test
 REGRESSION_TESTS+=test/callback_scoring_test
 REGRESSION_TESTS+=test/residue_grid_test
 REGRESSION_TESTS+=test/receptor_shielding_test

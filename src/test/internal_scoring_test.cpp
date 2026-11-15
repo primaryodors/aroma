@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <set>
 #include "../classes/protein.h"
 
 struct ScoringMolecule : Molecule
@@ -28,9 +29,11 @@ static Interaction verify_score(T& m, Molecule** neighbors)
 {
     Interaction score = ScoringMolecule::cfmol_multibind(&m, neighbors);
     Interaction pairs;
-    Molecule** selected = m.mclashables ? m.mclashables : neighbors;
-    if (selected) for (int i=0; selected[i]; i++)
-        pairs += m.intermol_bind_for_multimol_dock(selected[i], nullptr, false, false);
+    std::set<Molecule*> scored;
+    for (Molecule** selected : {m.mclashables, neighbors})
+        if (selected) for (int i=0; selected[i]; i++)
+            if (selected[i] != &m && scored.insert(selected[i]).second)
+                pairs += m.intermol_bind_for_multimol_dock(selected[i], nullptr, false, false);
     float strain = m.get_internal_clashes() + m.total_eclipses();
     if (m.is_residue()) strain -= reinterpret_cast<AminoAcid&>(m).initial_eclipses;
     close_score(score.clash - pairs.clash, strain * iteration_internal_clash_coefficient);
@@ -117,5 +120,14 @@ int main()
     residue.initial_eclipses = 2.0f;
     verify_score(residue, zero);
     verify_score(residue, two);
+    Molecule polar;
+    polar.from_smiles("O", false);
+    polar.recenter(m.get_barycenter().add(Point(0,4,0)));
+    Molecule* receptor_list[] = {&far_a, nullptr};
+    Molecule* ligand_and_receptor[] = {&polar, &far_a, nullptr};
+    m.mclashables = receptor_list;
+    assert(fabs(polar.get_intermol_binding(&m).summed())>.001);
+    verify_score(m, ligand_and_receptor);
+    m.mclashables = nullptr;
     puts("Internal scoring passed.");
 }

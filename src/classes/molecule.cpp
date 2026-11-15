@@ -5905,8 +5905,14 @@ Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* self
             result += f;
         }
     }
-    else if (nearby) for (j=0; nearby[j]; j++)
+    if (nearby) for (j=0; nearby[j]; j++)
     {
+        // Receptor clash lists contain residues, while nearby also contains ligands.
+        // Score their union so side-chain trials retain ligand contact incentives.
+        bool already_scored = nearby[j] == a;
+        if (a->mclashables) for (int k=0; a->mclashables[k]; k++)
+            if (a->mclashables[k] == nearby[j]) { already_scored = true; break; }
+        if (already_scored) continue;
         Interaction f = a->intermol_bind_for_multimol_dock(nearby[j], selfish, false, false);
         result += f;
     }
@@ -6603,6 +6609,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                         if (!selfish_side_chains && ares) do_selfish_flexion = false;
 
                         if (do_full_rotation && bb[q]->can_rotate
+                            && (!ares || a->has_hbond_donors() || a->has_hbond_acceptors())
                             #if fullrot_flex_first_subiter_only
                             && !qiter
                             #endif

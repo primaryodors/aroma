@@ -239,7 +239,7 @@
 #define fullrot_flex_first_subiter_only 0
 #define fullrot_flex_residues_only 0
 #define fullrot_flex_unfavorable_energy_only 0
-#define fullrot_forbid_residues 1
+#define fullrot_forbid_residues 0
 #define sidechain_flexion_frequency 0.333
 #define stochastic_flexion_of_clashing_residues 1
 

@@ -1694,6 +1694,22 @@ float InteratomicForce::optimal_distance(Atom* a, Atom* b)
     return optimal;
 }
 
+float InteratomicForce::hydrogen_bond_distance(Atom* hydrogen, Atom* acceptor)
+{
+    if (!hydrogen || !acceptor || hydrogen->Z != 1 || acceptor->Z <= 1
+        || hydrogen->is_polar() <= 0 || acceptor->is_polar() >= 0) return 0;
+    InteratomicForce* forces[32];
+    fetch_applicable(hydrogen, acceptor, forces);
+    float strength = -1, radius = 0;
+    for (int i=0; forces[i]; i++)
+        if (forces[i]->type == hbond && forces[i]->distance > 0 && forces[i]->kJ_mol > strength)
+        {
+            strength = forces[i]->kJ_mol;
+            radius = forces[i]->distance;
+        }
+    return radius;
+}
+
 float InteratomicForce::coordination_distance(Atom* donor, Atom* metal)
 {
     InteratomicForce* forces[32];
