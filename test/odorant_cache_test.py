@@ -7,6 +7,7 @@ from unittest import mock
 
 try:
     from rdkit import Chem
+    from rdkit.Chem import AllChem
 except ImportError:
     Chem = None
 
@@ -25,8 +26,64 @@ class OdorantCacheTest(unittest.TestCase):
         self.directory.cleanup()
 
     def write_structure(self, smiles, path):
+        mol = Chem.AddHs(Chem.MolFromSmiles(smiles.split("|", 1)[0]))
+        self.assertGreaterEqual(AllChem.EmbedMolecule(mol,randomSeed=11973),0)
+        AllChem.UFFOptimizeMolecule(mol,maxIters=500)
         with Chem.SDWriter(path) as writer:
-            writer.write(Chem.MolFromSmiles(smiles.split("|", 1)[0]))
+            writer.write(mol)
+
+    def test_regenerates_stretched_carbonyl_and_hydrogen_coordinates(self):
+        for symbol in ('O','H'):
+            with self.subTest(element=symbol):
+                self.write_structure('CC=O',self.path)
+                mol = Chem.MolFromMolFile(self.path,removeHs=False)
+                atom = next(a for a in mol.GetAtoms() if a.GetSymbol()==symbol)
+                point = mol.GetConformer().GetAtomPosition(atom.GetIdx())
+                mol.GetConformer().SetAtomPosition(atom.GetIdx(),(point.x+3,point.y,point.z))
+                with Chem.SDWriter(self.path) as writer:
+                    writer.write(mol)
+                self.assertTrue(self.utils._sdf_matches_smiles(self.path,'CC=O'))
+                self.assertFalse(self.utils._sdf_geometry_valid(self.path))
+                self.assertEqual(self.ensure('CC=O',self.write_structure),1)
+                self.assertTrue(self.utils._sdf_geometry_valid(self.path))
+
+    def test_arborone_ringflip_preserves_all_covalent_bonds(self):
+        smiles = 'CC(=O)[C@@]1(C)CC=C2[C@H]([C@@H]1C)C(C)(C)CCC2|rflp C4'
+        for seed in (11973,11974,11975):
+            mol = Chem.AddHs(Chem.MolFromSmiles(smiles.split('|')[0]))
+            self.assertGreaterEqual(AllChem.EmbedMolecule(mol,randomSeed=seed),0)
+            AllChem.UFFOptimizeMolecule(mol)
+            before = mol.GetConformer()
+            lengths = {(b.GetBeginAtomIdx(),b.GetEndAtomIdx()):
+                       (before.GetAtomPosition(b.GetBeginAtomIdx())-before.GetAtomPosition(b.GetEndAtomIdx())).Length()
+                       for b in mol.GetBonds()}
+            with Chem.SDWriter(self.path) as writer:
+                writer.write(mol)
+            subprocess.run(['bin/ringflip',self.path,'C4'],check=True)
+            self.assertTrue(self.utils._sdf_matches_smiles(self.path,smiles))
+            self.assertTrue(self.utils._sdf_geometry_valid(self.path))
+            result = Chem.MolFromMolFile(self.path,removeHs=False)
+            after = result.GetConformer()
+            for (a,b),distance in lengths.items():
+                self.assertAlmostEqual((after.GetAtomPosition(a)-after.GetAtomPosition(b)).Length(),distance,delta=.002)
+
+    def test_invalid_generated_coordinates_preserve_the_cached_file(self):
+        self.write_structure('C1CCCCC1',self.path)
+        original = pathlib.Path(self.path).read_bytes()
+        def command(arguments, **options):
+            if 'make' in arguments:
+                return subprocess.CompletedProcess(arguments,0)
+            mol = Chem.MolFromMolFile(arguments[1],removeHs=False)
+            hydrogen = next(a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum()==1)
+            point = mol.GetConformer().GetAtomPosition(hydrogen)
+            mol.GetConformer().SetAtomPosition(hydrogen,(point.x+4,point.y,point.z))
+            with Chem.SDWriter(arguments[1]) as writer:
+                writer.write(mol)
+            return subprocess.CompletedProcess(arguments,0)
+        with mock.patch.object(self.utils.subprocess,'run',side_effect=command):
+            with self.assertRaisesRegex(RuntimeError,'invalid bond geometry'):
+                self.utils._ensure_sdf_current('C1CCCCC1|rflp:C1',self.path)
+        self.assertEqual(pathlib.Path(self.path).read_bytes(),original)
 
     def ensure(self, smiles, generator):
         odorant = {"full_name": "fixture", "smiles": smiles, "sdfname": self.path}
@@ -108,7 +165,7 @@ class OdorantCacheTest(unittest.TestCase):
         self.write_structure('C1CCCCC1', self.path)
         original = pathlib.Path(self.path).read_bytes()
         def command(arguments, **options):
-            if arguments[0] == 'make':
+            if 'make' in arguments:
                 return subprocess.CompletedProcess(arguments, 0)
             pathlib.Path(arguments[1]).write_text('invalid SDF')
             raise subprocess.CalledProcessError(1, arguments)

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cstring>
+#include <vector>
 #include "classes/molecule.h"
 
 using namespace std;
@@ -65,6 +66,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    struct BondLength { Atom* a; Atom* b; float distance; };
+    std::vector<BondLength> original_bonds;
+    for (int a=0; a<m.get_atom_count(); a++) for (int b=a+1; b<m.get_atom_count(); b++)
+    {
+        Atom* first=m.get_atom(a);
+        Atom* second=m.get_atom(b);
+        if (first->is_bonded_to(second)) original_bonds.push_back({first,second,first->distance_to(second)});
+    }
+
     n = atom_names.size();
     for (i=0; i<n; i++)
     {
@@ -98,8 +108,16 @@ int main(int argc, char** argv)
         cout << "Flipped " << a->name << " " << (theta*fiftyseven) << "deg." << endl;
     }
 
-    m.refine_structure(500);
+    // Ring flips and torsional relaxation preserve covalent geometry.
+    // Cartesian mutation here can tear hydrogens and substituents off the ring.
     m.minimize_internal_clashes();
+    for (const auto& bond : original_bonds)
+        if (!std::isfinite(bond.a->distance_to(bond.b))
+            || std::fabs(bond.a->distance_to(bond.b)-bond.distance)>.02f)
+        {
+            cerr << "Ring flip changed covalent bond " << bond.a->name << "-" << bond.b->name << endl;
+            return 1;
+        }
 
     fp = fopen(filename.c_str(), "w");
     if (!fp)

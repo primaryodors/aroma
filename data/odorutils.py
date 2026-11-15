@@ -191,13 +191,49 @@ def _sdf_matches_smiles(path, smiles):
         return False
 
 
+def _sdf_geometry_valid(path):
+    """Check explicit hydrogen coordinates as well as the heavy-atom skeleton."""
+    try:
+        mol = Chem.MolFromMolFile(str(path), removeHs=False)
+        if mol is None or not mol.GetNumConformers() or not mol.GetConformer().Is3D():
+            return False
+        conformer = mol.GetConformer()
+        import math
+        for i in range(mol.GetNumAtoms()):
+            if not all(math.isfinite(value) for value in conformer.GetAtomPosition(i)):
+                return False
+        for bond in mol.GetBonds():
+            a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+            distance = (conformer.GetAtomPosition(a)-conformer.GetAtomPosition(b)).Length()
+            parameters = AllChem.GetUFFBondStretchParams(mol, a, b)
+            if parameters is not None:
+                target = parameters[1]
+            else:
+                table = Chem.GetPeriodicTable()
+                target = sum(table.GetRcovalent(mol.GetAtomWithIdx(i).GetAtomicNum()) for i in (a,b))
+                if bond.GetBondTypeAsDouble() >= 2:
+                    target *= .9 if bond.GetBondTypeAsDouble() == 2 else .85
+            tolerance = .15 if 1 in (bond.GetBeginAtom().GetAtomicNum(), bond.GetEndAtom().GetAtomicNum()) else .2
+            if abs(distance-target) > tolerance:
+                return False
+        for a in range(mol.GetNumAtoms()):
+            for b in range(a):
+                if (conformer.GetAtomPosition(a)-conformer.GetAtomPosition(b)).Length() < .5:
+                    return False
+        return True
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
 def _ensure_sdf_current(smiles, path):
     # A molecular graph cannot verify geometry directives such as ring flips.
-    if "|" not in smiles and _sdf_matches_smiles(path, smiles):
+    if "|" not in smiles and _sdf_matches_smiles(path, smiles) and _sdf_geometry_valid(path):
         return
     smiles_to_sdf(smiles, path)
     if not _sdf_matches_smiles(path, smiles):
         raise RuntimeError(f"Generated SDF does not match the odorant structure: {path}")
+    if not _sdf_geometry_valid(path):
+        raise RuntimeError(f"Generated SDF has invalid bond geometry: {path}")
 
 
 def ensure_sdf_exists(odorant):
@@ -243,9 +279,9 @@ def smiles_to_sdf(smiles, output_file):
             ring_atoms.extend(match.group(1).split())
     if ring_atoms:
         # Direct Python callers also refresh the native writer after source changes.
-        current = subprocess.run(["make", "-q", "bin/ringflip"])
+        current = subprocess.run(["nice", "-n", "10", "make", "-j2", "-q", "bin/ringflip"])
         if current.returncode:
-            subprocess.run(["make", "bin/ringflip"], check=True)
+            subprocess.run(["nice", "-n", "10", "make", "-j2", "bin/ringflip"], check=True)
     destination = os.path.abspath(output_file)
     with tempfile.TemporaryDirectory(prefix=".aroma-sdf-", dir=os.path.dirname(destination)) as folder:
         staged = os.path.join(folder, "ligand.sdf")
@@ -270,6 +306,8 @@ def smiles_to_sdf(smiles, output_file):
             subprocess.run(cmd, check=True)
         if not _sdf_matches_smiles(staged, smiles):
             raise RuntimeError(f"Generated SDF does not match the odorant structure: {output_file}")
+        if not _sdf_geometry_valid(staged):
+            raise RuntimeError(f"Generated SDF has invalid bond geometry: {output_file}")
         os.replace(staged, destination)
     print(f"Saved {output_file}")
 
