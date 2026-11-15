@@ -3702,6 +3702,15 @@ Bond** Molecule::get_all_bonds(bool unidirectional)
 }
 
 
+bool Molecule::flexion_clashes_allowed(float previous_clashes)
+{
+    if (is_residue()) return true;
+    // Permit ordinary strain and recovery from an already clashing conformation.
+    // Receptor attraction must not purchase a new severe ligand self-clash.
+    float limit = fmax(clash_limit_per_aa, 1.25f * base_internal_clashes);
+    return get_internal_clashes() <= max(limit, previous_clashes);
+}
+
 float Molecule::get_internal_clashes(bool sb, bool ib)
 {
     int i, j;
@@ -6613,6 +6622,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             Pose prior_state;
                             prior_state.copy_state(a);
                             benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
+                            float previous_clashes = a->get_memoized_internal_clashes();
                             for (theta=_fullrot_steprad; theta < M_PI*2; theta += _fullrot_steprad)
                             {
                                 prior_state.restore_state(a);
@@ -6636,27 +6646,30 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                     if (displacement >= _INTERA_R_CUTOFF*0.8) benerg.repulsive = Avogadro;
                                 }
 
-                                if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                    && a->get_memoized_internal_clashes() <= self_clash
+                                if ((fal || !wfal) && a->flexion_clashes_allowed(previous_clashes)
+                                    && tryenerg.accept_change(benerg)
+                                    && (!ares || a->get_memoized_internal_clashes() <= self_clash)
                                     && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                     && (!cav || try_cavfit >= cavfit)
                                    )
                                 {
                                     benerg = tryenerg;
+                                    previous_clashes = a->get_memoized_internal_clashes();
                                     best_theta = theta;
                                     test_and_update_absolute_best_poses
                                 }
                             }
+                            prior_state.restore_state(a);
                             if (best_theta)
                             {
-                                prior_state.restore_state(a);
                                 bb[q]->rotate(best_theta, false);
+                                a->enforce_stays(multimol_stays_enforcement);
                                 a->been_flexed = true;
-
                                 #if _dbg_mol_flexion
                                 if (is_flexion_dbg_mol_bond) cout << "Rotating to " << (best_theta*fiftyseven) << "deg." << endl << endl;
                                 #endif
                             }
+                            pib.copy_state(a);
                         }
                         else                                    // MONTE CARLO FLEXION
                         {
@@ -6672,6 +6685,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
 
                             benerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
                             benerg.clash += a->get_intermol_clashes(nearby);
+                            float previous_clashes = a->get_memoized_internal_clashes();
 
                             Ring* isra = bb[q]->atom1->in_same_ring_as(bb[q]->atom2);
                             if (isra)
@@ -6703,8 +6717,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                // && a->get_internal_clashes() <= self_clash
+                            if ((fal || !wfal) && a->flexion_clashes_allowed(previous_clashes)
+                                && tryenerg.accept_change(benerg)
                                 // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                 && (!cav || try_cavfit >= cavfit)
                                )
@@ -6727,6 +6741,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                                 #endif
                             }
 
+                            previous_clashes = a->get_internal_clashes();
                             a->enforce_stays(multimol_stays_enforcement);
                             tryenerg = cfmol_multibind(a, nearby, do_selfish_flexion ? bb[q] : nullptr, i?nullptr:cav);
                             tryenerg.clash += a->get_intermol_clashes(nearby);
@@ -6737,8 +6752,8 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             if (is_flexion_dbg_mol_bond) cout << "Trying " << (theta*fiftyseven) << "deg rotation...";
                             #endif
 
-                            if ((fal || !wfal) && tryenerg.accept_change(benerg)
-                                // && a->get_internal_clashes() <= self_clash
+                            bool flexion_clashes_ok = a->flexion_clashes_allowed(previous_clashes);
+                            if ((fal || !wfal) && flexion_clashes_ok && tryenerg.accept_change(benerg)
                                 // && a->get_intermol_clashes(nearby) <= clash_limit_per_aa
                                 && (!cav || try_cavfit >= cavfit)
                                )
@@ -6754,6 +6769,7 @@ void Molecule::conform_molecules(Molecule** mm, int iters, void (*cb)(int, Molec
                             }
                             else
                             {
+                                if (!flexion_clashes_ok) pib.restore_state(a);
                                 #if multimol_stays_allow_revert_worsening
                                 pib.restore_state(a);
 

@@ -266,6 +266,7 @@ public:
 
     // Interaction functions.
     float get_internal_clashes(bool subtract_baseline = false, bool include_backbone = true);
+    bool flexion_clashes_allowed(float previous_clashes);
     void minimize_internal_clashes();
     float get_base_clashes()
     {

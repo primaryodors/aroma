@@ -85,7 +85,35 @@ int main()
     staggered.restore_state(&ethane);
     close_score(verify_score(ethane, zero).summed(), initial.summed());
 
+    // A real chain torsion can fold terminal atoms into each other. Check both
+    // directions so an existing clash can escape rather than freezing in place.
+    {
+        ScoringMolecule chain;
+        chain.from_smiles("CCCCC", false);
+        Bond* torsion = chain.get_atom("C2")->get_bond_between(chain.get_atom("C3"));
+        assert(torsion);
+        Pose extended(&chain), folded(&chain), start(&chain);
+        float low = Avogadro, high = 0;
+        for (int step=0; step<72; step++)
+        {
+            start.restore_state(&chain);
+            torsion->rotate(step * M_PI / 36, false);
+            float clash = chain.get_internal_clashes();
+            if (clash < low) { low = clash; extended.copy_state(&chain); }
+            if (clash > high) { high = clash; folded.copy_state(&chain); }
+        }
+        assert(high > fmax(clash_limit_per_aa, 1.25f * chain.get_base_clashes()));
+        assert(high > low);
+        folded.restore_state(&chain);
+        assert(!chain.flexion_clashes_allowed(low));
+        assert(chain.flexion_clashes_allowed(high));
+        extended.restore_state(&chain);
+        assert(chain.flexion_clashes_allowed(high));
+        assert(chain.flexion_clashes_allowed(low));
+    }
+
     ScoringResidue residue;
+    assert(residue.flexion_clashes_allowed(0));
     residue.initial_eclipses = 2.0f;
     verify_score(residue, zero);
     verify_score(residue, two);
