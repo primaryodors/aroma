@@ -769,6 +769,14 @@ struct Model
                                 {
                                     auto p=std::minmax(a,d);
                                     if(rigid.insert(p).second)pair(a,d,(ideal[a]-ideal[d]).norm(),600);
+                                    // Distance terms alone permit aromatic rings to buckle.
+                                    // Conjugated bonds retain their plane while adjacent single bonds flex.
+                                    if(nodes[b].atom->is_pi()&&nodes[c].atom->is_pi())
+                                    {
+                                        double volume=(ideal[b]-ideal[a]).dot((ideal[c]-ideal[a]).cross(ideal[d]-ideal[a]));
+                                        if(std::fabs(volume)<.1)
+                                            volumes.push_back({a,int(b),c,d,0,1000});
+                                    }
                                 }
                 }
         for(size_t b=0; b<adj.size(); ++b) for(int c:adj[b]) if(int(b)<c)
@@ -1262,10 +1270,19 @@ struct Model
         for(size_t i=0; i<x.size(); ++i)if((x[i]-neighbor_origin[i]).norm()>.6)return true;
         return false;
     }
-    static double distance(const XYZ& x,XYZ& g,int a,int b,double lo,double hi,double w)
+    static double distance(const XYZ& x,XYZ& g,int a,int b,double lo,double hi,double w,double cap=0)
     {
         V v=x[a]-x[b];
         double d=std::max(1e-10,v.norm()),err=d<lo?d-lo:(d>hi?d-hi:0);
+        double energy=w*err*err;
+        // Soft contacts can break: their entire benefit is bounded, including
+        // during continuation. Covalent and explicitly hard restraints stay harmonic.
+        if(cap>0)
+        {
+            double scale=1/(1+energy/cap);
+            energy*=scale;
+            w*=scale*scale;
+        }
         V force=v*(2*w*err/d);
         if(d<1e-8)force=
         {
@@ -1273,7 +1290,7 @@ struct Model
         };
         g[a]+=force;
         g[b]+=force*(-1);
-        return w*err*err;
+        return energy;
     }
     // Threefold alkyl torsion potential; bonds and chiral volumes are independent terms.
     static double torsion_energy(const XYZ& x, XYZ& g, const Volume& t)
@@ -1537,7 +1554,7 @@ struct Model
                     chosen=p;
                 }
             }
-            e+=distance(x,g,chosen.first,chosen.second,c.lo,c.hi,c.weight*(c.hard?hard_scale:1));
+            e+=distance(x,g,chosen.first,chosen.second,c.lo,c.hi,c.weight*(c.hard?hard_scale:1),c.hard?0:25);
         }
         for(auto p:neighbors)
         {

@@ -89,6 +89,44 @@ int main(int argc, char** argv)
             assert(std::fabs((plus-minus)/(2*epsilon)-analytical) < 1e-5);
         }
     }
+    // Soft contacts have a finite benefit and a matching analytical gradient.
+    for(double separation:{1.0,3.0,4.0,30.0})
+    {
+        XYZ points{{0,0,0},{separation,0,0}},gradient(2),scratch(2);
+        double e=Model::distance(points,gradient,0,1,2.5,3.0,100,25);
+        assert(e>=0&&e<25);
+        points[1].x+=epsilon;
+        double plus=Model::distance(points,scratch,0,1,2.5,3.0,100,25);
+        points[1].x-=2*epsilon;
+        double minus=Model::distance(points,scratch,0,1,2.5,3.0,100,25);
+        assert(std::fabs((plus-minus)/(2*epsilon)-gradient[1].x)<1e-4);
+    }
+    // A deliberately impossible weak contact must yield before a Tyr ring buckles.
+    AminoAcid tyrosine('Y');
+    Template tyrosine_template;
+    Res tyrosine_residue{1,'Y',{}};
+    for(int i=0;i<tyrosine.get_atom_count();++i)
+    {
+        Atom* atom=tyrosine.get_atom(i);
+        if(atom->Z>1)tyrosine_residue.atoms[atom->name]=V(atom->loc);
+    }
+    tyrosine_template.residues.push_back(tyrosine_residue);
+    tyrosine_template.mapping.push_back(0);
+    std::vector<Template> tyrosine_templates{tyrosine_template};
+    Model aromatic;
+    aromatic.build("Y",tyrosine_templates);
+    aromatic.xyz=aromatic.anchors=aromatic.ideal;
+    int cg=aromatic.id(1,"CG"),cd=aromatic.id(1,"CD1"),ce=aromatic.id(1,"CE1");
+    V normal=(aromatic.xyz[cd]-aromatic.xyz[cg]).cross(aromatic.xyz[ce]-aromatic.xyz[cg]).unit();
+    aromatic.xyz[aromatic.id(1,"CZ")]+=normal*.4;
+    assert(aromatic.stats().planarity_max>.25);
+    aromatic.contacts.push_back({1,1,"CA","OH","contact",.5,1.,100000,false,
+                                {{aromatic.id(1,"CA"),aromatic.id(1,"OH")}}});
+    aromatic.hard_scale=1000;
+    aromatic.minimize(1000);
+    Stats relaxed=aromatic.stats();
+    assert(relaxed.bond_max<.08&&relaxed.angle_max<.18&&relaxed.planarity_max<.25);
+    assert((aromatic.xyz[aromatic.id(1,"CA")]-aromatic.xyz[aromatic.id(1,"OH")]).norm()>1.5);
     Template reference, moving;
     XYZ points{{1,2,3},{4,3,2},{-1,3,7},{2,8,1}};
     for (size_t i=0; i<points.size(); ++i)

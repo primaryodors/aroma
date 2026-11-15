@@ -58,6 +58,14 @@ int main(int argc,char** argv)
         }
         int severe=0;
         double maximum=0;
+        double bond_error=0,angle_error=0;
+        for(const auto& pair:model.geometry)if(pair.validate&&present[pair.a]&&present[pair.b])
+        {
+            double error=std::fabs((model.xyz[pair.a]-model.xyz[pair.b]).norm()-pair.lo);
+            if(pair.bond)bond_error=std::max(bond_error,error);
+            else angle_error=std::max(angle_error,error);
+        }
+        bool covalent_valid=bond_error<=.10&&angle_error<=.18;
         std::ostringstream pairs;
         for(size_t i=0;i<model.nodes.size();++i)if(present[i])
             for(size_t j=i+1;j<model.nodes.size();++j)if(present[j])
@@ -77,6 +85,8 @@ int main(int argc,char** argv)
         std::cout<<"{\"coordinate_source\":\"serialized PDB without minimization\","
                  <<"\"severe_clashes\":"<<severe<<",\"max_overlap_angstrom\":"<<maximum
                  <<",\"unmatched_constructed_atoms\":"<<absent
+                 <<",\"covalent_geometry\":{\"valid\":"<<(covalent_valid?"true":"false")
+                 <<",\"max_bond_error\":"<<bond_error<<",\"max_angle_distance_error\":"<<angle_error<<"}"
                  <<",\"fixed_heavy_atoms\":"<<model.fixed_records.size()
                  <<",\"severe_pairs_first_30\":["<<pairs.str()<<"]}\n";
         return 0;

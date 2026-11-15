@@ -18,6 +18,13 @@ HEAVY = {
     'TYR': 'CB CG CD1 CD2 CE1 CE2 CZ OH', 'VAL': 'CB CG1 CG2',
 }
 
+AROMATIC_RINGS = {
+    'PHE': ['CG CD1 CE1 CZ CE2 CD2'],
+    'TYR': ['CG CD1 CE1 CZ CE2 CD2'],
+    'HIS': ['CG ND1 CE1 NE2 CD2'],
+    'TRP': ['CG CD1 NE1 CE2 CD2', 'CD2 CE2 CZ2 CH2 CZ3 CE3'],
+}
+
 
 def inspect_sterics(path):
     """Audit final serialized positions with the native radii and exclusions."""
@@ -25,7 +32,7 @@ def inspect_sterics(path):
     (root / 'tmp').mkdir(exist_ok=True)
     with (root / 'tmp/reec-steric-audit.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        subprocess.run(['make', '-s', 'bin/reec_steric_audit'], cwd=root, check=True,
+        subprocess.run(['nice', '-n', '10', 'make', '-j2', '-s', 'bin/reec_steric_audit'], cwd=root, check=True,
                        stdout=subprocess.DEVNULL)
         result = subprocess.run([str(root / 'bin/reec_steric_audit'), str(Path(path).resolve())],
                                 cwd=root, check=True, capture_output=True, text=True)
@@ -34,6 +41,11 @@ def inspect_sterics(path):
             or report['severe_clashes'] < 0
             or not math.isfinite(report['max_overlap_angstrom'])):
         raise ValueError('Invalid serialized steric audit result')
+    geometry = report.get('covalent_geometry', {})
+    if (not isinstance(geometry.get('valid'), bool)
+            or not all(math.isfinite(geometry.get(key, math.nan))
+                       for key in ('max_bond_error', 'max_angle_distance_error'))):
+        raise ValueError('Invalid serialized covalent geometry audit result')
     return report
 
 
@@ -93,7 +105,7 @@ def inspect(path):
                 links.update(tuple(sorted((fields[0], other))) for other in fields[1:])
     if not residues:
         raise ValueError('No protein atoms')
-    failures, distances, angles, omegas = [], [], [], []
+    failures, distances, angles, omegas, ring_torsions = [], [], [], [], []
     for no, residue in sorted(residues.items()):
         atoms = residue['atoms']
         required = set(('N CA C O ' + HEAVY[residue['type']]).split())
@@ -104,6 +116,14 @@ def inspect(path):
             failures.append(f'{no}: atom inventory differs: {sorted(set(atoms) ^ required)}')
         if not required.issubset(atoms):
             continue
+        for ring in AROMATIC_RINGS.get(residue['type'], []):
+            names = ring.split()
+            for i in range(len(names)):
+                torsion = dihedral(*(atoms[names[(i+j) % len(names)]] for j in range(4)))
+                error = min(abs(torsion), abs(180-abs(torsion)))
+                ring_torsions.append(error)
+                if error > 10:
+                    failures.append(f'{no}: aromatic ring torsion {error:.2f} exceeds 10 degrees')
         for a, b, ideal in [('N', 'CA', 1.458), ('CA', 'C', 1.525), ('C', 'O', 1.231)]:
             error = abs(math.dist(atoms[a], atoms[b]) - ideal)
             distances.append(error)
@@ -168,6 +188,7 @@ def inspect(path):
             'max_backbone_bond_error': max(distances, default=0),
             'max_peptide_angle_error': max(angles, default=0),
             'max_omega_error': max(omegas, default=0), 'disulfides': sulfur_links,
+            'max_aromatic_torsion_error': max(ring_torsions, default=0),
             'failures': failures, 'optimizer_report': report}
 
 

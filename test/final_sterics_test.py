@@ -1,5 +1,6 @@
 """Publication checks for final-coordinate sterics and bounded cleanup."""
 import json
+import math
 from pathlib import Path
 import shutil
 import sys
@@ -11,10 +12,46 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'hm'))
 import modeling_backend as backend
 import reec_backend
-from reec_review import inspect_sterics
+from reec_review import inspect, inspect_sterics
 
 
 class FinalStericsTest(unittest.TestCase):
+    def test_aromatic_review_allows_mild_bending_but_rejects_buckling(self):
+        atoms = {'CA': (0,0,0), 'N': (-.527,1.359,0), 'C': (1.525,0,0),
+                 'O': (2.155,-1.057,0), 'CB': (0,0,-1.53), 'OH': (0,0,-7)}
+        for i, name in enumerate(('CG','CD1','CE1','CZ','CE2','CD2')):
+            theta = i*math.pi/3
+            atoms[name] = (1.4*math.cos(theta), 1.4*math.sin(theta), -4)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)/'tyrosine.pdb'
+            Path(str(output)+'.json').write_text(json.dumps({'contacts': [], 'target_sequence_length': 2}))
+            for displacement, valid in ((.05, True), (.4, False)):
+                positions = dict(atoms)
+                x,y,z = positions['CZ']
+                positions['CZ'] = x,y,z+displacement
+                output.write_text(''.join(
+                    f'ATOM  {i:5d} {name:^4s} TYR A   1    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00\n'
+                    for i,(name,(x,y,z)) in enumerate(positions.items(),1)))
+                review = inspect(output)
+                self.assertEqual(review['valid'], valid, review['failures'])
+                if valid:
+                    self.assertLess(review['max_aromatic_torsion_error'], 10)
+                else:
+                    self.assertTrue(any('aromatic ring torsion' in failure for failure in review['failures']))
+
+    def test_covalent_strain_cannot_publish_without_a_steric_clash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root/'active.pdb'
+            output.write_bytes((ROOT/'testdata/reec-small.pdb').read_bytes())
+            Path(str(output)+'.json').write_text('{"contacts": []}')
+            with patch.object(reec_backend, 'ROOT', root), \
+                    patch('reec_review.inspect', return_value={'valid': True, 'failures': []}), \
+                    patch('reec_review.inspect_sterics', return_value={
+                        'severe_clashes': 0, 'covalent_geometry': {'valid': False}}):
+                with self.assertRaises(reec_backend.CandidateRejected):
+                    backend.finalize(None, output, output)
+
     def test_rejection_preserves_prior_files_and_final_diagnostic(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

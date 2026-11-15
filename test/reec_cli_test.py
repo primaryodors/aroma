@@ -243,6 +243,16 @@ class ReecCLI(unittest.TestCase):
         self.assertEqual(self.output.read_text(), 'previous model\n')
         self.assertFalse(json.loads(Path(str(self.output) + '.json').read_text())['valid'])
 
+    def test_impossible_soft_contact_yields_before_covalent_geometry(self):
+        contacts = self.work / 'weak.contacts'
+        contacts.write_text('contact soft 1 N 1 CA 8 9 100000\n')
+        result = self.run_model('--contacts', str(contacts))
+        self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
+        report = json.loads(Path(str(self.output)+'.json').read_text())
+        self.assertTrue(report['valid'])
+        self.assertLess(report['max_bond_error'], .08)
+        self.assertGreater(report['contacts'][0]['violation'], 6)
+
     def test_nofail_exports_rejected_model_without_changing_status(self):
         contacts = self.work / 'impossible.contacts'
         contacts.write_text('contact hard 1 N 1 CA 8 9 100\n')

@@ -28,6 +28,9 @@ def review_source(source, target, sequence_length, work):
         if review['valid']:
             sterics = inspect_sterics(candidate)
             review['serialized_sterics'] = sterics
+            if not sterics.get('covalent_geometry', {}).get('valid', True):
+                review['valid'] = False
+                review['failures'].append('Final serialized model has excessive covalent strain')
             if sterics['severe_clashes']:
                 review['valid'] = False
                 review['failures'].append(f'Final serialized model has {sterics["severe_clashes"]} severe clashes')
