@@ -4164,22 +4164,23 @@ _try_again:
                                 && g_bbr[l].sec_res->coordmtl && g_bbr[l].sec_tgt->can_coord_metals();
                             bool tert_metal=g_bbr[l].tert_res && g_bbr[l].tert_tgt
                                 && g_bbr[l].tert_res->coordmtl && g_bbr[l].tert_tgt->can_coord_metals();
+                            Atom *primary_ligand,*primary_protein,*secondary_ligand,*secondary_protein,*tertiary_ligand,*tertiary_protein;
+                            float primary_radius,secondary_radius,tertiary_radius;
+                            bool primary_contact=Search::contact_atoms(g_bbr[l].pri_res,g_bbr[l].pri_tgt,primary_ligand,primary_protein,primary_radius);
+                            bool secondary_contact=Search::contact_atoms(g_bbr[l].sec_res,g_bbr[l].sec_tgt,secondary_ligand,secondary_protein,secondary_radius);
+                            bool tertiary_contact=Search::contact_atoms(g_bbr[l].tert_res,g_bbr[l].tert_tgt,tertiary_ligand,tertiary_protein,tertiary_radius);
                             // Multiple protein donors of one ion represent one metal anchor.
                             if(pri_metal && sec_metal && g_bbr[l].pri_res->coordmtl==g_bbr[l].sec_res->coordmtl)sec_metal=false;
                             if(pri_metal && tert_metal && g_bbr[l].pri_res->coordmtl==g_bbr[l].tert_res->coordmtl)tert_metal=false;
+                            if (pri_metal && primary_protein==secondary_protein) secondary_contact=false;
+                            if (pri_metal && primary_protein==tertiary_protein) tertiary_contact=false;
 
-                            if ((g_bbr[l].pri_res->has_hbond_acceptors() && g_bbr[l].pri_tgt->has_hb_donors())
-                                    || (g_bbr[l].pri_res->has_hbond_donors() && g_bbr[l].pri_tgt->has_hb_acceptors())
-                                    || pri_metal
-                                    )
+                            if (primary_contact)
                             {
-                                if (g_bbr[l].pri_tgt->single_atom) llig->stay_close_mine = g_bbr[l].pri_tgt->single_atom;
-                                else if (g_bbr[l].pri_tgt->conjgrp) llig->stay_close_mine = g_bbr[l].pri_tgt->conjgrp->get_nearest_atom(g_bbr[l].pri_res->get_CA_location());
+                                llig->stay_close_mine = primary_ligand;
                                 llig->stay_close_mol = g_bbr[l].pri_res;
-                                if (pri_metal) llig->stay_close_other = g_bbr[l].pri_res->coordmtl;
-                                else llig->stay_close_other = g_bbr[l].pri_res->get_reach_atom(g_bbr[l].pri_tgt->best_interaction());
-                                if (!llig->stay_close_other) llig->stay_close_other = g_bbr[l].pri_res->get_nearest_atom(g_bbr[l].pri_tgt->barycenter());
-                                if (llig->stay_close_other) llig->stay_close_optimal = InteratomicForce::optimal_distance(llig->stay_close_mine, llig->stay_close_other);
+                                llig->stay_close_other = primary_protein;
+                                llig->stay_close_optimal = primary_radius;
                                 llig->stay_close_tolerance = 0.5;
 
                                 if (pose <= 1 && llig->stay_close_other) cout << "Staying " << llig->stay_close_mine->name << " near " 
@@ -4188,19 +4189,13 @@ _try_again:
 
                             #if bb_secondary_must_be_farthest_from_primary
                             if (g_bbr[l].tert_res && g_bbr[l].tert_tgt
-                                && ((g_bbr[l].tert_res->has_hbond_acceptors() && g_bbr[l].tert_tgt->has_hb_donors())
-                                    || (g_bbr[l].tert_res->has_hbond_donors() && g_bbr[l].tert_tgt->has_hb_acceptors())
-                                    || tert_metal
-                                    )
+                                && tertiary_contact
                                 )
                             {
-                                if (g_bbr[l].tert_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].tert_tgt->single_atom;
-                                else if (g_bbr[l].tert_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].tert_tgt->conjgrp->get_nearest_atom(g_bbr[l].tert_res->get_CA_location());
+                                llig->stay_close2_mine = tertiary_ligand;
                                 llig->stay_close2_mol = g_bbr[l].tert_res;
-                                if (tert_metal) llig->stay_close2_other = g_bbr[l].tert_res->coordmtl;
-                                else llig->stay_close2_other = g_bbr[l].tert_res->get_reach_atom(g_bbr[l].tert_tgt->best_interaction());
-                                if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].tert_res->get_nearest_atom(g_bbr[l].tert_tgt->barycenter());
-                                if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
+                                llig->stay_close2_other = tertiary_protein;
+                                llig->stay_close2_optimal = tertiary_radius;
 
                                 if (llig->stay_close2_mine
                                     && llig->stay_close2_mine->Z == 1
@@ -4215,19 +4210,13 @@ _try_again:
                             else
                             #endif
                             if (g_bbr[l].sec_res && g_bbr[l].sec_tgt
-                                && ((g_bbr[l].sec_res->has_hbond_acceptors() && g_bbr[l].sec_tgt->has_hb_donors())
-                                    || (g_bbr[l].sec_res->has_hbond_donors() && g_bbr[l].sec_tgt->has_hb_acceptors())
-                                    || sec_metal
-                                    )
+                                && secondary_contact
                                 )
                             {
-                                if (g_bbr[l].sec_tgt->single_atom) llig->stay_close2_mine = g_bbr[l].sec_tgt->single_atom;
-                                else if (g_bbr[l].sec_tgt->conjgrp) llig->stay_close2_mine = g_bbr[l].sec_tgt->conjgrp->get_nearest_atom(g_bbr[l].sec_res->get_CA_location());
+                                llig->stay_close2_mine = secondary_ligand;
                                 llig->stay_close2_mol = g_bbr[l].sec_res;
-                                if (sec_metal) llig->stay_close2_other = g_bbr[l].sec_res->coordmtl;
-                                else llig->stay_close2_other = g_bbr[l].sec_res->get_reach_atom(g_bbr[l].sec_tgt->best_interaction());
-                                if (!llig->stay_close2_other) llig->stay_close2_other = g_bbr[l].sec_res->get_nearest_atom(g_bbr[l].sec_tgt->barycenter());
-                                if (llig->stay_close2_other) llig->stay_close2_optimal = InteratomicForce::optimal_distance(llig->stay_close2_mine, llig->stay_close2_other);
+                                llig->stay_close2_other = secondary_protein;
+                                llig->stay_close2_optimal = secondary_radius;
 
                                 if (llig->stay_close2_mine
                                     && llig->stay_close2_mine->Z == 1

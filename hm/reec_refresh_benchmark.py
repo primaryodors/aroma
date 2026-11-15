@@ -112,7 +112,7 @@ def main():
         if result['exit_code'] != 0:
             raise RuntimeError(f'{name} failed: {result}')
 
-    phase('build', ['make','-j2','bin/reec','bin/phew','bin/ic','bin/cavity_search','test/moiety_test','test/reec_test'], 1800)
+    phase('build', ['make','bin/reec','bin/phew','bin/ic','bin/cavity_search','test/moiety_test','test/reec_test'], 1800)
     objects = [str(root / 'obj' / (name+'.o')) for name in
                ('misc','point','atom','space','intera','molecule','aminoacid','protein','moiety','conj','progress')]
     phase('audit-build', ['g++','src/test/reec_steric_audit.cpp',*objects,'-o','bin/reec_steric_audit',

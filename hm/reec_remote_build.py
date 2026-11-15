@@ -23,7 +23,7 @@ def main():
     for name in ('bin', 'obj', 'tmp', 'out'):
         (root / name).mkdir(exist_ok=True)
     reports = []
-    commands = [['make', '-j2', 'bin/aromadock'],
+    commands = [['make', 'bin/aromadock'],
                 ['gcc', '-shared', '-fPIC', '-O2', 'test/reec_baseline_clock.c', '-ldl', '-o', 'bin/baseline_clock.so']]
     for index, command in enumerate(commands):
         with (root / f'build-{index}.log').open('w') as log:

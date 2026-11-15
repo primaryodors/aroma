@@ -32,7 +32,7 @@ def inspect_sterics(path):
     (root / 'tmp').mkdir(exist_ok=True)
     with (root / 'tmp/reec-steric-audit.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        subprocess.run(['nice', '-n', '10', 'make', '-j2', '-s', 'bin/reec_steric_audit'], cwd=root, check=True,
+        subprocess.run(['make', '-s', 'bin/reec_steric_audit'], cwd=root, check=True,
                        stdout=subprocess.DEVNULL)
         result = subprocess.run([str(root / 'bin/reec_steric_audit'), str(Path(path).resolve())],
                                 cwd=root, check=True, capture_output=True, text=True)

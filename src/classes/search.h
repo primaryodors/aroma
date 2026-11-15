@@ -80,6 +80,9 @@ class Search
     static bool target_compatibility(float chg1, float chg2, float pol1, float pol2, int pi1, int pi2,
         bool hba1, bool hba2, bool hbd1, bool hbd2);
     static bool target_compatibility(AminoAcid* aa, LigandTarget* lt);
+    static float thiol_pi_strength(AminoAcid* residue, LigandTarget* target);
+    static bool contact_atoms(AminoAcid* residue, LigandTarget* target,
+        Atom*& ligand_atom, Atom*& protein_atom, float& radius);
     static void clear_candidates();
 
     static void do_randhyd_search(Molecule* ligand, Protein* protein, Point pocketcen, Cavity* cav = nullptr, AminoAcid** bsres = nullptr);

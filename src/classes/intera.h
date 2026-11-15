@@ -66,6 +66,7 @@ public:
     static Interaction total_binding(Atom* a, Atom* b);
     static float optimal_distance(Atom* a, Atom* b);
     static float hydrogen_bond_distance(Atom* hydrogen, Atom* acceptor);
+    static bool thiol_pi_parameters(Atom* site, Atom* carbon, float& radius, float& strength);
     static float coordination_distance(Atom* donor, Atom* metal);
     static float Lennard_Jones(Atom* atom1, Atom* atom2, float sigma = 0);
     static float distance_anomaly(Atom* a, Atom* b);

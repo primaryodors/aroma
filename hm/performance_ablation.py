@@ -85,7 +85,7 @@ def build_variants(folder, env):
             values = switches(disabled)
             set_switches(values)
             print(f"BUILD {name}: {values}", flush=True)
-            code = command(["make", "-j2", "bin/aromadock", "test/residue_grid_test"], case / "build.log")
+            code = command(["make", "bin/aromadock", "test/residue_grid_test"], case / "build.log")
             if code:
                 raise RuntimeError(f"Build failed for {name}; see {case / 'build.log'}")
             code = command(["test/residue_grid_test"], case / "spatial_test.log", env)
@@ -105,7 +105,7 @@ def build_variants(folder, env):
     finally:
         set_switches(switches())
         print("RESTORE all-enabled applications", flush=True)
-        code = command(["make", "-j2", "bin/aromadock", "bin/ic"], folder / "restore_build.log")
+        code = command(["make", "bin/aromadock", "bin/ic"], folder / "restore_build.log")
         if code:
             raise RuntimeError("All-enabled restoration build failed")
     (folder / "spatial_fingerprints.json").write_text(json.dumps(fingerprints, indent=2) + "\n")

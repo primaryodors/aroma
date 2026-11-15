@@ -1698,6 +1698,8 @@ float InteratomicForce::hydrogen_bond_distance(Atom* hydrogen, Atom* acceptor)
 {
     if (!hydrogen || !acceptor || hydrogen->Z != 1 || acceptor->Z <= 1
         || hydrogen->is_polar() <= 0 || acceptor->is_polar() >= 0) return 0;
+    if (acceptor->get_family() == PNICTOGEN && acceptor->is_pi()
+        && acceptor->get_bonded_atoms_count() > 2) return 0;
     InteratomicForce* forces[32];
     fetch_applicable(hydrogen, acceptor, forces);
     float strength = -1, radius = 0;
@@ -1708,6 +1710,23 @@ float InteratomicForce::hydrogen_bond_distance(Atom* hydrogen, Atom* acceptor)
             radius = forces[i]->distance;
         }
     return radius;
+}
+
+bool InteratomicForce::thiol_pi_parameters(Atom* site, Atom* carbon, float& radius, float& strength)
+{
+    radius = strength = 0;
+    if (!site || !carbon || !site->is_thio() || carbon->Z != 6 || !carbon->is_pi()) return false;
+    Atom* hydrogen = site->Z == 1 ? site : site->is_bonded_to("H");
+    if (!hydrogen || !hydrogen->is_bonded_to("S")) return false;
+    InteratomicForce* forces[32];
+    fetch_applicable(hydrogen,carbon,forces);
+    for (int i=0; forces[i]; i++)
+        if (forces[i]->type == polarpi && forces[i]->distance > 0 && forces[i]->kJ_mol > strength)
+        {
+            radius = forces[i]->distance;
+            strength = forces[i]->kJ_mol;
+        }
+    return radius > 0 && strength > 0;
 }
 
 float InteratomicForce::coordination_distance(Atom* donor, Atom* metal)

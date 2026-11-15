@@ -279,9 +279,9 @@ def smiles_to_sdf(smiles, output_file):
             ring_atoms.extend(match.group(1).split())
     if ring_atoms:
         # Direct Python callers also refresh the native writer after source changes.
-        current = subprocess.run(["nice", "-n", "10", "make", "-j2", "-q", "bin/ringflip"])
+        current = subprocess.run(["make", "-q", "bin/ringflip"])
         if current.returncode:
-            subprocess.run(["nice", "-n", "10", "make", "-j2", "bin/ringflip"], check=True)
+            subprocess.run(["make", "bin/ringflip"], check=True)
     destination = os.path.abspath(output_file)
     with tempfile.TemporaryDirectory(prefix=".aroma-sdf-", dir=os.path.dirname(destination)) as folder:
         staged = os.path.join(folder, "ligand.sdf")

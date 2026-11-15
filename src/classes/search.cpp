@@ -743,10 +743,12 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
             if (jmet) require_metal = true;
             else if (is_ald && pocketres[j]->is_amine()) require_amine_aldehyde = true;
             else if (ichg && jchg && sgn(ichg) == -sgn(jchg)) require_ionic = true;
-            else if (ipol && jpol && availability[j] >= 0.05f
-                && ((targets[i].has_hb_acceptors() && pocketres[j]->has_hbond_donors())
-                    || (targets[i].has_hb_donors() && pocketres[j]->has_hbond_acceptors())))
-                require_neutral_polar = true;
+            else if (ipol && jpol && availability[j] >= 0.05f)
+            {
+                Atom *ligand_atom,*protein_atom; float radius;
+                if (contact_atoms(pocketres[j],&targets[i],ligand_atom,protein_atom,radius))
+                    require_neutral_polar = true;
+            }
         }
     }
 
@@ -1054,6 +1056,8 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
                             if (kchg && lchg) has_ionic = true;
                             else if (lpol && kpol) has_neutral_polar = true;
                             else if (kpi && lpi) has_pi = true;
+                            if (thiol_pi_strength(pocketres[j],&targets[i])>0
+                                || thiol_pi_strength(pocketres[l],&targets[k])>0) has_neutral_polar=true;
 
                             float nchg, npol, ncba;
                             int npi;
@@ -1080,6 +1084,7 @@ int Search::pair_targets(Protein* prot, Molecule *ligand,
                                 if (mchg && nchg) has_ionic = true;
                                 else if (mpol && npol) has_neutral_polar = true;
                                 else if (mpi && npi) has_pi = true;
+                                if (thiol_pi_strength(pocketres[n],&targets[m])>0) has_neutral_polar=true;
                             }
 
                             bbr.ligand = ligand;
@@ -1551,6 +1556,150 @@ void Search::scan_protein(Protein *prot, Molecule *ligand, LigandTarget *targets
     putitback.restore_state(ligand);
 }
 
+float Search::thiol_pi_strength(AminoAcid* residue, LigandTarget* target)
+{
+    if (!residue || !target || !target->single_atom || !target->is_thio()) return 0;
+    float best=0;
+    for (int ring=0; ring<residue->get_num_rings(); ring++) if (residue->ring_is_aromatic(ring))
+        for (int i=0; i<residue->get_ring_num_atoms(ring); i++)
+        {
+            float radius,strength;
+            if (InteratomicForce::thiol_pi_parameters(target->single_atom,residue->get_ring_atoms(ring)[i],radius,strength))
+                best=fmax(best,strength);
+        }
+    return best;
+}
+
+bool Search::contact_atoms(AminoAcid* residue, LigandTarget* target,
+    Atom*& ligand_atom, Atom*& protein_atom, float& radius)
+{
+    ligand_atom=protein_atom=nullptr; radius=0;
+    if (!residue || !target) return false;
+    if (residue->coordmtl && target->can_coord_metals())
+    {
+        ligand_atom=target->single_atom;
+        if (!ligand_atom) ligand_atom=target->contains(CHALCOGEN);
+        if (!ligand_atom) ligand_atom=target->contains(PNICTOGEN);
+        protein_atom=residue->coordmtl;
+        try { radius=ligand_atom ? InteratomicForce::coordination_distance(ligand_atom,protein_atom) : 0; }
+        catch (const std::invalid_argument&) { ligand_atom=protein_atom=nullptr; return false; }
+        return radius>0;
+    }
+    if (thiol_pi_strength(residue,target)>0)
+    {
+        Atom* site=target->single_atom;
+        Atom* hydrogen=site->Z==1 ? site : site->is_bonded_to("H");
+        float best=INFINITY;
+        for (int ring=0; ring<residue->get_num_rings(); ring++) if (residue->ring_is_aromatic(ring))
+            for (int i=0; i<residue->get_ring_num_atoms(ring); i++)
+            {
+                Atom* carbon=residue->get_ring_atoms(ring)[i];
+                float distance,strength;
+                if (!InteratomicForce::thiol_pi_parameters(site,carbon,distance,strength)) continue;
+                float error=fabs(hydrogen->distance_to(carbon)-distance);
+                if (error<best)
+                {
+                    best=error; ligand_atom=hydrogen; protein_atom=carbon; radius=distance;
+                }
+            }
+        return ligand_atom && protein_atom;
+    }
+    std::vector<Atom*> sites;
+    if (target->single_atom) sites.push_back(target->single_atom);
+    else if (target->conjgrp) for (int i=0; i<target->conjgrp->count_atoms(); i++)
+        sites.push_back(target->conjgrp->get_atom(i));
+    float best=INFINITY;
+    auto consider=[&](Atom* hydrogen,Atom* acceptor,bool ligand_donor)
+    {
+        float distance=InteratomicForce::hydrogen_bond_distance(hydrogen,acceptor);
+        if (distance<=0) return;
+        float error=fabs(hydrogen->distance_to(acceptor)-distance);
+        if (error<best)
+        {
+            best=error; radius=distance;
+            ligand_atom=ligand_donor ? hydrogen : acceptor;
+            protein_atom=ligand_donor ? acceptor : hydrogen;
+        }
+    };
+    for (Atom* site:sites)
+    {
+        Atom* heavy=site->Z==1 ? site->get_heavy_atom() : site;
+        if (!heavy || heavy->Z<=1) continue;
+        for (int i=0; i<residue->get_atom_count(); i++)
+        {
+            Atom* atom=residue->get_atom(i);
+            if (atom->is_backbone || atom->get_heavy_atom()->is_backbone) continue;
+            if (atom->Z==1) consider(atom,heavy,false);
+            else if (site->Z==1) consider(site,atom,true);
+            else for (int j=0; j<heavy->get_bonded_atoms_count(); j++)
+            {
+                Bond* bond=heavy->get_bond_by_idx(j);
+                if (bond && bond->atom2 && bond->atom2->Z==1) consider(bond->atom2,atom,true);
+            }
+        }
+    }
+    return ligand_atom && protein_atom;
+}
+
+static bool align_primary_thiol_pi(Molecule* ligand,BestBindingResult* bbr,float amount)
+{
+    if (Search::thiol_pi_strength(bbr->pri_res,bbr->pri_tgt)<=0) return false;
+    Atom* site=bbr->pri_tgt->single_atom;
+    Atom* hydrogen=site->Z==1 ? site : site->is_bonded_to("H");
+    Atom* sulfur=hydrogen->get_heavy_atom();
+    if (amount<.9999)
+    {
+        Atom *ligand_atom,*carbon; float radius;
+        if (!Search::contact_atoms(bbr->pri_res,bbr->pri_tgt,ligand_atom,carbon,radius)) return false;
+        Vector radial=hydrogen->loc.subtract(carbon->loc);
+        if (radial.r<.001) return false;
+        radial.r=radius;
+        Point shift=carbon->loc.add(Point(radial)).subtract(hydrogen->loc);
+        shift.multiply(amount); ligand->move(Vector(shift));
+        return true;
+    }
+    Pose initial(ligand),best(ligand);
+    float best_energy=INFINITY;
+    Point box=ligand->get_bounding_box().size();
+    float reach=fmax(box.x,fmax(box.y,box.z))+4;
+    AminoAcid* neighbors[SPHREACH_MAX+4];
+    int count=bbr->protein->get_residues_can_clash_ligand(neighbors,ligand,bbr->pri_res->get_barycenter(),Point(2*reach,2*reach,2*reach));
+    neighbors[count]=nullptr;
+    for (int ring=0; ring<bbr->pri_res->get_num_rings(); ring++) if (bbr->pri_res->ring_is_aromatic(ring))
+    {
+        Atom** atoms=bbr->pri_res->get_ring_atoms(ring);
+        Vector normal=bbr->pri_res->get_ring_normal(ring);
+        if (normal.r<.001) continue;
+        for (int i=0; i<bbr->pri_res->get_ring_num_atoms(ring); i++)
+        {
+            float radius,strength;
+            if (!InteratomicForce::thiol_pi_parameters(site,atoms[i],radius,strength)) continue;
+            for (int face:{-1,1})
+            {
+                initial.restore_state(ligand);
+                Vector direction=normal; direction.r=radius*face;
+                Point destination=atoms[i]->loc.add(Point(direction));
+                ligand->move(Vector(destination.subtract(hydrogen->loc)));
+                direction.r=face*sulfur->distance_to(hydrogen);
+                ligand->rotate(align_points_3d(sulfur->loc,destination.add(Point(direction)),destination),destination);
+                LocatedVector axis=normal; axis.origin=destination;
+                for (int spin=0; spin<8; spin++)
+                {
+                    float energy=ligand->get_intermol_binding((Molecule**)neighbors).summed();
+                    if (std::isfinite(energy) && energy<best_energy)
+                    {
+                        best_energy=energy; best.copy_state(ligand);
+                    }
+                    ligand->rotate(axis,M_PI/4);
+                }
+            }
+        }
+    }
+    if (std::isfinite(best_energy)) {best.restore_state(ligand); return true;}
+    initial.restore_state(ligand);
+    return false;
+}
+
 static bool align_primary_metal(Molecule* ligand,BestBindingResult* bbr,float amount)
 {
     Atom* ion=bbr->pri_res->coordmtl;
@@ -1636,6 +1785,18 @@ void Search::align_targets(Molecule *ligand, Point pocketcen, BestBindingResult*
 
     // Use the ion's open coordination slot and the ligand donor's free geometry.
     if(amt>0 && align_primary_metal(ligand,bbr,amt))return;
+    if (amt>0)
+    {
+        BestBindingResult aromatic_anchor=*bbr;
+        float strength=thiol_pi_strength(bbr->pri_res,bbr->pri_tgt);
+        for (const auto& pair : {std::make_pair(bbr->sec_res,bbr->sec_tgt),std::make_pair(bbr->tert_res,bbr->tert_tgt)})
+            if (thiol_pi_strength(pair.first,pair.second)>strength)
+            {
+                strength=thiol_pi_strength(pair.first,pair.second);
+                aromatic_anchor.pri_res=pair.first; aromatic_anchor.pri_tgt=pair.second;
+            }
+        if (strength>0 && align_primary_thiol_pi(ligand,&aromatic_anchor,amt)) return;
+    }
 
     if (amt >= 0.9999) ligand->recenter(pocketcen);
     else
@@ -2633,7 +2794,12 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
     float score = 0;
     if (ijmc) score += 200;
     if (ichg && jchg && sgn(ichg) == -sgn(jchg)) score += 60; 
-    if (ipol && jpol && ((ihba && jhbd) || (ihbd && jhba))) 
+    float primary_thiol=Search::thiol_pi_strength(pri_res,pri_tgt);
+    float secondary_thiol=Search::thiol_pi_strength(sec_res,sec_tgt);
+    float tertiary_thiol=Search::thiol_pi_strength(tert_res,tert_tgt);
+    score+=primary_thiol;
+    Atom *contact_ligand,*contact_protein; float contact_radius;
+    if (!primary_thiol && ipol && jpol && Search::contact_atoms(pri_res,pri_tgt,contact_ligand,contact_protein,contact_radius))
     {
         score += ipol*jpol*35;
         if (pri_res->is_amide() && ichg <= 0) score += amide_extra_importance_in_search;
@@ -2643,9 +2809,10 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
 
     if (sec_res && sec_tgt)
     {
+        score+=secondary_thiol;
         if (klmc) score += 200;
         if (kchg && lchg && sgn(kchg) == -sgn(lchg)) score += 60; 
-        if (lpol && kpol && ((khba && lhbd) || (khbd && lhba))) 
+        if (!secondary_thiol && lpol && kpol && Search::contact_atoms(sec_res,sec_tgt,contact_ligand,contact_protein,contact_radius))
         {
             score += kpol*lpol*35;
             if (sec_res->is_amide() && kchg <= 0) score += amide_extra_importance_in_search;
@@ -2656,9 +2823,10 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
 
     if (tert_res && tert_tgt)
     {
+        score+=tertiary_thiol;
         if (mnmc) score += 200;
         if (mchg && nchg && sgn(mchg) == -sgn(nchg)) score += 60; 
-        if (mpol && npol && ((mhba && nhbd) || (mhbd && nhba))) 
+        if (!tertiary_thiol && mpol && npol && Search::contact_atoms(tert_res,tert_tgt,contact_ligand,contact_protein,contact_radius))
         {
             score += mpol*npol*35;
             if (tert_res->is_amide() && mchg <= 0) score += amide_extra_importance_in_search;
@@ -2742,11 +2910,11 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
     #endif
 
     // Prefer results that include hydrogen bonds and ionic bonds.
-    if (ipol && jpol) score *= 2;
+    if (ipol && jpol && !primary_thiol) score *= 2;
     if (ichg && jchg) score *= 5;
-    if (kpol && lpol) score *= 1.5;
+    if (kpol && lpol && !secondary_thiol) score *= 1.5;
     if (kchg && lchg) score *= 3;
-    if (mpol && npol) score *= 1.25;
+    if (mpol && npol && !tertiary_thiol) score *= 1.25;
 
     // If a containing cavity is set, prefer results that are a good fit for the cavity.
     if (container)
@@ -2770,9 +2938,9 @@ float BestBindingResult::score(Point ligcen, Cavity *container)
 
     // Feasibility precedes priority: a preferred but inaccessible polar site
     // cannot be rescued by the residue's multiplicative priority bonus.
-    if (!ijmc && ((ipol && jpol) || (ichg && jchg))) score *= pri_availability;
-    if (sec_res && sec_tgt && !klmc && ((kpol && lpol) || (kchg && lchg))) score *= sec_availability;
-    if (tert_res && tert_tgt && !mnmc && ((mpol && npol) || (mchg && nchg))) score *= tert_availability;
+    if (!ijmc && !primary_thiol && ((ipol && jpol) || (ichg && jchg))) score *= pri_availability;
+    if (sec_res && sec_tgt && !klmc && !secondary_thiol && ((kpol && lpol) || (kchg && lchg))) score *= sec_availability;
+    if (tert_res && tert_tgt && !mnmc && !tertiary_thiol && ((mpol && npol) || (mchg && nchg))) score *= tert_availability;
 
     entropic_score = score;
     add_to_candidates();
