@@ -34,27 +34,11 @@ def ligand_contact_triples(protid, triples):
             raise ValueError(f'BW position is absent: {protein_atom}')
         if not re.fullmatch(r'[A-Za-z][A-Za-z0-9]*', ligand_atom):
             raise ValueError(f'Invalid ligand atom: {ligand_atom}')
-        distance = float(value)
-        if not math.isfinite(distance) or distance <= 0:
+        distance = None if value == 'auto' else float(value)
+        if distance is not None and (not math.isfinite(distance) or distance <= 0):
             raise ValueError('Contact distance must be positive and finite')
         result.append((ligand_atom, f'{number}:{atom or "EXTENT"}', distance))
     return result
-
-
-def ligand_contact_input(root, family, protid, mode, default, contacts):
-    required = {contact[0] for contact in contacts}
-    def compatible(path):
-        return path.is_file() and required.issubset({line[12:16].strip() for line in path.read_text().splitlines()
-                                                    if line.startswith('HETATM')})
-    default = Path(default)
-    if compatible(default):
-        return default
-    folder = Path(root) / 'out' / family / protid
-    candidates = [path for path in folder.glob(f'{protid}~*.{mode}.model1.pdb') if compatible(path)]
-    if len(candidates) != 1:
-        raise ValueError('Supply a ligand-containing input PDB or odorant; '
-                         f'found {len(candidates)} compatible docked inputs for {protid}')
-    return candidates[0]
 
 
 def repair_dock_path(root, family, protid, odor, mode):
@@ -177,13 +161,9 @@ def main(argv=None):
     delete_inppdb = False
 
     tokens = [value for value in options.legacy[(1 if input_arg else 0):] if value not in actions]
-    if len(tokens) % 3:
-        raise ValueError('Ligand contacts use triples: PROTEIN_ATOM LIGAND_ATOM DISTANCE')
-    positional = list(zip(tokens[::3], tokens[1::3], tokens[2::3]))
-    inward_contacts = ligand_contact_triples(protid, positional + options.ligand_contact)
-    if inward_contacts and not input_arg:
-        inppdb = str(ligand_contact_input(root_dir, fam, protid, mode, inppdb, inward_contacts))
-        _, odor = repair_input(inppdb, protid, fam, mode)
+    if tokens:
+        raise ValueError('Ligand contacts require -lc PROTEIN_ATOM LIGAND_ATOM DISTANCE for each contact')
+    inward_contacts = ligand_contact_triples(protid, options.ligand_contact)
     if {'loop', 'dock', 'fit', 'predock'}.intersection(options.legacy) and not odor:
         raise ValueError('Docking and fitting actions require an odorant')
     preparation_tools = []
@@ -328,7 +308,7 @@ def main(argv=None):
             inward_restraints = []
             inward_checks = []
             for ligand_atom, protein_atom, distance in inward_contacts:
-                cmd = ['bin/poslig', tplpdb, staged, '--receptor', str(distance), ligand_atom, protein_atom]
+                cmd = ['bin/poslig', tplpdb, staged, '--receptor', 'auto' if distance is None else str(distance), ligand_atom, protein_atom]
                 preparation = subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(preparation.stdout, end='')
                 for line in preparation.stdout.splitlines():

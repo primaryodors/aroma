@@ -21,6 +21,16 @@ def options(argv, repair=False):
     args = reec.parser(repair).parse_intermixed_args(
         ['--help' if value == 'help' else value for value in argv])
     args.backend = 'reec' if reec.requested(argv, default='reec') else 'modeller'
+    if repair:
+        actions = {'reset', 'fit', 'predock', 'loop', 'dock'}
+        first = args.legacy[0] if args.legacy else None
+        selector = first is not None and re.fullmatch(r'[1-9][0-9]*(?:\.[0-9]+)?(?::[0-9]?[A-Z]+[0-9]?)?', first)
+        explicit_input = first is not None and first not in actions and not selector
+        if args.ligand_contact and not explicit_input:
+            raise ValueError('Ligand contacts require an explicit ligand name or ligand-containing input PDB')
+        remaining = args.legacy[1:] if explicit_input else args.legacy
+        if any(value not in actions for value in remaining):
+            raise ValueError('Ligand contacts require -lc PROTEIN_ATOM LIGAND_ATOM DISTANCE for each contact')
     if args.iterations is not None and args.iterations < 1:
         raise ValueError('Iterations must be positive')
     if args.models is not None and args.models < 1:

@@ -84,23 +84,60 @@ def workspace(prefix, keep=False):
             shutil.rmtree(path)
 
 
+class ModelingArgumentParser(argparse.ArgumentParser):
+    def parse_known_args(self, args=None, namespace=None):
+        values = list(sys.argv[1:] if args is None else args)
+        if '--ligand-contact' in self._option_string_actions:
+            expanded = []
+            i = 0
+            while i < len(values):
+                flag = values[i]
+                if flag == '--':
+                    expanded.extend(values[i:])
+                    break
+                if flag.startswith(('--ligand-contact=', '-lc=')):
+                    option, value = flag.split('=', 1)
+                    values[i:i+1] = [option, value]
+                    flag = option
+                if flag in ('-lc', '--ligand-contact') and i+2 < len(values) and not any(v.startswith('-') for v in values[i+1:i+3]):
+                    expanded.extend(values[i:i+3])
+                    i += 3
+                    numeric = False
+                    if i < len(values):
+                        try:
+                            float(values[i])
+                            numeric = True
+                        except ValueError:
+                            numeric = values[i] == 'auto'
+                    if numeric:
+                        expanded.append(values[i])
+                        i += 1
+                    else:
+                        expanded.append('auto')
+                else:
+                    expanded.append(flag)
+                    i += 1
+            values = expanded
+        return super().parse_known_args(values, namespace)
+
+
 def parser(repair=False):
-    p = argparse.ArgumentParser(description=('Receptor repair' if repair else 'Receptor homology modeling')
+    p = ModelingArgumentParser(description=('Receptor repair' if repair else 'Receptor homology modeling')
                                 + ' (REEC or MODELLER)', allow_abbrev=False,
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                 epilog='Short aliases are case-sensitive. Options may appear between positional arguments.')
     p.add_argument('receptor', help='Receptor ID; append i for inactive repair')
-    p.add_argument('legacy', nargs='*', help='Input PDB or odorant, actions (reset, fit, predock, loop, dock), and PROTEIN_ATOM LIGAND_ATOM DISTANCE triples')
+    p.add_argument('legacy', nargs='*', help='Explicit ligand name or input PDB (mandatory with -lc), followed by actions: reset, fit, predock, loop, dock')
     p.add_argument('--backend', choices=['reec', 'modeller'], default='reec', help='Modeling engine')
     p.add_argument('--template', action='append', default=[], help='PDB template; repeat for an ensemble')
     p.add_argument('--chain', default='A', help='Template protein chain')
     p.add_argument('--alignment', type=Path, help='PIR alignment; target ID is the receptor ID')
     p.add_argument('--contacts', type=Path, action='append', default=[], help='Additional contact file; repeatable')
     if repair:
-        p.epilog += ' Ligand contact triples may also be positional. Without an input, use the receptor model if it contains the ligand, otherwise a unique compatible docked model.'
+        p.epilog += ' Ligand contacts require an explicit ligand name or ligand-containing input PDB and a separate -lc flag for each triple.'
         p.add_argument('--ligand-contact', nargs=3, action='append', default=[],
-                       metavar=('PROTEIN_ATOM','LIGAND_ATOM','DISTANCE'),
-                       help='Repeatable ligand contact: residue number or BW[:ATOM], ligand atom, distance in angstroms; omitted ATOM means EXTENT')
+                       metavar=('PROTEIN_ATOM','LIGAND_ATOM','[DISTANCE]'),
+                       help='Repeatable ligand contact: residue number or BW[:ATOM], ligand atom, optional distance in angstroms (default 2.8 for heavy atoms, typed reference for hydrogens); omitted ATOM means EXTENT')
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
     p.add_argument('--iterations', type=int, help='Initial modeling iteration budget')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')

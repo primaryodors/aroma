@@ -30,7 +30,8 @@ int main(int argc, char** argv)
 
     std::string infname = argv[1], outfname = argv[2];
     bool turn_receptor=argc>4 && !strcmp(argv[3],"--receptor");
-    float contact_distance=turn_receptor ? atof(argv[4]) : 3;
+    bool automatic_distance=turn_receptor && !strcmp(argv[4],"auto");
+    float contact_distance=automatic_distance?2.8f:turn_receptor ? atof(argv[4]) : 3;
     int first_pair=turn_receptor?5:3;
     if (argc<=first_pair || (argc-first_pair)%2 || !std::isfinite(contact_distance) || contact_distance<=0)
     { usage(); return 2; }
@@ -103,6 +104,13 @@ int main(int argc, char** argv)
 
         if (turn_receptor)
         {
+            if (automatic_distance)
+            {
+                contact_distance=2.8f;
+                float typed=a->Z==1?InteratomicForce::hydrogen_bond_distance(a,b):
+                    b->Z==1?InteratomicForce::hydrogen_bond_distance(b,a):0;
+                if (typed>0) contact_distance=typed;
+            }
             aa->movability=MOV_FLEXONLY;
             aa->conform_atom_to_location(b,a,10,contact_distance,true);
             if (fabs(b->distance_to(a)-contact_distance)>.2)

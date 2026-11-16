@@ -147,17 +147,25 @@ python3 hm/fixfail.py OR52E8 path/to/docked.model1.pdb --backend reec \
   --output tmp/OR52E8.contact-repair.pdb --max-attempts 1
 ```
 
-Repeat `-lc` or `--ligand-contact` for multiple contacts. Triples may also be
-positional, for example `OR52E8 208:OD1 O10 2.6 6.59:EXTENT O9 2.5`.
+Repeat `-lc` or `--ligand-contact` for multiple contacts. Each triple requires
+its own flag, and an explicit ligand name or ligand-containing input PDB is
+mandatory. For example:
+
+```sh
+python3 hm/fixfail.py OR52E8 3-hydroxy-3-methyl_heptanoic_acid \
+  -lc 208:OD1 O10 2.6 -lc 6.59:EXTENT O9 2.5
+```
+
+Distances are optional: `-lc 208:OD1 O10` uses 2.8 A for a heavy atom contact,
+a compromise between the OH and NH heavy targets. If a selected atom is a
+hydrogen, the typed H...acceptor target comes from `bindings.dat` instead.
+Explicit distances always override these defaults independently for each contact.
 Protein selectors accept residue numbers or BW positions, optionally followed
 by `:ATOM`. Without an atom name they use `EXTENT`, the same reach atom as
 the project's other tools. The ligand atom `O9` starts with the letter O.
 If the selected protein atom is a hydrogen, REEC uses its parent heavy atom
 as a geometric proxy and checks the requested hydrogen distance after rebuilding
 hydrogens. This preserves the meaning of the requested atom and distance.
-Without an explicit input, a receptor model containing the requested ligand
-atoms is used; otherwise a unique compatible docked model is selected.
-Ambiguous inputs require an explicit PDB or odorant.
 
 For an Asn donor, the 1.66 A NH...O reference and its N-H bond give a heavy
 target near 2.66 A. Preparation samples the intact amide geometry. REEC
