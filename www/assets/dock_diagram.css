@@ -1,0 +1,28 @@
+.dock-diagram {
+    background: #222222;
+    color: #e6edf3;
+    max-width: 100%;
+    overflow: auto;
+    padding: 8px;
+    font: 13px/1.5 sans-serif;
+}
+.dock-diagram svg { display: block; background: #222222; }
+.dock-diagram svg text { font-family: sans-serif; }
+.dock-diagram-legend { max-width: 600px; margin: 8px 0 0; color: #e6edf3; }
+.dock-contact-panel { color: #e6edf3; background: #293541; }
+.dock-contact-panel a, .dock-contact-panel h1, .dock-contact-panel .simr th { color: #9acbff; }
+.dock-contact-panel a { text-decoration: underline; }
+.dock-contact-panel a:focus-visible { outline: 2px solid #e6edf3; outline-offset: 3px; }
+.dock-contact-panel .simr .aacolorA, .dock-contact-panel .simr .aacolorI,
+.dock-contact-panel .simr .aacolorL, .dock-contact-panel .simr .aacolorV,
+.dock-contact-panel .simr .aacolorP { color: #dedede; }
+.dock-contact-panel .simr .aacolorM { color: #e4dc88; }
+.dock-contact-panel .simr .aacolorG { color: #b7c0cb; }
+.dock-contact-panel .simr .aacolorC { color: #ffe066; }
+.dock-contact-panel .simr .aacolorF, .dock-contact-panel .simr .aacolorW { color: #e1adeb; }
+.dock-contact-panel .simr .aacolorY { color: #f5a9f5; }
+.dock-contact-panel .simr .aacolorS, .dock-contact-panel .simr .aacolorT,
+.dock-contact-panel .simr .aacolorN, .dock-contact-panel .simr .aacolorQ { color: #6ee7ef; }
+.dock-contact-panel .simr .aacolorD, .dock-contact-panel .simr .aacolorE { color: #ff9f9f; }
+.dock-contact-panel .simr .aacolorK, .dock-contact-panel .simr .aacolorR { color: #86baff; }
+.dock-contact-panel .simr .aacolorH { color: #c4b3ff; }
