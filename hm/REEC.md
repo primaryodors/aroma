@@ -131,6 +131,37 @@ pairs in fixfail use the existing `LIGAND_ATOM RES:ATOM` syntax. `reset`, `fit`,
 local experiments, use `--output` with no docking action. Failed numerical reports are retained as
 `tmp/RECEPTOR.reec-failure.json`.
 
+For an inward-facing side chain, use `--inward-contact O10 208:ND2` with a supplied
+docked model. Preparation rotates the receptor side chain and, for a supported
+hydroxyl donor, its terminal ligand hydrogen. Ligand heavy coordinates and the
+protein backbone stay fixed during this preparation. `--contact-distance 2.94`
+sets the heavy atom restraint; a compatible hydrogen restraint is read from
+`bindings.dat`. Both are soft restraints during repair. The starting model can
+contain surrounding clashes; it is an input for repair, not a validated result.
+
+For example, an isolated OR52E8 repair can use:
+
+```sh
+python3 hm/fixfail.py OR52E8 path/to/docked.model1.pdb --backend reec \
+  --skip-reshape --inward-contact O10 208:ND2 --contact-distance 2.66 \
+  --output tmp/OR52E8.contact-repair.pdb --max-attempts 1
+```
+
+For an Asn donor, the 1.66 A NH...O reference and its N-H bond give a heavy
+target near 2.66 A. Preparation samples the intact amide geometry. REEC
+restrains its heavy atoms; receptor hydrogens are absent from its optimization.
+A ligand hydroxyl donor instead supplies an additional fixed-ligand
+H...acceptor restraint.
+
+Docking contact refinement compares the lowest scored sampled contact and
+non-contact conformers. Their two-state population estimate is
+`1 / (1 + exp((E_contact - E_other) / (R*T)))`, with energies in kJ/mol and the
+configured temperature. At populations of at least 10%, output coordinates favor
+the contact conformer. Its attractive hydrogen-bond contribution receives that
+fractional credit. Dock reports and model remarks record the fraction and energy
+gap. This is a local estimate from two sampled minima, without basin multiplicities
+or a full conformational free-energy calculation.
+
 ## Sampling and geometry details
 
 Optional bounded backbone trials are available through `--backbone-steps`,

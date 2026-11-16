@@ -14,6 +14,7 @@ sys.path.insert(0, root_dir)
 from modeling_backend import options as backend_options, api as backend_api, prepare, construct, forwarded_options, publication_guard, finalize
 from reec_backend import receptor, directory, CandidateRejected
 from data.preparation import generate_prepared_output
+from modeling_backend import preserve_environment_labels, inward_contact_failures
 
 
 def repair_dock_path(root, family, protid, odor, mode):
@@ -147,12 +148,18 @@ def main(argv=None):
             raise ValueError(f'Invalid receptor contact: {receptor_atom}')
         ligcontacts.append([ligand_atom, receptor_atom])
 
+    inward_contacts = options.inward_contact
+    for ligand_atom, receptor_atom in inward_contacts:
+        if not re.fullmatch(r'[0-9]+:[0-9]?[A-Z]+[0-9]?', receptor_atom):
+            raise ValueError(f'Invalid inward contact: {receptor_atom}')
+    if not 1.5 <= options.contact_distance <= 4:
+        raise ValueError('Contact distance must be between 1.5 and 4 angstroms')
     preparation_tools = []
     if odor:
         preparation_tools.append('bin/cavity_search')
     if 'fit' in options.legacy:
         preparation_tools.append('bin/cavity_fit')
-    if ligcontacts:
+    if ligcontacts or inward_contacts:
         preparation_tools.append('bin/poslig')
     if preparation_tools:
         subprocess.run(['make', *preparation_tools], check=True)
@@ -247,7 +254,7 @@ def main(argv=None):
         os.chdir("..")
 
         cmd = ["make", "bin/ic", "bin/phew"]
-        if ligcontacts:
+        if ligcontacts or inward_contacts:
             cmd.append("bin/poslig")
         data.globals.wait_cool_cpu()
         subprocess.run(cmd, check=True)
@@ -292,6 +299,26 @@ def main(argv=None):
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)
 
+        if inward_contacts:
+            staged = str(Path(tplpdb).with_suffix('.inward.pdb'))
+            cmd = ['bin/poslig', tplpdb, staged, '--receptor', str(options.contact_distance)]
+            for pair in inward_contacts:
+                cmd.extend(pair)
+            preparation = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(preparation.stdout, end='')
+            inward_restraints = []
+            inward_checks = []
+            for line in preparation.stdout.splitlines():
+                if line.startswith(('Contact restraint ', 'Contact donor ')):
+                    _, kind, atom, partner, distance = line.split()
+                    contact = (atom, partner, float(distance))
+                    inward_checks.append(contact)
+                    if kind == 'restraint': inward_restraints.append(contact)
+            os.replace(staged, tplpdb)
+        else:
+            inward_restraints = []
+            inward_checks = []
+
         haslig = False
         with open(tplpdb, 'r') as ftpl:
             cout = ""
@@ -308,6 +335,10 @@ def main(argv=None):
 
         with open(inppdb, 'r') as fin:
             cin = fin.read()
+            if inward_contacts:
+                environment = [line for line in c.splitlines() if line.startswith('HETATM')]
+                cin = '\n'.join(line for line in cin.splitlines() if not line.startswith('HETATM'))
+                cin += '\n' + '\n'.join(environment)
             for ln in cin.split("\n"):
                 if ln[0:6] == "REMARK":
                     cout = ln + "\n" + cout
@@ -324,7 +355,7 @@ def main(argv=None):
                 fout.write(cout)
 
 
-        if ligcontacts and not haslig:
+        if (ligcontacts or inward_contacts) and not haslig:
             raise ValueError('Ligand contacts require HETATM records')
         env = Environ()
         if haslig:
@@ -378,14 +409,14 @@ def main(argv=None):
                     rsr.rigid_bodies.append(rigb)
 
                 # Ligand-receptor contacts
-                if len(ligcontacts):
-                    for lc in ligcontacts:
-                        liga = lc[0]
-                        resno, resa = lc[1].split(':')
+                if ligcontacts or inward_contacts:
+                    restraint_pairs = [(a, b, options.contact_distance) for a, b in ligcontacts] + inward_restraints
+                    for liga, partner, distance in restraint_pairs:
+                        resno, resa = partner.split(':')
                         rsr.add(forms.Gaussian(group=physical.xy_distance,
                             feature=features.Distance(at[f"{resa}:{resno}:A"],
                                                       at[f"{liga}:{rigresno}:A"]),
-                                                      mean=3.5, stdev=0.5))
+                                                      mean=distance, stdev=0.3))
 
                 # 5-7 tyrosine link
                 bw5_58 = data.protutils.resno_from_bw(protid, "5.58")
@@ -593,7 +624,7 @@ def main(argv=None):
 
             LOAD $inpf A I
             LET %rcpseqln = %SEQLENI
-            LOAD $mdld A A
+            LOAD $mdld A A +
 
             BWCOPY I A
             STRAND I
@@ -659,15 +690,24 @@ def main(argv=None):
                 data.globals.wait_cool_cpu()
                 subprocess.run(cmd, check=True)
 
-                cmd = ["bin/ic", str(output_pdb), "minc", "save"]
-                for resno in sorted({resno for pair in source_disulfides for resno in pair}):
-                    cmd.extend(["pin", str(resno)])
-                print(" ".join(cmd))
-                data.globals.wait_cool_cpu()
-                subprocess.run(cmd, check=True)
+                if options.backend != 'reec' and not haslig:
+                    cmd = ["bin/ic", str(output_pdb), "minc", "save"]
+                    for resno in sorted({resno for pair in source_disulfides for resno in pair}):
+                        cmd.extend(["pin", str(resno)])
+                    print(" ".join(cmd))
+                    data.globals.wait_cool_cpu()
+                    subprocess.run(cmd, check=True)
+
+                if haslig:
+                    preserve_environment_labels(Path(script_dir) / model['name'], output_pdb)
 
                 with directory(script_dir):
                     finalize(a, output_pdb, model['name'], target=protid)
+                failures = inward_contact_failures(output_pdb, inward_checks)
+                if failures:
+                    failure_report = run_dir / f'contact-failure-{tries}.json'
+                    failure_report.write_text(json.dumps({'valid': False, 'requested_contact_failures': failures}, indent=2)+'\n')
+                    raise CandidateRejected('Requested inward contacts were not retained: '+ '; '.join(failures), failure_report)
 
         except CandidateRejected as exc:
             record('rejected', str(exc), exc.report)

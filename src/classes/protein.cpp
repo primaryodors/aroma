@@ -3168,8 +3168,37 @@ float Protein::optimize_hydrogens(int sr, int er, int* fr, bool use_rotation_cac
     return result;
 }
 
-bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue)
+static std::map<const AminoAcid*,std::vector<Point>> contact_witnesses;
+
+static std::vector<Point> contact_coordinates(Molecule* ligand, AminoAcid* residue)
 {
+    std::vector<Point> points;
+    for (Molecule* molecule:{ligand,static_cast<Molecule*>(residue)})
+        for (int i=0;i<molecule->get_atom_count();i++) points.push_back(molecule->get_atom(i)->loc);
+    return points;
+}
+
+bool hbond_population_matches(Molecule* ligand, AminoAcid* residue)
+{
+    if (!ligand || !residue || residue->contact_partner!=ligand) return false;
+    auto found=contact_witnesses.find(residue);
+    if (found==contact_witnesses.end()) return false;
+    auto points=contact_coordinates(ligand,residue);
+    if (points.size()!=found->second.size()) return false;
+    for (size_t i=0;i<points.size();i++)
+        if (points[i].get_3d_distance(found->second[i])>.001f) return false;
+    return true;
+}
+
+float Protein::contact_population(float energy_gap)
+{
+    float exponent = energy_gap / (.008314462618f * temperature);
+    return 1.f / (1.f + exp(fmax(-80.f,fmin(80.f,exponent))));
+}
+
+bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool explore_ligand)
+{
+    if (residue) { contact_witnesses.erase(residue); residue->contact_partner=nullptr; residue->contact_population=1; residue->contact_energy_gap=0; }
     if (!ligand || !residue || !(residue->movability & MOV_CAN_FLEX)
         || (residue->movability & MOV_FORBIDDEN)) return false;
     struct Contact { Atom *hydrogen, *acceptor, *donor; bool ligand_donor; float radius; };
@@ -3212,25 +3241,95 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue)
         }
     }
     pocket.push_back(nullptr); neighbors.push_back(nullptr);
+    std::map<std::vector<float>,Interaction> background_scores, residue_scores;
+    auto background = [&](Molecule* molecule, std::map<std::vector<float>,Interaction>& scores)
+    {
+        std::vector<float> coordinates;
+        coordinates.reserve(3*molecule->get_atom_count());
+        for (int i=0;i<molecule->get_atom_count();i++)
+        {
+            Point point=molecule->get_atom(i)->loc;
+            coordinates.push_back(point.x); coordinates.push_back(point.y); coordinates.push_back(point.z);
+        }
+        auto found=scores.find(coordinates);
+        if (found==scores.end())
+            found=scores.emplace(std::move(coordinates),molecule->get_intermol_binding(neighbors.data())).first;
+        return found->second;
+    };
     auto binding = [&]()
     {
-        return ligand->get_intermol_binding(pocket.data())
-            + static_cast<Molecule*>(residue)->get_intermol_binding(neighbors.data());
+        return background(ligand,background_scores)+ligand->get_intermol_binding(residue)
+            + background(residue,residue_scores);
     };
     Interaction best_score = binding();
     float ligand_clashes = ligand->get_internal_clashes();
     float residue_limit = fmax(clash_limit_per_aa, fmax(residue->get_internal_clashes(),1.25f*residue->get_base_clashes()));
     Pose best_residue(residue), best_ligand(ligand);
+    Pose contact_residue(residue), contact_ligand(ligand), other_residue(residue), other_ligand(ligand);
+    float contact_score=INFINITY, other_score=INFINITY;
+    float clash_ceiling=fmax(clash_limit_per_aa,best_score.clash)+clash_limit_per_aa;
+    float atom_clash_ceiling=fmax(clash_limit_per_aa,best_score.worst_atom_clash);
+    float initial_eclipses=ligand->total_eclipses();
+    float best_energy=best_score.summed();
+    std::vector<std::pair<Atom*,Atom*>> anchors;
+    std::vector<float> anchor_limits;
+    for (auto pair : {std::make_pair(ligand->stay_close_mine,ligand->stay_close_other),
+                      std::make_pair(ligand->stay_close2_mine,ligand->stay_close2_other)})
+        if (pair.first && pair.second)
+        { anchors.push_back(pair); anchor_limits.push_back(pair.first->distance_to(pair.second)+.35f); }
+    for (Molecule* neighbor:pocket) if (neighbor && neighbor!=residue)
+        for (int i=0;i<ligand->get_atom_count();i++) for (int j=0;j<neighbor->get_atom_count();j++)
+        {
+            Atom* a=ligand->get_atom(i); Atom* b=neighbor->get_atom(j);
+            Atom* h=a->Z==1?a:b; Atom* acceptor=a->Z==1?b:a;
+            float radius=InteratomicForce::hydrogen_bond_distance(h,acceptor);
+            if (radius>0 && h->distance_to(acceptor)<radius+.3f
+                && find_3d_angle(h->get_heavy_atom()->loc,acceptor->loc,h->loc)*fiftyseven>135)
+            { anchors.push_back({h,acceptor}); anchor_limits.push_back(radius+.4f); }
+        }
     bool changed = false;
     auto valid = [&]()
     {
+        for (size_t i=0;i<anchors.size();i++)
+            if (anchors[i].first->distance_to(anchors[i].second)>anchor_limits[i]) return false;
         return ligand->flexion_clashes_allowed(ligand_clashes)
             && residue->get_internal_clashes() <= residue_limit;
     };
+    auto has_contact = [&]()
+    {
+        for (const Contact& contact:contacts)
+        {
+            float distance=contact.hydrogen->distance_to(contact.acceptor);
+            float heavy_target=contact.radius+contact.donor->distance_to(contact.hydrogen);
+            if (fabs(distance-contact.radius)<=.4f
+                && fabs(contact.donor->distance_to(contact.acceptor)-heavy_target)<=.55f
+                && find_3d_angle(contact.donor->loc,contact.acceptor->loc,contact.hydrogen->loc)*fiftyseven>=135)
+                return true;
+        }
+        return false;
+    };
+    auto consider = [&]()
+    {
+        if (!valid()) return;
+        Interaction trial=binding();
+        if (trial.clash>clash_ceiling || trial.worst_atom_clash>atom_clash_ceiling) return;
+        float score=trial.summed()+fmax(0.f,ligand->get_internal_clashes()-ligand_clashes)
+            +fmax(0.f,ligand->total_eclipses()-initial_eclipses);
+        if (!std::isfinite(score)) return;
+        if (has_contact())
+        {
+            if (score<contact_score) { contact_score=score; contact_residue.copy_state(residue); contact_ligand.copy_state(ligand); }
+        }
+        else if (score<other_score) { other_score=score; other_residue.copy_state(residue); other_ligand.copy_state(ligand); }
+        if (score<best_energy)
+        { best_energy=score; best_score=trial; best_residue.copy_state(residue); best_ligand.copy_state(ligand); changed=true; }
+    };
+    consider();
     // Optimize terminal polar hydrogens on both partners against the same score.
     // Heavy coordinates remain fixed throughout each angular sweep.
     auto orient_hydrogens = [&](Molecule* molecule)
     {
+        if (molecule==ligand && !explore_ligand) return;
         if (!(molecule->movability & MOV_CAN_FLEX) || (molecule->movability & MOV_FORBIDDEN)) return;
         Bond** bonds = molecule->get_rotatable_bonds();
         if (!bonds) return;
@@ -3240,12 +3339,14 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue)
             if (!bond->can_rotate || bond->is_ring_bond() || bond->count_heavy_moves_with_atom2()
                 || !bond->atom2->num_bonded_to("H") || !bond->atom2->is_polar()) continue;
             Pose origin(molecule), local_best(molecule);
-            Interaction score = binding();
+            bool ligand_hydrogen=molecule==ligand;
+            Interaction score = ligand_hydrogen?ligand->get_intermol_binding(residue):binding();
             for (int step=1; step<24; step++)
             {
                 origin.restore_state(molecule);
                 bond->rotate(step*M_PI/12,false,true);
-                Interaction trial = binding();
+                Interaction trial = ligand_hydrogen?ligand->get_intermol_binding(residue):binding();
+                if (has_contact()) consider();
                 if (valid() && trial.summed() < score.summed())
                 {
                     score = trial;
@@ -3273,16 +3374,98 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue)
             orient_hydrogens(residue);
             orient_hydrogens(ligand);
         }
-        Interaction trial = binding();
-        if (valid() && trial.clash <= fmax(clash_limit_per_aa,best_score.clash)
-            && trial.summed() < best_score.summed())
+        consider();
+    }
+    // Sample torsions jointly: a distance optimum can hide a better contact rotamer.
+    Pose origin_residue(residue), origin_ligand(ligand);
+    best_residue.restore_state(residue); best_ligand.restore_state(ligand);
+    origin_residue.copy_state(residue); origin_ligand.copy_state(ligand);
+    std::vector<Bond*> axes;
+    Bond** residue_bonds=residue->get_rotatable_bonds();
+    if (residue_bonds) for (int i=0;residue_bonds[i] && axes.size()<2;i++)
+    {
+        Bond* bond=residue_bonds[i];
+        if (!bond->can_rotate || bond->is_ring_bond() || bond->atom2->is_backbone
+            || (bond->atom1->is_backbone && strcmp(bond->atom1->name,"CA"))) continue;
+        axes.push_back(bond);
+    }
+    auto sample_rotamers = [&]()
+    {
+        Pose ligand_trial(ligand);
+        int first=axes.empty()?1:24, second=axes.size()<2?1:24;
+        for (int a=0;a<first;a++) for (int b=0;b<second;b++)
         {
-            best_score = trial;
-            best_residue.copy_state(residue); best_ligand.copy_state(ligand);
-            changed = true;
+            origin_residue.restore_state(residue); ligand_trial.restore_state(ligand);
+            if (axes.size()) axes[0]->rotate(a*M_PI/12,false,true);
+            if (axes.size()>1) axes[1]->rotate(b*M_PI/12,false,true);
+            if (!valid()) continue;
+            bool close=false, ligand_hydrogen_close=false;
+            for (const Contact& contact:contacts)
+                if (contact.donor->distance_to(contact.acceptor)<contact.radius+1.6f)
+                { close=true; if (contact.ligand_donor) ligand_hydrogen_close=true; }
+            if (!close) { consider(); continue; }
+            consider();
+            if (axes.size()<2 || axes[1]->count_heavy_moves_with_atom2()) orient_hydrogens(residue);
+            if (ligand_hydrogen_close) orient_hydrogens(ligand);
+            consider();
+        }
+    };
+    sample_rotamers();
+    if (explore_ligand && !std::isfinite(contact_score)
+        && (ligand->movability & MOV_CAN_FLEX) && !(ligand->movability & MOV_FORBIDDEN))
+    {
+        Bond** bonds=ligand->get_rotatable_bonds();
+        int sampled=0;
+        if (bonds) for (int i=0;bonds[i] && sampled<2;i++)
+        {
+            Bond* bond=bonds[i];
+            if (!bond->can_rotate || bond->is_ring_bond() || !bond->count_heavy_moves_with_atom2()) continue;
+            auto anchor_count=[&](Bond* candidate)
+            {
+                std::vector<Atom*> moving(ligand->get_atom_count()+2,nullptr);
+                candidate->fetch_moves_with_atom2(moving.data());
+                int count=0;
+                for (const auto& pair:anchors)
+                {
+                    Atom* atom=pair.first->residue ? pair.second : pair.first;
+                    if (atom==candidate->atom2) count++;
+                    for (int j=0;moving[j];j++) if (moving[j]==atom) count++;
+                }
+                return count;
+            };
+            Bond* reversed=bond->get_reversed();
+            if (anchor_count(reversed)<anchor_count(bond)) bond=reversed;
+            std::vector<Atom*> moving(ligand->get_atom_count()+2,nullptr);
+            bond->fetch_moves_with_atom2(moving.data());
+            bool moves_contact=false;
+            for (const Contact& contact:contacts)
+            {
+                Atom* site=contact.ligand_donor?contact.donor:contact.acceptor;
+                if (site==bond->atom2) moves_contact=true;
+                for (int j=0;moving[j];j++) if (moving[j]==site) moves_contact=true;
+            }
+            if (!moves_contact) continue;
+            sampled++;
+            for (float degrees:{-30.f,-15.f,15.f,30.f})
+            {
+                origin_ligand.restore_state(ligand); origin_residue.restore_state(residue);
+                bond->rotate(degrees/fiftyseven,false,true);
+                if (valid()) sample_rotamers();
+            }
         }
     }
-    best_residue.restore_state(residue); best_ligand.restore_state(ligand);
+    float population=std::isfinite(contact_score)
+        ? (std::isfinite(other_score)?contact_population(contact_score-other_score):1.f) : 0.f;
+    // Prefer a visible ligand contact when its two-state population is at least 10%.
+    if (population>=.1f)
+    {
+        contact_residue.restore_state(residue); contact_ligand.restore_state(ligand);
+        residue->contact_partner=ligand; residue->contact_population=population;
+        residue->contact_energy_gap=std::isfinite(other_score)?contact_score-other_score:0;
+        contact_witnesses[residue]=contact_coordinates(ligand,residue);
+        changed=true;
+    }
+    else { best_residue.restore_state(residue); best_ligand.restore_state(ligand); }
     return changed;
 }
 

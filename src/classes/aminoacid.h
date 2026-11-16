@@ -70,6 +70,9 @@ struct MetalCoord
 class AminoAcid : public Molecule
 {
 public:
+    Molecule* contact_partner = nullptr;
+    float contact_population = 1;
+    float contact_energy_gap = 0;
     // Constructors.
     AminoAcid(FILE* instream, AminoAcid* prev_res=0, int resno_offset = 0, Protein* parent = nullptr);
     AminoAcid(const char letter, AminoAcid* prev_res=0, bool minimize_internal_clashes = true, Protein* parent = nullptr);

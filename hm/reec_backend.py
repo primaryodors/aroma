@@ -29,10 +29,12 @@ class CandidateRejected(ValueError):
 def requested(args, default='modeller'):
     backend = os.environ.get('AROMA_HM_BACKEND', default)
     for i, arg in enumerate(args):
-        if arg == '--backend' and i + 1 < len(args):
+        if arg in ('--backend', '-k') and i + 1 < len(args):
             backend = args[i + 1]
-        elif arg.startswith('--backend='):
+        elif arg.startswith(('--backend=', '-k=')):
             backend = arg.split('=', 1)[1]
+        elif arg.startswith('-k') and len(arg) > 2:
+            backend = arg[2:]
     if backend not in ('reec', 'modeller'):
         raise ValueError('Backend must be reec or modeller')
     return backend == 'reec'
@@ -42,9 +44,9 @@ def legacy_backend_args(args):
     result = []
     index = 0
     while index < len(args):
-        if args[index] == '--backend':
+        if args[index] in ('--backend', '-k'):
             index += 2
-        elif args[index].startswith('--backend='):
+        elif args[index].startswith(('--backend=', '-k')):
             index += 1
         else:
             result.append(args[index])
@@ -84,14 +86,21 @@ def workspace(prefix, keep=False):
 
 def parser(repair=False):
     p = argparse.ArgumentParser(description=('Receptor repair' if repair else 'Receptor homology modeling')
-                                + ' (REEC or MODELLER)')
-    p.add_argument('receptor')
-    p.add_argument('legacy', nargs='*')
-    p.add_argument('--backend', choices=['reec', 'modeller'], default='reec')
+                                + ' (REEC or MODELLER)', allow_abbrev=False,
+                                formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                epilog='Short aliases are case-sensitive. Options may appear between positional arguments.')
+    p.add_argument('receptor', help='Receptor ID; append i for inactive repair')
+    p.add_argument('legacy', nargs='*', help='Input PDB or odorant, actions (reset, fit, predock, loop, dock), and LIGAND_ATOM RES:ATOM pairs')
+    p.add_argument('--backend', choices=['reec', 'modeller'], default='reec', help='Modeling engine')
     p.add_argument('--template', action='append', default=[], help='PDB template; repeat for an ensemble')
     p.add_argument('--chain', default='A', help='Template protein chain')
     p.add_argument('--alignment', type=Path, help='PIR alignment; target ID is the receptor ID')
-    p.add_argument('--contacts', type=Path, action='append', default=[])
+    p.add_argument('--contacts', type=Path, action='append', default=[], help='Additional contact file; repeatable')
+    if repair:
+        p.add_argument('--inward-contact', nargs=2, action='append', default=[],
+                       metavar=('LIGAND_ATOM','RES:ATOM'), help='Turn a side chain toward a ligand contact before repair')
+        p.add_argument('--contact-distance', type=float, default=2.94,
+                       help='Heavy atom distance for ligand contact restraints, in angstroms')
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
     p.add_argument('--iterations', type=int, help='Initial modeling iteration budget')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')
@@ -109,6 +118,21 @@ def parser(repair=False):
     if not repair:
         p.add_argument('--coordinate-metals', action='store_true', help='Opt-in metal placement after dohm processing; default off')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
+    aliases = {'backend': '-k', 'template': '-t', 'chain': '-C', 'alignment': '-a',
+               'contacts': '-c', 'inward_contact': '-ic', 'contact_distance': '-cd',
+               'output': '-o', 'iterations': '-i', 'models': '-m',
+               'anneal_steps': '-A', 'anneal_temperature': '-u', 'anneal_residues': '-R',
+               'backbone_steps': '-b', 'backbone_range': '-B', 'backbone_angle': '-v',
+               'max_attempts': '-n', 'keep_work': '-w', 'coordinate_metals': '-M',
+               'skip_reshape': '-r'}
+    for action in p._actions:
+        if not action.option_strings or any(not option.startswith('--') for option in action.option_strings):
+            continue
+        alias = aliases.get(action.dest, '-' + action.dest[0])
+        if alias in p._option_string_actions:
+            raise ValueError(f'Duplicate CLI alias: {alias}')
+        action.option_strings.insert(0, alias)
+        p._option_string_actions[alias] = action
     return p
 
 

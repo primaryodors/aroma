@@ -22,6 +22,7 @@ REGRESSION_TESTS+=test/shielding_test
 REGRESSION_TESTS+=test/hydrogen_optimization_test
 REGRESSION_TESTS+=test/hbond_refinement_test
 REGRESSION_TESTS+=test/thiol_target_test
+REGRESSION_TESTS+=test/contact_population_test
 REGRESSION_TESTS+=test/callback_scoring_test
 REGRESSION_TESTS+=test/residue_grid_test
 REGRESSION_TESTS+=test/receptor_shielding_test

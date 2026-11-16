@@ -80,6 +80,7 @@ class DockResult
     std::string pdbdat;
     std::string isomer;
     std::string miscdata;
+    std::string contact_population_report;
     std::string atomlvl;
     float bytype[_INTER_TYPES_LIMIT];
     float ibytype[_INTER_TYPES_LIMIT];

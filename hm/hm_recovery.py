@@ -60,7 +60,7 @@ def repair_existing(target, source, options, root, *, contact_report=None, orien
     """Repair full geometry while softly retaining the source side-chain torsions."""
     import data.protutils as pu
     from reec_backend import publish, metadata
-    from modeling_backend import publication_guard, finalize
+    from modeling_backend import publication_guard, finalize, preserve_environment_labels
     root, source = Path(root), Path(source).resolve()
     (root / 'tmp').mkdir(exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix=f'{target}-geometry-repair-', dir=root / 'tmp'))
@@ -128,12 +128,13 @@ def repair_existing(target, source, options, root, *, contact_report=None, orien
                 orient=target if orient else None)
         hydrated = work / 'repaired.pdb'
         script = work / 'hydrate.phew'
-        script.write_text(f'LOAD "{oriented}" A A\nSTRAND A\nHYDRO\nSAVE "{hydrated}"\n')
+        script.write_text(f'LOAD "{oriented}" A A +\nSTRAND A\nHYDRO\nSAVE "{hydrated}"\n')
         with publication_guard(hydrated):
             code = run_native([root / 'bin/phew', script], root, work, f'hydrogenate-{attempt}')
             if code != 0:
                 continue
             try:
+                preserve_environment_labels(oriented, hydrated)
                 finalize(None, hydrated, candidate, target=target)
             except CandidateRejected:
                 continue

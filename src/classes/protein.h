@@ -7,6 +7,7 @@
 
 class SpatialGrid;
 class ResidueGrid;
+bool hbond_population_matches(Molecule* ligand, AminoAcid* residue);
 
 #include <string>
 #include <climits>
@@ -216,7 +217,8 @@ public:
     Point get_region_bounds(int startres, int endres);
     float optimize_hydrogens(int start_resno = 1, int end_resno = INT_MAX, int* force_resnos = nullptr,
                              bool use_rotation_cache = true, Molecule* ligand = nullptr);
-    bool refine_hbond_contact(Molecule* ligand, AminoAcid* residue);
+    bool refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool explore_ligand = true);
+    static float contact_population(float energy_gap);
     float get_empty_space_between_residues(int resno1, int resno2);
     float CA_to_CA_distance(int resno1, int resno2);
     float CA_to_CA_distance(ResiduePlaceholder res1, ResiduePlaceholder res2);

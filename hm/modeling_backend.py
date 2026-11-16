@@ -15,6 +15,9 @@ from reec_reports import report_path, archive_report
 
 
 def options(argv, repair=False):
+    if not argv:
+        reec.parser(repair).print_help()
+        raise SystemExit(2)
     args = reec.parser(repair).parse_intermixed_args(
         ['--help' if value == 'help' else value for value in argv])
     args.backend = 'reec' if reec.requested(argv, default='reec') else 'modeller'
@@ -409,6 +412,56 @@ def publication_guard(destination):
             else:
                 path.write_bytes(content)
         raise
+
+
+def preserve_environment_labels(candidate, destination):
+    """Restore fixed-environment labels after rigid postprocessing, without moving atoms."""
+    records = [line for line in Path(candidate).read_text().splitlines() if line.startswith('HETATM')]
+    labels = {line[12:16].strip(): line[17:30] for line in records}
+    if len(labels) != len(records):
+        raise ValueError('Fixed-environment atom names must be unique')
+    lines = Path(destination).read_text().splitlines()
+    found = set()
+    for i, line in enumerate(lines):
+        if line.startswith('HETATM') and line[12:16].strip() in labels:
+            name = line[12:16].strip()
+            lines[i] = line[:17] + labels[name] + line[30:]
+            found.add(name)
+    if found != set(labels):
+        raise ValueError('Postprocessing dropped fixed-environment atoms')
+    Path(destination).write_text('\n'.join(lines) + '\n')
+
+
+def inward_contact_failures(destination, contacts, tolerance=.35):
+    atoms = {(int(line[22:26]), line[12:16].strip()): tuple(float(line[i:i+8]) for i in (30,38,46))
+             for line in Path(destination).read_text().splitlines() if line.startswith(('ATOM  ', 'HETATM'))}
+    failures = []
+    for ligand_atom, partner, target in contacts:
+        residue, atom = partner.split(':')
+        a, b = atoms.get((999, ligand_atom)), atoms.get((int(residue), atom))
+        if a is None or b is None:
+            failures.append(f'Contact atom absent: {ligand_atom} {partner}')
+        elif abs(math.dist(a, b) - target) > tolerance:
+            failures.append(f'{ligand_atom} {partner}: {math.dist(a,b):.3f} A; target {target:.3f} A')
+        else:
+            hydrogen_key = ((999, ligand_atom) if ligand_atom.lstrip('0123456789').startswith('H')
+                            else (int(residue), atom) if atom.lstrip('0123456789').startswith('H') else None)
+            if hydrogen_key is not None:
+                hydrogen = atoms[hydrogen_key]
+                acceptor = b if hydrogen_key[0] == 999 else a
+                candidates = [point for (number, name), point in atoms.items()
+                              if number == hydrogen_key[0] and not name.lstrip('0123456789').startswith('H')
+                              and .6 < math.dist(point, hydrogen) < 1.3]
+                if not candidates:
+                    failures.append(f'H-bond donor atom absent: {ligand_atom} {partner}')
+                    continue
+                donor = min(candidates, key=lambda point: math.dist(point, hydrogen))
+                u = tuple(x-y for x, y in zip(donor, hydrogen))
+                v = tuple(x-y for x, y in zip(acceptor, hydrogen))
+                cosine = sum(x*y for x, y in zip(u,v)) / (math.dist(donor,hydrogen)*math.dist(acceptor,hydrogen))
+                if math.degrees(math.acos(max(-1, min(1, cosine)))) < 120:
+                    failures.append(f'H-bond direction below 120 degrees: {ligand_atom} {partner}')
+    return failures
 
 
 def finalize(model, destination, candidate=None, *, target=None):

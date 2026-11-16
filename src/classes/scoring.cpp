@@ -293,6 +293,9 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mol4occl[i+1] = reaches_spheroid[i];
     mol4occl[sphres+1] = nullptr;
 
+    bool preserve_contact_geometry=false;
+    for (i=0;i<sphres;i++)
+        if (hbond_population_matches(ligand,reaches_spheroid[i])) preserve_contact_geometry=true;
     for (i=0; i<sphres; i++)
     {
         if (!reaches_spheroid[i]) continue;
@@ -331,6 +334,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
                 }
                 #endif
 
+                if (preserve_contact_geometry) continue;
                 float apol = a->is_polar();
                 if (fabs(apol) < hydrophilicity_cutoff) continue;
 
@@ -378,7 +382,21 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
         mc_bpotential = 0;
         compute_interall = true;
         float was_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic];
+        float hbond_before=total_binding_by_type[hbond];
         Interaction lb = ligand->get_intermol_binding(reaches_spheroid[i], false, false, nullptr, protein);
+        AminoAcid* contact_residue=reaches_spheroid[i];
+        if (hbond_population_matches(ligand,contact_residue) && contact_residue->contact_population<1)
+        {
+            float fraction=contact_residue->contact_population;
+            float correction=-fmin(0.f,total_binding_by_type[hbond]-hbond_before)*(1-fraction);
+            lb.repulsive+=correction;
+            total_binding_by_type[hbond]+=correction;
+            std::ostringstream line;
+            line << "Sampled contact population " << contact_residue->get_name() << ": " << fraction
+                 << "; contact-minus-alternative " << contact_residue->contact_energy_gap
+                 << " kJ/mol; H-bond adjustment " << correction << " kJ/mol\n";
+            contact_population_report+=line.str();
+        }
         float new_hbond = total_binding_by_type[hbond] + total_binding_by_type[ionic] - was_hbond;
 
         if (lb.summed() <= 0 && new_hbond <= -1 && reaches_spheroid[i]->is_ic_res)
@@ -1054,6 +1072,7 @@ _btyp_unassigned:
 
     output << endl;
 
+    if (dr.contact_population_report.size()) output << dr.contact_population_report << endl;
     if (dr.miscdata.size())
     {
         output << dr.miscdata << endl;

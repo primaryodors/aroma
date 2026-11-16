@@ -1072,6 +1072,12 @@ bool do_pose_output(DockResult* drjk, int lnodeno, float energy_mult)
         if (r > size.magnitude()/2) goto _next_pose;
         #endif
 
+        if (drjk->contact_population_report.size())
+        {
+            std::istringstream lines(drjk->contact_population_report);
+            std::string line;
+            while (std::getline(lines,line)) fprintf(pfout,"REMARK 905 %s\n",line.c_str());
+        }
         protein->save_pdb(pfout, ligand);
 
         int atno_offset = protein->last_saved_atom_number;
@@ -4736,7 +4742,6 @@ _try_again:
             #endif
 
             #if attempt_optimize_hbonds_in_post
-            for (j=0; j<attempt_opthb_in_post_iters; j++)
                 for (i=0; i<sphres; i++)
                 {
                     protein->refine_hbond_contact(ligand,reaches_spheroid[nodeno][i]);
@@ -4856,6 +4861,11 @@ _try_again:
             }
 
             protein->optimize_hydrogens(1,INT_MAX,nullptr,true,ligand);
+
+            #if attempt_optimize_hbonds_in_post
+            for (i=0;i<sphres;i++)
+                protein->refine_hbond_contact(ligand,reaches_spheroid[nodeno][i],false);
+            #endif
 
             #if _dbg_atom_mov_to_clash
             movclash_prot = nullptr;
