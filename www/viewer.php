@@ -101,6 +101,7 @@ if (@$_REQUEST['view'] == "dock")
     $resradius = 25;
     $capos = [];
     $ligapos = [];
+    $diagram_ligand_positions = [];
     $ligcen = [0,0,0];
     $ligbonds = [];
     $farthest1 = $farthest2 = false;
@@ -115,52 +116,43 @@ if (@$_REQUEST['view'] == "dock")
     if (!file_exists($dock)) die("Something went wrong.");
     $txt = file_get_contents($dock);
 
+    // Read the selected pose independently of cavity annotations.
+    $poseno = 0;
+    foreach (explode("\n", $txt) as $ln)
+    {
+        if (substr($ln, 0, 6) == "Pose: ") { $poseno = intval(substr($ln, 6)); continue; }
+        if ($poseno != intval($n)) continue;
+        if (substr($ln, 0, 4) == "ATOM" && trim(substr($ln, 12, 4)) == "CA")
+            $capos[intval(substr($ln, 22, 4))] = [floatval(substr($ln,30,8)),floatval(substr($ln,38,8)),floatval(substr($ln,46,8))];
+        else if (substr($ln, 0, 6) == "HETATM")
+        {
+            $aname = trim(substr($ln, 12, 4));
+            $point = [floatval(substr($ln,30,8)),floatval(substr($ln,38,8)),floatval(substr($ln,46,8))];
+            $ligapos[$aname] = $point;
+            if (trim(substr($ln,17,3)) == 'LIG' || preg_match('/^(Cu|Zn|Fe|Co|Ni|Mn|Mg|Ca|Na|K|Ag|Au|Cd|Hg|Pt|Pd)[0-9]+$/', $aname))
+                $diagram_ligand_positions[$aname] = $point;
+        }
+        else if (preg_match('/^[A-Z][a-z]{2}[0-9]+:[A-Za-z0-9]+~[^:]+:[A-Za-z0-9]+:\s+[0-9.+-]+/', $ln))
+        {
+            list($resno, $unused, $aname, $binding) = explode(':', $ln);
+            list($energy, $intera_type) = array_pad(preg_split('/\s+/', trim($binding)), 2, 'none');
+            $resno = intval(preg_replace('/[^0-9]/', '', $resno)); $energy = floatval($energy);
+            if ($energy < -.5)
+            {
+                $bw = bw_from_resno($protid, $resno);
+                if (!isset($bsrintera[$bw][$aname]) || $energy < $bsrintera[$bw][$aname][0])
+                    $bsrintera[$bw][$aname] = [$energy, $intera_type, explode('~', $unused)[0]];
+            }
+        }
+    }
+
     $cavfn = "../pdbs/$fam/$protid.$mode.cvty";
     if (!file_exists($cavfn)) $cavfn = "../cpllocal/$fam/$sub/$protid.$mode.cvty";
     if (file_exists($cavfn))
     {
         $lines = explode("\n", $txt);
-        $poseno = 0;
         foreach ($lines as $i => $ln)
         {
-            if (substr($ln, 0, 6) == "Pose: ")
-            {
-                $poseno = intval(substr($ln, 6));
-            }
-            else if ($poseno == 1 && substr($ln, 0, 4) == "ATOM")
-            {
-                $aname = trim(substr($ln, 12, 4));
-                if ($aname == "CA")
-                {
-                    $resno = intval(substr($ln, 22, 4));
-                    $x = floatval(substr($ln, 30, 8));
-                    $y = floatval(substr($ln, 38, 8));
-                    $z = floatval(substr($ln, 46, 8));
-                    $capos[$resno] = [$x,$y,$z];
-                }
-            }
-            else if ($poseno == 1 && substr($ln, 0, 6) == "HETATM")
-            {
-                $aname = trim(substr($ln, 12, 4));
-                $x = floatval(substr($ln, 30, 8));
-                $y = floatval(substr($ln, 38, 8));
-                $z = floatval(substr($ln, 46, 8));
-                $ligapos[$aname] = [$x,$y,$z];
-            }
-            else if ($poseno == 1 && preg_match("/^[A-Z][a-z]{2}[0-9]+:[A-Za-z0-9]+~[^:]+:[A-Za-z0-9]+:\\s+[0-9.+-]+/", $ln))
-            {
-                list($resno, $idgaf, $aname, $binding) = explode(':', $ln);
-                if (false===strpos($binding, ' ')) $binding .= " none";
-                list($energy, $intera_type) = explode(' ', trim($binding));
-                $resno = intval(preg_replace("/[^0-9]/", "", $resno));
-                $energy = floatval($energy);
-
-                if ($energy < -0.5)
-                {
-                    $bw = bw_from_resno($protid, $resno);
-                    $bsrintera[$bw][$aname] = [ $energy, $intera_type ];
-                }
-            }
             if (substr($ln, 0, 10) != "REMARK 800") continue;
             $next = @$lines[$i+1];
             if (substr($next, 0, 10) != "REMARK 800")
@@ -307,6 +299,16 @@ if (@$_REQUEST['view'] == "dock")
     $c = str_replace("var literal_fname = \"\";\n", "var literal_fname = \"$protid~$odor.$mode.dock\";\n", $c);
     $c = preg_replace("/<title>[A-Za-z0-9 -]+</", "<title>$protid~$odor<", $c);
 
+    $diagram_projected = [];
+    foreach ($diagram_ligand_positions as $aname => $xyz)
+    {
+        $xyz = rotate3D($xyz, $ligcen, $ligrot1, $ligrot1[3]);
+        list($x,$y,$z) = rotate3D($xyz, $ligcen, $ligrot2, $ligrot2[3]);
+        $cx = intval($wid/2 + ($x-$ligcen[0])*$scale);
+        $cy = intval($hei/2 + ($z-$ligcen[2])*$scale);
+        $diagram_projected[$aname] = rotate3D([$cx,$cy,0],[$wid/2,$hei/2,0],$ligrot3,$ligrot3[3]);
+    }
+
     $c .= <<<dockdata
 
 <script>
@@ -317,33 +319,14 @@ dockdata;
 
     echo "<link rel=\"stylesheet\" href=\"assets/style.css\">\n";
     echo "<div style=\"display: flex;\">";
-    echo "<div style=\"display: block; width: 50%; height: 100vh; padding-left: 15px; overflow: auto;\">";
+    echo "<div class=\"dock-contact-panel\" style=\"display: block; width: 50%; height: 100vh; padding-left: 15px; overflow: auto;\">";
 
     ?>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://www.lactame.com/lib/openchemlib/5.2.0/openchemlib-minimal.js"></script>
-<script>
+<script src="js/dock_diagram.js"></script>
+<link rel="stylesheet" href="assets/dock_diagram.css">
 
-var ax = [], ay = [];
-function svg_from_smiles(smiles, w, h)
-{
-    var molecule=OCL.Molecule.fromSmiles(smiles);
-    result = molecule.toSVG(w, h, Math.random.toString(36), {fontWeight: 900})
-        .replace(/rgb\(0,0,0\)/g,"rgb(255,255,255)")
-        .replace(/fill=\"rgb\(160,0,0\)\">.*<\/text/g, '></text')
-        .replace(/rgb\(160,0,0\)/g,"rgb(170,187,204)")
-        ;
-    var n = molecule.getAllAtoms();
-    var i;
-    for (i=0; i<n; i++)
-    {
-        ax[i] = molecule.getAtomX(i);
-        ay[i] = molecule.getAtomY(i);
-        // console.log(molecule.getAtomLabel(i) + ": X="+ax[i] + ", Y="+ay[i]);
-    }
-    return result;
-}
-</script>
 <?php
     if (isset($gprots["hGNA$mode"])) echo "<h1>$protid:GNA$mode ~ $odor</h1>";
     else echo "<h1>$protid ~ $odor</h1>";
@@ -356,10 +339,12 @@ function svg_from_smiles(smiles, w, h)
     $mcres = [];
     $d = file_get_contents($dockfname);
     $lines = explode("\n", $d);
+    $contact_pose = 0;
     foreach ($lines as $ln) 
     {
+        if (substr($ln,0,6) == 'Pose: ') { $contact_pose = intval(substr($ln,6)); continue; }
+        if ($contact_pose != intval($n)) continue;
         if (trim($ln) == "# PDB Data") break;
-        if (trim($ln) == "Pose: 2") break;
         if (substr($ln, 0, 20) == "Metal coordination: ")
         {
             $pieces = explode(' ', $ln);
@@ -511,20 +496,12 @@ function svg_from_smiles(smiles, w, h)
             {
                 ?>
                 <td colspan="16">
-                <div id="skel<?php echo $id; ?>"></div>
+                <div class="dock-diagram" id="skel<?php echo $id; ?>"></div>
                 </td>
                 </tr>
                 <script>
                 window.setTimeout(function()
                 {
-                    var molrawsvg = svg_from_smiles("<?php echo $o["smiles"]; ?>", 300, 300);
-
-                    // TODO:
-                    // Rotate molrawsvg to place its atoms as close as possible to coordinates in the $ligaxy array.
-                    // Can use the colors of <text> elements to align atoms like oxygen, nitrogen, sulfur, chlorine, etc.
-
-                    var svgdat = "<svg id=\"function random() { [native code] }\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"<?php echo $wid; ?>px\" height=\"<?php echo $hei; ?>px\" viewBox=\"0 0 <?php echo $wid; ?> <?php echo $hei; ?>\">"; // svg_from_smiles("<?php echo $o["smiles"]; ?>", <?php echo $wid; ?>, <?php echo $hei; ?>);
-                    svgdat = svgdat.replace("</svg>", "");
                     <?php
 
                     // RESIDUE RAW X,Y COORDINATES FOR SVG
@@ -609,189 +586,30 @@ function svg_from_smiles(smiles, w, h)
                         }
                     }
 
-                    // INTERACTION LINES
-                    foreach ($bsrintera as $bw => $lresinters)
+                    $diagram_residues = [];
+                    foreach ($rescxy as $bw => $point)
                     {
-                        foreach ($lresinters as $aname => list($energy, $intera_type))
-                        {
-                            if (isset($ligaxy[$aname]) && isset($rescxy[$bw]))
-                            {
-                                $dasharray = "stroke-dasharray=\\\"2\\\"";
-                                switch ($intera_type)
-                                {
-                                    case "hbond": case "ionic":
-                                    $couleur = "#393";
-                                    break;
-
-                                    case "polarpi": case "mcoord":
-                                    $couleur = "#696";
-                                    break;
-
-                                    case "pi":
-                                    $couleur = "#c9c";
-                                    break;
-
-                                    case "covalent":
-                                    $couleur = "#ccc";
-                                    $dasharray = "";
-                                    break;
-
-                                    default:
-                                    $couleur = "#666";
-                                }
-
-                                list($x1, $y1) = $ligaxy[$aname];
-                                list($x2, $y2) = $rescxy[$bw];
-                                $r = get_2d_distance($ligaxy[$aname], $rescxy[$bw]);
-                                $coeff = ($r-$resradius)/$r;
-                                $x2 = $x1 + $coeff*($x2-$x1);
-                                $y2 = $y1 + $coeff*($y2-$y1);
-
-                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"$couleur\\\" $dasharray />\\n\";\n";
-                            }
-                        }
+                        $diagram_residues[$bw] = ['x'=>$point[0], 'y'=>$point[1],
+                            'letter'=>$lb[$bw], 'number'=>resno_from_bw($protid, $bw)];
                     }
-
-                    // LIGAND COVALENT BONDS
-                    foreach ($ligbonds as $aname1 => $b2)
-                    {
-                        if (!isset($ligaxy[$aname1])) continue;
-                        list($x1,$y1) = $ligaxy[$aname1];
-                        foreach ($b2 as $aname2 => $v)
-                        {
-                            if ($v && isset($ligaxy[$aname2]))
-                            {
-                                list($x2,$y2) = $ligaxy[$aname2];
-                                echo "svgdat += \"<line x1=\\\"$x1\\\" y1=\\\"$y1\\\" x2=\\\"$x2\\\" y2=\\\"$y2\\\" stroke=\\\"#ccc\\\" />\\n\";\n";
-                            }
-                        }
-                    }
-
-                    // LIGAND ATOMS
-                    foreach ($ligapos as $aname => $xyz)
-                    {
-                        $elem = ucwords(strtolower(preg_replace("/[0-9]/", "", $aname)));
-                        if ($elem == "H") continue;
-                        switch ($elem)
-                        {
-                            case "C":
-                                $couleur = "#ccc";
-                                break;
-                            case "N":
-                                $couleur = "#06f";
-                                break;
-                            case "O":
-                                $couleur = "#f00";
-                                break;
-                            case "S":
-                                $couleur = "#fc0";
-                                break;
-                            case "Cl":
-                                $couleur = "#0c0";
-                                break;
-                            case "Br":
-                                $couleur = "#c60";
-                                break;
-                            case "I":
-                                $couleur = "#609";
-                                break;
-                            default:
-                                $couleur = "#f6f";
-                                break;
-                        }
-                        list($cx,$cy) = $ligaxy[$aname];
-                        echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"4\\\" fill=\\\"$couleur\\\"></circle>\\n\";\n";
-                    }
-
-                    // RESIDUE CIRCLES
-                    foreach ($lb as $bw => $aa)
-                    {
-                        if (isset($rescxy[$bw]))
-                        {
-                            $resno = resno_from_bw($protid, $bw);
-                            list($cx,$cy) = $rescxy[$bw];
-                            $tx  = $cx - intval(floatval(strlen($bw)) * 3.333);
-                            $txr = $cx - intval(floatval(strlen($resno)+1) * 3.333);
-                            $ty  = $cy - 2;
-                            $tyr = $cy + 9;
-
-                            switch ($aa)
-                            {
-                                case "A": case "I": case "L": case "V": case "P":
-                                    $couleur = "#ccc";
-                                    break;
-                                case "M":
-                                    $couleur = "#cc6";
-                                    break;
-                                case "G":
-                                    $couleur = "#999";
-                                    break;
-                                case "C":
-                                    $couleur = "#fc0";
-                                    break;
-                                case "F": case "W":
-                                    $couleur = "#c9c";
-                                    break;
-                                case "Y":
-                                    $couleur = "#f6f";
-                                    break;
-                                case "S": case "T": case "N": case "Q":
-                                    $couleur = "#0ff";
-                                    break;
-                                case "D": case "E":
-                                    $couleur = "#f66";
-                                    break;
-                                case "K": case "R":
-                                    $couleur = "#06f";
-                                    break;
-                                case "H":
-                                    $couleur = "#76f";
-                                    break;
-                                default:
-                                    $couleur = "#f0f";
-                            }
-
-                            echo "svgdat += \"<circle cx=\\\"$cx\\\" cy=\\\"$cy\\\" r=\\\"$resradius\\\" stroke=\\\"$couleur\\\" stroke-width=\\\"1\\\" fill-opacity=\\\"0\\\"></circle>\\n\";\n";
-                            echo "svgdat += \"<text x=\\\"$tx\\\" y=\\\"$ty\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$bw</text>\\n\";\n";
-                            echo "svgdat += \"<text x=\\\"$txr\\\" y=\\\"$tyr\\\" fill=\\\"$couleur\\\" font-size=\\\"11px\\\">$aa$resno</text>\\n\";\n";
-                        }
-                    }
-                    ?>
-                    svgdat += "</svg>";
-                    $("#skel<?php echo $id; ?>")[0].innerHTML = svgdat;
-                    var cx = 0, cy = 0, x0, x1, y0, y1;
-                    var i, n = ax.length;
-                    for (i=0; i<n; i++)
-                    {
-                        if (!i || ax[i] < x0) x0 = ax[i];
-                        if (!i || ax[i] > x1) x1 = ax[i];
-                        if (!i || ay[i] < y0) y0 = ay[i];
-                        if (!i || ay[i] > y1) y1 = ay[i];
-                    }
-                    cx = (x0 + x1) / 2;
-                    cy = (y0 + y1) / 2;
-                    var rect = $("#skel<?php echo $id; ?> svg")[0].getClientRects()[0];
-                    console.log(rect);
-                    <?php
-                    $aayoff = [];
-                    if (0) foreach ($lb as $bw => $aa)
-                    {
-                        $i = intval(preg_replace("/[^0-9]/", "", $lbsr[$bw])) - 1;
-                        $ay = @$aayoff[$i] ?: 0;
-                        if ($i < 0) continue;
-                        echo "                var x = parseInt((ax[$i]-cx)*40-8), y = parseInt((ay[$i]-cy)*50+13*$ay), ih = '$aa<sup>$bw</sup>', cls = 'aacolor$aa';\n"; ?>
-                        var aa = document.createElement("span");
-                        aa.innerHTML = ih;
-                        aa.className = cls;
-                        aa.style.position = 'absolute';
-                        if (x < 0) x -= 15;
-                        if (y < 20) y -= 20;
-                        aa.style.top = parseInt(rect.top + rect.height/2 + y).toString() + "px";
-                        aa.style.left = parseInt(rect.left + rect.width/2 + x).toString() + "px";
-                        $("#skel<?php echo $id; ?>")[0].appendChild(aa);
-                        <?php
-                        $aayoff[$i] = $ay+1;
-                    }
+                    $diagram_interactions = [];
+                    foreach ($bsrintera as $bw => $contacts)
+                        foreach ($contacts as $atom => $contact)
+                            if (isset($rescxy[$bw]) && isset($diagram_projected[$atom]))
+                                $diagram_interactions[] = ['residue'=>(string)$bw, 'atom'=>$atom,
+                                    'type'=>$contact[1], 'energy'=>$contact[0], 'proteinAtom'=>$contact[2]];
+                    $structure_name = $o['full_name'] ?? $odor;
+                    $pose_pattern = '/^Pose: '.intval($n).'[ \t]*\R(.*?)(?=^Pose:|\z)/ms';
+                    if (preg_match($pose_pattern, $txt, $pose_block)
+                        && preg_match('/^Isomer: (.+)$/m', $pose_block[1], $isomer))
+                        $structure_name = trim($isomer[1]);
+                    $structure_path = __DIR__.'/../sdf/'.basename(str_replace(' ', '_', $structure_name)).'.sdf';
+                    $diagram = ['title'=>"$protid / $odor: ligand interactions", 'width'=>$wid, 'height'=>$hei,
+                        'sdf'=>is_file($structure_path) ? file_get_contents($structure_path) : '',
+                        'smiles'=>explode('|', $o['smiles'] ?? '')[0], 'positions'=>$diagram_ligand_positions,
+                        'projected'=>$diagram_projected, 'residues'=>$diagram_residues, 'interactions'=>$diagram_interactions];
+                    echo 'DockDiagram.render(document.getElementById('.json_encode("skel$id").'),'.
+                        json_encode($diagram, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).');';
                     ?>
                 }, 250);
                 </script>
