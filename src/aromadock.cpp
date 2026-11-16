@@ -5382,6 +5382,7 @@ _try_again:
                 }
                 dr[j][nodeno].ligpos.restore_state(ligand);
 
+                #if heavy_cav_ctnmt_disqo
                 if (ncvtys)
                 {
                     dr[j][nodeno].disqualified = true;
@@ -5401,6 +5402,7 @@ _try_again:
                         dr[j][nodeno].disqualify_reason += "Heavy-atom cavity containment " + std::to_string(cp)
                             + " below " + std::to_string(min_cvty_ctnmt) + ". ";
                 }
+                #endif
 
                 if (dr[j][nodeno].disqualified)
                 {

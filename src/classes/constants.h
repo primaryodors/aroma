@@ -314,6 +314,7 @@
 #define occlusion_as_disqualify_reason 1
 #define occlusion_threshold_for_cavsearch 0.773
 #define occlusion_threshold_for_disquo 0.3
+#define heavy_cav_ctnmt_disqo 0
 
 // Random Hydrophilic search constants.
 #define randhyd_priority_escape 0.001
