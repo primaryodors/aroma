@@ -126,16 +126,16 @@ validation; no subsequent unconstrained IC relaxation alters the result.
 
 Fixed ligand heavy atoms from a repair input participate in steric scoring and retain their exact
 coordinates. The executable also accepts `--environment FILE.pdb` for that purpose. Ligand contact
-pairs in fixfail use the existing `LIGAND_ATOM RES:ATOM` syntax. `reset`, `fit`, `predock`, `dock`, and
+triples in fixfail use `PROTEIN_ATOM LIGAND_ATOM DISTANCE`. `reset`, `fit`, `predock`, `dock`, and
 `loop` actions are available; docking actions publish to the normal receptor path. For reviewable
 local experiments, use `--output` with no docking action. Failed numerical reports are retained as
 `tmp/RECEPTOR.reec-failure.json`.
 
-For an inward-facing side chain, use `--inward-contact O10 208:ND2` with a supplied
+For an inward-facing side chain, use `-lc 208:ND2 O10 2.66` with a supplied
 docked model. Preparation rotates the receptor side chain and, for a supported
 hydroxyl donor, its terminal ligand hydrogen. Ligand heavy coordinates and the
-protein backbone stay fixed during this preparation. `--contact-distance 2.94`
-sets the heavy atom restraint; a compatible hydrogen restraint is read from
+protein backbone stay fixed during this preparation. Each triple supplies its
+own distance in angstroms; a compatible hydrogen restraint is read from
 `bindings.dat`. Both are soft restraints during repair. The starting model can
 contain surrounding clashes; it is an input for repair, not a validated result.
 
@@ -143,9 +143,21 @@ For example, an isolated OR52E8 repair can use:
 
 ```sh
 python3 hm/fixfail.py OR52E8 path/to/docked.model1.pdb --backend reec \
-  --skip-reshape --inward-contact O10 208:ND2 --contact-distance 2.66 \
+  --skip-reshape -lc 208:ND2 O10 2.66 \
   --output tmp/OR52E8.contact-repair.pdb --max-attempts 1
 ```
+
+Repeat `-lc` or `--ligand-contact` for multiple contacts. Triples may also be
+positional, for example `OR52E8 208:OD1 O10 2.6 6.59:EXTENT O9 2.5`.
+Protein selectors accept residue numbers or BW positions, optionally followed
+by `:ATOM`. Without an atom name they use `EXTENT`, the same reach atom as
+the project's other tools. The ligand atom `O9` starts with the letter O.
+If the selected protein atom is a hydrogen, REEC uses its parent heavy atom
+as a geometric proxy and checks the requested hydrogen distance after rebuilding
+hydrogens. This preserves the meaning of the requested atom and distance.
+Without an explicit input, a receptor model containing the requested ligand
+atoms is used; otherwise a unique compatible docked model is selected.
+Ambiguous inputs require an explicit PDB or odorant.
 
 For an Asn donor, the 1.66 A NH...O reference and its N-H bond give a heavy
 target near 2.66 A. Preparation samples the intact amide geometry. REEC

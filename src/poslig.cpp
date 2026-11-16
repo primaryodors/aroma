@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     bool turn_receptor=argc>4 && !strcmp(argv[3],"--receptor");
     float contact_distance=turn_receptor ? atof(argv[4]) : 3;
     int first_pair=turn_receptor?5:3;
-    if (argc<=first_pair || (argc-first_pair)%2 || contact_distance<1.5 || contact_distance>4)
+    if (argc<=first_pair || (argc-first_pair)%2 || !std::isfinite(contact_distance) || contact_distance<=0)
     { usage(); return 2; }
 
     Protein p("prot");
@@ -94,6 +94,7 @@ int main(int argc, char** argv)
             return 2;
         }
         Atom *b = aa->get_atom(aname);
+        if (!strcmp(aname,"EXTENT")) b=aa->get_reach_atom();
         if (!b)
         {
             cerr << "No atom named " << aname << " found in " << aa->get_name() << endl;
@@ -108,6 +109,16 @@ int main(int argc, char** argv)
             { cerr << "Side chain cannot reach the requested contact." << endl; return 2; }
             cout << "Inward contact " << aa->get_name() << ":" << b->name << " to " << a->name
                  << " at " << b->distance_to(a) << " A; surrounding clashes are left for repair." << endl;
+            if (b->Z==1)
+            {
+                Atom* heavy=b->get_heavy_atom();
+                if (!heavy || heavy->Z==1) { cerr << "Protein hydrogen has no parent atom." << endl; return 2; }
+                cout << "Contact donor " << a->name << " " << aa->get_residue_no() << ":" << b->name
+                     << " " << contact_distance << endl;
+                cout << "Contact restraint " << a->name << " " << aa->get_residue_no() << ":" << heavy->name
+                     << " " << heavy->distance_to(a) << endl;
+                continue;
+            }
             cout << "Contact restraint " << a->name << " " << aa->get_residue_no() << ":" << b->name
                  << " " << contact_distance << endl;
             Atom* h=a->is_bonded_to("H");

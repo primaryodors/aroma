@@ -15,6 +15,46 @@ from modeling_backend import options as backend_options, api as backend_api, pre
 from reec_backend import receptor, directory, CandidateRejected
 from data.preparation import generate_prepared_output
 from modeling_backend import preserve_environment_labels, inward_contact_failures
+import math
+
+
+def protein_contact_selector(value):
+    return re.fullmatch(r'[1-9][0-9]*(?:\.[0-9]+)?(?::[0-9]?[A-Z]+[0-9]?)?', value) is not None
+
+
+def ligand_contact_triples(protid, triples):
+    from data.protutils import resno_from_bw
+    result = []
+    for protein_atom, ligand_atom, value in triples:
+        if not protein_contact_selector(protein_atom):
+            raise ValueError(f'Invalid protein contact: {protein_atom}')
+        residue, _, atom = protein_atom.partition(':')
+        number = resno_from_bw(protid, residue) if '.' in residue else int(residue)
+        if not number:
+            raise ValueError(f'BW position is absent: {protein_atom}')
+        if not re.fullmatch(r'[A-Za-z][A-Za-z0-9]*', ligand_atom):
+            raise ValueError(f'Invalid ligand atom: {ligand_atom}')
+        distance = float(value)
+        if not math.isfinite(distance) or distance <= 0:
+            raise ValueError('Contact distance must be positive and finite')
+        result.append((ligand_atom, f'{number}:{atom or "EXTENT"}', distance))
+    return result
+
+
+def ligand_contact_input(root, family, protid, mode, default, contacts):
+    required = {contact[0] for contact in contacts}
+    def compatible(path):
+        return path.is_file() and required.issubset({line[12:16].strip() for line in path.read_text().splitlines()
+                                                    if line.startswith('HETATM')})
+    default = Path(default)
+    if compatible(default):
+        return default
+    folder = Path(root) / 'out' / family / protid
+    candidates = [path for path in folder.glob(f'{protid}~*.{mode}.model1.pdb') if compatible(path)]
+    if len(candidates) != 1:
+        raise ValueError('Supply a ligand-containing input PDB or odorant; '
+                         f'found {len(candidates)} compatible docked inputs for {protid}')
+    return candidates[0]
 
 
 def repair_dock_path(root, family, protid, odor, mode):
@@ -99,7 +139,8 @@ def main(argv=None):
         raise ValueError('Dock actions use the receptor model path; omit --output')
     if mode == 'inactive' and 'reset' in options.legacy:
         raise ValueError('Reset builds active models; omit reset for inactive repair')
-    input_arg = options.legacy[0] if options.legacy and options.legacy[0] not in actions else None
+    input_arg = (options.legacy[0] if options.legacy and options.legacy[0] not in actions
+                 and not protein_contact_selector(options.legacy[0]) else None)
     inppdb = origpdb
     odor = False
     if input_arg:
@@ -113,9 +154,6 @@ def main(argv=None):
                 raise ValueError(f'Docked repair source is absent: {expected}. The ligand was recognized, '
                                  'but a completed model PDB is unavailable. Finish the dock or use fit to prepare a source.')
             raise ValueError(f'Input file not found: {input_arg}')
-
-    if {'loop', 'dock', 'fit', 'predock'}.intersection(options.legacy) and not odor:
-        raise ValueError('Docking and fitting actions require an odorant')
 
     aaletts = "ARNDCEQGHILKMFPSTWYV"
     aacode3 = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLU", "GLN", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
@@ -139,27 +177,21 @@ def main(argv=None):
     delete_inppdb = False
 
     tokens = [value for value in options.legacy[(1 if input_arg else 0):] if value not in actions]
-    if len(tokens) % 2:
-        raise ValueError('Ligand contacts use pairs: LIGAND_ATOM RES:ATOM')
-    ligcontacts = []
-    for ligand_atom, receptor_atom in zip(tokens[::2], tokens[1::2]):
-        receptor_atom = re.sub(r'^[A-Za-z]{0,3}(?=[0-9])', '', receptor_atom)
-        if not re.fullmatch(r'[0-9]+:[0-9]?[A-Z]+[0-9]?', receptor_atom):
-            raise ValueError(f'Invalid receptor contact: {receptor_atom}')
-        ligcontacts.append([ligand_atom, receptor_atom])
-
-    inward_contacts = options.inward_contact
-    for ligand_atom, receptor_atom in inward_contacts:
-        if not re.fullmatch(r'[0-9]+:[0-9]?[A-Z]+[0-9]?', receptor_atom):
-            raise ValueError(f'Invalid inward contact: {receptor_atom}')
-    if not 1.5 <= options.contact_distance <= 4:
-        raise ValueError('Contact distance must be between 1.5 and 4 angstroms')
+    if len(tokens) % 3:
+        raise ValueError('Ligand contacts use triples: PROTEIN_ATOM LIGAND_ATOM DISTANCE')
+    positional = list(zip(tokens[::3], tokens[1::3], tokens[2::3]))
+    inward_contacts = ligand_contact_triples(protid, positional + options.ligand_contact)
+    if inward_contacts and not input_arg:
+        inppdb = str(ligand_contact_input(root_dir, fam, protid, mode, inppdb, inward_contacts))
+        _, odor = repair_input(inppdb, protid, fam, mode)
+    if {'loop', 'dock', 'fit', 'predock'}.intersection(options.legacy) and not odor:
+        raise ValueError('Docking and fitting actions require an odorant')
     preparation_tools = []
     if odor:
         preparation_tools.append('bin/cavity_search')
     if 'fit' in options.legacy:
         preparation_tools.append('bin/cavity_fit')
-    if ligcontacts or inward_contacts:
+    if inward_contacts:
         preparation_tools.append('bin/poslig')
     if preparation_tools:
         subprocess.run(['make', *preparation_tools], check=True)
@@ -254,7 +286,7 @@ def main(argv=None):
         os.chdir("..")
 
         cmd = ["make", "bin/ic", "bin/phew"]
-        if ligcontacts or inward_contacts:
+        if inward_contacts:
             cmd.append("bin/poslig")
         data.globals.wait_cool_cpu()
         subprocess.run(cmd, check=True)
@@ -283,15 +315,7 @@ def main(argv=None):
 
         rshpmfn = repair_reshape_script(protid, mode, options.skip_reshape)
 
-        if len(ligcontacts):
-            cmd = ["bin/poslig", inppdb, tplpdb]
-            for lc in ligcontacts:
-                cmd.extend(lc)
-            print(" ".join(cmd))
-            data.globals.wait_cool_cpu()
-            subprocess.run(cmd, check=True)
-        else:
-            shutil.copyfile(inppdb, tplpdb)
+        shutil.copyfile(inppdb, tplpdb)
 
         if rshpmfn is not None:
             cmd = ["bin/ic", tplpdb, str(rshpmfn), "save"]
@@ -301,20 +325,19 @@ def main(argv=None):
 
         if inward_contacts:
             staged = str(Path(tplpdb).with_suffix('.inward.pdb'))
-            cmd = ['bin/poslig', tplpdb, staged, '--receptor', str(options.contact_distance)]
-            for pair in inward_contacts:
-                cmd.extend(pair)
-            preparation = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            print(preparation.stdout, end='')
             inward_restraints = []
             inward_checks = []
-            for line in preparation.stdout.splitlines():
-                if line.startswith(('Contact restraint ', 'Contact donor ')):
-                    _, kind, atom, partner, distance = line.split()
-                    contact = (atom, partner, float(distance))
-                    inward_checks.append(contact)
-                    if kind == 'restraint': inward_restraints.append(contact)
-            os.replace(staged, tplpdb)
+            for ligand_atom, protein_atom, distance in inward_contacts:
+                cmd = ['bin/poslig', tplpdb, staged, '--receptor', str(distance), ligand_atom, protein_atom]
+                preparation = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                print(preparation.stdout, end='')
+                for line in preparation.stdout.splitlines():
+                    if line.startswith(('Contact restraint ', 'Contact donor ')):
+                        _, kind, atom, partner, value = line.split()
+                        contact = (atom, partner, float(value))
+                        inward_checks.append(contact)
+                        if kind == 'restraint': inward_restraints.append(contact)
+                os.replace(staged, tplpdb)
         else:
             inward_restraints = []
             inward_checks = []
@@ -355,7 +378,7 @@ def main(argv=None):
                 fout.write(cout)
 
 
-        if (ligcontacts or inward_contacts) and not haslig:
+        if inward_contacts and not haslig:
             raise ValueError('Ligand contacts require HETATM records')
         env = Environ()
         if haslig:
@@ -409,8 +432,8 @@ def main(argv=None):
                     rsr.rigid_bodies.append(rigb)
 
                 # Ligand-receptor contacts
-                if ligcontacts or inward_contacts:
-                    restraint_pairs = [(a, b, options.contact_distance) for a, b in ligcontacts] + inward_restraints
+                if inward_contacts:
+                    restraint_pairs = inward_restraints
                     for liga, partner, distance in restraint_pairs:
                         resno, resa = partner.split(':')
                         rsr.add(forms.Gaussian(group=physical.xy_distance,

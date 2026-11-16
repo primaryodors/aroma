@@ -90,17 +90,17 @@ def parser(repair=False):
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
                                 epilog='Short aliases are case-sensitive. Options may appear between positional arguments.')
     p.add_argument('receptor', help='Receptor ID; append i for inactive repair')
-    p.add_argument('legacy', nargs='*', help='Input PDB or odorant, actions (reset, fit, predock, loop, dock), and LIGAND_ATOM RES:ATOM pairs')
+    p.add_argument('legacy', nargs='*', help='Input PDB or odorant, actions (reset, fit, predock, loop, dock), and PROTEIN_ATOM LIGAND_ATOM DISTANCE triples')
     p.add_argument('--backend', choices=['reec', 'modeller'], default='reec', help='Modeling engine')
     p.add_argument('--template', action='append', default=[], help='PDB template; repeat for an ensemble')
     p.add_argument('--chain', default='A', help='Template protein chain')
     p.add_argument('--alignment', type=Path, help='PIR alignment; target ID is the receptor ID')
     p.add_argument('--contacts', type=Path, action='append', default=[], help='Additional contact file; repeatable')
     if repair:
-        p.add_argument('--inward-contact', nargs=2, action='append', default=[],
-                       metavar=('LIGAND_ATOM','RES:ATOM'), help='Turn a side chain toward a ligand contact before repair')
-        p.add_argument('--contact-distance', type=float, default=2.94,
-                       help='Heavy atom distance for ligand contact restraints, in angstroms')
+        p.epilog += ' Ligand contact triples may also be positional. Without an input, use the receptor model if it contains the ligand, otherwise a unique compatible docked model.'
+        p.add_argument('--ligand-contact', nargs=3, action='append', default=[],
+                       metavar=('PROTEIN_ATOM','LIGAND_ATOM','DISTANCE'),
+                       help='Repeatable ligand contact: residue number or BW[:ATOM], ligand atom, distance in angstroms; omitted ATOM means EXTENT')
     p.add_argument('--output', type=Path, help='Publish here instead of the receptor model')
     p.add_argument('--iterations', type=int, help='Initial modeling iteration budget')
     p.add_argument('--models', type=int, help='Override the workflow ensemble size')
@@ -119,7 +119,7 @@ def parser(repair=False):
         p.add_argument('--coordinate-metals', action='store_true', help='Opt-in metal placement after dohm processing; default off')
     p.add_argument('--skip-reshape', action='store_true', help='Repair the supplied conformation directly')
     aliases = {'backend': '-k', 'template': '-t', 'chain': '-C', 'alignment': '-a',
-               'contacts': '-c', 'inward_contact': '-ic', 'contact_distance': '-cd',
+               'contacts': '-c', 'ligand_contact': '-lc',
                'output': '-o', 'iterations': '-i', 'models': '-m',
                'anneal_steps': '-A', 'anneal_temperature': '-u', 'anneal_residues': '-R',
                'backbone_steps': '-b', 'backbone_range': '-B', 'backbone_angle': '-v',
