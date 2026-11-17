@@ -184,6 +184,8 @@ def inspect(path):
             failures.append('Serialized contact distance differs from report')
         if contact['hard'] and not contact['min'] - .052 <= distance <= contact['max'] + .052:
             failures.append('Serialized mandatory contact outside bounds')
+    from schiff import failures as schiff_failures
+    failures.extend(schiff_failures(path))
     return {'model': str(path), 'residues': len(residues), 'valid': not failures,
             'max_backbone_bond_error': max(distances, default=0),
             'max_peptide_angle_error': max(angles, default=0),

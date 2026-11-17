@@ -331,7 +331,7 @@ class ReecModel:
                 environment = work / 'environment.pdb'
                 # Retain the protein frame for ligand alignment; only HETATM records become fixed atoms.
                 environment.write_text('\n'.join(line for line in self.template_paths()[0][1].read_text().splitlines()
-                                                  if line.startswith(('ATOM  ', 'HETATM', 'CONECT', 'ENDMDL'))) + '\n')
+                                                  if line.startswith(('ATOM  ', 'HETATM', 'CONECT', 'ENDMDL', 'REMARK 950 SCHIFF'))) + '\n')
             anneal_residues = args.anneal_residues
             if anneal_residues is None and self.sequence in reec.pu.prots:
                 target_size = len(rows[self.sequence][1].replace('-', '').replace('.', ''))
@@ -440,6 +440,8 @@ def preserve_environment_labels(candidate, destination):
     if found != set(labels):
         raise ValueError('Postprocessing dropped fixed-environment atoms')
     Path(destination).write_text('\n'.join(lines) + '\n')
+    from schiff import restore
+    restore(destination, Path(candidate).read_text())
 
 
 def inward_contact_failures(destination, contacts, tolerance=.35):
@@ -476,7 +478,11 @@ def inward_contact_failures(destination, contacts, tolerance=.35):
 
 def finalize(model, destination, candidate=None, *, target=None):
     from reec_review import inspect, inspect_sterics
+    from schiff import failures as schiff_failures
     destination = Path(destination)
+    broken = schiff_failures(destination, require_hydrogens=True)
+    if broken:
+        raise reec.CandidateRejected('Schiff validation failed: '+'; '.join(broken))
     if isinstance(model, ReecModel):
         report = json.loads(Path(str(Path(candidate or model.outputs[0]['name']).resolve())+'.json').read_text())
     elif model is None:

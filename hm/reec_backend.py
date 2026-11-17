@@ -135,6 +135,7 @@ def parser(repair=False):
     p.add_argument('--contacts', type=Path, action='append', default=[], help='Additional contact file; repeatable')
     if repair:
         p.epilog += ' Ligand contacts require an explicit ligand name or ligand-containing input PDB and a separate -lc flag for each triple.'
+        p.epilog += ' Schiff-linked inputs are detected automatically from saved topology or the cached ligand SDF and adduct geometry; repair currently requires REEC. Fresh docking retains a separate adduct artifact and restores an unreacted receptor.'
         p.add_argument('--ligand-contact', nargs=3, action='append', default=[],
                        metavar=('PROTEIN_ATOM','LIGAND_ATOM','[DISTANCE]'),
                        help='Repeatable ligand contact: residue number or BW[:ATOM], ligand atom, optional distance in angstroms (default 2.8 for heavy atoms, typed reference for hydrogens); omitted ATOM means EXTENT')

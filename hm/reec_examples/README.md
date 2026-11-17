@@ -50,3 +50,26 @@ The Class I run used the existing IC stage, and the saved IC template was reused
 relaxation. `OR52E8.reshape.log` retains the complete reshape log. The exact retained template
 path appears in `OR52E8.log`. IC sampling can vary between runs. Plot generation uses Matplotlib;
 the engine, adapters, and independent geometry audit have no Matplotlib dependency.
+
+## Schiff-linked repair
+
+`fixfail.py` automatically recognizes lysine–aldehyde Schiff adducts using saved topology,
+or the cached ligand SDF together with the missing carbonyl oxygen and C=N geometry.
+Explicit protein–ligand connectivity takes precedence over distance when an old bond is stretched.
+Ambiguous assignments stop with a diagnostic. A ligand SDF reference is mandatory for an
+unannotated adduct; the repair does not regenerate or overwrite it.
+
+REEC preserves the imine bond using the project's covalent radius, trigonal bond angles,
+planarity, and the input cis/trans configuration. Covalently connected neighbors receive
+the corresponding steric exclusions. Saved `REMARK 950 SCHIFF` records track atom identities,
+the departed oxygen, and the neutral imine or singly protonated iminium state through serial
+renumbering and hydrogen cleanup. Serialized checks reject broken or distorted linkages.
+Schiff inputs currently require `--backend reec`; MODELLER repair rejects them explicitly.
+
+For `dock` or `loop`, each accepted repair retains `attempt-N.adduct.pdb` and its report in
+the printed fixfail workspace. Fresh docking receives a receptor with that adduct removed
+and the ordinary lysine amine hydrogens restored, together with the original unreacted ligand.
+Without a docking action, the repair output retains the adduct. Regression fixtures in
+`testdata/schiff_octanal.pdb` and `testdata/schiff_phenylacetaldehyde.pdb` are three-residue
+fragments extracted from the OR6A2–octanal and OR6P1–phenylacetaldehyde docks, respectively;
+the linked lysine is residue 2 and the ligand is residue 999.

@@ -314,7 +314,10 @@ test/reec_backbone_sampling_test: src/test/reec_backbone_sampling_test.cpp src/r
 test/reec_cg_test: src/test/reec_cg_test.cpp src/reec.cpp $(OBJS)
 	$(CPL) src/test/reec_cg_test.cpp $(OBJS) -o $@ $(CFLAGS)
 
-check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbone_sampling_test test/reec_cg_test $(BIN)/phew $(BIN)/ic
+test/schiff_repair_test: src/test/schiff_repair_test.cpp $(OBJS)
+	$(CPL) src/test/schiff_repair_test.cpp $(OBJS) -o $@ $(CFLAGS)
+
+check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbone_sampling_test test/reec_cg_test test/schiff_repair_test $(BIN)/phew $(BIN)/ic
 	./test/reec_test
 	./test/reec_backbone_sampling_test
 	./test/reec_cg_test
@@ -325,6 +328,7 @@ check-reec: $(BIN)/reec $(BIN)/reec_steric_audit test/reec_test test/reec_backbo
 	python3 test/dohm_recovery_test.py
 	python3 test/fixfail_reshape_test.py
 	python3 test/fixfail_retry_test.py
+	python3 test/schiff_repair_test.py
 	python3 test/reec_reports_test.py
 
 .PHONY: check-metal

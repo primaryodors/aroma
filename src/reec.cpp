@@ -625,6 +625,7 @@ struct Model
     std::vector<std::unique_ptr<Atom>> external;
     std::map<int,std::string> fixed_records;
     std::vector<std::pair<int,int>> fixed_links;
+    std::vector<std::string> schiff_records;
     double hard_scale=1,anchor_scale=1;
     unsigned seed=0;
     double clash_scale=1;
@@ -1161,9 +1162,20 @@ struct Model
         std::string s;
         std::map<int,int> serial_to_index;
         std::vector<std::pair<int,int>> input_links;
+        std::map<int,int> protein_serials;
+        std::vector<std::string> adducts;
+        while(std::getline(f,s))if(s.compare(0,17,"REMARK 950 SCHIFF")==0)adducts.push_back(s);
+        include_hydrogens=include_hydrogens||!adducts.empty();
+        f.clear();
+        f.seekg(0);
         bool ended=false;
         while (std::getline(f,s))
         {
+            if(!ended && s.compare(0,6,"ATOM  ")==0 && s.size()>=54 && s[21]=='A')
+            {
+                auto key=std::make_pair(integer(trim(s.substr(22,4))),trim(s.substr(12,4)));
+                if(ids.count(key)) protein_serials[integer(trim(s.substr(6,5)))]=ids.at(key);
+            }
             if(s.compare(0,6,"ENDMDL")==0)ended=true;
             if(s.compare(0,6,"CONECT")==0&&s.size()>=11)
             {
@@ -1225,10 +1237,85 @@ struct Model
             anchors.push_back(p);
             anchor_weight.push_back(0);
         }
-        for(auto p:input_links)if(serial_to_index.count(p.first)&&serial_to_index.count(p.second))fixed_links.push_back(
+        adj.resize(nodes.size());
+        for(auto p:input_links)if(serial_to_index.count(p.first)&&serial_to_index.count(p.second))
+        {
+            auto link=std::minmax(serial_to_index[p.first],serial_to_index[p.second]);
+            if(std::find(fixed_links.begin(),fixed_links.end(),std::pair<int,int>(link))==fixed_links.end())
             {
-                serial_to_index[p.first],serial_to_index[p.second]
-            });
+                fixed_links.push_back(link);
+                edge(link.first,link.second);
+            }
+        }
+        for(const auto& record:adducts)
+        {
+            std::stringstream ss(record);
+            std::string word,n,c,b,o,hydrogen,configuration,extra;
+            int tag,r,lr;
+            ss>>word>>tag>>word;
+            if(!(ss>>r>>n>>lr>>c>>b>>o) || n!="NZ")
+                throw std::runtime_error("Invalid Schiff topology record");
+            ss>>hydrogen>>configuration;
+            if((ss>>extra)||(!configuration.empty()&&configuration!="cis"&&configuration!="trans"))
+                throw std::runtime_error("Invalid Schiff proton or configuration metadata");
+            int ni=id(r,n),ci=id(lr,c),ce=id(r,"CE"),cb=id(lr,b);
+            if(protein.get_residue(r)->get_letter()!='K' || !fixed_records.count(ci) || !fixed_records.count(cb)
+                || ids.count({lr,o})) throw std::runtime_error("Invalid Schiff atom inventory");
+            schiff_records.push_back(record);
+            auto link=std::minmax(ni,ci);
+            fixed_links.push_back(link);
+            edge(ni,ci);
+            double nc=InteratomicForce::covalent_bond_radius(nodes[ni].atom,nodes[ci].atom,2);
+            double ne=(ideal[ni]-ideal[ce]).norm(),cc=(xyz[ci]-xyz[cb]).norm();
+            if(nc<1.18||nc>1.38)throw std::runtime_error("Invalid library Schiff bond target");
+            pair(ni,ci,nc,6000,true);
+            if(cc<1.3 || cc>1.65) throw std::runtime_error("Invalid Schiff carbon substituent bond");
+            pair(ce,ci,std::sqrt(ne*ne+nc*nc+ne*nc),3000);
+            pair(ni,cb,std::sqrt(cc*cc+nc*nc+cc*nc),3000);
+            int aldehydic_hydrogens=0;
+            for(int h:adj[ci])if(fixed_records.count(h)&&nodes[h].atom->Z==1)
+            {
+                double ch=(xyz[ci]-xyz[h]).norm();
+                if(ch<.9||ch>1.2)throw std::runtime_error("Invalid Schiff carbon hydrogen bond");
+                pair(ni,h,std::sqrt(nc*nc+ch*ch+nc*ch),3000);
+                volumes.push_back({ni,ci,cb,h,0,500});
+                ++aldehydic_hydrogens;
+            }
+            if(aldehydic_hydrogens!=1)throw std::runtime_error("Schiff topology requires one explicit aldehydic hydrogen");
+            V u=xyz[ni]-xyz[ce],v=xyz[ci]-xyz[ni],w=xyz[cb]-xyz[ci];
+            double cosine=u.cross(v).dot(v.cross(w));
+            double angle=configuration.empty()?(cosine<0?std::acos(-1.):0)
+                :(configuration=="trans"?std::acos(-1.):0);
+            dihedral_restraints.push_back({ce,ni,ci,cb,angle,3000});
+            volumes.push_back({ce,ni,ci,cb,0,500});
+            Contact contact{r,lr,n,c,"schiff",1.18,1.38,100,true,{}};
+            resolve(contact);
+            contacts.push_back(contact);
+            // Exclude bonded neighbors through three edges across the new covalent link.
+            for(int start:{ni,ce,ci,cb})
+            {
+                std::set<int> visited{start},front{start};
+                for(int depth=0;depth<3;++depth)
+                {
+                    std::set<int> next;
+                    for(int a:front)for(int z:adj[a])if(visited.insert(z).second)
+                    {
+                        excluded.insert(std::minmax(start,z));
+                        next.insert(z);
+                    }
+                    front=next;
+                }
+            }
+        }
+        for(auto p:input_links)
+        {
+            int a=protein_serials.count(p.first)?p.first:p.second;
+            int b=a==p.first?p.second:p.first;
+            if(!protein_serials.count(a)||!serial_to_index.count(b))continue;
+            auto link=std::minmax(protein_serials[a],serial_to_index[b]);
+            if(std::find(fixed_links.begin(),fixed_links.end(),std::pair<int,int>(link))==fixed_links.end())
+                throw std::runtime_error("Protein-ligand connectivity requires supported covalent topology metadata");
+        }
         if (fixed_records.empty()) throw std::runtime_error("Fixed environment has no ligand heavy atoms");
     }
     void refresh(const XYZ& x)
@@ -2077,6 +2164,7 @@ struct Model
         }
         for(auto p:disulfides)fprintf(f,"CONECT%5d%5d\n",serials[id(p.first,"SG")],serials[id(p.second,"SG")]);
         for(auto p:fixed_links)fprintf(f,"CONECT%5d%5d\n",serials[p.first],serials[p.second]);
+        for(const auto& record:schiff_records)fprintf(f,"%s\n",record.c_str());
         fprintf(f,"TER\n");
         fprintf(f,"END\n");
         bool failed=std::ferror(f);

@@ -87,7 +87,8 @@ int main(int argc,char** argv)
                  <<",\"unmatched_constructed_atoms\":"<<absent
                  <<",\"covalent_geometry\":{\"valid\":"<<(covalent_valid?"true":"false")
                  <<",\"max_bond_error\":"<<bond_error<<",\"max_angle_distance_error\":"<<angle_error<<"}"
-                 <<",\"fixed_heavy_atoms\":"<<model.fixed_records.size()
+                 <<",\"fixed_heavy_atoms\":"<<std::count_if(model.fixed_records.begin(),model.fixed_records.end(),
+                    [&](const auto& record){return model.nodes[record.first].atom->Z>1;})
                  <<",\"severe_pairs_first_30\":["<<pairs.str()<<"]}\n";
         return 0;
     }

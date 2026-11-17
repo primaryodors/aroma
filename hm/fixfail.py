@@ -15,6 +15,7 @@ from modeling_backend import options as backend_options, api as backend_api, pre
 from reec_backend import receptor, directory, CandidateRejected
 from data.preparation import generate_prepared_output
 from modeling_backend import preserve_environment_labels, inward_contact_failures
+import schiff
 import math
 
 
@@ -233,6 +234,16 @@ def main(argv=None):
     log_root.mkdir(parents=True, exist_ok=True)
     run_dir = Path(tempfile.mkdtemp(prefix=f'{protid}-fixfail-', dir=log_root))
     attempt_log = run_dir / 'attempts.json'
+    ligand_reference = None
+    if odor:
+        cached = Path(root_dir) / 'sdf' / (odor['full_name'].replace(' ', '_')+'.sdf')
+        if cached.is_file():
+            ligand_reference = cached
+    adducts = schiff.discover(inppdb, ligand_reference)
+    if adducts and options.backend != 'reec':
+        raise ValueError('Schiff-linked repair requires the REEC backend; MODELLER covalent topology is not configured')
+    if adducts:
+        print('Preserving Schiff linkages: '+', '.join(f'{x.residue}:{x.nitrogen}={x.carbon}' for x in adducts), flush=True)
 
     def record(status, reason='', report=None):
         entry = {'attempt': tries, 'seed': options.seed, 'iterations': options.iterations,
@@ -296,6 +307,7 @@ def main(argv=None):
         rshpmfn = repair_reshape_script(protid, mode, options.skip_reshape)
 
         shutil.copyfile(inppdb, tplpdb)
+        schiff.annotate(tplpdb, adducts, ligand_reference)
 
         if rshpmfn is not None:
             cmd = ["bin/ic", tplpdb, str(rshpmfn), "save"]
@@ -356,6 +368,7 @@ def main(argv=None):
                     haslig = True
             with open(tplpdb, "w") as fout:
                 fout.write(cout)
+        schiff.annotate(tplpdb, adducts, ligand_reference, ligand_number=999)
 
 
         if inward_contacts and not haslig:
@@ -711,6 +724,26 @@ def main(argv=None):
                     failure_report = run_dir / f'contact-failure-{tries}.json'
                     failure_report.write_text(json.dumps({'valid': False, 'requested_contact_failures': failures}, indent=2)+'\n')
                     raise CandidateRejected('Requested inward contacts were not retained: '+ '; '.join(failures), failure_report)
+                if adducts and {'loop', 'dock'}.intersection(options.legacy):
+                    retained = run_dir / f'attempt-{tries}.adduct.pdb'
+                    shutil.copyfile(output_pdb, retained)
+                    sidecar = Path(str(output_pdb)+'.json')
+                    shutil.copyfile(sidecar, Path(str(retained)+'.json'))
+                    departed = {(int(line[22:26]),line[12:16].strip())
+                                for line in Path(output_pdb).read_text().splitlines()
+                                if line.startswith('HETATM') and line[17:20]=='LIG'}
+                    schiff.receptor_only(output_pdb, schiff.links(Path(output_pdb).read_text()))
+                    script = run_dir / f'attempt-{tries}.redock.phew'
+                    script.write_text(f'LOAD "{output_pdb}" A A +\nSTRAND A\nHYDRO\nSAVE "{output_pdb}"\n')
+                    subprocess.run(['bin/phew', str(script)], check=True)
+                    report = json.loads(sidecar.read_text())
+                    report['contacts'] = [c for c in report['contacts']
+                                          if (c['res1'],c['atom1']) not in departed and (c['res2'],c['atom2']) not in departed]
+                    report['schiff_adduct_artifact'] = str(retained)
+                    report.pop('validated_sha256', None)
+                    report.pop('validated_ready', None)
+                    sidecar.write_text(json.dumps(report, indent=2)+'\n')
+                    finalize(None, output_pdb, output_pdb, target=protid)
 
         except CandidateRejected as exc:
             record('rejected', str(exc), exc.report)
