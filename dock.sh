@@ -4,6 +4,7 @@ set -euo pipefail
 if [ "$#" -lt 2 ]; then
     echo "Usage: ./dock.sh RECEPTOR ODORANT [options]"
     echo "Example: ./dock.sh OR1A1 linalool"
+    echo "Add mt to allow up to four guarded threads for an isolated dock."
     exit 2
 fi
 

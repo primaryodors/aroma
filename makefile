@@ -6,7 +6,7 @@ TMP=tmp
 
 DIRS=$(OBJ) $(BIN) $(OUT) $(SDF) $(TMP)
 OBJS=$(OBJ)/misc.o $(OBJ)/point.o $(OBJ)/atom.o $(OBJ)/space.o $(OBJ)/intera.o $(OBJ)/molecule.o $(OBJ)/aminoacid.o \
-	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o
+	$(OBJ)/protein.o $(OBJ)/moiety.o $(OBJ)/conj.o $(OBJ)/progress.o $(OBJ)/dock_worker.o
 DOBJ=$(OBJ)/dynamic.o $(OBJ)/reshape.o $(OBJ)/scoring.o $(OBJ)/search.o $(OBJ)/cavity.o $(OBJ)/soft.o $(OBJ)/appear.o
 TSTS=test/point_test test/atom_test test/molecule_test test/pi_stack_test test/mol_assem_test test/aniso_test test/amino_test \
 	  test/protein_test test/backbone_test test/bond_rotation_test test/moiety_test test/ameliorate_test \
@@ -46,7 +46,7 @@ ic: $(DIRS) $(OBJS) $(DOBJ) $(BIN)/ic
 CPL=g++
 
 # Common flags for all modes
-CFLAGS=-O3 -flto -fopenmp -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
+CFLAGS=-O3 -flto=auto -fopenmp -Wwrite-strings -fextended-identifiers -std=c++14 -march=native
 
 # Debug CFLAGS - allows gdb, valgrind
 # CFLAGS+=-g
@@ -104,7 +104,10 @@ $(OBJ)/conj.o: src/classes/conj.h src/classes/conj.cpp $(OBJ)/atom.o makefile
 $(OBJ)/intera.o: src/classes/intera.h src/classes/intera.cpp $(OBJ)/conj.o makefile
 	$(CPL) -c src/classes/intera.cpp -o $(OBJ)/intera.o $(CFLAGS)
 
-$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp $(OBJ)/intera.o makefile
+$(OBJ)/dock_worker.o: src/classes/dock_worker.cpp src/classes/dock_worker.h src/classes/constants.h makefile
+	$(CPL) -c src/classes/dock_worker.cpp -o $(OBJ)/dock_worker.o $(CFLAGS)
+
+$(OBJ)/molecule.o: src/classes/molecule.h src/classes/molecule.cpp src/classes/dock_worker.h $(OBJ)/intera.o makefile
 	$(CPL) -c src/classes/molecule.cpp -o $(OBJ)/molecule.o $(CFLAGS)
 
 $(OBJ)/aminoacid.o: src/classes/aminoacid.h src/classes/aminoacid.cpp $(OBJ)/molecule.o makefile
@@ -247,7 +250,7 @@ $(OBJ)/protein.o: src/classes/residuegrid.h src/classes/spatialgrid.h
 
 # Apps
 
-$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/callback_scoring.h src/classes/configtext.h src/classes/failure_reporting.h $(OBJS) $(DOBJ)
+$(BIN)/aromadock: src/aromadock.cpp src/classes/pose_contact.h src/classes/rotamer_repair.h src/classes/callback_scoring.h src/classes/configtext.h src/classes/failure_reporting.h src/classes/dock_worker.h $(OBJS) $(DOBJ)
 	$(CPL) src/aromadock.cpp $(OBJS) $(DOBJ) -o $(BIN)/aromadock $(CFLAGS)
 
 $(BIN)/phew: src/phew.cpp $(OBJS) $(DOBJ)

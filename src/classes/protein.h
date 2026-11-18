@@ -265,7 +265,7 @@ public:
 
     // Homology
     void homology_conform(Protein* target_structure, Protein* reference_structure);
-    void bridge(int resno1, int resno2);
+    void bridge(int resno1, int resno2, bool repack_neighbors = true, bool polish_between_moves = true);
     int replace_side_chains_from_other_protein(Protein* other);
 
     // Pre-placement

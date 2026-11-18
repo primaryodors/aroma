@@ -245,7 +245,8 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     for (i=0; i<end1; i++) final_binding[i] = 0;
     #endif
 
-    AminoAcid* allres[protein->get_end_resno()+16]; 
+    #if !AROMA_OPT_SKIP_UNUSED_SCORING_SCAN
+    AminoAcid* allres[protein->get_end_resno()+16];
     int qpr = protein->fetch_residues_near(ligand->get_barycenter(), 100000, allres, false);
     Molecule* postaa[qpr+16];
     postaa[0] = ligand;
@@ -253,6 +254,7 @@ void DockResult::initialize(Protein* protein, Molecule* ligand, int sphres, Amin
     {
         postaa[i+1] = reinterpret_cast<Molecule*>(allres[i]);
     }
+    #endif
 
     for (i=0; i<_INTER_TYPES_LIMIT; i++) fin_total_binding_by_type[i] = total_binding_by_type[i];
 

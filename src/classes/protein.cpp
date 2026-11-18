@@ -3256,9 +3256,9 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool ex
             found=scores.emplace(std::move(coordinates),molecule->get_intermol_binding(neighbors.data())).first;
         return found->second;
     };
-    auto binding = [&]()
+    auto binding = [&](const Interaction* pair_score = nullptr)
     {
-        return background(ligand,background_scores)+ligand->get_intermol_binding(residue)
+        return background(ligand,background_scores)+(pair_score ? *pair_score : ligand->get_intermol_binding(residue))
             + background(residue,residue_scores);
     };
     Interaction best_score = binding();
@@ -3308,21 +3308,23 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool ex
         }
         return false;
     };
-    auto consider = [&]()
+    auto consider_score = [&](Interaction trial, bool confirmed_contact)
     {
-        if (!valid()) return;
-        Interaction trial=binding();
         if (trial.clash>clash_ceiling || trial.worst_atom_clash>atom_clash_ceiling) return;
         float score=trial.summed()+fmax(0.f,ligand->get_internal_clashes()-ligand_clashes)
             +fmax(0.f,ligand->total_eclipses()-initial_eclipses);
         if (!std::isfinite(score)) return;
-        if (has_contact())
+        if (confirmed_contact || has_contact())
         {
             if (score<contact_score) { contact_score=score; contact_residue.copy_state(residue); contact_ligand.copy_state(ligand); }
         }
         else if (score<other_score) { other_score=score; other_residue.copy_state(residue); other_ligand.copy_state(ligand); }
         if (score<best_energy)
         { best_energy=score; best_score=trial; best_residue.copy_state(residue); best_ligand.copy_state(ligand); changed=true; }
+    };
+    auto consider = [&]()
+    {
+        if (valid()) consider_score(binding(), false);
     };
     consider();
     // Optimize terminal polar hydrogens on both partners against the same score.
@@ -3346,8 +3348,15 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool ex
                 origin.restore_state(molecule);
                 bond->rotate(step*M_PI/12,false,true);
                 Interaction trial = ligand_hydrogen?ligand->get_intermol_binding(residue):binding();
+                #if AROMA_OPT_HBOND_TRIAL_REUSE
+                bool allowed = valid();
+                if (allowed && has_contact())
+                    consider_score(ligand_hydrogen ? binding(&trial) : trial, true);
+                if (allowed && trial.summed() < score.summed())
+                #else
                 if (has_contact()) consider();
                 if (valid() && trial.summed() < score.summed())
+                #endif
                 {
                     score = trial;
                     local_best.copy_state(molecule);
@@ -3403,8 +3412,14 @@ bool Protein::refine_hbond_contact(Molecule* ligand, AminoAcid* residue, bool ex
             for (const Contact& contact:contacts)
                 if (contact.donor->distance_to(contact.acceptor)<contact.radius+1.6f)
                 { close=true; if (contact.ligand_donor) ligand_hydrogen_close=true; }
+            #if AROMA_OPT_HBOND_TRIAL_REUSE
+            // The restored and rotated trial already passed valid().
+            consider_score(binding(), false);
+            if (!close) continue;
+            #else
             if (!close) { consider(); continue; }
             consider();
+            #endif
             if (axes.size()<2 || axes[1]->count_heavy_moves_with_atom2()) orient_hydrogens(residue);
             if (ligand_hydrogen_close) orient_hydrogens(ligand);
             consider();
@@ -5284,7 +5299,7 @@ void Protein::homology_conform(Protein* target, Protein* reference)
     mass_undoable = wmu;
 }
 
-void Protein::bridge(int resno1, int resno2)
+void Protein::bridge(int resno1, int resno2, bool repack_neighbors, bool polish_between_moves)
 {
     save_undo_state();
     AminoAcid *aa1 = get_residue(resno1), *aa2 = get_residue(resno2);
@@ -5294,16 +5309,23 @@ void Protein::bridge(int resno1, int resno2)
 
     _INTERA_R_CUTOFF = aa1->get_CA_location().get_3d_distance(aa2->get_CA_location())
         + aa1->get_reach() + aa2->get_reach() + _DEFAULT_INTERA_R_CUTOFF;
+
+    if (!repack_neighbors)
+    {
+        // Score the surrounding residues during pair refinement while keeping them in place.
+        if (!aa1->mclashables) get_residues_can_clash(resno1);
+        if (!aa2->mclashables) get_residues_can_clash(resno2);
+    }
     
     float r = aa1->get_CA_location().get_3d_distance(aa2->get_CA_location()) - aa1->get_reach() - aa2->get_reach();
     if (r > 4)
     {
         if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
         if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
-        aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc);
-        aa2->conform_atom_to_location(aa2->get_reach_atom()->name, aa1->get_reach_atom()->loc);
-        aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc);
-        aa2->conform_atom_to_location(aa2->get_reach_atom()->name, aa1->get_reach_atom()->loc);
+        aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc, 20, 0, false, polish_between_moves);
+        aa2->conform_atom_to_location(aa2->get_reach_atom()->name, aa1->get_reach_atom()->loc, 20, 0, false, polish_between_moves);
+        aa1->conform_atom_to_location(aa1->get_reach_atom()->name, aa2->get_reach_atom()->loc, 20, 0, false, polish_between_moves);
+        aa2->conform_atom_to_location(aa2->get_reach_atom()->name, aa1->get_reach_atom()->loc, 20, 0, false, polish_between_moves);
     }
 
     Molecule* mols[3];
@@ -5313,19 +5335,13 @@ void Protein::bridge(int resno1, int resno2)
 
     Molecule::conform_molecules(mols, 15);
 
-    Molecule** mols2;
-    int i;
-
-    mols2 = (Molecule**)get_residues_can_clash(resno1);
-    if (mols2 && mols2[0])
+    if (repack_neighbors)
     {
-        Molecule::conform_molecules(mols2, 20);
-    }
+        Molecule** neighbors = reinterpret_cast<Molecule**>(get_residues_can_clash(resno1));
+        if (neighbors && neighbors[0]) Molecule::conform_molecules(neighbors, 20);
 
-    mols2 = (Molecule**)get_residues_can_clash(resno2);
-    if (mols2 && mols2[0])
-    {
-        Molecule::conform_molecules(mols2, 20);
+        neighbors = reinterpret_cast<Molecule**>(get_residues_can_clash(resno2));
+        if (neighbors && neighbors[0]) Molecule::conform_molecules(neighbors, 20);
     }
 
     aa1->find_mutual_max_bind_potential(aa2);
@@ -5338,13 +5354,13 @@ void Protein::bridge(int resno1, int resno2)
         if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
         if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close_mine && aa1->stay_close_other)
-            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal, false, polish_between_moves);
         if (aa2->stay_close_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal, false, polish_between_moves);
         if (aa1->stay_close_mine && aa1->stay_close_other) 
-            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal, false, polish_between_moves);
         if (aa2->stay_close_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal, false, polish_between_moves);
     }
     r = (aa1->stay_close2_mine && aa1->stay_close_other) ? aa1->stay_close2_mine->distance_to(aa1->stay_close_other) : -1;
     if (r>0 && r > aa1->stay_close_optimal)
@@ -5352,13 +5368,13 @@ void Protein::bridge(int resno1, int resno2)
         if (!aa1->mclashables) set_clashables(aa1->get_residue_no());
         if (!aa2->mclashables) set_clashables(aa2->get_residue_no());
         if (aa1->stay_close2_mine && aa1->stay_close_other)
-            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal, false, polish_between_moves);
         if (aa2->stay_close2_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal, false, polish_between_moves);
         if (aa1->stay_close2_mine && aa1->stay_close_other) 
-            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal);
+            aa1->conform_atom_to_location(aa1->stay_close2_mine->name, aa1->stay_close_other->loc, 20, aa1->stay_close_optimal, false, polish_between_moves);
         if (aa2->stay_close2_mine && aa2->stay_close_other) 
-            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal);
+            aa2->conform_atom_to_location(aa2->stay_close2_mine->name, aa2->stay_close_other->loc, 20, aa2->stay_close_optimal, false, polish_between_moves);
     }
     Molecule::conform_molecules(mols, 20);
 

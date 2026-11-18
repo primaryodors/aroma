@@ -12,6 +12,7 @@
 #include "molecule.h"
 #include "aminoacid.h"
 #include "protein.h"
+#include "dock_worker.h"
 
 #define _DBGCLSLOOP 0
 
@@ -5525,6 +5526,46 @@ float Molecule::get_intermol_contact_area(Molecule* ligand, bool hpho)
     if (!atoms) return 0;
     int i, j;
     float result = 0;
+
+    #if AROMA_OPT_GUARDED_THREADS
+    const size_t pair_count = static_cast<size_t>(atcount) * ligand->atcount;
+    if (ligand->atoms && atcount >= 2 && ligand->atcount >= 2
+        && pair_count >= 512 && pair_count <= 65536 && dock_worker_available()
+        && std::find(ligand->atoms, ligand->atoms + ligand->atcount, nullptr) == ligand->atoms + ligand->atcount)
+    {
+        struct SurfaceAtom { Point location; float radius; };
+        auto collect = [hpho](Atom** source, int count)
+        {
+            std::vector<SurfaceAtom> surface;
+            for (int k = 0; k < count && source[k]; ++k)
+            {
+                Atom* atom = source[k];
+                if (!hpho || !atom->is_polar()) surface.push_back({atom->loc, atom->vdW_radius});
+            }
+            return surface;
+        };
+        const auto first = collect(atoms, atcount);
+        const auto second = collect(ligand->atoms, ligand->atcount);
+        std::vector<float> areas(first.size() * second.size(), 0);
+        auto calculate = [&](size_t start, size_t end)
+        {
+            for (size_t a = start; a < end; ++a)
+                for (size_t b = 0; b < second.size(); ++b)
+                {
+                    const float distance = second[b].location.get_3d_distance(&first[a].location);
+                    if (!distance || distance > first[a].radius + second[b].radius) continue;
+                    const float area = sphere_inter_area(first[a].radius, second[b].radius, distance);
+                    if (!isnan(area)) areas[a * second.size() + b] = area;
+                }
+        };
+        run_dock_worker([&](int index, int threads) {
+            calculate(first.size() * index / threads, first.size() * (index + 1) / threads);
+        });
+        // Keep the serial accumulation order even when the geometry is evaluated in parallel.
+        for (float area : areas) result += area;
+        return result;
+    }
+    #endif
 
     for (i=0; atoms[i]; i++)
     {

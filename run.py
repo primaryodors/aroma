@@ -28,7 +28,8 @@ Options (bare words, without leading dashes):
               older reports without counts use the 100 KB size rule.
   noa         Skip active-state docks (uncoupled receptors).
   noi         Skip inactive-state docks (uncoupled receptors).
-  ns          Suppress the docking program's splash screen.
+  ns, nosplash  Suppress the docking program's splash screen.
+  mt          Allow up to four guarded threads per isolated dock.
   emp         Filter a selected receptor/odorant pair to empirical pairs.
   ago         Filter a selected receptor/odorant pair to known agonists.
   top         Filter a selected receptor/odorant pair to its strongest agonist.
@@ -374,7 +375,9 @@ for rcpid in data.protutils.prots.keys():
 
             os.chdir(os.path.dirname(os.path.abspath(__file__)))
             cmd = ["bin/aromadock", "tmp/" + conffn]
-            if "ns" in sys.argv: cmd.append("--ns")
+            if any(arg in ("ns", "nosplash", "--ns", "--nosplash") for arg in sys.argv[3:]):
+                cmd.append("--ns")
+            if "mt" in sys.argv[3:]: cmd.append("--mt")
             print(" ".join(cmd))
             data.globals.wait_cool_cpu()
             subprocess.run(cmd, check=True)

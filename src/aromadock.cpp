@@ -8,17 +8,20 @@
 #include <time.h>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 #include <unistd.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 #include "classes/dynamic.h"
 #include "classes/configtext.h"
+#include "classes/dock_worker.h"
 #include <map>
 #include <memory>
 #include "classes/search.h"
 #include "classes/scoring.h"
 #include "classes/pose_contact.h"
+#include "classes/rotamer_repair.h"
 #include "classes/callback_scoring.h"
 #include "classes/failure_reporting.h"
 #include "classes/cavity.h"
@@ -28,6 +31,43 @@
 #include "classes/progress.h"
 
 using namespace std;
+
+class DockStageTimer
+{
+    using Clock = std::chrono::steady_clock;
+    bool enabled;
+    int pose, node;
+    Clock::time_point started, previous;
+
+    void report(const char* stage, Clock::duration elapsed) const
+    {
+        if (node < 0)
+            fprintf(stderr, "Dock timing pose %d: %s %.3f s\n", pose, stage,
+                    std::chrono::duration<double>(elapsed).count());
+        else
+            fprintf(stderr, "Dock timing pose %d node %d: %s %.3f s\n", pose, node, stage,
+                    std::chrono::duration<double>(elapsed).count());
+    }
+
+public:
+    DockStageTimer(bool enabled, int pose, int node = -1)
+        : enabled(enabled), pose(pose), node(node),
+          started(enabled ? Clock::now() : Clock::time_point{}), previous(started)
+    {}
+
+    void mark(const char* stage)
+    {
+        if (!enabled) return;
+        const auto now = Clock::now();
+        report(stage, now - previous);
+        previous = now;
+    }
+
+    ~DockStageTimer()
+    {
+        if (enabled) report("total", Clock::now() - started);
+    }
+};
 
 std::string get_fttl_no_path_or_ext(const char* filename)
 {
@@ -2512,12 +2552,19 @@ int main(int argc, char** argv) try
     begin_debug_file();
     #endif
 
+    char buf[20];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", lbegan);
+
+    cout << "Dock began at " << buf << endl;
+
     copy_config_text(configfname, "example.config");
 
     smcmd = false;
+    bool guarded_threads = false;
     for (i=1; i<argc; i++)
     {
-        if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
+        if (!strcmp(argv[i], "--mt")) guarded_threads = true;
+        else if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
         {
             dosplash = false;
         }
@@ -2576,6 +2623,7 @@ int main(int argc, char** argv) try
 
     for (i=1; i<argc; i++)
     {
+        if (!strcmp(argv[i], "--mt")) continue;
         if (!strcmp(argv[i], "--ns") || !strcmp(argv[i], "--nosplash"))
         {
             dosplash = false;
@@ -2602,6 +2650,14 @@ int main(int argc, char** argv) try
         cerr << "Docking runs serially; use separate processes for parallel screening." << endl;
         num_threads = 1;
     }
+    #ifdef _OPENMP
+    omp_set_num_threads(1);
+    #endif
+    if (guarded_threads)
+    {
+        if (enable_dock_worker()) cerr << "AromaDock: guarded threading requested.\n";
+        else cerr << "AromaDock: guarded threading unavailable. Running serially.\n";
+    }
     std::unique_ptr<Protein[]> pose_proteins(new Protein[poses+1]);
     std::unique_ptr<Molecule[]> pose_ligands(new Molecule[poses+1]);
     std::vector<int> pose_isomers(poses+1, 0);
@@ -2615,6 +2671,11 @@ int main(int argc, char** argv) try
     }
     protein->load_pdb(pf, 0, protstrand ?: 'A');
     fclose(pf);
+
+    std::map<int, ReceptorRotamer> starting_rotamers;
+    if (flex)
+        for (int r = protein->get_start_resno(); r <= protein->get_end_resno(); ++r)
+            if (AminoAcid* residue = protein->get_residue(r)) starting_rotamers[r].capture(*residue);
 
     j=1;
     std::string seq = protein->get_sequence();
@@ -2813,7 +2874,8 @@ int main(int argc, char** argv) try
 
     if (bridges.size())
     {
-        reconnect_bridges();
+        // The settings pass already reconnects bridges. Refit after any later structure changes.
+        if (!AROMA_OPT_SINGLE_STARTUP_RECONNECT || tplset || hydrogenate_pdb) reconnect_bridges();
 
         if (temp_pdb_file.length()) std::remove(temp_pdb_file.c_str());
         temp_pdb_file = (std::string)"tmp/" + std::to_string(pid) + (std::string)"_bridged.pdb";
@@ -3161,8 +3223,11 @@ _try_again:
     }
 
     float best_energy = 0, best_acc_energy = 0, best_worst_clash = 0;
+    const char* timing_env = getenv("AROMA_DOCK_TIMING");
+    const bool timing_enabled = timing_env && !strcmp(timing_env, "1");
     for (pose = 1; pose <= poses; pose++)
     {
+        DockStageTimer pose_timer(timing_enabled, pose);
         isono = pose_isomers[pose];
         nodeno = 0;         // makes life easier when doing vestibules
         nodeoff = 0;        // "
@@ -3408,6 +3473,7 @@ _try_again:
 
         for (nodeno=0; nodeno<=pathnodes; nodeno++)
         {
+            DockStageTimer node_timer(timing_enabled, pose, nodeno);
             soft_contact_elasticity = initial_soft_contact_elasticity;
             movie_offset = iters * (nodeno /*+ (pose-1)*(pathnodes+1)*/);
 
@@ -4564,7 +4630,9 @@ _try_again:
             /////////////////////////////////////////////////////////////////////////////////
             // Main call to conformational search function.
             /////////////////////////////////////////////////////////////////////////////////
+            node_timer.mark("node preparation");
             Molecule::conform_molecules(cfmols, iters, &iteration_callback, progressbar ? &update_progressbar : nullptr, last_appear_iter?iters:0, (Space*)gcav);
+            node_timer.mark("conformational search");
             if (end_program) poses = pose;
             #if _DBG_STEPBYSTEP
             float postdock_mclashes = protein->total_mclashes();
@@ -4741,6 +4809,7 @@ _try_again:
             }
             #endif
 
+            node_timer.mark("post-search ligand adjustments");
             #if attempt_optimize_hbonds_in_post
                 for (i=0; i<sphres; i++)
                 {
@@ -4748,6 +4817,7 @@ _try_again:
                 }
             #endif
 
+            node_timer.mark("first hydrogen-bond refinement");
             #if optimize_internal_contacts_post_iterations
             if (nsoftrgn)
             {
@@ -4812,7 +4882,9 @@ _try_again:
             #endif
 
             // Set the dock result properties and allocate the arrays.
+            node_timer.mark("soft-contact optimization and cleanup");
             protein->set_conditional_basicities();
+            node_timer.mark("conditional basicities");
             #if _dbg_cond_basic
             AminoAcid* aadbg = protein->get_residue(155);
             cout << aadbg->get_name() << " charge = " << aadbg->get_charge() << endl;
@@ -4829,7 +4901,8 @@ _try_again:
                         AminoAcid* first = softrgns[i].get_local_contact(j, protein);
                         AminoAcid* second = softrgns[i].get_distant_contact(j, protein);
                         if (first && second)
-                            protein->bridge(first->get_residue_no(), second->get_residue_no());
+                            protein->bridge(first->get_residue_no(), second->get_residue_no(),
+                                            !AROMA_OPT_LOCAL_POST_REPAIRS);
                     }
                 for (const auto& ds : active_disulfides)
                 {
@@ -4846,6 +4919,7 @@ _try_again:
                     second->conform_atom_to_location(sg2, sg1, 20, 2.07);
                     first->movability = second->movability = MOV_PINNED;
                 }
+                node_timer.mark("ordinary contact and disulfide repairs");
                 for (const auto& contact : tracked_internal_contacts)
                 {
                     if (!contact.is_salt_bridge) continue;
@@ -4856,16 +4930,58 @@ _try_again:
                     first->mutual_closest_atoms(second, &a1, &a2);
                     const float distance = (a1 && a2) ? a1->distance_to(a2) : 999.0f;
                     if (distance > 4.5f || first->get_intermol_binding(second).summed() > -1.0f)
-                        protein->bridge(contact.res1, contact.res2);
+                        protein->bridge(contact.res1, contact.res2, !AROMA_OPT_LOCAL_POST_REPAIRS,
+                                        !AROMA_OPT_SALT_BRIDGE_REPAIR);
                 }
             }
 
+            node_timer.mark(nsoftrgn ? "tracked salt-bridge repairs" : "structural repairs");
             protein->optimize_hydrogens(1,INT_MAX,nullptr,true,ligand);
+            node_timer.mark("whole-receptor hydrogen optimization");
 
             #if attempt_optimize_hbonds_in_post
             for (i=0;i<sphres;i++)
                 protein->refine_hbond_contact(ligand,reaches_spheroid[nodeno][i],false);
             #endif
+            node_timer.mark("second hydrogen-bond refinement");
+
+            std::vector<std::string> restored_rotamers;
+            for (i = 0; flex && cfmols[i]; ++i)
+            {
+                if (!cfmols[i]->is_residue() || ligand->glued_to_mol() == cfmols[i]) continue;
+                auto* residue = static_cast<AminoAcid*>(cfmols[i]);
+                const char type = residue->get_letter();
+                if (type == 'C' || type == 'P' || type == 'H' || residue->coordmtl || residue->glued_to_mol()) continue;
+                if (residue->get_internal_clashes(false, false) <= clash_limit_per_aa * 10
+                    || (!residue->clash1 && !residue->clash2)) continue;
+
+                const int resno = residue->get_residue_no();
+                if (residue->priority || residue->stay_close_other || residue->stay_close2_other
+                    || (ligand->stay_close_other && ligand->stay_close_other->residue == resno)
+                    || (ligand->stay_close2_other && ligand->stay_close2_other->residue == resno)) continue;
+                if (std::any_of(tracked_internal_contacts.begin(), tracked_internal_contacts.end(),
+                    [resno](const auto& contact) {
+                        return contact.is_salt_bridge && (contact.res1 == resno || contact.res2 == resno);
+                    })) continue;
+                if (std::any_of(forced_static_resnos.begin(), forced_static_resnos.end(),
+                    [resno](const auto& fixed) { return fixed.resno == resno; })) continue;
+                bool configured_bridge = false;
+                for (const auto& bridge : bridges)
+                {
+                    const char* second = strchr(bridge.c_str(), '|');
+                    if (interpret_resno(bridge.c_str()) == resno || (second && interpret_resno(second + 1) == resno))
+                    {
+                        configured_bridge = true;
+                        break;
+                    }
+                }
+                if (configured_bridge) continue;
+                const auto start = starting_rotamers.find(resno);
+                if (start != starting_rotamers.end()
+                    && start->second.repair(*residue, *protein, *ligand, met, waters, clash_limit_per_aa * 10))
+                    restored_rotamers.emplace_back(residue->get_name());
+            }
+            node_timer.mark("distant rotamer repair");
 
             #if _dbg_atom_mov_to_clash
             movclash_prot = nullptr;
@@ -4873,6 +4989,9 @@ _try_again:
             #endif
 
             dr[drcount][nodeno] = DockResult(protein, ligand, search_size, addl_resno, drcount, waters);
+            node_timer.mark("DockResult scoring");
+            for (const auto& residue : restored_rotamers)
+                dr[drcount][nodeno].miscdata += "Restored input rotamer for " + residue + ".\n";
             dr[drcount][nodeno].out_per_res_e = out_per_res_e;
             dr[drcount][nodeno].out_per_btyp_e = out_per_btyp_e;
             dr[drcount][nodeno].out_itemized_e_cutoff = out_itemized_e_cutoff;
@@ -4902,6 +5021,10 @@ _try_again:
             #endif
 
             n = protein->get_end_resno();
+            #if AROMA_OPT_POSE_CLASH_PROXIMITY
+            // Coordinates are fixed throughout this check. Cache each inner-loop lookup on first use.
+            std::vector<signed char> near_ligand(n+1, -1);
+            #endif
             for (i=1; i<sphres; i++)
             {
                 AminoAcid* aa1 = reaches_spheroid[nodeno][i];
@@ -4917,10 +5040,20 @@ _try_again:
                     if (!aa2) continue;
                     if (!aa1->been_flexed && !aa2->been_flexed) continue;
                     if (aa1->is_thiol() && aa2->is_thiol()) continue;
+                    #if AROMA_OPT_POSE_CLASH_PROXIMITY
+                    auto& near = near_ligand[j];
+                    if (near < 0)
+                    {
+                        aa2->mutual_closest_atoms(ligand, &ra, &la);
+                        near = la && ra && !(la->distance_to(ra) >= _INTERA_R_CUTOFF);
+                    }
+                    if (!near) continue;
+                    #else
                     la = ra = nullptr;
                     aa2->mutual_closest_atoms(ligand, &ra, &la);
                     if (!la || !ra) continue;
                     if (la->distance_to(ra) >= _INTERA_R_CUTOFF) continue;
+                    #endif
 
                     float f = aa1->get_intermol_clashes(aa2) - aa1->get_base_mclashes();
                     if (f > clash_limit_per_aa*2 && aa1->clash1 && aa1->clash1->Z > 1 && aa1->clash2 && aa1->clash2->Z > 1)
@@ -5122,6 +5255,7 @@ _try_again:
                 }
             }
 
+            node_timer.mark("post-score checks");
             float btot = dr[drcount][nodeno].kJmol;
             float pstot = dr[drcount][nodeno].polsat;
             if (isomers.size()) dr[drcount][nodeno].isomer = ligand->get_name();

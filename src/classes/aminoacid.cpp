@@ -3842,7 +3842,7 @@ bool AminoAcid::is_amine()
     return false;
 }
 
-void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od, bool imc)
+void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, float od, bool imc, bool polish)
 {
     if (!atoms) return;
     int i;
@@ -3850,7 +3850,7 @@ void AminoAcid::conform_atom_to_location(const char* an, Point t, int iters, flo
     {
         if (!strcmp(atoms[i]->name, an))
         {
-            conform_atom_to_location(i, t, iters, od, imc);
+            conform_atom_to_location(i, t, iters, od, imc, polish);
             return;
         }
     }
@@ -3923,7 +3923,7 @@ void AminoAcid::conform_atom_to_location(Atom *a, Atom *target, int iters, float
     if (!imc) conform_molecules(mols, mclashables, 50);
 }
 
-void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bool imc)
+void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bool imc, bool polish)
 {
     if (!(movability & MOV_CAN_FLEX)) return;
 
@@ -3943,6 +3943,7 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
     bool CACB;
     for (iter = 0; iter < iters; iter++)
     {
+        const float previous_best = bestr;
         float r;
         for (j=0; b[j]; j++)
         {
@@ -3966,6 +3967,8 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
                 cout << " " << bestr;
                 #endif
 
+                // A rejected distance cannot become an improvement after clash evaluation.
+                if (!polish && !(r < bestr)) continue;
                 float c = get_internal_clashes();
                 if (mclashables && !imc) c += get_intermol_clashes(mclashables);
                 if (r < bestr && (/* CACB || */ c < oc+clash_limit_per_aa))
@@ -3980,13 +3983,14 @@ void AminoAcid::conform_atom_to_location(int i, Point t, int iters, float od, bo
             cout << endl << name << "." << iter << ": " << circdiv << "|" << bestr << endl;
             #endif
         }
+        if (!polish && bestr == previous_best) break;
     }
     best.restore_state(this);
 
     Molecule* mols[2];
     mols[0] = (Molecule*)this;
     mols[1] = nullptr;
-    if (!imc) conform_molecules(mols, mclashables, 50);
+    if (!imc && polish) conform_molecules(mols, mclashables, 50);
 }
 
 
