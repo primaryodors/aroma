@@ -2292,13 +2292,13 @@ Molecule* Molecule::create_Schiff_base(Molecule *other)
     who_moves->glued_atom_mine = (N->mol == who_moves) ? N : C;
     who_moves->glued_atom_other = (C->mol == who_moves) ? N : C;
     who_moves->glued_atoms_r = N->distance_to(C);
-    glued_energy.attractive = InteratomicForce::covalent_bond_energy(C, N, 2)
+    who_moves->glued_energy.attractive = InteratomicForce::covalent_bond_energy(C, N, 2)
         - InteratomicForce::covalent_bond_energy(C, O, 2)
         - InteratomicForce::covalent_bond_energy(H1, N, 1)
         - InteratomicForce::covalent_bond_energy(H2, N, 1)
         + InteratomicForce::covalent_bond_energy(H1, O, 1)
         + InteratomicForce::covalent_bond_energy(H2, O, 1);
-    intermol_covalent_enthalpy = glued_energy.summed();
+    intermol_covalent_enthalpy = who_moves->glued_energy.summed();
     // cout << "Schiff enthalpy of formation: " << intermol_covalent_enthalpy << endl;
     if (who_moves == this)
     {
@@ -5238,18 +5238,20 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
         Point aloc = latoms[i]->loc;
         for (l=0; ligands[l]; l++)
         {
-            if (glued_to && ligands[l] == glued_to)
+            Molecule* adduct = glued_to == ligands[l] ? this
+                : (ligands[l]->glued_to == this ? ligands[l] : nullptr);
+            if (i == 0 && adduct)
             {
                 if (compute_interall)
                 {
-                    interall_a1[ninterall] = glued_atom_mine;
-                    interall_a2[ninterall] = glued_atom_other;
+                    interall_a1[ninterall] = adduct->glued_atom_mine;
+                    interall_a2[ninterall] = adduct->glued_atom_other;
                     interall_t[ninterall] = covalent;
-                    interall[ninterall++] = glued_energy.summed();
+                    interall[ninterall++] = adduct->glued_energy.summed();
+                    if (ninterall >= MAX_INTERALL-1) compute_interall = false;
                 }
-                kJmol += glued_energy;
+                kJmol += adduct->glued_energy;
             }
-            if (ligands[l]->glued_to && ligands[l]->glued_to == this) kJmol += ligands[l]->glued_energy;
             bool skip = false;
             if (ligands[l]->nmonomers)
             {
@@ -5276,6 +5278,11 @@ Interaction Molecule::get_intermol_binding(Molecule** ligands, bool subtract_cla
                     ligands[l]->atcount = j;
                     break;
                 }
+                // Shared adduct atoms retain their original molecule ownership.
+                // Their internal pairs must not become intermolecular contacts.
+                if (adduct && latoms[i]->mol == ligands[l]->atoms[j]->mol) continue;
+                if (adduct && (latoms[i]->is_bonded_to(ligands[l]->atoms[j])
+                    || latoms[i]->shares_bonded_with(ligands[l]->atoms[j]))) continue;
                 if (latoms[i]->is_backbone && ligands[l]->atoms[j]->is_backbone
                     &&
                     (	(	latoms[i]->residue == ligands[l]->atoms[j]->residue - 1
