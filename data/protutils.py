@@ -224,25 +224,34 @@ def templates_for_hm(protid):
     if protid[0:2] == "OR":
         sub = subfamily_from_protid(protid)
 
-        if fam == "OR1" or fam == "OR3" or fam == "OR7":
-            return consOR1 + OR1D2
+        if int(fam[2:]) < 51:
+            if not prots:
+                load_prots()
+            target = prots.get(protid, {}).get('btree', '')
 
-        if fam == "OR2" or fam == "OR13":
-            return consOR2
+            def in_clade(*anchors):
+                # Span a selected clade using receptors on its two sides.
+                # Derive its prefix so reordered binary paths remain usable.
+                paths = [prots.get(name, {}).get('btree', '') for name in anchors]
+                if not target or not all(paths):
+                    return False
+                prefix = os.path.commonprefix(paths)
+                return len(prefix) > 3 and target.startswith(prefix)
 
-        if fam == "OR4" or fam == "OR12":
-            return consOR4
-
-        if fam == "OR5" or fam == "OR8" or fam == "OR9":
-            if protid == "OR5V1": return OR5V1
-            else: return consOR5
-
-        if fam == "OR6" or fam == "OR10" or fam == "OR11":
-            if fam == "OR6" and (sub == 'A' or sub == 'B' or sub == 'P' or sub == 'Y'):
+            if protid == 'OR5V1':
+                return OR5V1 + consOR5
+            if in_clade('OR6A2', 'OR6B2'):
                 return bmOR6A2
-            else: return consOR6
-
-        if fam == "OR14":
+            if in_clade('OR1A1', 'OR1B1'):
+                return consOR1 + OR1D2
+            if in_clade('OR2A1', 'OR2L2', 'OR13J1'):
+                return consOR2
+            if in_clade('OR4A4', 'OR4F3'):
+                return consOR4
+            if in_clade('OR5A1', 'OR8B2', 'OR9Q1'):
+                return consOR5
+            if in_clade('OR6C1', 'OR6F1'):
+                return consOR6
             return CLASSII
 
         if fam == "OR51":

@@ -117,9 +117,7 @@ def validated_subfamily_alignment(rcpid, work):
         provenance.append(str(source.relative_to(root_dir)))
 
     experimental = pir_rows(work / 'experimental.ali')
-    experimental_ids = set(pu.templates_for_hm(rcpid)) | {
-        '8uxv', '8hti', '9wg4', '8uxy', '8uy0', '8uyq', '9wpm',
-        '9ldv', '9ldw', '9ldx', '9ldz'}
+    experimental_ids = set(pu.templates_for_hm(rcpid))
     for name, (description, row) in experimental.items():
         if name not in experimental_ids or any(tag in description.lower() for tag in ('inactive', 'apo ')):
             continue
@@ -151,14 +149,8 @@ def primary_experimental_alignment(rcpid, work):
 def experimental_ensemble_alignment(rcpid, work):
     """Keep experimental donors separate for native similarity weighting."""
     rows = pir_rows(work / 'experimental.ali')
-    if rcpid == 'OR5V1':
-        identifiers = ['9lkb', '9wpm']
-    else:
-        candidates = set(pu.templates_for_hm(rcpid))
-        if rcpid.startswith('OR'):
-            family = int(re.sub(r'[^0-9]', '', pu.family_from_protid(rcpid)))
-            candidates.update(pu.templates_for_hm('OR56B2' if family >= 51 else 'OR14A1'))
-        identifiers = sorted(candidates)
+    candidates = set(pu.templates_for_hm(rcpid))
+    identifiers = sorted(candidates)
     templates = []
     selected = {}
     for name in identifiers:
