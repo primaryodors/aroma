@@ -68,6 +68,7 @@ class Search
         const std::vector<int>& anchors, const std::vector<bool>& eligible);
     static Point pocket_starting_center(Cavity* cavity, Point declared_center);
     static void do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocket_cen);
+    static int sample_anchored_conformers(Protein* protein, Molecule* ligand, Space* cavity = nullptr);
     static void copy_ligand_position_from_file(Protein* protein, Molecule* ligand, const char* filename, const char* ligname, int auth_resno);
 
     static int identify_ligand_pairing_targets(Molecule* ligand, LigandTarget* results, int max_results);

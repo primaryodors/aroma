@@ -4624,6 +4624,8 @@ _try_again:
                 cout << "Formed Schiff base between ligand and " << g_bbr->pri_res->get_name() << endl << endl;
                 ligand->stay_close_mine = ligand->stay_close2_mine = nullptr;
                 ligand->stay_close_other = ligand->stay_close2_other = nullptr;
+                Search::sample_anchored_conformers(protein,ligand,gcav);
+                if (output_each_iter) output_iter(++nodeoff, cfmols, "anchored ligand conformers");
             }
             #endif
 

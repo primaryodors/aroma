@@ -29,6 +29,7 @@ REGRESSION_TESTS+=test/receptor_shielding_test
 REGRESSION_TESTS+=test/config_text_test
 REGRESSION_TESTS+=test/failure_reporting_test
 REGRESSION_TESTS+=test/sdf_roundtrip_test test/amino_cache_test
+REGRESSION_TESTS+=test/anchored_conformer_test
 
 APPS=$(BIN)/aromadock $(BIN)/phew $(BIN)/ic $(BIN)/qc $(BIN)/protseq $(BIN)/molsurf $(BIN)/olfactophore \
 	 $(BIN)/scorpion $(BIN)/ramachandran $(BIN)/ringflip $(BIN)/cavity_search $(BIN)/cavity_fit $(BIN)/molfix $(BIN)/poslig $(BIN)/reec

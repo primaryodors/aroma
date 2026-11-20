@@ -14,6 +14,206 @@ int cs_idx = -1;
 bool Search::any_resnos_priority = false;
 BestBindingResult bbr_candidates[MAX_BBR_CANDIDATES];
 
+int Search::sample_anchored_conformers(Protein* protein, Molecule* ligand, Space* cavity)
+{
+    if (!protein || !ligand || !ligand->glued_to_mol()) return 0;
+    Atom* anchor = nullptr;
+    for (int i=0; i<ligand->get_atom_count(); ++i)
+    {
+        Atom* atom = ligand->get_atom(i);
+        if (atom->mol != ligand) continue;
+        for (int j=0; j<abs(atom->get_geometry()); ++j)
+        {
+            Bond* bond = atom->get_bond_by_idx(j);
+            if (bond && bond->atom2 && bond->atom2->mol == ligand->glued_to_mol()
+                && bond->cardinality == 2) anchor = atom;
+        }
+    }
+    if (!anchor)
+    {
+        if (audit) fprintf(audit,"Anchored conformer sampling skipped: no imine attachment found.\n");
+        return 0;
+    }
+
+    // Choose the orientation that moves only the distal ligand fragment.
+    // Never rotate the imine, receptor atoms, or a ring closure.
+    std::vector<Bond*> rotations;
+    std::vector<Bond*> bonds;
+    for (int i=0; i<ligand->get_atom_count(); ++i)
+    {
+        Atom* atom = ligand->get_atom(i);
+        if (atom->mol != ligand || atom->Z<=1) continue;
+        for (int j=0; j<abs(atom->get_geometry()); ++j)
+        {
+            Bond* bond = atom->get_bond_by_idx(j);
+            if (!bond || !bond->atom2 || bond->atom2->mol != ligand || bond->atom2->Z<=1) continue;
+            bool duplicate = false;
+            for (Bond* previous : bonds)
+                if ((previous->atom1 == bond->atom1 && previous->atom2 == bond->atom2)
+                    || (previous->atom1 == bond->atom2 && previous->atom2 == bond->atom1)) duplicate = true;
+            if (!duplicate) bonds.push_back(bond);
+        }
+    }
+    for (Bond* bond : bonds)
+    {
+        if (rotations.size()==12) break;
+        if (!bond->can_rotate || bond->cardinality != 1 || bond->is_ring_bond()
+            || bond->atom1->mol != ligand || bond->atom2->mol != ligand
+            || (bond->atom1->is_pi() && bond->atom2->is_pi())) continue;
+        for (int orientation=0; orientation<2; ++orientation)
+        {
+            Bond* directed = orientation ? bond->get_reversed() : bond;
+            if (!directed || !directed->can_rotate || directed->atom2 == anchor) continue;
+            std::vector<Atom*> moving(directed->count_moves_with_atom2()+2,nullptr);
+            directed->fetch_moves_with_atom2(moving.data());
+            bool safe = moving[0] != nullptr;
+            for (Atom* atom : moving)
+            {
+                if (!atom) break;
+                if (atom->mol != ligand || atom == anchor) safe = false;
+            }
+            if (safe)
+            {
+                rotations.push_back(directed);
+                break;
+            }
+        }
+    }
+    if (rotations.empty())
+    {
+        if (audit) fprintf(audit,"Anchored conformer sampling skipped: no movable ligand torsions.\n");
+        return 0;
+    }
+
+    std::vector<Molecule*> neighbors;
+    for (int r=protein->get_start_resno(); r<=protein->get_end_resno(); ++r)
+    {
+        AminoAcid* aa = protein->get_residue(r);
+        if (aa) neighbors.push_back(aa);
+    }
+    neighbors.push_back(nullptr);
+    const float clash_limit = fmax(ligand->get_internal_clashes(),
+        fmax(clash_limit_per_aa,1.25f*ligand->get_base_clashes()));
+    auto score = [&]() {
+        for (Bond* bond : rotations)
+        {
+            bond->eclipse_hash = 0;
+            if (bond->get_reversed()) bond->get_reversed()->eclipse_hash = 0;
+        }
+        return ligand->conformer_binding(neighbors.data(),cavity).summed();
+    };
+    auto span = [&]() {
+        float result = 0;
+        for (int i=0; i<ligand->get_atom_count(); ++i)
+        {
+            Atom* atom = ligand->get_atom(i);
+            if (atom->mol == ligand && atom->Z>1) result = fmax(result,atom->distance_to(anchor));
+        }
+        return result;
+    };
+    struct Candidate
+    {
+        Pose pose;
+        float energy;
+        std::vector<Point> points;
+        Candidate(Molecule* mol,float value):pose(mol),energy(value)
+        {
+            for (int i=0; i<mol->get_atom_count(); ++i)
+                if (mol->get_atom(i)->Z>1) points.push_back(mol->get_atom(i)->loc);
+        }
+    };
+    const float initial_energy = score();
+    if (!std::isfinite(initial_energy))
+    {
+        if (audit) fprintf(audit,"Anchored conformer sampling skipped: nonfinite starting score.\n");
+        return 0;
+    }
+    std::vector<Candidate> beam;
+    beam.emplace_back(ligand,initial_energy);
+    int evaluated = 1;
+
+    // Supply both extended and compact starts. Local pocket scoring then decides
+    // which degree of folding is useful; extension itself earns no energy bonus.
+    for (int direction : {-1,1})
+    {
+        beam.front().pose.restore_state(ligand,true);
+        for (Bond* bond : rotations)
+        {
+            Pose start(ligand), best(ligand);
+            float best_span = direction*span();
+            for (int step=1; step<6; ++step)
+            {
+                start.restore_state(ligand,true);
+                if (!bond->rotate(step*M_PI/3,false,true)) continue;
+                if (ligand->get_internal_clashes()>clash_limit) continue;
+                float extent = direction*span();
+                if (extent>best_span)
+                {
+                    best_span = extent;
+                    best.copy_state(ligand);
+                }
+            }
+            best.restore_state(ligand,true);
+        }
+        float energy = score();
+        ++evaluated;
+        if (std::isfinite(energy)) beam.emplace_back(ligand,energy);
+    }
+
+    for (Bond* bond : rotations)
+    {
+        std::vector<Candidate> trials;
+        for (Candidate& parent : beam)
+        {
+            trials.push_back(parent);
+            for (int step=1; step<6; ++step)
+            {
+                parent.pose.restore_state(ligand,true);
+                if (!bond->rotate(step*M_PI/3,false,true)) continue;
+                if (ligand->get_internal_clashes()>clash_limit) continue;
+                float energy = score();
+                ++evaluated;
+                if (std::isfinite(energy)) trials.emplace_back(ligand,energy);
+            }
+        }
+        std::stable_sort(trials.begin(),trials.end(),[](const Candidate& a,const Candidate& b) {
+            return a.energy<b.energy;
+        });
+        beam.clear();
+        for (Candidate& trial : trials)
+        {
+            bool duplicate = false;
+            for (const Candidate& kept : beam)
+            {
+                float squared = 0;
+                for (size_t i=0; i<trial.points.size(); ++i)
+                {
+                    float distance = trial.points[i].get_3d_distance(kept.points[i]);
+                    squared += distance*distance;
+                }
+                if (squared < 0.1225f*trial.points.size()) duplicate = true;
+            }
+            if (!duplicate) beam.push_back(trial);
+            if (beam.size()==4) break;
+        }
+    }
+    // Mostly exploit the best fit; occasionally explore a near-degenerate fit,
+    // but never replace the original with a worse preparation score.
+    size_t chosen = 0;
+    if (frand(0,1)<0.2f)
+    {
+        size_t eligible = 1;
+        while (eligible<beam.size() && beam[eligible].energy<=initial_energy
+            && beam[eligible].energy<=beam.front().energy+2.5f) ++eligible;
+        chosen = std::min(eligible-1,static_cast<size_t>(frand(0,eligible)));
+    }
+    beam[chosen].pose.restore_state(ligand,true);
+    ligand->memoize_clashes();
+    if (audit) fprintf(audit,"Anchored conformer sampling: %d scored, %zu torsions, score %g -> %g, anchor span %g A.\n",
+        evaluated,rotations.size(),initial_energy,beam[chosen].energy,span());
+    return evaluated;
+}
+
 void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocket_cen)
 {
     int i, j, l, n;
@@ -32,6 +232,7 @@ void Search::do_tumble_spheres(Protein* protein, Molecule* ligand, Point l_pocke
     for (i=0; !ligbbox.fits_inside(pocketsize) && i<100; i++)
     {
         ligand->crumple(fiftyseventh*30);
+        ligbbox = ligand->get_bounding_box().size();
     }
 
     for (i=0; i<tsphsz; i++)

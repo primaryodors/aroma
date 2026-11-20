@@ -5932,6 +5932,11 @@ Interaction Molecule::intermol_bind_for_multimol_dock(Molecule *om, Bond *selfis
     return lbind;
 }
 
+Interaction Molecule::conformer_binding(Molecule** nearby, Space* cavity)
+{
+    return cfmol_multibind(this,nearby,nullptr,cavity);
+}
+
 Interaction Molecule::cfmol_multibind(Molecule* a, Molecule** nearby, Bond* selfish, Space* cav)
 {
     if (a->is_residue() && ((AminoAcid*)a)->conditionally_basic()) ((AminoAcid*)a)->set_conditional_basicity(nearby);

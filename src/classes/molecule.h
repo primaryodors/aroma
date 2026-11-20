@@ -290,6 +290,7 @@ public:
     float solvent_bound_energy(Molecule** neighbors);
     float get_intermol_polar_sat(Molecule* ligand);
     float get_intermol_contact_area(Molecule* ligand, bool hydrophobic_only = false);
+    Interaction conformer_binding(Molecule** nearby, Space* cavity = nullptr);
     void mutual_closest_atoms(Molecule* mol2, Atom** atom1, Atom** atom2);
     void mutual_closest_hbond_pair(Molecule* mol2, Atom** atom1, Atom** atom2);
     float get_total_mclashes();

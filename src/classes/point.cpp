@@ -682,7 +682,9 @@ float cap_area(float r1, float r2, float d)
 
 float sphere_intersection(float r1, float r2, float d)
 {
-    if (d > r1+r2) return 0;
+    if (r1<=0 || r2<=0 || d>=r1+r2) return 0;
+    if (d<=fabs(r1-r2))
+        return (4.0f/3.0f)*M_PI*pow(fmin(r1,r2),3);
 
     // https://mathworld.wolfram.com/Sphere-SphereIntersection.html
     return M_PI * pow(r1 + r2 - d, 2)
